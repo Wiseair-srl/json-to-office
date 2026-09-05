@@ -1,5 +1,47 @@
 # @json-to-office/mcp-server
 
+## 2.4.2
+
+### Patch Changes
+
+- e005374: A pairwise comparison is only counted when it survives swapping the two documents around.
+
+  The first pairwise run returned 25 against 13 in the assisted set's favour, p = 0.073, and it was mostly seating. The check built into it for exactly this reason says the judge picked whichever document it saw **second** in 68% of comparisons, and the per-brief hash meant to balance the orders happened to put the assisted set second 23 times out of 38. Within the orientation that disfavoured it, the same set won 7 of 15 — a coin.
+
+  So every pair is now judged twice, once in each order, and a brief counts only when both showings name the same winner. A document that wins from the second slot and loses from the first has not won; it is recorded as `inconsistent`, which is a pair the judge could not rank rather than a pair anyone lost. The scorecard prints the second-shown win rate before it prints any claim about the documents, because that number is the instrument and it belongs above the result.
+
+  Two calls per brief instead of one, still no re-authoring. `--single-order` retains individual showings for a smoke run, but contributes no decided comparisons or comparative conclusion. CLI options work before or between the input directories, and significant results name the actual winning side. The superseded run is kept in `baselines/` under its own name, as the evidence for why the design changed.
+
+- 8c51d5d: Comparisons between two run sets no longer go through the judge's zero.
+
+  Absolute verdicts drift, and today's measurement showed the drift has a direction: the same 39 documents scored 8 shippable one day and 12 the next, with every change in the same direction and none coming back. The cold-to-assisted difference the spec reports is one document. An effect a quarter the size of the instrument's zero-shift is not an effect, and re-judging each side again does not fix it — it only makes the two zeroes recent instead of distant.
+
+  `pnpm pairwise <a-dir> <b-dir>` shows the judge both answers to the same brief and asks which is better. There is no zero to move: a lenient session, a fuller context, a different mood in the rubric moves both documents together and neither side of the comparison. Both sets already have contact sheets on disk, so the default two-order comparison costs two calls per brief and no authoring.
+
+  Each pair is shown in both orders; only verdicts that agree after the swap contribute to the sign test. A seeded single-order mode is available for smoke checks, but produces no comparative conclusion. The winner is translated back out of the shown order and the orientation is recorded, so a reader can check the un-flipping.
+
+  The result is reported with an exact two-sided sign test, because the paired shape this programme keeps producing — nine against four — reads as convincing and is not.
+
+- 5290108: Compared pairwise, the prose skill wins and never loses — and the metric the spec led with could not see it.
+
+  Each brief's two documents were shown to the judge twice, once in each order, counting only the briefs whose verdict survives the swap: **assisted 6, cold 0**, with thirty pairs where the two orders disagreed and four not compared. Six against nil is p = 0.031, and eleven of the twelve showings behind them called the margin "clear".
+
+  The shipping metric reported 20% against 22.5% and read as a null result. It was not a result at all: re-judging the same 39 documents a day later moved 8 shippable to 12, every change in the same direction, so the instrument's zero shifts by four documents while the difference being claimed is one.
+
+  So the honest statement is narrower than either previous draft of §1. Prose guidance does produce better documents; the effect is real, one-directional, detectable on about one brief in six, and below the resolution of a binary ship verdict on the rest. That sharpens the programme's first principle rather than weakening it: taste as data is not needed because prose fails, but because prose buys an improvement this small, at 82 KB and one brief in six, while a rule applies every time.
+
+  The thirty disagreements are resolution, not ties — pairs whose difference is smaller than the judge's 64% pull towards whatever it saw second. Any phase whose effect is smaller than the skill's will be invisible to this instrument, which makes #321 a gate on reading a phase result rather than on starting one.
+
+- d4b5c6d: The judge's repeatability has a number now, and the earlier alarm was overstated.
+
+  A four-document spot check had changed three verdicts and suggested the shipping metric was mostly noise. Over all 39 uncontaminated cold-baseline documents, re-judged a day later with the same rubric and model, it is not: 90% agreement and a kappa of 0.73 on `wouldShip`, which is substantial. By kappa the binary verdict is the best-behaved field on the rubric, not the worst — `level` agrees exactly only 62% of the time (kappa 0.45), though just one document moved by more than a single step.
+
+  What survives is worse than noise, because it has a direction. All four verdicts that changed moved the same way, no to yes: the same corpus scored 8 shippable one day and 12 the next, with nothing moving back. The instrument does not wobble around a stable centre, it drifts, and the drift between two sessions is four documents. The cold-to-assisted difference §1 reports is one document, and the two sets were judged on different days.
+
+  So the paired cold-versus-assisted analysis is neither evidence for the skill nor against it: its zero moved by more than the effect it was measuring. Re-judging both sets in a single pass costs one call per document and no authoring, and is the minimum a comparison needs. `judgePair` is the version that survives drift outright.
+
+  `rejudge` also now skips contaminated runs. The raw cold scorecard on disk and the committed baseline reported 9 shippable and 8 for the same forty runs, because one of them still carried the brief that had called into an unrelated MCP server.
+
 ## 2.4.1
 
 ### Patch Changes
