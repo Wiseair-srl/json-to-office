@@ -319,45 +319,24 @@ export class JsonValidator {
     strict?: boolean
   ): Promise<ValidateFileResult> {
     try {
-      const schemaContent = readFileSync(resolve(schemaPath), 'utf-8');
-      const schema = JSON.parse(schemaContent);
-
-      // Ajv bundles draft-07 under its canonical http URI. Accept the https
-      // spelling emitted by older json-to-office schema generators too.
-      if (schema.$schema === 'https://json-schema.org/draft-07/schema#') {
-        schema.$schema = 'http://json-schema.org/draft-07/schema#';
-      }
-
-      const Ajv = (await import('ajv')).default;
-      const addFormats = (await import('ajv-formats')).default;
-
-      const ajv = new Ajv({
-        allErrors: true,
-        verbose: true,
-        strict: strict ?? false,
-        // Renderer profiles make the DOCX schema substantially larger. Keep
-        // recursive refs as functions instead of inlining them into one giant
-        // validator, which overflows Ajv 8.12's compile stack.
-        inlineRefs: false,
-      });
-      addFormats(ajv);
-
-      const validate = ajv.compile(schema);
-      const valid = validate(jsonData);
-
-      const errors: ValidationError[] =
-        validate.errors?.map((error) => ({
-          path: error.instancePath || 'root',
-          message: error.message || 'Validation error',
-          code: error.keyword || 'validation_error',
-          value: error.data,
-        })) || [];
+      const { valid, errors } = await compileAndValidate(
+        resolve(schemaPath),
+        jsonData,
+        strict ?? false
+      );
 
       return {
         file: filePath,
-        valid: valid as boolean,
+        valid,
         type: 'custom',
-        errors: valid ? undefined : errors,
+        errors: valid
+          ? undefined
+          : errors.map((error) => ({
+              path: error.instancePath || 'root',
+              message: error.message || 'Validation error',
+              code: error.keyword || 'validation_error',
+              value: valueAtPointer(jsonData, error.instancePath),
+            })),
       };
     } catch (error: any) {
       return {
@@ -452,3 +431,128 @@ export class JsonValidator {
     return JSON.stringify(results, null, 2);
   }
 }
+
+interface SchemaErrorReport {
+  instancePath: string;
+  message?: string;
+  keyword?: string;
+}
+
+/**
+ * The value an Ajv error points at, read back from its `instancePath`.
+ *
+ * Ajv can hand this over itself under `verbose`, but only by embedding the
+ * subschema and the failing data at every error site in the validator it
+ * generates — which is exactly what this path cannot afford (see below).
+ */
+function valueAtPointer(data: unknown, pointer: string): unknown {
+  if (!pointer) return data;
+  let current: unknown = data;
+  for (const raw of pointer.slice(1).split('/')) {
+    if (current === null || typeof current !== 'object') return undefined;
+    const key = raw.replace(/~1/g, '/').replace(/~0/g, '~');
+    current = (current as Record<string, unknown>)[key];
+  }
+  return current;
+}
+
+/**
+ * Compile an exported schema and validate one document against it, on a worker
+ * thread.
+ *
+ * The generated schemas are large — the DOCX document schema is several
+ * megabytes, most of it one recursive `ComponentDefinition` — and Ajv turns
+ * each recursive definition into a single generated function. A stack frame for
+ * a function that size, entered once per nesting level of the document, does
+ * not fit the ~1MB stack Node gives the main thread: validation threw
+ * `RangeError: Maximum call stack size exceeded` before it could report a
+ * single schema error, on documents the runtime validator accepts. A worker
+ * thread's stack is sized explicitly, so the ceiling is a number here rather
+ * than a property of the host.
+ *
+ * Ajv resolves from this module, not from the worker's cwd: the worker source
+ * is evaluated without a filename and could not find `ajv` on its own.
+ */
+async function compileAndValidate(
+  schemaPath: string,
+  data: unknown,
+  strict: boolean
+): Promise<{ valid: boolean; errors: SchemaErrorReport[] }> {
+  const { Worker } = await import('node:worker_threads');
+  const { default: Module } = await import('node:module');
+  const { pathToFileURL } = await import('node:url');
+  const require = Module.createRequire(import.meta.url);
+
+  return new Promise((resolvePromise, reject) => {
+    const worker = new Worker(SCHEMA_WORKER_SOURCE, {
+      eval: true,
+      workerData: {
+        ajvUrl: pathToFileURL(require.resolve('ajv')).href,
+        formatsUrl: pathToFileURL(require.resolve('ajv-formats')).href,
+        schemaPath,
+        data,
+        strict,
+      },
+      // 16MB carries the current schemas with room to grow; the default 4MB
+      // clears them today by a margin thin enough to break on the next
+      // component added.
+      resourceLimits: { stackSizeMb: 16 },
+    });
+    worker.once('message', (message) => {
+      void worker.terminate();
+      if (message.error) reject(new Error(message.error));
+      else resolvePromise({ valid: message.valid, errors: message.errors });
+    });
+    worker.once('error', reject);
+    worker.once('exit', (code) => {
+      if (code !== 0) reject(new Error(`Schema worker exited with ${code}`));
+    });
+  });
+}
+
+/**
+ * CommonJS on purpose: `eval`-ed worker source has no module context of its
+ * own, so it reaches Ajv through the file URLs the parent resolved.
+ */
+const SCHEMA_WORKER_SOURCE = `
+const { parentPort, workerData } = require('node:worker_threads');
+const { readFileSync } = require('node:fs');
+
+(async () => {
+  const ajvModule = await import(workerData.ajvUrl);
+  const formatsModule = await import(workerData.formatsUrl);
+  const Ajv = ajvModule.default?.default ?? ajvModule.default ?? ajvModule;
+  const addFormats =
+    formatsModule.default?.default ?? formatsModule.default ?? formatsModule;
+
+  const schema = JSON.parse(readFileSync(workerData.schemaPath, 'utf-8'));
+  // Ajv bundles draft-07 under its canonical http URI. Accept the https
+  // spelling emitted by older json-to-office schema generators too.
+  if (schema.$schema === 'https://json-schema.org/draft-07/schema#') {
+    schema.$schema = 'http://json-schema.org/draft-07/schema#';
+  }
+
+  const ajv = new Ajv({
+    allErrors: true,
+    strict: workerData.strict,
+    // Renderer profiles make the DOCX schema substantially larger. Keep
+    // recursive refs as functions instead of inlining them into one giant
+    // validator, which overflows Ajv 8.12's compile stack.
+    inlineRefs: false,
+  });
+  addFormats(ajv);
+
+  const validate = ajv.compile(schema);
+  const valid = validate(workerData.data);
+  parentPort.postMessage({
+    valid,
+    errors: (validate.errors ?? []).map((error) => ({
+      instancePath: error.instancePath,
+      message: error.message,
+      keyword: error.keyword,
+    })),
+  });
+})().catch((error) => {
+  parentPort.postMessage({ error: error?.message ?? String(error) });
+});
+`;
