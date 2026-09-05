@@ -1,5 +1,23 @@
 # @json-to-office/mcp-server
 
+## 2.4.1
+
+### Patch Changes
+
+- 8716401: A run set now knows whether the product moved underneath it.
+
+  The manifest was assembled after the last brief, so it described the tree the scorecard was written against rather than the tree any brief actually ran on. A variance run shared a working tree with another session that landed a feature and rebuilt at minute 58 of 76: the twelve runs already finished were measuring the old build, the six that followed died with `does not provide an export named ...` because the process still held the previous `@json-to-office/quality` in its module graph, and the manifest recorded one clean final SHA. The only surviving evidence that anything had happened was a file mtime.
+
+  So the tree is captured before the first brief and compared after the last, and a set that straddles a change says so on its own first line. Git alone is not enough — runs import the built packages, so `pnpm build` on an unchanged commit changes the product and leaves no trace in git. The fingerprint covers each package's compiled entry point.
+
+- 1f759bb: The judge can now be measured against itself, and the first look is not reassuring.
+
+  Every taste number this programme reports rests on one absolute verdict per document, which is worth exactly as much as its repeatability — a quantity nobody had measured. Four stored contact sheets from the cold baseline, re-judged a day later with the same rubric and the same model, changed three of four `wouldShip` answers. One of the three flipped to "would not ship" while the same call scored the document level 4 and genericness 1, its two best marks.
+
+  `pnpm rejudge <run-dir>` re-judges a recorded set from the contact sheets already on disk, so a full corpus costs one judge call per document and no authoring at all, and reports Cohen's kappa per rubric field. Kappa rather than agreement: on a corpus where four in five documents are unshippable, a judge that says no to everything agrees with itself 80% of the time and has said nothing.
+
+  If the spot check holds at n=40, the cold-versus-assisted comparison in §1 measures the judge and not the product, and the graded fields — which moved far less, none by more than one step — are the part worth keeping. The recorded baselines now carry that caveat.
+
 ## 2.4.0
 
 ### Minor Changes
