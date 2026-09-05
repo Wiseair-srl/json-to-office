@@ -13,7 +13,8 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage --passWithNoTests"
+    "test:coverage": "vitest run --coverage --passWithNoTests",
+    "rejudge": "tsx src/rejudge-cli.ts"
   },
   "dependencies": {
     "@json-to-office/jto-ops": "workspace:^",
