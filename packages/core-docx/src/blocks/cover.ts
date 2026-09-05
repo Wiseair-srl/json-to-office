@@ -5,9 +5,10 @@
  * `chrome.cover` recipe a third of the way down the page, the client as an
  * eyebrow, the title in the recipe's type role, the subtitle in the theme's
  * subtitle style, and a meta line — date and confidentiality — under it. The
- * drop to the title is a proportion of the page the theme declares, never a
- * coordinate; every colour and weight is the recipe's, with fallbacks that
- * hold on a theme that declares no recipe at all.
+ * drop to the title is the block's own share of the body height the theme's
+ * page leaves — a proportion resolved against the theme, never a coordinate,
+ * and not a recipe key. Every colour, weight and role is the recipe's, with
+ * fallbacks that hold on a theme that declares no recipe at all.
  *
  * The block does not break the page after itself: a paragraph can only break
  * before, and a break before the first paragraph of a new section is a blank
@@ -19,7 +20,12 @@ import type { CoverProps } from '@json-to-office/shared-docx';
 import type { ThemeConfig } from '../styles';
 import type { ComponentDefinition } from '../types';
 import { getAvailableHeightTwips } from '../utils/widthUtils';
-import { clampRule, hasStyle, roleProps } from './recipe';
+import {
+  clampRule,
+  FALLBACK_EYEBROW_FONT,
+  hasStyle,
+  roleProps,
+} from './recipe';
 import type { BlockCompilation } from './types';
 
 /** How far down the page the cover rule sits, as a share of the measure. */
@@ -33,7 +39,6 @@ const FALLBACK = {
   ruleWeightPt: 3,
   ruleColor: 'accent',
   padPt: 12,
-  eyebrowFont: { size: 9, bold: true, color: 'accent', case: 'upper' },
   metaFont: { size: 9, color: 'textSecondary' },
 } as const;
 
@@ -93,10 +98,11 @@ export function compileCover(
     );
   }
   let dropPending = !drawsRule;
-  const before = (): { spacing: { before: number } } | Record<never, never> => {
+  /** The drop, as spacing-before on whichever paragraph comes first. */
+  const before = (): { before: number } | Record<never, never> => {
     if (!dropPending) return {};
     dropPending = false;
-    return { spacing: { before: dropPt } };
+    return { before: dropPt };
   };
 
   if (props.client) {
@@ -106,9 +112,8 @@ export function compileCover(
         props: {
           text: props.client,
           keepNext: true,
-          spacing: { after: 4 },
-          ...roleProps(theme, 'eyebrow', FALLBACK.eyebrowFont),
-          ...before(),
+          spacing: { ...before(), after: 4 },
+          ...roleProps(theme, 'eyebrow', FALLBACK_EYEBROW_FONT),
         },
       },
       { '/props/text': '/props/client' }
@@ -123,8 +128,8 @@ export function compileCover(
       props: {
         text: props.title,
         keepNext: true,
+        ...(dropPending && { spacing: before() }),
         ...roleProps(theme, titleRole, { size: 26, bold: true }, recipe?.color),
-        ...before(),
       },
     },
     { '/props/text': '/props/title' }

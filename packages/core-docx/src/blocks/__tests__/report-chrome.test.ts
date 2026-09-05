@@ -199,6 +199,27 @@ describe('cover', () => {
     });
   });
 
+  it('keeps the eyebrow spacing when a recipe draws no rule and the drop rides on it', () => {
+    const theme = {
+      ...consulting,
+      chrome: { ...consulting.chrome, cover: { rule: { weightPt: 0 } } },
+    };
+    const doc = report('consulting', undefined, []);
+    const block = (expandBlocks(doc, theme).document as Expanded).children[0]
+      .children[0];
+    expect(block.children!.map((child) => child.name)).toEqual([
+      'paragraph',
+      'paragraph',
+      'paragraph',
+      'paragraph',
+    ]);
+    expect(block.children![0].props).toMatchObject({
+      text: 'Acme Holdings',
+      spacing: { before: 209, after: 4 },
+    });
+    expect(block.children![1].props).not.toHaveProperty('spacing');
+  });
+
   it('counts the title and subtitle against their budgets', () => {
     const long = Array.from({ length: 31 }, (_, i) => `w${i}`).join(' ');
     const doc = report('minimal', undefined, []);
@@ -483,8 +504,104 @@ describe('running-head', () => {
       font: { size: 8, color: 'textMuted', case: 'upper' },
     });
     expect(only.children[0].props!.footer![1].props).toMatchObject({
-      text: '\t{PAGE} / {TOTAL_PAGES}',
+      text: '{PAGE} / {TOTAL_PAGES}',
+      alignment: 'center',
       font: { size: 8, color: 'textMuted' },
+    });
+  });
+
+  it('sets a lone footer part where the recipe says, and skips an opener with no props', () => {
+    const doc = {
+      name: 'docx',
+      props: { theme: 'consulting', metadata: { title: 'T' } },
+      children: [
+        {
+          name: 'section',
+          children: [
+            {
+              name: 'running-head',
+              props: { date: 'May 2026', pageNumbers: false },
+            },
+            { name: 'section-opener' },
+            opener('02', 'Real'),
+          ],
+        },
+      ],
+    };
+    const footRight = {
+      ...consulting,
+      chrome: {
+        ...consulting.chrome,
+        confidentialFooter: {
+          ...consulting.chrome!.confidentialFooter,
+          alignment: 'right' as const,
+        },
+      },
+    };
+    const section = (expandBlocks(doc, footRight).document as Expanded)
+      .children[0];
+    expect(section.props!.footer![1].props).toMatchObject({
+      text: 'May 2026',
+      alignment: 'right',
+    });
+    expect(section.props!.footer![1].props).not.toHaveProperty('tabStops');
+    expect((section.props!.header![0].props as { text: string }).text).toBe(
+      'T\tReal'
+    );
+    // A page number alone sits centred, whatever the recipe says of text.
+    const centred = (
+      expandBlocks(
+        {
+          ...doc,
+          children: [{ name: 'section', children: [{ name: 'running-head' }] }],
+        },
+        consulting
+      ).document as Expanded
+    ).children[0];
+    expect(centred.props!.footer![1].props).toMatchObject({
+      text: '{PAGE} / {TOTAL_PAGES}',
+      alignment: 'center',
+    });
+  });
+
+  it("lays the chrome out on a section's own page setup", () => {
+    const doc = {
+      name: 'docx',
+      props: { theme: 'consulting', metadata: { title: 'T' } },
+      children: [
+        {
+          name: 'section',
+          props: {
+            page: { size: 'LETTER', margins: { left: 720, right: 720 } },
+          },
+          children: [
+            { name: 'running-head', props: { confidentiality: 'C' } },
+            opener('01', 'One'),
+          ],
+        },
+        {
+          name: 'section',
+          props: { page: { margins: { left: 2160 } } },
+          children: [opener('02', 'Two')],
+        },
+      ],
+    };
+    const [letter, wideLeft] = (
+      expandBlocks(doc, consulting).document as Expanded
+    ).children;
+    // 8.5in less two half-inch margins.
+    expect(letter.props!.header![0].props).toMatchObject({
+      tabStops: [{ type: 'right', position: 12240 - 1440 }],
+    });
+    expect(letter.props!.footer![1].props).toMatchObject({
+      tabStops: [
+        { type: 'center', position: 5400 },
+        { type: 'right', position: 10800 },
+      ],
+    });
+    // A4 with the theme's right margin and the section's own left one.
+    expect(wideLeft.props!.header![0].props).toMatchObject({
+      tabStops: [{ type: 'right', position: 11906 - 2160 - 1440 }],
     });
   });
 

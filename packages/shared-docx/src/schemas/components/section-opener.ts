@@ -10,6 +10,7 @@
  */
 
 import { Type, Static } from '@sinclair/typebox';
+import { oneLineText } from './common';
 
 /** The slot budgets the compiler and the quality rules both read. */
 export const SECTION_OPENER_BUDGET = {
@@ -17,19 +18,12 @@ export const SECTION_OPENER_BUDGET = {
   tracker: { maxWords: 6 },
 } as const;
 
-const oneLine = (description: string) =>
-  Type.String({
-    minLength: 1,
-    pattern: '^[^\\r\\n]+$',
-    description,
-  });
-
 export const SectionOpenerPropsSchema = Type.Object(
   {
     number: Type.Optional(
       Type.Union(
         [
-          oneLine(
+          oneLineText(
             'The section number as it should read ("02", "Part II"). Drawn as an eyebrow above the title.'
           ),
           Type.Integer({ minimum: 0 }),
@@ -40,11 +34,11 @@ export const SectionOpenerPropsSchema = Type.Object(
         }
       )
     ),
-    title: oneLine(
+    title: oneLineText(
       `The section title, one line, at most ${SECTION_OPENER_BUDGET.title.maxWords} words. Say what the section concludes, not what it contains.`
     ),
     tracker: Type.Optional(
-      oneLine(
+      oneLineText(
         `The label the running head shows for this section, at most ${SECTION_OPENER_BUDGET.tracker.maxWords} words (default: the title).`
       )
     ),

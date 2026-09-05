@@ -15,19 +15,13 @@
 
 import { Type, Static } from '@sinclair/typebox';
 import { ImagePropsSchema } from './image';
+import { oneLineText } from './common';
 
 /** The slot budgets the compiler and the quality rules both read. */
 export const COVER_BUDGET = {
   title: { maxWords: 12 },
   subtitle: { maxWords: 30 },
 } as const;
-
-const oneLine = (description: string) =>
-  Type.String({
-    minLength: 1,
-    pattern: '^[^\\r\\n]+$',
-    description,
-  });
 
 /**
  * The image props a cover logo accepts: a source and a size, nothing about
@@ -57,26 +51,26 @@ export const CoverLogoSchema = Type.Object(
 
 export const CoverPropsSchema = Type.Object(
   {
-    title: oneLine(
+    title: oneLineText(
       `The report title, one line, at most ${COVER_BUDGET.title.maxWords} words. Set in the theme's cover type role.`
     ),
     subtitle: Type.Optional(
-      oneLine(
+      oneLineText(
         `What the report answers, one line, at most ${COVER_BUDGET.subtitle.maxWords} words. Set in the theme's subtitle style.`
       )
     ),
     client: Type.Optional(
-      oneLine(
+      oneLineText(
         'Who the report is for — a client or organisation name. Drawn as an eyebrow above the title.'
       )
     ),
     date: Type.Optional(
-      oneLine(
+      oneLineText(
         'The report date as it should read ("September 2026", "Q3 2026"). Free text: the block never reformats it.'
       )
     ),
     confidentiality: Type.Optional(
-      oneLine(
+      oneLineText(
         'A confidentiality statement ("Confidential", "For internal use"). Drawn on the meta line under the title.'
       )
     ),

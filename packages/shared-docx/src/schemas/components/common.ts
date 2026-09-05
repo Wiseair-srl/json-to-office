@@ -242,6 +242,19 @@ export const TabStopSchema = Type.Object(
   }
 );
 
+/**
+ * A block slot that holds one line of text: non-empty, no line break. A line
+ * break inside a running head, a cover title or a takeaway would break the
+ * recipe that draws it, so the shape is a schema bound and a violation is a
+ * path-addressed error at the slot.
+ */
+export const oneLineText = (description: string) =>
+  Type.String({
+    minLength: 1,
+    pattern: '^[^\\r\\n]+$',
+    description,
+  });
+
 export const TabStopsSchema = Type.Array(TabStopSchema, {
   description:
     'Tab stops for the paragraph. Tab characters (\\t) in the text jump to these positions.',

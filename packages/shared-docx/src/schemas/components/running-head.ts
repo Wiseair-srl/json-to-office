@@ -15,6 +15,7 @@
  */
 
 import { Type, Static } from '@sinclair/typebox';
+import { oneLineText } from './common';
 
 /** The slot budgets the compiler and the quality rules both read. */
 export const RUNNING_HEAD_BUDGET = {
@@ -24,32 +25,25 @@ export const RUNNING_HEAD_BUDGET = {
   date: { maxWords: 6 },
 } as const;
 
-const oneLine = (description: string) =>
-  Type.String({
-    minLength: 1,
-    pattern: '^[^\\r\\n]+$',
-    description,
-  });
-
 export const RunningHeadPropsSchema = Type.Object(
   {
     title: Type.Optional(
-      oneLine(
+      oneLineText(
         `The header's left-hand text, at most ${RUNNING_HEAD_BUDGET.title.maxWords} words (default: the document's metadata.title).`
       )
     ),
     tracker: Type.Optional(
-      oneLine(
+      oneLineText(
         `The header's right-hand tracker for sections that have no section-opener, at most ${RUNNING_HEAD_BUDGET.tracker.maxWords} words. A section-opener's tracker (or title) wins for its section.`
       )
     ),
     confidentiality: Type.Optional(
-      oneLine(
+      oneLineText(
         `The footer's left-hand text ("Confidential"), at most ${RUNNING_HEAD_BUDGET.confidentiality.maxWords} words.`
       )
     ),
     date: Type.Optional(
-      oneLine(
+      oneLineText(
         `The footer's right-hand date as it should read ("September 2026"), at most ${RUNNING_HEAD_BUDGET.date.maxWords} words. Free text: the block never reformats it.`
       )
     ),
