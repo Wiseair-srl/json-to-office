@@ -2,45 +2,61 @@
 
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { parseArgs } from 'node:util';
 
 import { comparePairs } from './pairwise.js';
 
-function value(argv: readonly string[], name: string): string | undefined {
-  const index = argv.indexOf(`--${name}`);
-  if (index === -1) return undefined;
-  const next = argv[index + 1];
-  return next !== undefined && !next.startsWith('--') ? next : undefined;
-}
+const OPTIONS = {
+  judge: { type: 'string' },
+  out: { type: 'string' },
+  seed: { type: 'string' },
+  briefs: { type: 'string' },
+  'judge-api': { type: 'boolean' },
+  'single-order': { type: 'boolean' },
+} as const;
 
 export async function main(
   argv: readonly string[],
-  line: (text: string) => void = console.log
+  line: (text: string) => void
 ): Promise<number> {
-  const positional = argv.filter((arg) => !arg.startsWith('--'));
-  const [aDir, bDir] = positional;
-  if (!aDir || !bDir) {
+  let parsed: ReturnType<typeof parseArguments>;
+  try {
+    parsed = parseArguments(argv);
+  } catch (error) {
+    line(error instanceof Error ? error.message : String(error));
+    return 1;
+  }
+  const {
+    positionals: [aDir, bDir],
+    values,
+  } = parsed;
+  if (!aDir || !bDir || parsed.positionals.length !== 2) {
     line(
       'usage: pnpm pairwise <a-dir> <b-dir> [--judge <model>] [--out <path>]'
     );
+    return 1;
+  }
+  const seed = values.seed === undefined ? undefined : Number(values.seed);
+  if (seed !== undefined && !Number.isSafeInteger(seed)) {
+    line('--seed must be a safe integer');
     return 1;
   }
 
   const report = await comparePairs({
     aDir: path.resolve(aDir),
     bDir: path.resolve(bDir),
-    judgeModel: value(argv, 'judge') ?? 'claude-opus-5',
-    useApiKey: argv.includes('--judge-api'),
-    ...(value(argv, 'seed') !== undefined && {
-      seed: Number(value(argv, 'seed')),
-    }),
-    ...(argv.includes('--single-order') && { singleOrder: true }),
-    ...(value(argv, 'briefs') !== undefined && {
-      briefs: value(argv, 'briefs') as string,
+    judgeModel: values.judge ?? 'claude-opus-5',
+    useApiKey: values['judge-api'] ?? false,
+    ...(seed !== undefined && { seed }),
+    ...(values['single-order'] && { singleOrder: true }),
+    ...(values.briefs !== undefined && {
+      briefs: values.briefs as string,
     }),
     onProgress: (message) => line(message),
   });
 
-  const out = path.resolve(value(argv, 'out') ?? 'pairwise.json');
+  const out = path.resolve(values.out ?? 'pairwise.json');
+  await fs.mkdir(path.dirname(out), { recursive: true });
   await fs.writeFile(out, JSON.stringify(report, null, 2));
 
   const { a, b, tie, inconsistent, decided, pValue, secondShownWinRate } =
@@ -61,7 +77,9 @@ export async function main(
     // Never silently: a comparison over 31 pairs is not one over 39.
     line(`${report.skipped.length} brief(s) not compared`);
   }
-  if (decided === 0) {
+  if (values['single-order']) {
+    line('single-order smoke run: no comparative conclusion');
+  } else if (decided === 0) {
     line('nothing was decided, so nothing is claimed');
   } else {
     line(
@@ -69,7 +87,7 @@ export async function main(
     );
     line(
       pValue < 0.05
-        ? `B is better than A on this corpus`
+        ? `${b > a ? 'B' : 'A'} is preferred on the ${decided} order-consistent comparisons`
         : 'this is what a coin looks like; the difference is not established'
     );
   }
@@ -77,6 +95,30 @@ export async function main(
   return 0;
 }
 
+function parseArguments(argv: readonly string[]) {
+  return parseArgs({
+    args: [...argv],
+    options: OPTIONS,
+    allowPositionals: true,
+  });
+}
+
 if (process.argv[1] && process.argv[1].endsWith('pairwise-cli.ts')) {
-  process.exitCode = await main(process.argv.slice(2));
+  const { createElement } = await import('react');
+  const { render, Static, Text } = await import('ink');
+  const lines: { id: number; text: string }[] = [];
+  const view = () =>
+    createElement(Static<{ id: number; text: string }>, {
+      items: [...lines],
+      children: (item) => createElement(Text, { key: item.id }, item.text),
+    });
+  const app = render(view());
+  try {
+    process.exitCode = await main(process.argv.slice(2), (text) => {
+      lines.push({ id: lines.length, text });
+      app.rerender(view());
+    });
+  } finally {
+    app.unmount();
+  }
 }

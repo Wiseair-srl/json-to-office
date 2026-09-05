@@ -69,6 +69,18 @@ describe('signTest', () => {
 });
 
 describe('agreedVerdict', () => {
+  it('does not count a single showing or duplicate orders as a result', () => {
+    for (const judgements of [
+      [showing(false, 'b')],
+      [showing(false, 'b'), showing(false, 'b')],
+    ]) {
+      const verdict = agreedVerdict(judgements);
+      expect(verdict).toBe('inconsistent');
+      expect(tally([{ briefId: 'smoke', judgements, verdict }]).decided).toBe(
+        0
+      );
+    }
+  });
   it('takes the winner both orders named', () => {
     expect(agreedVerdict([showing(false, 'b'), showing(true, 'b')])).toBe('b');
   });
