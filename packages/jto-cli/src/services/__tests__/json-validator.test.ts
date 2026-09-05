@@ -45,9 +45,10 @@ describe('JsonValidator custom schemas', () => {
     });
 
     expect(result).toMatchObject({ valid: true, type: 'custom' });
-    // Compiling a schema this size on a worker thread costs seconds, not
-    // milliseconds; the budget matches its siblings below.
-  }, 60_000);
+    // Compiling a schema this size costs seconds locally and the better part of
+    // a minute on a two-core runner, so this carries the same budget as the
+    // heaviest case below rather than a tighter one.
+  }, 180_000);
 
   it('compiles the deepest branch a document can actually reach', async () => {
     // Ajv compiles lazily, so an empty document proves nothing about the parts
@@ -101,7 +102,7 @@ describe('JsonValidator custom schemas', () => {
     });
 
     expect(result).toMatchObject({ valid: true, type: 'custom' });
-  }, 60_000);
+  }, 180_000);
 
   it('applies the document\u2019s own renderer rules inside a section header', async () => {
     // A section header reaches components through the recursive component
