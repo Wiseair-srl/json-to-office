@@ -1,5 +1,16 @@
 # @json-to-office/shared-docx
 
+## 2.5.0
+
+### Minor Changes
+
+- 99b6ac8: Add shared palette, typography and canvas-spacing theme layers for DOCX and PPTX. Named roles compile into native styles, ordered chart palettes reach both chart paths, and quality checks recognize the extended colors. Fix DOCX theme font weights and support case formatting. Preserve existing theme defaults; chrome/motif recipes are schema contracts for later consumers.
+
+### Patch Changes
+
+- Updated dependencies [99b6ac8]
+  - @json-to-office/shared@2.5.0
+
 ## 2.0.0
 
 ### Patch Changes
