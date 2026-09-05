@@ -27,6 +27,7 @@ import { ParagraphPropsSchema } from './components/paragraph';
 import { TextBoxPropsSchema } from './components/text-box';
 import { ImagePropsSchema } from './components/image';
 import { StatisticPropsSchema } from './components/statistic';
+import { KeyTakeawaysPropsSchema } from './components/key-takeaways';
 import { TablePropsSchema, createTablePropsSchema } from './components/table';
 import { ListPropsSchema } from './components/list';
 import { TocPropsSchema } from './components/toc';
@@ -175,6 +176,7 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
         'visual',
         'columns',
         'text-box',
+        'key-takeaways',
       ],
       category: 'container',
       description:
@@ -197,6 +199,7 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
         'chart',
         'visual',
         'text-box',
+        'key-takeaways',
       ],
       category: 'layout',
       description:
@@ -246,6 +249,14 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
       category: 'content',
       description:
         'Statistic display - shows a number with description. Perfect for KPIs and metrics.',
+    },
+    {
+      name: 'key-takeaways',
+      propsSchema: KeyTakeawaysPropsSchema,
+      hasChildren: false,
+      category: 'content',
+      description:
+        "Key-takeaways block - 3–5 one-sentence takeaways under a label, drawn as the theme's takeaways recipe (rule, label role, list). Opens a report or a major section with its conclusions; the theme styles it, so never hand-build one from paragraphs.",
     },
     {
       name: 'table',

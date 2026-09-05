@@ -34,6 +34,13 @@ import {
   type ResolvedDocumentTree,
 } from '../core/structure';
 import { normalizeDocument } from '../json/normalizer';
+import {
+  blockSlotBudgets,
+  expandBlocks,
+  toAuthoredPointer,
+  type BlockName,
+  type BlockSourceMap,
+} from '../blocks';
 import { resolveFontSize } from '../styles/utils/styleHelpers';
 import { getThemeStyles } from '../themes/defaults';
 import { relativeLengthToTwips } from '../utils/widthUtils';
@@ -202,6 +209,18 @@ export interface DocxFontFact extends QualityFact {
   family: string;
 }
 
+/**
+ * One text slot of a block, counted against the budget the block declares.
+ * The path is the authored slot, so a finding lands where the author writes.
+ */
+export interface DocxBlockSlotFact extends QualityFact {
+  kind: 'docx/block-slot';
+  block: BlockName;
+  slot: string;
+  words: number;
+  maxWords: number;
+}
+
 /** One authored string that reads as a placeholder rather than as content. */
 export interface DocxPlaceholderFact extends QualityFact {
   kind: 'docx/placeholder';
@@ -218,6 +237,7 @@ export type DocxQualityFact =
   | DocxSvgTextFact
   | DocxLineBoxFact
   | DocxPlaceholderFact
+  | DocxBlockSlotFact
   | DocxThemeFact
   | DocxColorFact
   | DocxFontFact
@@ -226,9 +246,20 @@ export type DocxQualityFact =
 
 export interface DocxQualityModel {
   authored: ReportComponentDefinition;
+  /** Theme context over the expanded tree: every block lowered in place. */
   context: GenerationThemeContext;
   document: ResolvedDocumentTree;
   themeName: string;
+}
+
+/** What `PreparedDocument.metadata.blocks` carries once a block expanded. */
+export interface DocxBlocksMetadata {
+  /** Expanded pointer → authored pointer, for every compiled region. */
+  sourceMap: BlockSourceMap;
+  /** Authored pointers of the expanded blocks. */
+  blocks: readonly string[];
+  /** The compiled form: the document with every block lowered in place. */
+  document: ReportComponentDefinition;
 }
 
 export interface PrepareDocxQualityOptions {
@@ -883,13 +914,21 @@ export function prepareDocxQualityDocument(
   document: ReportComponentDefinition,
   options: PrepareDocxQualityOptions = {}
 ): PreparedDocument<DocxQualityModel, DocxQualityFact> {
-  const context =
+  const themed =
     options.context ??
     resolveThemeContext(normalizeDocument(document)[0], {
       customThemes: options.customThemes,
       fonts: options.fonts,
       warnings: options.warnings,
     });
+  // Blocks lower here, once, for every consumer: the facts below, the IR
+  // compiler and the renderers all read the expanded tree, and a caller that
+  // hands in a context of its own gets the same expansion.
+  const expanded = expandBlocks(themed.document, themed.theme);
+  const context: GenerationThemeContext =
+    expanded.blocks.length > 0
+      ? { ...themed, document: expanded.document }
+      : themed;
   const resolved = resolveDocumentTree(context.document, context.theme);
   const basePage = pageBox(resolved.theme, context.themeName);
   const typography: Typography = {
@@ -900,13 +939,33 @@ export function prepareDocxQualityDocument(
   const provenance: Record<string, ProvenanceMap[string]> = {};
   let previousHeadingLevel: number | undefined;
 
-  const addFact = (fact: DocxQualityFact): void => {
+  // A fact raised on a compiled child is reported at the authored slot it
+  // came from, so a finding inside a block points at what the author wrote,
+  // never at a node they never saw.
+  const authoredPath = (path: string): string =>
+    toAuthoredPointer(expanded.sourceMap, path);
+  const addFact = (raw: DocxQualityFact): void => {
+    const fact: DocxQualityFact = {
+      ...raw,
+      path: authoredPath(raw.path),
+      ...(raw.relatedPaths && {
+        relatedPaths: raw.relatedPaths.map(authoredPath),
+      }),
+    };
     facts.push(fact);
     provenance[fact.id] = {
       path: fact.path,
       ...(fact.relatedPaths && { relatedPaths: fact.relatedPaths }),
     };
   };
+
+  for (const budget of blockSlotBudgets(context.document, expanded.blocks)) {
+    addFact({
+      id: `docx:block-slot:${budget.path}`,
+      kind: 'docx/block-slot',
+      ...budget,
+    });
+  }
 
   const paletteHexes: Record<string, string> = {};
   const visualColors = designColors(
@@ -1093,5 +1152,14 @@ export function prepareDocxQualityDocument(
     facts,
     provenance,
     renderer: options.renderer ?? DEFAULT_DOCX_RENDERER_ID,
+    ...(expanded.blocks.length > 0 && {
+      metadata: {
+        blocks: {
+          sourceMap: expanded.sourceMap,
+          blocks: expanded.blocks,
+          document: context.document,
+        } satisfies DocxBlocksMetadata,
+      },
+    }),
   };
 }

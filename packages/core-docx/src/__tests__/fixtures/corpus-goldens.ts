@@ -18,6 +18,10 @@
  */
 
 export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
+  'blocks/key-takeaways-fallback':
+    'ef42a5e079223e4df653b200883bf70801ef987bd1b2fad56bbc4bba64861e73',
+  'blocks/key-takeaways-consulting':
+    '2468c4ccc09e5062c7bb705c37724d8e8e899692dcf5751077cf6060671ff636',
   'theme/shared-foundation':
     'd4d5649f4c5089dd7562a2e5142bdc45c2a2988ab5c7514ff5a3a4d2dc8465bb',
   'text/plain':

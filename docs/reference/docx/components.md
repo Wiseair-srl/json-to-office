@@ -4,24 +4,25 @@ The complete catalog of DOCX components: what each one does, every prop it accep
 
 ## Overview
 
-| Component                                     | Category                | Children allowed                                                                                              |
-| --------------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------- |
-| [`docx`](/reference/docx/document#docx-root)  | container               | `section` only                                                                                                |
-| [`section`](/reference/docx/document#section) | container               | heading, paragraph, image, statistic, table, list, toc, divider, highcharts, chart, visual, columns, text-box |
-| [`columns`](#columns)                         | layout                  | same as section, minus `columns` (no nesting)                                                                 |
-| [`text-box`](#text-box)                       | layout                  | heading, paragraph, image, divider                                                                            |
-| [`heading`](#heading)                         | content                 | —                                                                                                             |
-| [`paragraph`](#paragraph)                     | content                 | —                                                                                                             |
-| [`image`](#image)                             | content                 | —                                                                                                             |
-| [`statistic`](#statistic)                     | content                 | —                                                                                                             |
-| [`table`](#table)                             | content                 | — (cells nest components via `content`)                                                                       |
-| [`list`](#list)                               | content                 | —                                                                                                             |
-| [`toc`](#toc)                                 | content                 | —                                                                                                             |
-| [`divider`](#divider)                         | content                 | —                                                                                                             |
-| [`highcharts`](#highcharts)                   | content                 | —                                                                                                             |
-| [`chart`](#chart)                             | content (`office-open`) | —                                                                                                             |
-| [`visual`](#visual)                           | content                 | —                                                                                                             |
-| [`text-space-after`](#text-space-after)       | legacy custom (opt-in)  | —                                                                                                             |
+| Component                                     | Category                | Children allowed                                                                                                             |
+| --------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| [`docx`](/reference/docx/document#docx-root)  | container               | `section` only                                                                                                               |
+| [`section`](/reference/docx/document#section) | container               | heading, paragraph, image, statistic, table, list, toc, divider, highcharts, chart, visual, columns, text-box, key-takeaways |
+| [`columns`](#columns)                         | layout                  | same as section, minus `columns` (no nesting)                                                                                |
+| [`text-box`](#text-box)                       | layout                  | heading, paragraph, image, divider                                                                                           |
+| [`heading`](#heading)                         | content                 | —                                                                                                                            |
+| [`paragraph`](#paragraph)                     | content                 | —                                                                                                                            |
+| [`image`](#image)                             | content                 | —                                                                                                                            |
+| [`statistic`](#statistic)                     | content                 | —                                                                                                                            |
+| [`table`](#table)                             | content                 | — (cells nest components via `content`)                                                                                      |
+| [`list`](#list)                               | content                 | —                                                                                                                            |
+| [`toc`](#toc)                                 | content                 | —                                                                                                                            |
+| [`divider`](#divider)                         | content                 | —                                                                                                                            |
+| [`highcharts`](#highcharts)                   | content                 | —                                                                                                                            |
+| [`key-takeaways`](#key-takeaways)             | block                   | —                                                                                                                            |
+| [`chart`](#chart)                             | content (`office-open`) | —                                                                                                                            |
+| [`visual`](#visual)                           | content                 | —                                                                                                                            |
+| [`text-space-after`](#text-space-after)       | legacy custom (opt-in)  | —                                                                                                                            |
 
 Every node is `{ name, props, children? }` plus optional `id` and `enabled` fields; `enabled: false` removes the node from the render. Custom plugin components (see [API reference](/reference/api)) are allowed as children of any container.
 
@@ -571,6 +572,34 @@ One limit stays a **render-time fallback**, because it depends on what the child
 Two further warnings report a downgrade inside shape mode rather than a fallback: per-side borders that disagree (the first declared side of top/left/bottom/right wins), and a percentage size being frozen.
 
 A shape cannot carry both `style.shading.fill` and `style.border`: docx 9.7.1 writes the two fill groups in an order Word rejects, so when both are given the fill is kept, the border dropped, and a warning raised. Use one or the other, or stay on the table path.
+
+## `key-takeaways`
+
+The first **block**: a content component with bounded slots that the pipeline lowers to the primitives above, styled entirely from the theme. Three to five one-sentence takeaways under a label, drawn as the theme's takeaways recipe — a rule in the accent, the label in the theme's `label` type role, the items as a list the theme's list defaults already style, a hairline to close the box. It opens a report or a major section with its conclusions. Never hand-build one from paragraphs: the block is what a blueprint places, and what the theme restyles when the theme changes.
+
+| Prop    | Type                   | Required | Default           | Description                                                                     |
+| ------- | ---------------------- | -------- | ----------------- | ------------------------------------------------------------------------------- |
+| `items` | `string[]` (3–5 items) | **yes**  | —                 | One claim per item, one sentence, at most 25 words. The count is a schema bound |
+| `label` | `string`               | no       | `"Key takeaways"` | The box label, set in the theme's `label` role                                  |
+
+```json
+{
+  "name": "key-takeaways",
+  "props": {
+    "items": [
+      "Revenue grew in every region for a third consecutive quarter.",
+      "The gap between the strongest and weakest region narrowed from 31 to 19 points.",
+      "Islands remains below plan; a targeted channel review is recommended."
+    ]
+  }
+}
+```
+
+![The key-takeaways block on the consulting theme](/blocks/key-takeaways-consulting.png)
+
+**What it compiles to.** The block stays where you put it; its `children` are filled with `divider`, `paragraph`, `list`, `divider`, read from the theme's `chrome.keyTakeaways` recipe (`rule.weightPt` and `rule.color` for the top rule, `type` for the label role, `padPt` for the space inside). A theme without a recipe gets a 1.5pt accent rule and a bold label. The compiled tree is what validation, quality analysis and both renderers see; `jto_validate` returns it with `includeCompiled: true`. A source map ties every compiled node back to its slot, so a finding on the second item is reported at `/props/items/1`, never at a node you did not write.
+
+**What is checked.** Fewer than three or more than five items is a schema error at `/props/items`. An item over 25 words is `W_QUALITY_SLOT_BUDGET` at that item. Placeholder text inside an item is reported at the item, like anywhere else.
 
 ## `highcharts`
 

@@ -995,6 +995,8 @@ function compileComponent(
       return compileChart(component, scope);
     case 'table':
       return compileTable(component, scope);
+    case 'key-takeaways':
+      return compileBlock(component, scope);
     default:
       scope.ctx.unsupported.push({
         name: component.name,
@@ -1002,6 +1004,31 @@ function compileComponent(
       });
       return [];
   }
+}
+
+/**
+ * An expanded block is a transparent container: its compiled children are
+ * lowered in flow order under the block's own path. A block that reaches the
+ * compiler unexpanded — a caller that skipped preparation — is reported as
+ * unsupported rather than silently dropped.
+ */
+function compileBlock(
+  component: ComponentDefinition,
+  scope: ComponentScope
+): DocxIrBlock[] {
+  const children =
+    (component as { children?: ComponentDefinition[] }).children ?? [];
+  if (children.length === 0) {
+    scope.ctx.unsupported.push({ name: component.name, path: scope.path });
+    return [];
+  }
+  return children.flatMap((child, index) =>
+    compileComponent(child, {
+      ...scope,
+      path: `${scope.path}.children[${index}]`,
+      id: `${scope.id}:b${index}`,
+    })
+  );
 }
 
 /* ------------------------------------------------------------------ *

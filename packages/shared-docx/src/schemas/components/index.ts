@@ -22,6 +22,7 @@ export * from './highcharts';
 export * from './chart';
 export * from './visual';
 export * from './statistic';
+export * from './key-takeaways';
 export * from './table';
 export * from './list';
 export * from './toc';

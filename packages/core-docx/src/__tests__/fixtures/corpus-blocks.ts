@@ -3,7 +3,9 @@
  *
  * Covers the three components that sit in the document flow as blocks rather
  * than as text: `image` (inline and floating, with captions and alt text),
- * `statistic`, and `text-box` (both `table` and `shape` renderings).
+ * `statistic`, and `text-box` (both `table` and `shape` renderings) — and the
+ * first of the bounded-slot blocks, `key-takeaways`, on the house theme that
+ * declares its recipe and on one that does not.
  *
  * Every image here is an inline base64 data URI: a corpus case is identified by
  * the SHA-256 of the package it produces, so nothing may reach outside the
@@ -81,7 +83,45 @@ const columns = (
 const divider = (props?: Record<string, unknown>): unknown =>
   props === undefined ? { name: 'divider' } : { name: 'divider', props };
 
+const TAKEAWAYS = [
+  'Revenue grew in every region for a third consecutive quarter.',
+  'The gap between the strongest and weakest region narrowed from 31 to 19 points.',
+  'Islands remains below plan; a targeted channel review is recommended.',
+];
+
 export const CASES: CorpusCase[] = [
+  // --------------------------------------------------------------------------
+  // key-takeaways: the block lowered through the theme's recipe
+  // --------------------------------------------------------------------------
+  {
+    // The house recipe: 2pt accent rule, the label role, 8pt pad, hairline.
+    name: 'blocks/key-takeaways-consulting',
+    document: doc(
+      [
+        section([
+          { name: 'heading', props: { text: 'Summary', level: 1 } },
+          { name: 'key-takeaways', props: { items: TAKEAWAYS } },
+          { name: 'paragraph', props: { text: 'After the box.' } },
+        ]),
+      ],
+      { theme: 'consulting' }
+    ),
+  },
+  {
+    // No recipe and no label role: the fallback rule, a bold authored label.
+    name: 'blocks/key-takeaways-fallback',
+    document: doc([
+      section([
+        {
+          name: 'key-takeaways',
+          props: {
+            items: [...TAKEAWAYS, 'A fourth.', 'A fifth.'],
+            label: 'What matters',
+          },
+        },
+      ]),
+    ]),
+  },
   // ==========================================================================
   // image — inline
   // ==========================================================================
