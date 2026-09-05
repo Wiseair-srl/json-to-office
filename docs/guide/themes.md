@@ -56,6 +56,51 @@ The pptx `chart` and the `highcharts` component in **both** formats default thei
 A theme that fills only some of them behaves identically in both formats too: the unset slot is dropped, the palette is only as long as the theme has tokens defined, and the chart library reuses that shorter list. No warning is emitted — the fallback rule above governs a token named _explicitly_, not the implicit chart palette. Every built-in DOCX theme fills `accent4`–`accent6`, so a docx chart on a bundled theme draws from six curated series colors. See [Charts](/guide/charts#theme-palette).
 :::
 
+## Shared visual roles
+
+Add a type ladder and palette without changing a bundled theme. For example, use this root on a DOCX document:
+
+```json
+{
+  "name": "docx",
+  "props": {
+    "theme": "vermilion",
+    "themeOverrides": {
+      "palette": {
+        "rule": "#58595B",
+        "textMuted": "rule",
+        "chart": ["primary", "accent", "rule"]
+      },
+      "typography": {
+        "roles": {
+          "display": {
+            "face": "heading",
+            "weight": 300,
+            "case": "upper",
+            "color": "primary"
+          },
+          "source": { "size": 9, "color": "textMuted" }
+        },
+        "scale": { "a4": { "base": 12, "ratio": 1.25, "baselinePt": 4 } }
+      },
+      "spacing": { "canvas": { "a4": { "safeAreaIn": 0.75 } } }
+    }
+  },
+  "children": [
+    {
+      "name": "paragraph",
+      "props": { "text": "A stronger report", "themeStyle": "display" }
+    },
+    {
+      "name": "paragraph",
+      "props": { "text": "Source: field observations", "themeStyle": "source" }
+    }
+  ]
+}
+```
+
+PPTX themes accept the same layers; use `wide169` or `standard43` scales and `style: "display"` on text. A theme controls visual values only. It does not require a title, source line or any other content. Chrome and motif recipes currently store values for later rendering work. See the [shared visual reference](/reference/theme-schema#shared-visual-layers) for precedence, units and case behavior.
+
 ## Built-in themes
 
 ### DOCX themes

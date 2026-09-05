@@ -25,6 +25,7 @@ import type {
 import type { FontRuntimeOpts } from '@json-to-office/shared';
 import { applyExportMode } from '@json-to-office/shared';
 import { getPptxTheme } from '../themes/defaults';
+import { resolvePptxDesignSystem } from '../themes/design-system';
 
 export interface ThemeContextOptions {
   customThemes?: Record<string, PptxThemeConfig>;
@@ -106,6 +107,11 @@ export function resolveThemeContext(
 
   // Export-mode pre-pass: substitute rewrites non-safe families in place;
   // custom leaves refs untouched and resolution short-circuits to empty.
+  theme = resolvePptxDesignSystem(
+    theme,
+    document.props.slideWidth,
+    document.props.slideHeight
+  );
   const mode = applyExportMode({ doc: document, theme, fonts });
   document = mode.doc;
   theme = mode.theme;

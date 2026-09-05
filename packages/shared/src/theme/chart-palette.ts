@@ -17,8 +17,9 @@
  * is a preference-ordered pool of candidate colors, not fixed per-series slots,
  * so keeping a color the theme did define beats dropping or duplicating one.
  *
- * A slot may also hold another token's name (`"accent4": "primary"`) — both
- * theme schemas allow it — and both formats walk that reference to hex before
+ * DOCX legacy slots and both formats' new `palette` roles may name another
+ * token. Legacy PPTX `colors` slots accept hex only at validation, though
+ * both runtime resolvers walk references to hex before
  * using it, so a chained slot lands on the same color in a deck as in a
  * document. A slot whose value reaches no hex (`"accent4": "nonsense"`, or a
  * reference cycle) is dropped from the implicit palette in both formats rather

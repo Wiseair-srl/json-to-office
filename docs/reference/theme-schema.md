@@ -2,7 +2,60 @@
 
 Precise reference for both theme file formats: the DOCX `ThemeConfig` (validated against the generated `theme.schema.json`) and the PPTX `ThemeConfig` (usually supplied inline on `props.theme`). For the conceptual guide — tokens, built-ins, cascades — see [Themes & styling](/guide/themes).
 
+## Shared visual layers
+
+These optional roots use the same schema in DOCX and PPTX. DOCX also accepts them in `props.themeOverrides`, deep-merging objects and replacing arrays. PPTX accepts them in an inline `props.theme` or a registered theme. `jto://themes/values` preserves all these values; `jto://themes` retains its list of names.
+
+Themes specify appearance. They never require content, an archetype, action titles, sources, trackers, footers or density. Blueprints and quality profiles own those expectations. A coordinate-authored document can use every theme without adding chrome.
+
+### `palette`
+
+Optional scalar keys: `rule`, `textMuted`, `onPrimary`, `surfaceInverse`, `positive`, `negative`. Values are six-digit hex (optional `#`) or references to legacy `colors` or these palette keys. Palette keys take precedence over same-named legacy colors; unknown targets and cycles fail generation.
+
+`chart` is an ordered array of 1–12 such colors. Native charts and Highcharts use it when the author provides no chart colors. Without it, the existing six-token chart palette applies. Quality checks recognize these additional colors.
+
+PPTX component color enums are unchanged: reference new roles inside themes, or use their resolved hex in component props. DOCX component colors can reference new palette names directly.
+
+### `typography`
+
+`roles` accepts `eyebrow`, `display`, `stat`, `quote`, `label`, `footer`, `tableHeader`, `tableCell`, `chartLabel`, `tracker`, `source`. Only declared roles are materialized; role names alone do not restyle existing components.
+
+| Role field                  | Meaning                                                                                                               |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `face`                      | `heading`, `body`, `mono`, `light`; defaults to body. PPTX missing mono falls back to body, missing light to heading. |
+| `weight`                    | Integer 100–900. Overrides bold; numeric weights use the existing synthetic-family mechanism.                         |
+| `size`                      | Explicit 5–200 points; wins over the canvas scale.                                                                    |
+| `lineHeight`                | Line-height multiple, 0.5–3.                                                                                          |
+| `tracking`                  | Hundredths of an em, negative for condensed tracking.                                                                 |
+| `case`                      | `none`, `upper`, `smallCaps`.                                                                                         |
+| `color`                     | Hex or theme token.                                                                                                   |
+| `spaceBefore`, `spaceAfter` | Nonnegative points.                                                                                                   |
+
+Use `themeStyle: "display"` on a DOCX paragraph or `style: "display"` on PPTX text/shape. Native `styles.<role>` fields override projected role fields, and explicit component formatting wins. DOCX `font.case` and native theme styles accept the same case values; PPTX native text styles also accept `case` and `paraSpaceBefore`.
+
+DOCX writes native caps/small-caps formatting and preserves text. PPTX writes uppercase output text; small caps are emulated by uppercasing lowercase spans at 80% of the run size. Authored JSON remains unchanged. This is not OpenType small-cap glyph selection.
+
+`scale.<canvas>` takes required `base` (5–200 pt), optional `ratio` (1–2, default 1.25) and `baselinePt` (>0–24, default 4). Derived size is `base × ratio^step`, snapped to the nearest baseline step and clamped to 5–200 pt. Steps: display 4, stat 3, quote 1, tableHeader/tableCell 0, eyebrow/label/chartLabel/tracker −1, footer/source −2. Without a canvas scale, roles use the existing body/default size.
+
+Canvas keys are `a4`, `letter`, `wide169`, `standard43`. DOCX uses `theme.page.size`: LETTER selects letter; A4, A3, LEGAL and custom dimensions use a4. PPTX selects the closest of 16:9 and 4:3 from document dimensions (default 10 × 7.5 inches); ties use standard43. There is no authored canvas identifier.
+
+### `spacing`
+
+`canvas.<canvas>` accepts nonnegative `safeAreaIn` and `gutterIn`, and integer `columns`/`rows` (1–100). DOCX maps safe area to four page margins and gutter to the page gutter, converting inches to twips; section/page overrides still apply. PPTX uses them as grid defaults; document/slide/template grid overrides win. Absolute PPTX coordinates remain absolute.
+
+`basePt` (>0) and `blockGap.tight/normal/loose` (≥0) are spacing values in points. DOCX normal-style spacing falls back to `blockGap.normal`, then `basePt`, when native normal-style spacing is absent. Its normal size similarly falls back to the selected scale base. Tight/loose gaps and DOCX grid rows/columns are reserved for semantic block consumers; they do not insert blocks or columns. PPTX block gaps are values for those later consumers, not automatic coordinate rearrangement.
+
+### `chrome` and `motif`
+
+Schema contracts only in this foundation; rendering consumers are tracked in #361. No content is inserted.
+
+`chrome` optionally contains `runningHead`, `tracker`, `actionTitle`, `keyTakeaways`, `sourceLine`, `confidentialFooter`, `logoSlot`, `cover`. Each recipe accepts `type` (a role name), `color`, `fill`, `rule: { weightPt, color }`, `padPt` and `alignment` (left/center/right). Weights/padding are nonnegative points.
+
+`motif` is a single object with required `kind` (none/rule/corner/band), optional `color`, `weightPt` and `placement`. Recipe colors are stored for later consumers. Neither schema accepts content requirements.
+
 ## DOCX theme
+
+Both formats also accept the five optional [shared visual layers](#shared-visual-layers). Existing themes need none of them.
 
 A DOCX theme is a JSON object (conventionally a `*.docx.theme.json` file). Unknown top-level properties are rejected (`additionalProperties: false`).
 
@@ -161,6 +214,8 @@ When a theme is loaded programmatically, missing optional pieces are filled from
 :::
 
 ## PPTX theme
+
+Also accepts optional `displayName`, `description`, `version` and the [shared visual layers](#shared-visual-layers). `fonts.mono` and `fonts.light` are optional family strings for type roles.
 
 A PPTX theme is a plain object, most often supplied **inline** on the presentation's `props.theme` (see [Themes & styling](/guide/themes#custom-themes)). Unknown top-level properties are rejected (`additionalProperties: false`). `jto pptx schemas` emits a PPTX `theme.schema.json` generated from this ThemeConfig schema — the format parent determines which theme schema is generated (see [JSON schemas](/reference/json-schemas)).
 

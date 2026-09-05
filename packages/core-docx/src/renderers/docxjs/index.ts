@@ -39,6 +39,7 @@ import type {
 import type { DocxFeature } from '../../ir/features';
 import {
   canonicalizeDocxBuffer,
+  normalizeDocxCaseBuffer,
   resolveGenerationDate,
 } from '../../utils/packageDocument';
 import { fixFloatingImageIdsInBuffer } from '../../utils/fixFloatingImageIds';
@@ -111,7 +112,8 @@ export function createDocxJsRenderer(): DocxRenderer {
       const packed = (await Packer.toBuffer(document)) as Buffer;
       const fixed = fixFloatingImageIdsInBuffer(packed);
 
-      if (renderOptions?.deterministic === false) return new Uint8Array(fixed);
+      if (renderOptions?.deterministic === false)
+        return new Uint8Array(normalizeDocxCaseBuffer(fixed));
       return new Uint8Array(
         canonicalizeDocxBuffer(
           fixed,

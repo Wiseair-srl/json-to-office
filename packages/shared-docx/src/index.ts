@@ -95,6 +95,7 @@ export type {
 
 export {
   ThemeConfigSchema,
+  ThemeOverridesSchema,
   isValidThemeConfig,
   createMinimalTheme,
 } from './schemas/theme';

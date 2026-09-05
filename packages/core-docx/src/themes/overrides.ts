@@ -4,8 +4,9 @@
  */
 
 import type { ThemeConfig } from '../styles';
+import { mergeWithDefaults, type DesignSystem } from '@json-to-office/shared';
 
-export interface ThemeOverrides {
+export interface ThemeOverrides extends DesignSystem {
   colors?: Partial<ThemeConfig['colors']>;
   fonts?: Partial<ThemeConfig['fonts']>;
   styles?: ThemeConfig['styles'];
@@ -39,6 +40,16 @@ export function applyThemeOverrides(
 
   return {
     ...theme,
+    ...Object.fromEntries(
+      ['palette', 'typography', 'spacing', 'chrome', 'motif'].flatMap(
+        (name) => {
+          const key = name as keyof DesignSystem;
+          return overrides[key] === undefined
+            ? []
+            : [[key, mergeWithDefaults(overrides[key], theme[key] ?? {})]];
+        }
+      )
+    ),
     colors: { ...theme.colors, ...(overrides.colors ?? {}) },
     fonts,
     ...(Object.keys(styles).length > 0 && { styles }),

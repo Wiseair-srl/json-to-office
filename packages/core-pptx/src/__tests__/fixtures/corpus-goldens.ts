@@ -18,6 +18,8 @@
  */
 
 export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
+  'theme/shared-foundation':
+    '7af49a5ffbaf84ea7bed36d868a83cd4c9549dd89eaba2f6e970160883f63c17',
   'text/plain':
     '856c8d0ade8513d243155580bde179eefbbed559428189dd37637ece728cab74',
   'text/styled':

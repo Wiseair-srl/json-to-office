@@ -4,7 +4,7 @@
  */
 
 import { Type } from '@sinclair/typebox';
-import { FontFamilyNameSchema } from '@json-to-office/shared';
+import { FontFamilyNameSchema, TextCaseSchema } from '@json-to-office/shared';
 
 // ----------------------------------------------------------------------------
 // Shared Color Schema
@@ -71,6 +71,7 @@ export const NoProofWordsSchema = Type.Array(Type.String({ minLength: 1 }), {
  */
 export const TextFormattingPropertiesSchema = Type.Object(
   {
+    case: Type.Optional(TextCaseSchema),
     size: Type.Optional(Type.Number({ minimum: 8, maximum: 120 })),
     color: Type.Optional(HexColorSchema),
     bold: Type.Optional(Type.Boolean()),

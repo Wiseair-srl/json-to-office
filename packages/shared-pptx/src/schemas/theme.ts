@@ -7,6 +7,8 @@ import { Value } from '@sinclair/typebox/value';
 import {
   FontFamilyNameSchema,
   FontRegistrySchema,
+  DesignSystemProperties,
+  TextCaseSchema,
 } from '@json-to-office/shared';
 import {
   ColorValueSchema,
@@ -98,6 +100,8 @@ export const TextStyleSchema = Type.Object(
     lineSpacing: Type.Optional(Type.Number()),
     charSpacing: Type.Optional(Type.Number()),
     paraSpaceAfter: Type.Optional(Type.Number()),
+    paraSpaceBefore: Type.Optional(Type.Number()),
+    case: Type.Optional(TextCaseSchema),
   },
   { additionalProperties: false, description: 'Text style preset' }
 );
@@ -108,6 +112,10 @@ export type TextStyle = Static<typeof TextStyleSchema>;
 
 export const ThemeConfigSchema = Type.Object(
   {
+    ...DesignSystemProperties,
+    displayName: Type.Optional(Type.String()),
+    description: Type.Optional(Type.String()),
+    version: Type.Optional(Type.String()),
     name: Type.String({ description: 'Theme name' }),
     colors: Type.Object(
       {
@@ -131,6 +139,8 @@ export const ThemeConfigSchema = Type.Object(
       {
         heading: FontFamilyNameSchema,
         body: FontFamilyNameSchema,
+        mono: Type.Optional(FontFamilyNameSchema),
+        light: Type.Optional(FontFamilyNameSchema),
       },
       { additionalProperties: false, description: 'Font families' }
     ),
@@ -147,7 +157,7 @@ export const ThemeConfigSchema = Type.Object(
         Type.Object(
           Object.fromEntries(
             STYLE_NAMES.map((n) => [n, TextStyleSchema])
-          ) as Record<string, typeof TextStyleSchema>
+          ) as Record<(typeof STYLE_NAMES)[number], typeof TextStyleSchema>
         ),
         { additionalProperties: false, description: 'Named text style presets' }
       )

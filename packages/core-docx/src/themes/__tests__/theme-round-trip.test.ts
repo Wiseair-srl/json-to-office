@@ -26,6 +26,11 @@ const COMPLETE: ThemeConfigJson = {
   displayName: 'Round Trip',
   description: 'Every root key the schema allows.',
   version: '1.0.0',
+  palette: { rule: '#123456', chart: ['rule', 'primary'] },
+  typography: { roles: { display: { size: 32 } }, scale: { a4: { base: 12 } } },
+  spacing: { basePt: 4, canvas: { a4: { safeAreaIn: 0.75 } } },
+  chrome: { sourceLine: { type: 'source' } },
+  motif: { kind: 'rule' },
   colors: {
     primary: '#2B302B',
     secondary: '#4A5B4E',
@@ -96,9 +101,9 @@ describe('ensureThemeDefaults keeps what the schema allows', () => {
     // must not need this function edited to survive.
     const result = ensureThemeDefaults({
       ...COMPLETE,
-      typography: { roles: { eyebrow: { size: 8 } } },
+      futureVisualLayer: { token: 8 },
     } as ThemeConfigJson) as Record<string, unknown>;
-    expect(result.typography).toEqual({ roles: { eyebrow: { size: 8 } } });
+    expect(result.futureVisualLayer).toEqual({ token: 8 });
   });
 
   it('keeps a font role it has never heard of', () => {

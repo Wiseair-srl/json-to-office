@@ -3,6 +3,7 @@
  */
 
 import { Type } from '@sinclair/typebox';
+import { TYPE_ROLES } from '../../theme/design-system';
 
 const HexColorSchema = Type.String({
   pattern: '^#?[0-9A-Fa-f]{6}$',
@@ -50,6 +51,7 @@ export const STYLE_NAMES = [
   'heading3',
   'body',
   'caption',
+  ...TYPE_ROLES,
 ] as const;
 
 export const StyleNameSchema = Type.Union(

@@ -1,5 +1,6 @@
 import { ThemeConfig } from '../index';
 import { getThemeColors } from '../../themes/defaults';
+import { resolveDesignColor } from '@json-to-office/shared';
 
 export type ColorName = keyof ReturnType<typeof getThemeColors>;
 
@@ -16,7 +17,12 @@ export type ValidColorName =
   | 'borderPrimary'
   | 'borderSecondary'
   | 'backgroundPrimary'
-  | 'backgroundSecondary';
+  | 'backgroundSecondary'
+  | 'rule'
+  | 'onPrimary'
+  | 'surfaceInverse'
+  | 'positive'
+  | 'negative';
 
 // Type for color value that can be either a hex string or a color name
 export type ColorValue = string; // Can be hex color or color name
@@ -49,8 +55,11 @@ export function resolveColor(
   const colors = getThemeColors(theme);
   const resolvedColor = colors[colorValue as ColorName];
   if (typeof resolvedColor === 'string') {
-    // Recursively resolve in case the theme color is also a reference
-    return resolveColor(resolvedColor, theme);
+    const hex = resolveDesignColor(colorValue, colors);
+    if (hex) return hex.toUpperCase();
+    throw new Error(
+      `Unresolvable theme color: "${colorValue}" (missing reference or cycle).`
+    );
   }
 
   // Bare 6-digit hex, e.g. "F0FDF4". HexColorSchema admits it through the
