@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { promises as fs } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -221,5 +223,62 @@ describe('tree stability across a run', () => {
     const manifest = buildManifest(base);
     expect(manifest.treeStableDuringRun).toBe(true);
     expect(manifest.gitShaAtStart).toBe(manifest.gitSha);
+  });
+});
+
+describe('buildFingerprint covers every compiled entry point', () => {
+  /** A fake workspace: `packages/<name>/dist/<files>`, each with content. */
+  async function workspace(
+    packages: Record<string, Record<string, string>>
+  ): Promise<string> {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'jto-fingerprint-'));
+    for (const [name, files] of Object.entries(packages)) {
+      const dist = path.join(root, 'packages', name, 'dist');
+      await fs.mkdir(dist, { recursive: true });
+      for (const [file, content] of Object.entries(files)) {
+        await fs.writeFile(path.join(dist, file), content);
+      }
+    }
+    return root;
+  }
+
+  it('notices a rebuild that touched only the CLI entry', async () => {
+    // The regression: `tsup` builds `cli` and `index` as separate entries, and
+    // `serverCommand` launches `mcp-server/dist/cli.js`. Fingerprinting only
+    // `index.js` left a CLI-only rebuild invisible to the one check whose job
+    // is noticing that the compiled product moved under a measurement.
+    const root = await workspace({
+      'mcp-server': { 'index.js': 'index', 'cli.js': 'cli' },
+    });
+    const before = buildFingerprint(root);
+
+    await fs.writeFile(
+      path.join(root, 'packages/mcp-server/dist/cli.js'),
+      'cli, rebuilt and longer'
+    );
+
+    expect(buildFingerprint(root)).not.toBe(before);
+    await fs.rm(root, { recursive: true, force: true });
+  });
+
+  it('still records an unbuilt package as absent', async () => {
+    // Both readings come from the SAME root, so the built package's size and
+    // mtime are identical across them and the only thing that moved is the
+    // unbuilt package appearing. Comparing two temp roots would have passed
+    // whatever the code did, since their mtimes differ anyway.
+    const root = await workspace({ built: { 'index.js': 'x' } });
+    const builtOnly = buildFingerprint(root);
+
+    await fs.mkdir(path.join(root, 'packages', 'unbuilt'), { recursive: true });
+
+    expect(buildFingerprint(root)).not.toBe(UNAVAILABLE);
+    expect(buildFingerprint(root)).not.toBe(builtOnly);
+    await fs.rm(root, { recursive: true, force: true });
+  });
+
+  it('answers UNAVAILABLE when there is no packages directory', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'jto-empty-'));
+    expect(buildFingerprint(root)).toBe(UNAVAILABLE);
+    await fs.rm(root, { recursive: true, force: true });
   });
 });
