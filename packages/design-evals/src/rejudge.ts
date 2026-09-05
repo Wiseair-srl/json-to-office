@@ -55,9 +55,11 @@ export interface RejudgeReport {
   };
 }
 
-interface RecordedRun {
+export interface RecordedRun {
   briefId: string;
   judge?: { wouldShip?: boolean; level?: number; genericness?: number };
+  /** Non-empty when the run reached tools outside the server under test. */
+  foreignTools?: readonly string[];
 }
 
 /** Pairs where BOTH judgements exist; anything else cannot be an agreement. */
@@ -103,6 +105,29 @@ export function summarise(
   };
 }
 
+/**
+ * The recorded runs a re-judge may compare itself against.
+ *
+ * Two exclusions, both of them a number that was never published. A set may
+ * hold repeats of one brief under `--repeat`, and only the first is the verdict
+ * a committed baseline reports. And a contaminated run — one that reached tools
+ * outside the server under test — is dropped from a baseline's totals: reading
+ * the raw scorecard on disk and the committed baseline gave two different ship
+ * counts for the same forty runs, 9 against 8, because one of them still
+ * carried a brief that had called into an unrelated MCP server.
+ */
+export function comparableRuns(records: readonly RecordedRun[]): RecordedRun[] {
+  const seen = new Set<string>();
+  const kept: RecordedRun[] = [];
+  for (const record of records) {
+    if (seen.has(record.briefId)) continue;
+    if (record.foreignTools && record.foreignTools.length > 0) continue;
+    seen.add(record.briefId);
+    kept.push(record);
+  }
+  return kept;
+}
+
 export interface RejudgeOptions {
   /** Directory holding `runs/<briefId>/contact-sheet.png`. */
   runsDir: string;
@@ -130,14 +155,10 @@ export async function rejudge(options: RejudgeOptions): Promise<RejudgeReport> {
     ? anthropicVision({ model: options.judgeModel })
     : agentVision({ model: options.judgeModel });
 
-  // A set may hold repeats of the same brief; the first recorded verdict for
-  // each is the one a committed baseline reports, so it is the one to match.
-  const seen = new Set<string>();
   const runs: RejudgedRun[] = [];
-  for (const record of recorded.runs) {
+  for (const record of comparableRuns(recorded.runs)) {
     const brief = byId.get(record.briefId);
-    if (!brief || seen.has(record.briefId)) continue;
-    seen.add(record.briefId);
+    if (!brief) continue;
 
     const then = record.judge ?? {};
     const sheetPath = path.join(

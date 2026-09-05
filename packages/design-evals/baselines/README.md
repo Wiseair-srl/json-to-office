@@ -59,16 +59,41 @@ ceiling of the skill's _guidance_, not of everything it ships.
 ## Re-judging a recorded set
 
 `pnpm rejudge <run-dir>` judges the contact sheets a set already produced, without
-re-authoring anything, and reports how much the judge agrees with itself.
+re-authoring anything, and reports Cohen's kappa per rubric field. It exists
+because nobody had measured how repeatable a verdict is, and every number in this
+directory is built out of verdicts.
 
-It exists because a spot check found that it often does not. Four stored
-documents from the cold baseline, re-judged a day later with the same rubric and
-the same model, changed three of the four `wouldShip` answers — including one
-the judge scored level 4 and genericness 1, its two best marks, while answering
-"no". Graded fields moved far less: no level moved by more than one step.
+Measured once, on the 39 uncontaminated cold-baseline documents, judged again a
+day later with the same rubric and the same model
+(`2026-09-05-rejudge-cold-documents.json`):
 
-That ordering matters for how these baselines may be read. The rubric's graded
-scores look usable; the binary shipping verdict, which is the metric §1 leads
-with, may be mostly the instrument. Until a full re-judge puts a kappa on it,
-treat every `wouldShip` comparison in this directory — including the paired cold
-versus assisted analysis — as unproven rather than as a result.
+| field       | agreement | kappa |
+| ----------- | --------- | ----- |
+| wouldShip   | 90%       | 0.73  |
+| level       | 62% exact | 0.45  |
+| genericness | 74% exact | 0.49  |
+
+Read the kappas, not the percentages: on a corpus that is four-fifths
+unshippable, always answering "no" scores 80% and knows nothing. By that measure
+the binary verdict is the best-behaved field, not the worst — 0.73 is substantial
+agreement — and `level` is the loose one, though only one document moved by more
+than a single step.
+
+**The problem is the direction, not the amount.** Four documents changed their
+shipping verdict and all four went the same way, no to yes: the same corpus
+scored 8 one day and 12 the next. Nothing moved in the other direction. So the
+instrument does not wobble around a stable centre, it drifts, and the drift
+between two sessions is four documents.
+
+That is the number to hold against §1. The cold-to-assisted difference the spec
+reports is **one** document, 8 against 9. It is a quarter of the judge's own
+between-session drift, and the two sets were judged on different days. So the
+paired analysis of cold versus assisted is not evidence of anything about the
+skill, and it is not evidence against it either — it was measured with an
+instrument whose zero moves by more than the effect.
+
+The fix is cheap and does not need re-authoring: judge both sets in one pass,
+from the sheets already on disk, so a comparison at least shares its zero.
+Pairwise judging (`judgePair`, written but not yet wired into the scorecard) is
+the version that survives drift entirely, and it is what #321 exists to
+calibrate.
