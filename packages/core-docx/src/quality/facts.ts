@@ -20,6 +20,7 @@ import type {
   GenerationWarning,
 } from '@json-to-office/shared';
 import { DEFAULT_DOCX_RENDERER_ID } from '@json-to-office/shared-docx';
+import { designColors, resolveDesignColor } from '@json-to-office/shared';
 import type { ComponentDefinition, ReportComponentDefinition } from '../types';
 import type { ThemeConfig } from '../styles';
 import {
@@ -908,16 +909,29 @@ export function prepareDocxQualityDocument(
   };
 
   const paletteHexes: Record<string, string> = {};
-  for (const [token, value] of Object.entries(
-    (resolved.theme.colors ?? {}) as Record<string, unknown>
-  )) {
+  const visualColors = designColors(
+    resolved.theme.colors,
+    resolved.theme.palette
+  );
+  const entries = {
+    ...visualColors,
+    ...Object.fromEntries(
+      (resolved.theme.palette?.chart ?? []).map((value) => {
+        const hex = resolveDesignColor(value, visualColors);
+        return [hex ? `#${hex}` : value, value];
+      })
+    ),
+  };
+  for (const [token, value] of Object.entries(entries)) {
     if (typeof value !== 'string') continue;
-    const hex = normalizeHex(value);
+    const hex = normalizeHex(resolveDesignColor(value, visualColors) ?? value);
     if (hex) paletteHexes[token] = hex;
   }
-  const paletteTokens = SERIES_COLOR_TOKENS.filter(
-    (token) => paletteHexes[token] !== undefined
-  );
+  const paletteTokens =
+    resolved.theme.palette?.chart?.map(
+      (value) => `#${resolveDesignColor(value, visualColors)}`
+    ) ??
+    SERIES_COLOR_TOKENS.filter((token) => paletteHexes[token] !== undefined);
   const authoredPropsAt = (pointer: string): Rec | undefined =>
     asRecord(asRecord(nodeAtPointer(context.document, pointer))?.props);
   addFact({

@@ -6,7 +6,11 @@
 
 import type { PptxThemeConfig, PipelineWarning } from '../types';
 import { SEMANTIC_COLOR_NAMES } from '@json-to-office/shared-pptx';
-import { DEFAULT_CHART_THEME_COLORS } from '@json-to-office/shared';
+import {
+  DEFAULT_CHART_THEME_COLORS,
+  designColors,
+  resolveDesignColor,
+} from '@json-to-office/shared';
 import { warn, W } from './warn';
 
 // Build identity entries from the shared source of truth, then add aliases
@@ -74,6 +78,7 @@ function chainToHex(
  * fallback + warning.
  */
 export function definedChartColorTokens(theme: PptxThemeConfig): string[] {
+  if (theme.palette?.chart) return theme.palette.chart;
   const colors = theme?.colors as
     | Record<string, string | undefined>
     | undefined;
@@ -95,6 +100,13 @@ export function resolveColor(
   theme: PptxThemeConfig,
   warnings?: PipelineWarning[]
 ): string {
+  if (theme.palette) {
+    const hex = resolveDesignColor(
+      color,
+      designColors(theme.colors, theme.palette)
+    );
+    if (hex) return hex;
+  }
   const themeKey = SEMANTIC_TO_THEME_KEY[color];
   if (themeKey) {
     const resolved = theme.colors[themeKey];

@@ -177,6 +177,9 @@ export function runOptions(
       : undefined;
   }
   if (formatting.strike !== undefined) options.strike = formatting.strike;
+  if (formatting.allCaps !== undefined) options.allCaps = formatting.allCaps;
+  if (formatting.smallCaps !== undefined)
+    options.smallCaps = formatting.smallCaps;
   if (formatting.scalePercent !== undefined) {
     options.scale = formatting.scalePercent;
   }

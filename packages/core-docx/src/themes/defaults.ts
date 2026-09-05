@@ -3,6 +3,7 @@
  */
 
 import type { ThemeConfigJson } from '@json-to-office/shared-docx';
+import { designColors } from '@json-to-office/shared';
 
 /**
  * Default colors for themes
@@ -200,10 +201,13 @@ export function isCompleteTheme(theme: unknown): theme is ThemeConfigJson {
  * Safe getter for theme colors with defaults
  */
 export function getThemeColors(theme: Partial<ThemeConfigJson>) {
-  return {
-    ...DEFAULT_COLORS,
-    ...(theme.colors || {}),
-  };
+  return designColors(
+    {
+      ...DEFAULT_COLORS,
+      ...(theme.colors || {}),
+    },
+    theme.palette
+  );
 }
 
 /**

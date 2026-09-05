@@ -123,12 +123,14 @@ function withThemeColors(
   const options = config.options as Record<string, unknown> | undefined;
   if (!options || options.colors || !theme?.colors) return config;
   const themeColors = theme.colors as Record<string, string | undefined>;
-  const palette = DEFAULT_CHART_THEME_COLORS.map((token) => {
-    const value = themeColors[token];
-    return typeof value === 'string' && value.length > 0
-      ? toChartColor(value, theme)
-      : undefined;
-  }).filter((c): c is string => c !== undefined);
+  const palette = theme.palette?.chart
+    ? theme.palette.chart.map((value) => `#${resolveColor(value, theme)}`)
+    : DEFAULT_CHART_THEME_COLORS.map((token) => {
+        const value = themeColors[token];
+        return typeof value === 'string' && value.length > 0
+          ? toChartColor(value, theme)
+          : undefined;
+      }).filter((c): c is string => c !== undefined);
   if (palette.length === 0) return config;
   return {
     ...config,

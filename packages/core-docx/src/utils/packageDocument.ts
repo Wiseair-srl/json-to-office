@@ -140,6 +140,7 @@ export function canonicalizeDocxBuffer(
   generatedAt: Date = DEFAULT_GENERATION_DATE
 ): Buffer {
   const zip = new AdmZip(buffer);
+  normalizeTextCase(zip);
   canonicalizeRelationshipIds(zip);
 
   const isoTimestamp = generatedAt.toISOString();
@@ -169,4 +170,40 @@ export function canonicalizeDocxBuffer(
   }
 
   return zip.toBuffer();
+}
+
+/** Case semantics also apply when timestamp normalization is disabled. */
+export function normalizeDocxCaseBuffer(buffer: Buffer): Buffer {
+  const zip = new AdmZip(buffer);
+  return normalizeTextCase(zip) ? zip.toBuffer() : buffer;
+}
+
+function normalizeTextCase(zip: AdmZip): boolean {
+  let changed = false;
+  for (const entry of zip.getEntries()) {
+    // Both writers emit only one caps flag. State the opposite flag as false
+    // so case changes (including `none`) can override an inherited style.
+    if (/^word\/.*\.xml$/.test(entry.entryName)) {
+      const xml = entry.getData().toString('utf8');
+      if (/<w:(?:caps|smallCaps)\b/.test(xml)) {
+        const normalized = xml.replace(
+          /<w:rPr\b[^>]*>[\s\S]*?<\/w:rPr>/g,
+          (run) => {
+            const caps = /<w:caps\b/.test(run);
+            const small = /<w:smallCaps\b/.test(run);
+            if (caps === small) return run;
+            return run.replace(
+              '</w:rPr>',
+              `<w:${caps ? 'smallCaps' : 'caps'} w:val="false"/></w:rPr>`
+            );
+          }
+        );
+        if (normalized !== xml) {
+          zip.updateFile(entry, Buffer.from(normalized, 'utf8'));
+          changed = true;
+        }
+      }
+    }
+  }
+  return changed;
 }

@@ -17,7 +17,11 @@ import {
   type TableInfoDesign,
 } from '@json-to-office/quality';
 import type { FontRuntimeOpts, ServicesConfig } from '@json-to-office/shared';
-import { DEFAULT_PPTX_RENDERER_ID } from '@json-to-office/shared-pptx';
+import {
+  DEFAULT_PPTX_RENDERER_ID,
+  SEMANTIC_COLOR_NAMES,
+} from '@json-to-office/shared-pptx';
+import { designColors } from '@json-to-office/shared';
 import type {
   GridConfig,
   GridPosition,
@@ -1202,12 +1206,32 @@ export function preparePptxQualityDocument(
   const ctx = themeContext(processed.theme);
 
   const paletteHexes: Record<string, string> = {};
-  for (const [token, value] of Object.entries(processed.theme.colors ?? {})) {
+  const visualColors = designColors(
+    processed.theme.colors,
+    processed.theme.palette
+  );
+  const entries = {
+    ...visualColors,
+    ...Object.fromEntries(
+      (processed.theme.palette?.chart ?? []).map((value) => [
+        `#${resolveColor(value, processed.theme)}`,
+        value,
+      ])
+    ),
+  };
+  for (const [token, value] of Object.entries(entries)) {
     if (typeof value !== 'string') continue;
     // Through `resolveColor` so a slot naming another slot lands on the colour
     // it actually paints, not on the token name it stores.
     const hex = normalizeHex(resolveColor(value, processed.theme));
-    if (hex) paletteHexes[token] = hex;
+    // New palette roles are theme-only, outside the component color enum.
+    // Quality fixes must offer a legal literal for those colors.
+    if (hex)
+      paletteHexes[
+        (SEMANTIC_COLOR_NAMES as readonly string[]).includes(token)
+          ? token
+          : hex
+      ] = hex;
   }
   addFact({
     id: 'pptx:theme',
@@ -1240,9 +1264,11 @@ export function preparePptxQualityDocument(
   );
   const analyzedTextPaths = new Set<string>();
   const analyzedContentPaths = new Set<string>();
-  const paletteTokens = SERIES_COLOR_TOKENS.filter(
-    (token) => paletteHexes[token] !== undefined
-  );
+  const paletteTokens =
+    processed.theme.palette?.chart?.map(
+      (value) => `#${resolveColor(value, processed.theme)}`
+    ) ??
+    SERIES_COLOR_TOKENS.filter((token) => paletteHexes[token] !== undefined);
   const authoredPropsAt = (pointer: string): Rec | undefined =>
     authoredPropsAtPointer(document, pointer);
 

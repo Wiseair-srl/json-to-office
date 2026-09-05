@@ -175,6 +175,7 @@ export {
 
 // Cross-format theme constants
 export { DEFAULT_CHART_THEME_COLORS } from './theme/chart-palette';
+export * from './theme/design-system';
 
 // Deep merge utilities
 export { mergeWithDefaults } from './utils/deepMerge';

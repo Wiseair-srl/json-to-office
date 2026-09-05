@@ -22,7 +22,11 @@ import {
   FeatureRequirementCollector,
   type FeatureRequirement,
 } from '@json-to-office/shared/rendering';
-import type { GenerationWarning } from '@json-to-office/shared';
+import type {
+  GenerationWarning,
+  TypeRoleName,
+  TypeRole,
+} from '@json-to-office/shared';
 import {
   synthesizeFamilyName,
   DEFAULT_CHART_THEME_COLORS,
@@ -834,6 +838,7 @@ function compileChromeParagraph(
       italic: font.italic ?? false,
       ...(font.underline !== undefined ? { underline: font.underline } : {}),
       ...(font.fontWeight !== undefined ? { fontWeight: font.fontWeight } : {}),
+      ...(font.case !== undefined ? { case: font.case } : {}),
       ...(font.lineSpacing !== undefined
         ? { lineSpacing: font.lineSpacing }
         : {}),
@@ -3105,9 +3110,20 @@ function runFormatting(
   ctx: CompileContext
 ): DocxIrRunFormatting {
   const hasWeightRequest = font.fontWeight != null || font.bold === true;
+  const roleName = props.themeStyle as string | undefined;
+  const role = roleName
+    ? ctx.theme.typography?.roles?.[roleName as TypeRoleName]
+    : undefined;
+  const roleStyles = ctx.theme.styles as
+    | Record<string, { font?: TypeRole['face'] }>
+    | undefined;
+  const roleFamily =
+    role && roleName
+      ? resolveFontFamily(ctx.theme, roleStyles?.[roleName]?.font ?? role.face)
+      : undefined;
   const effectiveFamily =
     font.family ??
-    (hasWeightRequest ? resolveBodyFamily(ctx.theme) : undefined);
+    (hasWeightRequest ? roleFamily ?? resolveBodyFamily(ctx.theme) : undefined);
 
   const weighted = applyFontWeightAlias({
     fontFamily: effectiveFamily,
@@ -3117,7 +3133,11 @@ function runFormatting(
   });
 
   const formatting: DocxIrRunFormatting = {};
-  if (font.family || (weighted.font && weighted.font !== effectiveFamily)) {
+  if (
+    font.family ||
+    (hasWeightRequest && roleFamily) ||
+    (weighted.font && weighted.font !== effectiveFamily)
+  ) {
     formatting.fontFamily = weighted.font;
   }
   if (font.size) formatting.sizeHalfPoints = pointsToHalfPoints(font.size);
@@ -3129,6 +3149,10 @@ function runFormatting(
     formatting.underline = font.underline ? { type: 'single' } : undefined;
   }
   if (font.scale) formatting.scalePercent = font.scale;
+  if (font.case !== undefined) {
+    if (font.case === 'upper') formatting.allCaps = true;
+    else formatting.smallCaps = font.case === 'smallCaps';
+  }
   if (font.characterSpacing) {
     const { type, value } = font.characterSpacing as {
       type?: string;
@@ -3707,19 +3731,21 @@ function compileChart(
     ? props.chartColors.map((color: unknown) =>
         resolveColor(String(color), ctx.theme)
       )
-    : DEFAULT_CHART_THEME_COLORS.map((token) => {
-        const value = (
-          ctx.theme?.colors as Record<string, string | undefined>
-        )?.[token];
-        if (typeof value !== 'string' || value.length === 0) return undefined;
-        try {
-          return resolveColor(token, ctx.theme);
-        } catch {
-          // A slot reaching no colour is dropped, never handed on: Word
-          // answers an unparseable colour by drawing the series black.
-          return undefined;
-        }
-      }).filter((color): color is string => color !== undefined);
+    : ctx.theme.palette?.chart
+      ? ctx.theme.palette.chart.map((value) => resolveColor(value, ctx.theme))
+      : DEFAULT_CHART_THEME_COLORS.map((token) => {
+          const value = (
+            ctx.theme?.colors as Record<string, string | undefined>
+          )?.[token];
+          if (typeof value !== 'string' || value.length === 0) return undefined;
+          try {
+            return resolveColor(token, ctx.theme);
+          } catch {
+            // A slot reaching no colour is dropped, never handed on: Word
+            // answers an unparseable colour by drawing the series black.
+            return undefined;
+          }
+        }).filter((color): color is string => color !== undefined);
 
   const page = getPageSetup(ctx.theme);
   const contentWidthInches =

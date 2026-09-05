@@ -28,6 +28,7 @@ import {
 } from '../../utils/imageUtils';
 import {
   canonicalizeDocxBuffer,
+  normalizeDocxCaseBuffer,
   resolveGenerationDate,
 } from '../../utils/packageDocument';
 import type { DocxRenderOptions, DocxRenderer, DocxRendererId } from '../types';
@@ -147,7 +148,8 @@ export async function createOfficeOpenDocxRenderer(): Promise<DocxRenderer> {
         raw = zip.toBuffer();
       }
 
-      if (options?.deterministic === false) return new Uint8Array(raw);
+      if (options?.deterministic === false)
+        return new Uint8Array(normalizeDocxCaseBuffer(raw));
       // The backend stamps ZIP entries with the wall clock, so the same
       // document rendered twice differs. Pinning those is a property of an
       // OOXML package rather than of this backend, which is why the same pass

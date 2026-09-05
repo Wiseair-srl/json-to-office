@@ -93,6 +93,8 @@ export function resolveFontSize(
  * Font properties that can be defined in font definitions
  */
 export interface FontProperties {
+  fontWeight?: number;
+  case?: 'none' | 'upper' | 'smallCaps';
   family?: string;
   size?: number;
   color?: string;
@@ -141,6 +143,8 @@ export function resolveFontProperties(
     size: fontDef.size,
     color: fontDef.color,
     bold: fontDef.bold,
+    fontWeight: fontDef.fontWeight,
+    case: fontDef.case,
     italic: fontDef.italic,
     underline: fontDef.underline,
     alignment: fontDef.alignment,

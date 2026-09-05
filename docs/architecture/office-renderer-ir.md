@@ -885,6 +885,20 @@ relationship or make deterministic renumbering miss a newly-added part.
 | `packages/core-docx/src/utils/packageDocument.ts`                 | Generic DOCX relationship-id, core-metadata and ZIP timestamp canonicalization                | Relationship parts and owners, `docProps/core.xml`, ZIP entry headers                      | Final DOCX pass, after every backend-specific repair                                             |
 | `packages/core-pptx/src/core/finalizePackage.ts`                  | Generic PPTX chart-id, nested-package, core-metadata and ZIP timestamp canonicalization       | Chart names and references, embedded Office packages, `docProps/core.xml`, ZIP entry dates | Final PPTX pass, after chart and PptxGenJS-specific repairs                                      |
 
+## Theme foundation golden changes (#328)
+
+`theme/font-numeric-weights` changes intentionally: DOCX theme-level weights now
+reach Word styles as synthetic family names and bold/italic flags. All other
+existing corpus digests remain unchanged. New `theme/shared-foundation` cases in
+both formats cover palette tokens, named roles, canvas scale/spacing and case.
+The DOCX case uses vermilion with additive overrides; no bundled theme is restyled.
+
+Both DOCX writers emit only one of caps/smallCaps. Package finalization now adds
+the opposite false flag, allowing `case: none` to reset an inherited case style.
+This repair also runs with deterministic output disabled. PPTX case is lowered
+to text runs in the compiler; synthetic small caps use 80% size for lowercase
+spans. Chrome/motif contracts do not render until #361.
+
 ## Source map
 
 | Concern                                             | Path                                                                                           |

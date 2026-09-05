@@ -623,7 +623,7 @@ function compileText(
   const hyperlink = compileHyperlink(props.hyperlink, 'text', ctx, path);
   // The link belongs to the text box, not to each run: attaching it per run
   // emits one identical external relationship per run.
-  const runs: PptxIrTextRun[] = runProps
+  let runs: PptxIrTextRun[] = runProps
     ? runProps.map((run) =>
         compileRichRun(run, cascade, undefined, scope.slideCtx, ctx)
       )
@@ -638,6 +638,7 @@ function compileText(
         },
       ];
 
+  runs = applyTextCase(runs, named.style?.case);
   ctx.features.require('text', path);
   if (runs.length > 1) ctx.features.require('rich-text', path);
   if (cascade.language) ctx.features.require('proofing-language', path);
@@ -696,6 +697,28 @@ function namedStyle(
     style: name ? pickStyle(theme, name) : undefined,
     isHeading: name !== undefined && /^(title|heading)/.test(name),
   };
+}
+
+/** PPTX backends lack a shared caps primitive. Lower case to explicit runs. */
+function applyTextCase(
+  runs: PptxIrTextRun[],
+  textCase: 'none' | 'upper' | 'smallCaps' | undefined
+): PptxIrTextRun[] {
+  if (!textCase || textCase === 'none') return runs;
+  return runs.flatMap((run) => {
+    if (textCase === 'upper') return [{ ...run, text: run.text.toUpperCase() }];
+    const pieces = run.text.match(/\p{Ll}+|[^\p{Ll}]+/gu) ?? [''];
+    return pieces.map((text, index) => ({
+      ...run,
+      text: text.toUpperCase(),
+      fontSize: /^\p{Ll}/u.test(text) ? run.fontSize * 0.8 : run.fontSize,
+      ...(index > 0 && { spaceBeforePoints: undefined }),
+      ...(index < pieces.length - 1 && {
+        breakAfter: undefined,
+        spaceAfterPoints: undefined,
+      }),
+    }));
+  });
 }
 
 function pickStyle(theme: PptxThemeConfig, name: StyleName) {
@@ -920,8 +943,8 @@ function textBodyStyle(
       : lineSpacing !== undefined
         ? { lineSpacingPoints: lineSpacing }
         : {}),
-    ...(props.paraSpaceBefore !== undefined
-      ? { spaceBeforePoints: props.paraSpaceBefore }
+    ...((props.paraSpaceBefore ?? style?.paraSpaceBefore) !== undefined
+      ? { spaceBeforePoints: props.paraSpaceBefore ?? style?.paraSpaceBefore }
       : {}),
     ...(spaceAfter !== undefined ? { spaceAfterPoints: spaceAfter } : {}),
     ...(props.bullet !== undefined
@@ -1107,6 +1130,7 @@ function compileShape(
           compileTextSegment(segment, cascade, ctx)
         )
       : [{ text: props.text as string, ...baseRunFormatting(cascade) }];
+    runs = applyTextCase(runs, named.style?.case);
     style = textBodyStyle(props, named, cascade);
     requireBulletFeatures(style.bullet, path, ctx);
     ctx.features.require('text', path);

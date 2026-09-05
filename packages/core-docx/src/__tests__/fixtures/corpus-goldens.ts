@@ -18,6 +18,8 @@
  */
 
 export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
+  'theme/shared-foundation':
+    '0cd1445e4de233d4f50d96eb52a15bd94e3d06186c1850650953ac3334a77b6f',
   'text/plain':
     'd488d552102350e37f866b6354c3f20b52fe2918e8dfd61223ae6f340b3b566b',
   'text/empty-and-whitespace':
@@ -545,7 +547,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'theme/font-registry-safe-families':
     '0687f66c26d4b671ab1ef4caa31463bf2e5452ae54a6d079916b0fea7b158219',
   'theme/font-numeric-weights':
-    '32a59d602b5e51c600f3773637a86d53ef41c563177b770c1015013f0cb3297c',
+    'f7420c8b81e661fb401aeaf5e18557e4d3e1882bd440beab8ecad90916a1f1fe',
   'theme/toc-entry-styles':
     '64815d016ab0ed929d167fd7d7d17942d2fa190eb21c99f2299e872e0d59c562',
   'theme/component-defaults-document':

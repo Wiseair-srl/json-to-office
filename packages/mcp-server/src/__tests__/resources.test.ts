@@ -153,6 +153,29 @@ describe('discovery resources', () => {
     }
   });
 
+  it('preserves extended visual values without changing theme-name discovery', async () => {
+    const extended = {
+      name: 'extended',
+      palette: { chart: ['#123456'] },
+      typography: { roles: { display: { size: 32 } } },
+      spacing: { basePt: 4 },
+      chrome: { sourceLine: { type: 'source' } },
+      motif: { kind: 'rule' },
+    };
+    const detailed = vi
+      .spyOn(deps.getAdapter('docx'), 'getBuiltinThemeValues')
+      .mockResolvedValue({ extended });
+    try {
+      const values = await readJson(RESOURCE_URIS.themeValues);
+      expect(
+        values.formats.find((entry: any) => entry.format === 'docx').themes
+          .extended
+      ).toEqual(extended);
+    } finally {
+      detailed.mockRestore();
+    }
+  });
+
   it('serves starter documents that validate', async () => {
     const { starters } = await readJson(RESOURCE_URIS.templates);
     expect(starters.length).toBeGreaterThanOrEqual(4);

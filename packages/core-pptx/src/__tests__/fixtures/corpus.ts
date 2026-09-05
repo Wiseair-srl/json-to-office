@@ -11,6 +11,7 @@
  */
 
 import type { PresentationComponentDefinition } from '../../types';
+import { DEFAULT_PPTX_THEME } from '../../themes';
 
 /** A 1x1 transparent PNG. */
 export const PNG_1PX =
@@ -47,6 +48,65 @@ const SERIES = [
 import { CASES as REGRESSIONS } from './corpus-regressions';
 
 export const CORPUS: CorpusCase[] = [
+  {
+    name: 'theme/shared-foundation',
+    document: deck(
+      [
+        slide([
+          {
+            name: 'text',
+            props: {
+              text: 'A shared visual system',
+              style: 'display',
+              grid: { column: 1, row: 1, columnSpan: 4 },
+            },
+          },
+          {
+            name: 'text',
+            props: {
+              text: 'Source: observations',
+              style: 'source',
+              x: 1,
+              y: 3,
+              w: 5,
+              h: 1,
+            },
+          },
+          {
+            name: 'chart',
+            props: { type: 'bar', x: 1, y: 4, w: 6, h: 3, data: SERIES },
+          },
+        ]),
+      ],
+      {
+        slideWidth: 16,
+        slideHeight: 9,
+        theme: {
+          ...DEFAULT_PPTX_THEME,
+          palette: { rule: '#123456', chart: ['rule', '#337755'] },
+          typography: {
+            roles: {
+              display: {
+                face: 'heading',
+                weight: 300,
+                case: 'upper',
+                color: 'rule',
+              },
+              source: { size: 10, case: 'smallCaps' },
+            },
+            scale: { wide169: { base: 16, ratio: 1.25, baselinePt: 4 } },
+          },
+          spacing: {
+            canvas: {
+              wide169: { safeAreaIn: 0.5, gutterIn: 0.2, columns: 6, rows: 4 },
+            },
+          },
+          chrome: { sourceLine: { type: 'source' } },
+          motif: { kind: 'rule' },
+        },
+      }
+    ),
+  },
   {
     name: 'text/plain',
     document: deck([slide([{ name: 'text', props: { text: 'Hello' } }])]),

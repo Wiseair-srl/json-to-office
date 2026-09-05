@@ -13,16 +13,14 @@
  * for exactly one of them names a single theme file, and one that moves for all
  * three names the theme→docx adapter.
  *
- * Two corners are deliberately absent:
+ * A deliberately absent corner:
  *
  * - A colour token that is not in the palette. `resolveColor` throws
  *   `Invalid color value: "…"` rather than degrading, so such a document is a
  *   validation failure, not a corpus case.
- * - A custom style name in `themeStyle`. `theme.styles` accepts arbitrary keys,
- *   but the docx adapter only maps the nine predefined ones
- *   (normal, heading1..6, title, subtitle) and warns-and-ignores anything else,
- *   so the extra key would not reach the package. `theme/toc-entry-styles`
- *   covers the one family of non-predefined styles that does — TOC1..TOC6.
+ * Custom theme styles, including the new type roles, compile to Word styles.
+ * `theme/shared-foundation` covers their projection; `theme/toc-entry-styles`
+ * covers the canonical TOC1..TOC6 identifiers.
  *
  * The two shipped example documents are imported rather than copied, so they
  * keep tracking `templates/documents/` as it changes. `inlineImages` swaps any
@@ -196,6 +194,46 @@ function inlineImages<T>(node: T): T {
 }
 
 export const CASES: CorpusCase[] = [
+  {
+    name: 'theme/shared-foundation',
+    document: page(
+      [
+        p({ text: 'A shared visual system', themeStyle: 'display' }),
+        p({ text: 'Source: field observations', themeStyle: 'source' }),
+        p({
+          text: 'Explicit override',
+          themeStyle: 'display',
+          font: { case: 'none', size: 12 },
+        }),
+      ],
+      {
+        theme: 'vermilion',
+        themeOverrides: {
+          palette: {
+            rule: '#123456',
+            textMuted: 'rule',
+            chart: ['rule', '#337755'],
+          },
+          typography: {
+            roles: {
+              display: {
+                face: 'heading',
+                weight: 300,
+                case: 'upper',
+                color: 'textMuted',
+                tracking: 2,
+              },
+              source: { size: 9, case: 'smallCaps' },
+            },
+            scale: { a4: { base: 12, ratio: 1.25, baselinePt: 4 } },
+          },
+          spacing: { canvas: { a4: { safeAreaIn: 0.5 } } },
+          chrome: { sourceLine: { type: 'source' } },
+          motif: { kind: 'rule', color: 'rule' },
+        },
+      }
+    ),
+  },
   // --------------------------------------------------------------------------
   // The bundled themes — one body, one case per theme
   // --------------------------------------------------------------------------

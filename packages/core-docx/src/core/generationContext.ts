@@ -22,6 +22,7 @@ import type {
 import { applyExportMode } from '@json-to-office/shared';
 import { resolveBuiltInTheme } from '../styles/theme-resolver';
 import { applyThemeOverrides } from '../themes/overrides';
+import { resolveDocxDesignSystem } from '../themes/design-system';
 
 export interface ThemeContextOptions {
   customThemes?: { [key: string]: ThemeConfig };
@@ -112,6 +113,7 @@ export function resolveThemeContext(
 
   // Export-mode pre-pass: substitute (default) rewrites non-safe families to
   // safe equivalents; custom keeps refs as-is.
+  theme = resolveDocxDesignSystem(theme);
   const mode = applyExportMode({ doc: document, theme, fonts });
   for (const w of mode.warnings) {
     if (warnings) {

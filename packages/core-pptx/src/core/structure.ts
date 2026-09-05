@@ -19,6 +19,7 @@ import {
   mergeGridConfigs,
 } from './grid';
 import { getPptxTheme } from '../themes';
+import { resolvePptxDesignSystem, designGrid } from '../themes/design-system';
 import type { GenerationOptions } from './generator';
 import { resolveComponentTree } from '../utils/resolveComponentTree';
 import {
@@ -58,19 +59,33 @@ export function processPresentation(
   document: PresentationComponentDefinition,
   options?: GenerationOptions
 ): ProcessedPresentation {
-  const { props, children = [] } = document;
+  let { props } = document;
+  const { children = [] } = document;
 
   // The generation prologue hands the resolved theme over directly — after
   // the export-mode pre-pass, so a name lookup here would resurrect
   // pre-substitute font families. The `props.theme` resolution below (a name,
   // or an inline theme config object embedded in the document itself —
   // self-contained documents-as-data) is the fallback for direct callers.
-  const baseTheme =
+  const selectedTheme =
     options?.theme ??
     (typeof props.theme === 'object' && props.theme !== null
       ? (props.theme as PptxThemeConfig)
       : options?.customThemes?.[props.theme ?? 'default'] ??
         getPptxTheme(props.theme ?? 'default'));
+
+  const baseTheme = resolvePptxDesignSystem(
+    selectedTheme,
+    props.slideWidth,
+    props.slideHeight
+  );
+  const tokenGrid = designGrid(
+    baseTheme,
+    props.slideWidth ?? 10,
+    props.slideHeight ?? 7.5
+  );
+  if (tokenGrid)
+    props = { ...props, grid: mergeGridConfigs(tokenGrid, props.grid) };
 
   // Merge presentation-level componentDefaults on top of theme-level ones
   const presDefaults = props.componentDefaults;

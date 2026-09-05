@@ -8,6 +8,7 @@
  */
 
 import { getTheme } from '../templates/themes';
+import { synthesizeFamilyName } from '@json-to-office/shared';
 
 /**
  * A right tab at the text-measure edge, which is where a TOC page number sits.
@@ -81,6 +82,8 @@ interface ThemeBorders {
 
 // Style properties for various text elements
 interface StyleProperties {
+  fontWeight?: number;
+  case?: 'none' | 'upper' | 'smallCaps';
   font?: 'heading' | 'body' | 'mono' | 'light';
   size?: number;
   color?: string;
@@ -113,48 +116,15 @@ interface StyleProperties {
 }
 
 /**
- * Type-safe style name union
- */
-type StyleName =
-  | 'normal'
-  | 'heading1'
-  | 'heading2'
-  | 'heading3'
-  | 'heading4'
-  | 'heading5'
-  | 'heading6'
-  | 'title'
-  | 'subtitle';
-
-/**
- * Type guard to check if a style name is valid
- */
-function isValidStyleName(name: string): name is StyleName {
-  return [
-    'normal',
-    'heading1',
-    'heading2',
-    'heading3',
-    'heading4',
-    'heading5',
-    'heading6',
-    'title',
-    'subtitle',
-  ].includes(name);
-}
-
-/**
  * Type-safe style getter with proper error handling
  */
 function getStyleSafe(
   theme: ThemeConfig,
   styleName: string
 ): StyleProperties | undefined {
-  if (!isValidStyleName(styleName)) {
-    console.warn(`Invalid style name: ${styleName}`);
-    return undefined;
-  }
-  return theme.styles?.[styleName] as StyleProperties | undefined;
+  return theme.styles && Object.hasOwn(theme.styles, styleName)
+    ? (theme.styles as Record<string, StyleProperties | undefined>)[styleName]
+    : undefined;
 }
 
 /**
@@ -260,8 +230,16 @@ function convertRunProperties(
   defaultColor?: string,
   defaultSize?: number
 ): DocxIrRunFormatting {
+  const weighted =
+    merged.fontWeight !== undefined
+      ? synthesizeFamilyName(
+          merged.family || 'Arial',
+          merged.fontWeight,
+          merged.italic === true
+        )
+      : undefined;
   return {
-    fontFamily: merged.family || 'Arial',
+    fontFamily: weighted?.family ?? merged.family ?? 'Arial',
     sizeHalfPoints: (merged.size || defaultSize || 11) * 2,
     color: {
       hex: resolveColor(
@@ -271,6 +249,11 @@ function convertRunProperties(
     },
     ...(merged.bold !== undefined && { bold: merged.bold }),
     ...(merged.italic !== undefined && { italic: merged.italic }),
+    ...(weighted && { bold: weighted.bold, italic: weighted.italic }),
+    ...(merged.case !== undefined &&
+      (merged.case === 'upper'
+        ? { allCaps: true }
+        : { smallCaps: merged.case === 'smallCaps' })),
     ...(merged.underline !== undefined &&
       merged.underline && { underline: { type: 'single' } }),
     ...(merged.characterSpacing && {
@@ -397,12 +380,25 @@ function fallbackRun(
   defaultColor: string,
   defaultSize: number
 ): DocxIrRunFormatting {
+  const weighted =
+    fontProps.fontWeight !== undefined
+      ? synthesizeFamilyName(
+          fontProps.family || 'Arial',
+          fontProps.fontWeight,
+          fontProps.italic === true
+        )
+      : undefined;
   return {
-    fontFamily: fontProps.family || 'Arial',
+    fontFamily: weighted?.family ?? fontProps.family ?? 'Arial',
     sizeHalfPoints: (fontProps.size || defaultSize) * 2,
     color: { hex: resolveColor(fontProps.color || defaultColor, theme) },
     ...(fontProps.bold !== undefined && { bold: fontProps.bold }),
     ...(fontProps.italic !== undefined && { italic: fontProps.italic }),
+    ...(weighted && { bold: weighted.bold, italic: weighted.italic }),
+    ...(fontProps.case !== undefined &&
+      (fontProps.case === 'upper'
+        ? { allCaps: true }
+        : { smallCaps: fontProps.case === 'smallCaps' })),
     ...(fontProps.underline !== undefined &&
       fontProps.underline && { underline: { type: 'single' } }),
   };
@@ -448,6 +444,8 @@ export function createDocumentStyles(
           size: normalStyle?.size,
           color: normalStyle?.color,
           bold: normalStyle?.bold,
+          fontWeight: normalStyle?.fontWeight,
+          case: normalStyle?.case,
           italic: normalStyle?.italic,
           underline: normalStyle?.underline,
           characterSpacing: normalStyle?.characterSpacing,
@@ -496,6 +494,8 @@ export function createDocumentStyles(
             size: headingStyle.size,
             color: headingStyle.color,
             bold: headingStyle.bold,
+            fontWeight: headingStyle.fontWeight,
+            case: headingStyle.case,
             italic: headingStyle.italic,
             underline: headingStyle.underline,
             characterSpacing: headingStyle.characterSpacing,
@@ -566,6 +566,8 @@ export function createDocumentStyles(
             size: headingStyle.size,
             color: headingStyle.color,
             bold: headingStyle.bold,
+            fontWeight: headingStyle.fontWeight,
+            case: headingStyle.case,
             italic: headingStyle.italic,
             underline: headingStyle.underline,
             characterSpacing: headingStyle.characterSpacing,
@@ -634,6 +636,8 @@ export function createDocumentStyles(
           size: titleStyle.size,
           color: titleStyle.color,
           bold: titleStyle.bold,
+          fontWeight: titleStyle.fontWeight,
+          case: titleStyle.case,
           italic: titleStyle.italic,
           underline: titleStyle.underline,
           characterSpacing: titleStyle.characterSpacing,
@@ -695,6 +699,8 @@ export function createDocumentStyles(
           size: subtitleStyle.size,
           color: subtitleStyle.color,
           bold: subtitleStyle.bold,
+          fontWeight: subtitleStyle.fontWeight,
+          case: subtitleStyle.case,
           italic: subtitleStyle.italic,
           underline: subtitleStyle.underline,
           characterSpacing: subtitleStyle.characterSpacing,
@@ -852,6 +858,8 @@ export function createDocumentStyles(
             size: customStyle.size,
             color: customStyle.color,
             bold: customStyle.bold,
+            fontWeight: customStyle.fontWeight,
+            case: customStyle.case,
             italic: customStyle.italic,
             underline: customStyle.underline,
             characterSpacing: customStyle.characterSpacing,

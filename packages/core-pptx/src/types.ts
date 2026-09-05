@@ -10,6 +10,7 @@ import type {
   GradientFill,
   PptxComponentDefaults,
   PptxRendererId,
+  ThemeConfigJson,
 } from '@json-to-office/shared-pptx';
 
 export interface PptxComponentInput {
@@ -133,59 +134,12 @@ export interface GridPosition {
   rowSpan?: number;
 }
 
-export interface TextStyle {
-  fontSize?: number;
-  fontFace?: string;
-  fontColor?: string;
-  bold?: boolean;
-  /**
-   * Per-style weight (100–900). Overrides `bold` when set — renderer picks
-   * the closest embedded variant via CSS font-matching and emits the run
-   * under a synthetic family alias (e.g. "Inter Light" for weight 300).
-   */
-  fontWeight?: number;
-  italic?: boolean;
-  align?: string;
-  lineSpacing?: number;
-  charSpacing?: number;
-  paraSpaceAfter?: number;
-}
+export type TextStyle = NonNullable<
+  NonNullable<ThemeConfigJson['styles']>['body']
+>;
+export type StyleName = keyof NonNullable<ThemeConfigJson['styles']>;
 
-export type StyleName =
-  | 'title'
-  | 'subtitle'
-  | 'heading1'
-  | 'heading2'
-  | 'heading3'
-  | 'body'
-  | 'caption';
-
-export interface PptxThemeConfig {
-  name: string;
-  colors: {
-    primary: string;
-    secondary: string;
-    accent: string;
-    background: string;
-    text: string;
-    text2?: string;
-    background2?: string;
-    accent4?: string;
-    accent5?: string;
-    accent6?: string;
-  };
-  fonts: {
-    heading: string;
-    body: string;
-  };
-  fontRegistry?: FontRegistryDefinition;
-  defaults: {
-    fontSize: number;
-    fontColor: string;
-  };
-  styles?: Partial<Record<StyleName, TextStyle>>;
-  componentDefaults?: PptxComponentDefaults;
-}
+export type PptxThemeConfig = ThemeConfigJson;
 
 export interface PlaceholderDefinition {
   name: string;

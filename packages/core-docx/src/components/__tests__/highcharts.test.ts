@@ -645,6 +645,31 @@ describe('components/highcharts', { timeout: 30000 }, () => {
   });
 
   describe('theme palette injection', () => {
+    it('uses the ordered visual palette and preserves explicit chart colors', async () => {
+      const theme = {
+        ...devportalTheme,
+        palette: {
+          positive: '#337755',
+          rule: '#123456',
+          chart: ['positive', 'rule'],
+        },
+      };
+      const options = {
+        chart: { width: 600, height: 400 },
+        series: [{ type: 'bar', data: [1, 2] }],
+      };
+      await renderChartToImageProps({ options } as never, theme);
+      expect(JSON.parse(mockFetch.mock.calls[0][1].body).infile.colors).toEqual(
+        ['#337755', '#123456']
+      );
+      await renderChartToImageProps(
+        { options: { ...options, colors: ['#ABCDEF'] } } as never,
+        theme
+      );
+      expect(JSON.parse(mockFetch.mock.calls[1][1].body).infile.colors).toEqual(
+        ['#ABCDEF']
+      );
+    });
     const chartComponent = {
       name: 'highcharts' as const,
       props: {
