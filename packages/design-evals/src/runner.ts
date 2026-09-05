@@ -135,30 +135,92 @@ export function countIterations(events: readonly AgentEvent[]): number {
  * supposed to have none. When the call carried a workspace handle instead of a
  * document, the document is fetched from where the server persisted it.
  */
+function lastGeneration(events: readonly AgentEvent[]) {
+  const calls = events.filter(
+    (event): event is Extract<AgentEvent, { type: 'tool_use' }> =>
+      event.type === 'tool_use' && event.name === GENERATE_TOOL
+  );
+  return calls[calls.length - 1];
+}
+
+/** Only a matching tool response proves delivery; session success does not. */
+function generationPayload(
+  events: readonly AgentEvent[]
+): Record<string, unknown> | undefined {
+  const call = lastGeneration(events);
+  if (!call?.id) return undefined;
+  const response = events.find(
+    (event): event is Extract<AgentEvent, { type: 'tool_result' }> =>
+      event.type === 'tool_result' && event.toolUseId === call.id
+  );
+  if (!response || response.isError) return undefined;
+  const texts =
+    typeof response.content === 'string'
+      ? [response.content]
+      : Array.isArray(response.content)
+        ? response.content.flatMap((block) =>
+            block?.type === 'text' && typeof block.text === 'string'
+              ? [block.text]
+              : []
+          )
+        : [];
+  for (const text of texts) {
+    try {
+      const payload = JSON.parse(text);
+      const artifact = payload?.artifact;
+      if (
+        payload?.ok === true &&
+        artifact?.bytes > 0 &&
+        ((artifact.mode === 'path' &&
+          typeof artifact.path === 'string' &&
+          artifact.path.length > 0) ||
+          (artifact.mode === 'base64' &&
+            typeof artifact.base64 === 'string' &&
+            artifact.base64.length > 0))
+      ) {
+        return payload;
+      }
+    } catch {
+      // Non-JSON tool output is not evidence of a generated artifact.
+    }
+  }
+  return undefined;
+}
+
 export async function finalDocument(
   events: readonly AgentEvent[],
   workspaceRoot: string | undefined
 ): Promise<unknown | undefined> {
-  const generates = events.filter(
-    (event): event is Extract<AgentEvent, { type: 'tool_use' }> =>
-      event.type === 'tool_use' && event.name === GENERATE_TOOL
-  );
-  const last = generates[generates.length - 1];
-  if (!last) return undefined;
-
+  const last = lastGeneration(events);
+  const payload = generationPayload(events);
+  if (!last || !payload) return undefined;
   const inline = last.input.document;
   if (inline !== undefined && inline !== null) return inline;
-
+  const source = payload.source as
+    | { handle?: unknown; revision?: unknown }
+    | undefined;
   const handle = last.input.handle;
-  if (typeof handle !== 'string' || workspaceRoot === undefined) {
+  if (
+    typeof handle !== 'string' ||
+    workspaceRoot === undefined ||
+    source?.handle !== handle ||
+    !Number.isInteger(source.revision) ||
+    (source.revision as number) < 1 ||
+    path.basename(handle) !== handle
+  ) {
     return undefined;
   }
-  return readWorkspaceDocument(path.join(workspaceRoot, handle));
+  // Later patches must not change the document the scorecard measures.
+  return readWorkspaceDocument(
+    path.join(workspaceRoot, handle),
+    source.revision as number
+  );
 }
 
-/** The head revision a workspace directory holds, or undefined. */
+/** Read an exact generated revision, or the head for callers without a pin. */
 export async function readWorkspaceDocument(
-  directory: string
+  directory: string,
+  revision?: number
 ): Promise<unknown | undefined> {
   let names: string[];
   try {
@@ -169,20 +231,22 @@ export async function readWorkspaceDocument(
   const revisions = names
     .map((name) => /^(?:rev-)?(\d+)\.json$/.exec(name))
     .filter((found): found is RegExpExecArray => found !== null)
+    .filter((found) => revision === undefined || Number(found[1]) === revision)
     .sort((a, b) => Number(b[1]) - Number(a[1]));
-  for (const revision of revisions) {
+  for (const entry of revisions) {
     try {
       return JSON.parse(
-        await fs.readFile(path.join(directory, revision[0]), 'utf8')
+        await fs.readFile(path.join(directory, entry[0]), 'utf8')
       );
     } catch {
-      // A half-written revision is not the head; try the one before it.
+      // Never substitute a different revision for a generated one.
     }
   }
   return undefined;
 }
 
 interface Attempt {
+  usageComplete: boolean;
   events: AgentEvent[];
   result?: Extract<AgentEvent, { type: 'result' }>;
 }
@@ -192,20 +256,40 @@ async function attempt(
   prompt: string
 ): Promise<Attempt> {
   const events: AgentEvent[] = [];
+  let usageComplete = false;
   let result: Extract<AgentEvent, { type: 'result' }> | undefined;
-  for await (const event of options.driver({
-    prompt,
-    model: options.model,
-    maxTurns: options.maxTurns,
-    server: options.server,
-    ...(options.skill !== undefined && { skill: options.skill }),
-    cwd: options.runDir,
-    ...(options.signal && { signal: options.signal }),
-  })) {
-    events.push(event);
-    if (event.type === 'result') result = event;
+  try {
+    for await (const event of options.driver({
+      prompt,
+      model: options.model,
+      maxTurns: options.maxTurns,
+      server: options.server,
+      ...(options.skill !== undefined && { skill: options.skill }),
+      cwd: options.runDir,
+      ...(options.signal && { signal: options.signal }),
+    })) {
+      events.push(event);
+      if (event.type === 'result') {
+        result = event;
+        usageComplete = true;
+      }
+    }
+  } catch (error) {
+    result = {
+      type: 'result',
+      ok: false,
+      turns: result?.turns ?? 0,
+      inputTokens: result?.inputTokens ?? 0,
+      outputTokens: result?.outputTokens ?? 0,
+      ...(result?.usd !== undefined && { usd: result.usd }),
+      ...(result?.credential !== undefined && {
+        credential: result.credential,
+      }),
+      durationMs: result?.durationMs ?? 0,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
-  return { events, ...(result && { result }) };
+  return { events, usageComplete, ...(result && { result }) };
 }
 
 /**
@@ -221,84 +305,76 @@ export async function runBrief(options: RunBriefOptions): Promise<RunMetrics> {
   await fs.mkdir(options.runDir, { recursive: true });
 
   const prompt = briefPrompt(options.brief);
-  let attempts = 0;
-  let last: Attempt | undefined;
+  const attempts: Attempt[] = [];
+  let last: Attempt;
+  do {
+    last = await attempt(options, prompt);
+    attempts.push(last);
+  } while (
+    !last.result?.ok &&
+    attempts.length <= options.maxRetries &&
+    !options.signal?.aborted
+  );
 
-  while (attempts <= options.maxRetries) {
-    attempts += 1;
-    try {
-      last = await attempt(options, prompt);
-      if (last.result?.ok === true) break;
-    } catch (error) {
-      last = {
-        events: [],
-        result: {
-          type: 'result',
-          ok: false,
-          turns: 0,
-          inputTokens: 0,
-          outputTokens: 0,
-          durationMs: 0,
-          error: error instanceof Error ? error.message : String(error),
-        },
-      };
-    }
-  }
-
-  const retries = attempts - 1;
-  const events = last?.events ?? [];
-  const toolCalls = events.filter((event) => event.type === 'tool_use').length;
-  const result = last?.result;
-  const wallMs = now() - started;
-
-  await writeArtifacts(options, { events, prompt });
-
-  if (!result || !result.ok) {
+  const events = attempts.flatMap((entry) => entry.events);
+  const results = attempts.flatMap((entry) =>
+    entry.result ? [entry.result] : []
+  );
+  const usd = results.flatMap((entry) =>
+    entry.usd === undefined ? [] : [entry.usd]
+  );
+  const credentials = [
+    ...new Set(
+      results.flatMap((entry) => (entry.credential ? [entry.credential] : []))
+    ),
+  ];
+  const accounting = {
+    retries: attempts.length - 1,
+    toolCalls: events.filter((event) => event.type === 'tool_use').length,
+    foreignTools: countForeignTools(events),
+    iterations: attempts.reduce(
+      (sum, entry) => sum + countIterations(entry.events),
+      0
+    ),
+    turns: results.reduce((sum, entry) => sum + entry.turns, 0),
+    wallMs: now() - started,
+    cost: {
+      usageComplete: attempts.every((entry) => entry.usageComplete),
+      inputTokens: results.reduce((sum, entry) => sum + entry.inputTokens, 0),
+      outputTokens: results.reduce((sum, entry) => sum + entry.outputTokens, 0),
+      ...(usd.length > 0 && {
+        usd: usd.reduce((sum, value) => sum + value, 0),
+      }),
+      ...(credentials.length > 0 && { credential: credentials.join(',') }),
+    },
+  };
+  await writeArtifacts(options, { events, prompt, attempts });
+  if (!last.result?.ok) {
     return failedRun(
       options.brief.id,
       options.brief.format,
-      result?.error ?? 'the agent session produced no result',
-      {
-        toolCalls,
-        retries,
-        wallMs,
-        iterations: countIterations(events),
-        turns: result?.turns ?? 0,
-      }
+      last.result?.error ?? 'the agent session produced no result',
+      accounting
     );
   }
-
-  const document = await finalDocument(events, options.workspaceRoot);
-  if (document === undefined) {
-    // Two very different failures, and telling them apart matters more than it
-    // looks. A session that generated nothing is an authoring failure and a
-    // real product result. A session that DID call `jto_generate` and whose
-    // document the harness then could not recover is a measurement failure —
-    // and one that lands hardest on agents authoring through a workspace
-    // handle, which is exactly what the server's instructions tell them to do.
-    // Reporting the second as the first would quietly penalise the recommended
-    // path and read as a product regression.
-    const generated = events.some(
-      (event) => event.type === 'tool_use' && event.name === GENERATE_TOOL
-    );
+  if (!generationPayload(last.events)) {
     return failedRun(
       options.brief.id,
       options.brief.format,
-      generated
-        ? 'HARNESS: jto_generate was called but the document could not be recovered — check that the server and the harness share a workspace directory'
+      lastGeneration(last.events)
+        ? 'the final jto_generate did not confirm artifact delivery'
         : 'the session ended without generating a document',
-      {
-        toolCalls,
-        retries,
-        wallMs,
-        iterations: countIterations(events),
-        turns: result.turns,
-        cost: {
-          inputTokens: result.inputTokens,
-          outputTokens: result.outputTokens,
-          ...(result.usd !== undefined && { usd: result.usd }),
-        },
-      }
+      accounting
+    );
+  }
+
+  const document = await finalDocument(last.events, options.workspaceRoot);
+  if (document === undefined) {
+    return failedRun(
+      options.brief.id,
+      options.brief.format,
+      'HARNESS: generated document could not be recovered — check the workspace directory and generated revision',
+      accounting
     );
   }
 
@@ -317,13 +393,7 @@ export async function runBrief(options: RunBriefOptions): Promise<RunMetrics> {
       `the produced document could not be analyzed: ${
         error instanceof Error ? error.message : String(error)
       }`,
-      {
-        toolCalls,
-        retries,
-        wallMs,
-        iterations: countIterations(events),
-        turns: result.turns,
-      }
+      accounting
     );
   }
 
@@ -355,20 +425,7 @@ export async function runBrief(options: RunBriefOptions): Promise<RunMetrics> {
       pages: measured.pages,
     }),
     pageCountSource: measured.pageCountSource ?? 'structural',
-    iterations: countIterations(events),
-    turns: result.turns,
-    toolCalls,
-    foreignTools: countForeignTools(events),
-    cost: {
-      inputTokens: result.inputTokens,
-      outputTokens: result.outputTokens,
-      ...(result.usd !== undefined && { usd: result.usd }),
-      ...(result.credential !== undefined && {
-        credential: result.credential,
-      }),
-    },
-    wallMs,
-    retries,
+    ...accounting,
     ...(judgement !== undefined && { judge: judgement }),
   };
 }
@@ -383,7 +440,7 @@ export async function runBrief(options: RunBriefOptions): Promise<RunMetrics> {
  */
 async function writeArtifacts(
   options: RunBriefOptions,
-  run: { events: readonly AgentEvent[]; prompt: string }
+  run: { events: readonly AgentEvent[]; prompt: string; attempts: Attempt[] }
 ): Promise<void> {
   await fs.writeFile(
     path.join(options.runDir, 'transcript.json'),
@@ -394,6 +451,7 @@ async function writeArtifacts(
         briefHash: options.brief.hash,
         prompt: options.sealed ? `[sealed:${options.brief.hash}]` : run.prompt,
         events: run.events,
+        attempts: run.attempts,
       },
       null,
       2
