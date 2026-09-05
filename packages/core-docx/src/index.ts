@@ -117,10 +117,15 @@ export {
 // Blocks: bounded-slot components lowered to primitives, styled by the theme
 export {
   BLOCK_NAMES,
+  CHROME_BLOCK_NAMES,
   expandBlocks,
   toAuthoredPointer,
   blockSlotBudgets,
   compileKeyTakeaways,
+  compileCover,
+  compileSectionOpener,
+  compileRunningHead,
+  sectionTracker,
 } from './blocks';
 export type {
   BlockName,
@@ -128,6 +133,8 @@ export type {
   BlockCompilation,
   ExpandedBlocks,
   BlockSlotBudget,
+  RunningHeadCompilation,
+  RunningHeadContext,
 } from './blocks';
 export type { ThemeName } from './styles/index';
 

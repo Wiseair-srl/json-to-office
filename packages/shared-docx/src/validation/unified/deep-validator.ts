@@ -171,6 +171,25 @@ export function collectImageSourceConflicts(data: unknown): ValidationError[] {
       }
     }
 
+    // A cover's logo lowers to an image, so it is held to the same rule — and
+    // to its converse: a logo slot with no source at all draws nothing, which
+    // is never what the author meant.
+    if (node.name === 'cover' && node.props && node.props.logo) {
+      const present = presentImageSources(node.props.logo);
+      if (present.length !== 1) {
+        errors.push({
+          path: `${path}/props/logo`,
+          message:
+            present.length === 0
+              ? 'Cover logo has no source. Give it exactly one of "path", "base64", or "svg".'
+              : `Cover logo accepts only one source, but found ${present
+                  .map((f) => `"${f}"`)
+                  .join(', ')}. Use exactly one of "path", "base64", or "svg".`,
+          code: 'mutually_exclusive',
+        });
+      }
+    }
+
     for (const key of Object.keys(node)) {
       visit(node[key], `${path}/${key}`);
     }

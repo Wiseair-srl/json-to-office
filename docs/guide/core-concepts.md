@@ -56,14 +56,14 @@ Components fall into two categories:
 
 Allowed children per container:
 
-| Format | Container  | Allowed children                                                                                                                                          |
-| ------ | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| DOCX   | `docx`     | `section` only                                                                                                                                            |
-| DOCX   | `section`  | `heading`, `paragraph`, `image`, `statistic`, `table`, `list`, `toc`, `divider`, `highcharts`, `chart`¹, `visual`, `columns`, `text-box`, `key-takeaways` |
-| DOCX   | `columns`  | Same as `section`, minus `columns` (no nested column layouts)                                                                                             |
-| DOCX   | `text-box` | `heading`, `paragraph`, `image`, `divider`                                                                                                                |
-| PPTX   | `pptx`     | `slide` only                                                                                                                                              |
-| PPTX   | `slide`    | `text`, `image`, `shape`, `table`, `highcharts`, `chart`                                                                                                  |
+| Format | Container  | Allowed children                                                                                                                                                                                     |
+| ------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DOCX   | `docx`     | `section` only                                                                                                                                                                                       |
+| DOCX   | `section`  | `heading`, `paragraph`, `image`, `statistic`, `table`, `list`, `toc`, `divider`, `highcharts`, `chart`¹, `visual`, `columns`, `text-box`, `key-takeaways`, `cover`, `section-opener`, `running-head` |
+| DOCX   | `columns`  | Same as `section`, minus `columns` (no nested column layouts)                                                                                                                                        |
+| DOCX   | `text-box` | `heading`, `paragraph`, `image`, `divider`                                                                                                                                                           |
+| PPTX   | `pptx`     | `slide` only                                                                                                                                                                                         |
+| PPTX   | `slide`    | `text`, `image`, `shape`, `table`, `highcharts`, `chart`                                                                                                                                             |
 
 ¹ `chart` needs `renderer: "office-open"`; the default `docxjs` renderer has no chart primitive and omits it from its profile.
 

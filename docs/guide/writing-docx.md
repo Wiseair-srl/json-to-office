@@ -175,6 +175,29 @@ A later section can reuse the previous section's header or footer by passing the
 }
 ```
 
+### Report chrome from a block
+
+For a report, do not hand-build the header and footer. A `running-head` block, declared once as a child of the first section after the cover, writes a themed header (document title left, section tracker right, hairline beneath) and footer (confidentiality, page `n / N`, date) into that section and every later one, and each section's `section-opener` changes the tracker. A section that authors its own `header` or `footer` keeps it.
+
+```json
+{
+  "name": "section",
+  "children": [
+    {
+      "name": "running-head",
+      "props": { "confidentiality": "Confidential", "date": "September 2026" }
+    },
+    {
+      "name": "section-opener",
+      "props": { "number": "01", "title": "Summary" }
+    },
+    { "name": "paragraph", "props": { "text": "The year in one page." } }
+  ]
+}
+```
+
+The `cover` block goes in a section of its own before it, so the cover page carries no running head. See the [block reference](/reference/docx/components#cover) for every slot.
+
 ## Tables
 
 Tables are **column-based**, not row-based: you describe each column once — its header, width, and per-column cell defaults — and list its cells top to bottom. This keeps column styling in one place instead of repeating it on every row.

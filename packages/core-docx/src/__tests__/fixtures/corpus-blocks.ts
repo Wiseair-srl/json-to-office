@@ -4,8 +4,9 @@
  * Covers the three components that sit in the document flow as blocks rather
  * than as text: `image` (inline and floating, with captions and alt text),
  * `statistic`, and `text-box` (both `table` and `shape` renderings) — and the
- * first of the bounded-slot blocks, `key-takeaways`, on the house theme that
- * declares its recipe and on one that does not.
+ * bounded-slot blocks: `key-takeaways`, and the report architecture of
+ * `cover`, `section-opener` and `running-head`, each on the house theme that
+ * declares its recipes and on one that does not.
  *
  * Every image here is an inline base64 data URI: a corpus case is identified by
  * the SHA-256 of the package it produces, so nothing may reach outside the
@@ -119,6 +120,99 @@ export const CASES: CorpusCase[] = [
             label: 'What matters',
           },
         },
+      ]),
+    ]),
+  },
+  // --------------------------------------------------------------------------
+  // cover, section-opener, running-head: the report architecture
+  // --------------------------------------------------------------------------
+  {
+    // A cover in its own section, then two sections under one running head:
+    // the tracker follows each opener, the footer carries n / N and the date,
+    // and the cover section stays chrome-free. Every value is the house
+    // recipe's: display title over a 3pt accent rule, tracker role in the
+    // header, footer role in the footer, hairlines in `rule`.
+    name: 'blocks/report-chrome-consulting',
+    document: doc(
+      [
+        section([
+          {
+            name: 'cover',
+            props: {
+              title: 'Annual performance review',
+              subtitle: 'What changed in 2026 and what to do about it',
+              client: 'Acme Holdings',
+              date: 'September 2026',
+              confidentiality: 'Confidential',
+              logo: { base64: PNG_4X2, alt: 'Acme' },
+            },
+          },
+        ]),
+        section([
+          {
+            name: 'running-head',
+            props: { confidentiality: 'Confidential', date: 'September 2026' },
+          },
+          { name: 'section-opener', props: { number: '01', title: 'Summary' } },
+          { name: 'key-takeaways', props: { items: TAKEAWAYS } },
+          { name: 'paragraph', props: { text: 'The year in one page.' } },
+        ]),
+        section([
+          {
+            name: 'section-opener',
+            props: {
+              number: '02',
+              title: 'Results by region',
+              tracker: 'Results',
+            },
+          },
+          { name: 'paragraph', props: { text: 'Body.' } },
+        ]),
+      ],
+      {
+        theme: 'consulting',
+        metadata: { title: 'Annual review', author: 'JTO' },
+      }
+    ),
+  },
+  {
+    // No recipes and no roles: the fallback rule, the title style for the
+    // cover, explicit small runs for the chrome; a section that authored its
+    // own header keeps it and takes only the footer; a later running head
+    // replaces the first from its section on, with page numbers off.
+    name: 'blocks/report-chrome-fallback',
+    document: doc([
+      section([{ name: 'cover', props: { title: 'Field notes' } }]),
+      section([
+        { name: 'running-head', props: { title: 'Field notes, 2026' } },
+        {
+          name: 'section-opener',
+          props: { number: 1, title: 'One', pageBreak: true },
+        },
+        { name: 'paragraph', props: { text: 'Body one.' } },
+      ]),
+      {
+        name: 'section',
+        props: {
+          header: [
+            { name: 'paragraph', props: { text: 'Mine', alignment: 'center' } },
+          ],
+        },
+        children: [
+          { name: 'section-opener', props: { title: 'Two' } },
+          { name: 'paragraph', props: { text: 'Body two.' } },
+        ],
+      },
+      section([
+        {
+          name: 'running-head',
+          props: {
+            tracker: 'Appendix',
+            pageNumbers: false,
+            confidentiality: 'Internal',
+          },
+        },
+        { name: 'paragraph', props: { text: 'Body three.' } },
       ]),
     ]),
   },
