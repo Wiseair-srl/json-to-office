@@ -1,6 +1,6 @@
 {
   "name": "@json-to-office/core-pptx",
-  "version": "2.4.1",
+  "version": "2.5.0",
   "description": "Core PPTX presentation generation engine",
   "type": "module",
   "main": "dist/index.js",
