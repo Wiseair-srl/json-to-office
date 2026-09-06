@@ -20,7 +20,7 @@ json-to-office gives you two ways to put charts in a document: **native charts**
 ::: info Why the docx chart is renderer-scoped
 docx.js has no chart primitive at all, so the component is absent from that renderer's schema rather than accepted and dropped. `@office-open/docx` does have one, though it writes only the cached values: json-to-office splices in the embedded workbook, the series colors and the axis titles afterwards, which is what makes **Edit Data** work and the theme palette apply. See the [component reference](/reference/docx/components#chart).
 
-The pptx `office-open` renderer needed the same repair and used to decline charts over it. It no longer does: the same pass writes the workbook there too, so both pptx backends now draw an editable native chart. `@office-open/pptx` forwards more of the chart options than its docx sibling, so only the cell references and the series colors have to be spliced in.
+The pptx `office-open` renderer needs the same repair: the same pass writes the workbook there too, so both pptx backends draw an editable native chart. `@office-open/pptx` forwards more of the chart options than its docx sibling, so only the cell references and the series colors have to be spliced in.
 
 One exception: the native `bubble` chart is `pptxgenjs`-only, and is absent from the docx component altogether. `@office-open` spells a bubble series as x/y/size triples rather than categories and values, and there is no unambiguous reading of a category label as a numeric x — so it is refused by name rather than guessed at. A Highcharts bubble chart is unaffected: `highcharts` keeps its full catalog on every renderer.
 :::
@@ -52,7 +52,7 @@ Both palettes resolve each token through the theme's own recursive name resoluti
 Named _explicitly_, an unresolvable token stays loud in both formats, with different mechanics. On pptx it falls back to `primary` and emits a warning — `THEME_COLOR_FALLBACK` when the slot is unset, `UNKNOWN_COLOR` when the slot holds a value that resolves to nothing. Docx has no warning channel for colors: it throws.
 
 ::: info Only DOCX themes can spell the reference
-The two theme schemas differ on the color _value_. A docx theme color is `#RRGGBB` **or** the name of another color; a pptx theme color must be strict hex (`^#?[0-9A-Fa-f]{6}$`), so `"accent4": "primary"` fails `jto pptx validate`. A pptx reference chain therefore only reaches generation through a theme the schema never sees — a `customThemes` object, a `--theme-path` file (parsed as plain JSON, [without validation](/reference/theme-schema#loading-rules)), or an inline `props.theme` in a run with `validation.enabled = false` — an inline theme is part of the document, so the generation gate checks it against `ThemeConfigSchema` like any other prop. Those are exactly the paths that used to leak the raw token name into the deck.
+The two theme schemas differ on the color _value_. A docx theme color is `#RRGGBB` **or** the name of another color; a pptx theme color must be strict hex (`^#?[0-9A-Fa-f]{6}$`), so `"accent4": "primary"` fails `jto pptx validate`. A pptx reference chain therefore only reaches generation through a theme the schema never sees — a `customThemes` object, a `--theme-path` file (parsed as plain JSON, [without validation](/reference/theme-schema#loading-rules)), or an inline `props.theme` in a run with `validation.enabled = false` — an inline theme is part of the document, so the generation gate checks it against `ThemeConfigSchema` like any other prop.
 :::
 
 ## Quick examples
