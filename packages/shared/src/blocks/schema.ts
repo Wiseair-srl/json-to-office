@@ -27,7 +27,6 @@ export interface BlockSlot {
 
 /** Definitions are authored data. No concrete block is registered by the core. */
 export interface JsonBlockDefinition {
-  format: 'docx' | 'pptx';
   description?: string;
   slots: Record<string, BlockSlot>;
   body: unknown[];
@@ -81,7 +80,6 @@ export const BlockSlotSchema: TSchema = Type.Recursive((Self) =>
 export const JsonBlockDefinitionSchema = Type.Unsafe<JsonBlockDefinition>(
   Type.Object(
     {
-      format: Type.Union([Type.Literal('docx'), Type.Literal('pptx')]),
       description: Type.Optional(Type.String()),
       slots: Type.Record(Type.String(), BlockSlotSchema),
       body: Type.Array(Type.Unknown()),

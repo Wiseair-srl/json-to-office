@@ -3,6 +3,8 @@ import { describe, it, expect } from 'vitest';
 import AdmZip from 'adm-zip';
 import { Type } from '@sinclair/typebox';
 import { validateDocument } from '@json-to-office/shared-docx';
+import { ComponentValidationError } from '../../plugin/validation';
+import { blockSlotBudgets } from '../document';
 import { expandBlocks, toAuthoredPointer } from '../index';
 import {
   consultingTheme,
@@ -206,12 +208,10 @@ describe('JSON report blocks from playground templates', () => {
     });
     const input = simple();
     input.props.blocks.leaf = {
-      format: 'docx',
       slots: { value: { type: 'string', required: true } },
       body: [{ name: 'paragraph', props: { text: { $slot: '/value' } } }],
     };
     input.props.blocks.outer = {
-      format: 'docx',
       slots: {},
       body: [{ name: 'calculated', props: { value: 'Calculated content' } }],
     };
@@ -281,7 +281,6 @@ describe('JSON report blocks from playground templates', () => {
   it('reports missing plugin registration and invalid plugin output at the authored block', async () => {
     const input = simple();
     input.props.blocks.outer = {
-      format: 'docx',
       slots: {},
       body: [{ name: 'missing-plugin', props: {} }],
     };
@@ -304,12 +303,11 @@ describe('JSON report blocks from playground templates', () => {
       createDocumentGenerator({})
         .addComponent(invalid)
         .expandStandardDefinition(input)
-    ).rejects.toThrow(/children\/0\/children\/0/);
+    ).rejects.toBeInstanceOf(ComponentValidationError);
   });
   it('rejects section effects introduced inside a layout by another block', () => {
     const input = simple();
     input.props.blocks.outer = {
-      format: 'docx',
       slots: {},
       body: [
         {
@@ -323,5 +321,72 @@ describe('JSON report blocks from playground templates', () => {
     expect(() => expandBlocks(input, consultingTheme)).toThrow(
       /Section effects require/
     );
+  });
+  it('exports budgets and quality facts for nested object slots inside arrays', () => {
+    const input = simple();
+    input.props.blocks.nested = {
+      slots: {
+        items: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: { label: { type: 'string', maxWords: 6 } },
+          },
+        },
+      },
+      body: [
+        {
+          $each: '/items',
+          template: { name: 'paragraph', props: { text: { $item: '/label' } } },
+        },
+      ],
+    };
+    input.children[0].children = [
+      {
+        name: 'block',
+        props: {
+          ref: 'nested',
+          slots: {
+            items: [{ label: 'First metric' }, { label: 'Second metric' }],
+          },
+        },
+      },
+    ];
+    const budgets = blockSlotBudgets(input, ['/children/0/children/0']);
+    expect(budgets).toHaveLength(2);
+    expect(budgets[1]).toMatchObject({
+      path: '/children/0/children/0/props/slots/items/1/label',
+      words: 2,
+      maxWords: 6,
+    });
+    expect(
+      prepareDocxQualityDocument(input).facts.filter(
+        (fact) => fact.kind === 'docx/block-slot'
+      )
+    ).toHaveLength(2);
+  });
+  it('accepts a plugin emitting section-effect blocks at a section boundary', async () => {
+    const component = createComponent({
+      name: 'chrome',
+      versions: {
+        '1.0.0': {
+          propsSchema: Type.Object({}),
+          render: async () => [
+            {
+              name: 'block',
+              props: { ref: 'running-head', slots: { title: 'Plugin report' } },
+            },
+          ],
+        },
+      },
+    });
+    const input = simple();
+    input.children[0].children = [{ name: 'chrome', props: {} }];
+    const result = await createDocumentGenerator({})
+      .addComponent(component)
+      .expandStandardDefinition(input);
+    expect(
+      JSON.stringify(result.standardDefinition.children[0].props.header)
+    ).toContain('Plugin report');
   });
 });

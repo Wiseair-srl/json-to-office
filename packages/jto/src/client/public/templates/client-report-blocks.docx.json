@@ -7,7 +7,6 @@
     },
     "blocks": {
       "key-takeaways": {
-        "format": "docx",
         "description": "Executive conclusions with bounded one-line takeaways. Copy and adapt this document-local example.",
         "slots": {
           "label": {
@@ -103,7 +102,6 @@
         ]
       },
       "cover": {
-        "format": "docx",
         "description": "A themed title page; optional subtitle, logo and metadata collapse when omitted.",
         "slots": {
           "title": {
@@ -326,7 +324,6 @@
         ]
       },
       "section-opener": {
-        "format": "docx",
         "description": "A numbered section heading which sets the general section tracker.",
         "slots": {
           "number": {
@@ -399,7 +396,6 @@
         ]
       },
       "running-head": {
-        "format": "docx",
         "description": "Document title/section tracker and page fields, inherited by subsequent sections.",
         "slots": {
           "title": {
@@ -595,7 +591,6 @@
         }
       },
       "metric-row": {
-        "format": "docx",
         "description": "Two to four equal-width metrics. Optional source collapses together with its divider. Text budgets reject overflow; columns reflow at unchanged type size.",
         "slots": {
           "items": {

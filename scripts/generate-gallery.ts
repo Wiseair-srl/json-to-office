@@ -25,6 +25,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import zlib from 'zlib';
+import { readPreviousGallery } from './gallery-manifest';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -169,13 +170,10 @@ async function main(): Promise<void> {
   const check = process.argv.includes('--check');
   const onlyIndex = process.argv.indexOf('--only');
   const only = onlyIndex === -1 ? undefined : process.argv[onlyIndex + 1];
-  const previous = fs.existsSync(MANIFEST_FILE)
-    ? (
-        JSON.parse(fs.readFileSync(MANIFEST_FILE, 'utf8')) as {
-          templates: TemplateManifest[];
-        }
-      ).templates
-    : [];
+  const previous = readPreviousGallery<TemplateManifest>(
+    MANIFEST_FILE,
+    only !== undefined
+  );
   const notes = JSON.parse(fs.readFileSync(NOTES_FILE, 'utf8')) as Notes;
   const names = Object.keys(notes.templates).sort();
   if (onlyIndex !== -1 && (!only || !names.includes(only) || check))

@@ -497,12 +497,19 @@ function createBuilderImpl<
     const validateEmitted =
       vOpts.enabled === false
         ? undefined
-        : (emitted: ComponentDefinition[], componentLabel: string) => {
+        : (
+            emitted: ComponentDefinition[],
+            componentLabel: string,
+            sourcePath?: string
+          ) => {
             const result = validateDocument(
               {
                 ...internalDocument,
                 ...(renderer !== undefined ? { renderer } : {}),
-                children: emitted,
+                children:
+                  sourcePath === undefined
+                    ? emitted
+                    : [{ name: 'section', props: {}, children: emitted }],
               },
               state.components as unknown as CustomComponent<TSchema>[],
               { allowUnknownFields: vOpts.allowUnknownFields }
@@ -510,7 +517,13 @@ function createBuilderImpl<
             if (!result.valid) {
               throw new ComponentValidationError(
                 (result.errors ?? []).map((e) => ({
-                  path: e.path ?? '',
+                  path:
+                    sourcePath === undefined
+                      ? e.path ?? ''
+                      : (e.path ?? '').replace(
+                          /^\/children\/0\/children\/\d+/,
+                          sourcePath
+                        ),
                   message: `custom component '${componentLabel}' emitted invalid output — ${e.message}`,
                 })),
                 emitted
@@ -575,7 +588,11 @@ function createBuilderImpl<
                 context,
               }),
           });
-          return Array.isArray(output) ? output : [output];
+          const emitted = (
+            Array.isArray(output) ? output : [output]
+          ) as ComponentDefinition[];
+          validateEmitted?.(emitted, custom.name, path);
+          return emitted;
         },
         preserveSet
       );
@@ -695,8 +712,8 @@ function createBuilderImpl<
           document: modedDoc,
           theme: modedTheme,
           themeName,
-          sourceMap,
-          blockPaths,
+          ...(sourceMap !== undefined && { sourceMap }),
+          ...(blockPaths !== undefined && { blockPaths }),
         },
         ...(state.services ? { services: state.services } : {}),
         ...(state.fonts ? { fonts: state.fonts } : {}),
