@@ -130,7 +130,16 @@ describe('discovery resources', () => {
 
     const presentation = await readJson(RESOURCE_URIS.documentSchema('pptx'));
     expect(presentation.$id).toBe('presentation.schema.json');
-    expect(Array.isArray(presentation.anyOf)).toBe(true);
+    // One component definition per renderer, dispatched on `renderer` at
+    // the root, plus the block-body authoring schemas derived from each.
+    expect(Object.keys(presentation.definitions)).toEqual(
+      expect.arrayContaining([
+        'PptxComponentDefinition_pptxgenjs',
+        'PptxComponentDefinition_office-open',
+        'BlockTemplate_PptxComponentDefinition_pptxgenjs_Body',
+      ])
+    );
+    expect(Array.isArray(presentation.allOf)).toBe(true);
   });
 
   it('serves the theme schemas', async () => {

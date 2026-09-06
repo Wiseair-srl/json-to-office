@@ -1,6 +1,34 @@
 /**
- * PPTX Schema Export Metadata
+ * PPTX Schema Export
  */
+import type { TSchema } from '@sinclair/typebox';
+import { convertToJsonSchema as convertSharedToJsonSchema } from '@json-to-office/shared';
+import {
+  addPptxBlockAuthoringSchemas,
+  dispatchPptxRootByRenderer,
+} from './block-authoring';
+
+/**
+ * The shared TypeBox → JSON Schema export, enriched with the PPTX block-body
+ * authoring schemas. Every producer of the published presentation schema —
+ * the playground, the CLI, the MCP server, the checked-in schema file — goes
+ * through this so an editor sees the same block completion everywhere.
+ */
+export function convertToJsonSchema(
+  schema: TSchema,
+  options: Omit<
+    NonNullable<Parameters<typeof convertSharedToJsonSchema>[1]>,
+    'enrich'
+  > = {}
+): Record<string, unknown> {
+  return convertSharedToJsonSchema(schema, {
+    ...options,
+    enrich: (json) => {
+      addPptxBlockAuthoringSchemas(json);
+      dispatchPptxRootByRenderer(json);
+    },
+  });
+}
 
 export const PPTX_COMPONENT_METADATA: Record<
   string,

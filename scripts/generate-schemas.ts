@@ -58,12 +58,14 @@ async function main() {
   );
   console.log('Generated schemas/theme.schema.json');
 
-  // PPTX presentation schema
-  const { generateUnifiedDocumentSchema: generatePptx } = await import(
-    pathToFileURL(SHARED_PPTX).href
-  );
+  // PPTX presentation schema — through the PPTX export, which adds the
+  // block-body authoring schemas the shared converter knows nothing about.
+  const {
+    generateUnifiedDocumentSchema: generatePptx,
+    convertToJsonSchema: convertPptxToJsonSchema,
+  } = await import(pathToFileURL(SHARED_PPTX).href);
   const pptxSchema = generatePptx({ customComponents: [] });
-  const pptxJson = convertToJsonSchema(pptxSchema, {
+  const pptxJson = convertPptxToJsonSchema(pptxSchema, {
     $id: 'presentation.schema.json',
   });
   await exportSchemaToFile(

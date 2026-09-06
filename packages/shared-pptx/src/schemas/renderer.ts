@@ -6,6 +6,17 @@ export type PptxRendererId = (typeof PPTX_RENDERER_IDS)[number];
 export const DEFAULT_PPTX_RENDERER_ID: PptxRendererId = 'pptxgenjs';
 
 /**
+ * The exported JSON-Schema definition name for one renderer's component
+ * union. One name per renderer, as for DOCX: TypeBox's own ordinals (`T4`,
+ * `T5`) shift with how many recursive schemas the process built before this
+ * one, and the block-body authoring schemas are derived by name from the
+ * definition they narrow.
+ */
+export function pptxComponentDefinitionName(renderer: PptxRendererId): string {
+  return `PptxComponentDefinition_${renderer}`;
+}
+
+/**
  * Renderer-specific view of one canonical component props schema.
  *
  * This is intentionally a pruning pass rather than a second schema tree. The

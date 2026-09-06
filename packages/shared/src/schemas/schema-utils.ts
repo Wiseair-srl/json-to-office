@@ -139,6 +139,13 @@ export function convertToJsonSchema(
     title?: string;
     description?: string;
     definitions?: Record<string, unknown>;
+    /**
+     * Format-specific enrichment applied once references resolve and before
+     * the name-discriminated unions are restructured — the point at which a
+     * component union is still a flat `anyOf` a derivation can filter and
+     * copy. The PPTX block-body authoring schemas are added here.
+     */
+    enrich?: (schema: Record<string, unknown>) => void;
   } = {}
 ): Record<string, unknown> {
   const {
@@ -147,6 +154,7 @@ export function convertToJsonSchema(
     title,
     description,
     definitions = {},
+    enrich,
   } = options;
 
   const schemaJson = JSON.parse(JSON.stringify(schema));
@@ -214,6 +222,7 @@ export function convertToJsonSchema(
   }
 
   fixSchemaReferences(jsonSchema);
+  enrich?.(jsonSchema);
   restructureNameDiscriminatedUnions(jsonSchema);
 
   return jsonSchema;

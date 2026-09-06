@@ -29,6 +29,7 @@ import {
 } from '@json-to-office/shared-docx';
 import {
   PPTX_STANDARD_COMPONENTS_REGISTRY,
+  convertToJsonSchema as convertPptxToJsonSchema,
   ThemeConfigSchema as PptxThemeConfigSchema,
   generateUnifiedDocumentSchema as generatePptxDocumentSchema,
 } from '@json-to-office/shared-pptx';
@@ -82,7 +83,7 @@ function generateDocumentSchema(format: FormatName): SchemaNode {
         }),
         { $id: 'document.schema.json' }
       ) as SchemaNode)
-    : (convertToJsonSchema(
+    : (convertPptxToJsonSchema(
         generatePptxDocumentSchema({ customComponents: [] }),
         {
           $id: 'presentation.schema.json',

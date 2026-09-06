@@ -10,6 +10,7 @@ import { createAllPptxComponentSchemasNarrowed } from './component-registry';
 import {
   DEFAULT_PPTX_RENDERER_ID,
   PPTX_RENDERER_IDS,
+  pptxComponentDefinitionName,
   type PptxRendererId,
 } from './renderer';
 
@@ -92,42 +93,49 @@ function generateRendererSchema(
   renderer: PptxRendererId,
   requireDiscriminator: boolean
 ): TSchema {
-  return Type.Recursive((Self) => {
-    // ── Phase 1: Build plugin schemas (plugins get Self for arbitrary nesting) ──
-    const pluginSchemas: TSchema[] = [];
+  return Type.Recursive(
+    (Self) => {
+      // ── Phase 1: Build plugin schemas (plugins get Self for arbitrary nesting) ──
+      const pluginSchemas: TSchema[] = [];
 
-    for (const custom of customComponents) {
-      if (custom.versions.length > 0) {
-        const latest = latestVersion(
-          custom.versions.map((entry) => entry.version)
-        );
-        const versions = custom.versions.map((entry) =>
-          createPluginVersionSchema(
-            custom,
-            entry,
-            Self,
-            entry.version === latest
-          )
-        );
-        pluginSchemas.push(
-          versions.length === 1 ? versions[0] : Type.Union(versions)
-        );
+      for (const custom of customComponents) {
+        if (custom.versions.length > 0) {
+          const latest = latestVersion(
+            custom.versions.map((entry) => entry.version)
+          );
+          const versions = custom.versions.map((entry) =>
+            createPluginVersionSchema(
+              custom,
+              entry,
+              Self,
+              entry.version === latest
+            )
+          );
+          // One branch per version, flat in the component union (as the DOCX
+          // generator does): a nested union has no `name` const of its own,
+          // so the export could not restructure the union into the if/then
+          // dispatch editors need, and a group's children fell back to an
+          // untyped name for the plugin.
+          pluginSchemas.push(...versions);
+        }
       }
-    }
 
-    // ── Phase 2: Build standard components with narrowed children ──
-    const standardSchemas = createAllPptxComponentSchemasNarrowed(
-      Self,
-      pluginSchemas,
-      { renderer, requireDiscriminator }
-    );
+      // ── Phase 2: Build standard components with narrowed children ──
+      const standardSchemas = createAllPptxComponentSchemasNarrowed(
+        Self,
+        pluginSchemas,
+        { renderer, requireDiscriminator }
+      );
 
-    const componentSchemas = [...standardSchemas, ...pluginSchemas];
+      const componentSchemas = [...standardSchemas, ...pluginSchemas];
 
-    if (componentSchemas.length === 0) {
-      return Type.Object({});
-    }
+      if (componentSchemas.length === 0) {
+        return Type.Object({});
+      }
 
-    return Type.Union(componentSchemas);
-  });
+      return Type.Union(componentSchemas);
+    },
+    // Named per renderer so the export keys `definitions` by a stable name.
+    { $id: pptxComponentDefinitionName(renderer) }
+  );
 }
