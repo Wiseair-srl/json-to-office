@@ -41,6 +41,7 @@ import {
   type ColorToken,
 } from './color-picker';
 import { FamilyCombobox } from './font-combobox';
+import { matchesQuery } from '../../lib/theme-editor/schema-form';
 
 /**
  * The named styles: the schema's slots first, then whatever else the theme
@@ -503,7 +504,14 @@ function AddCustomStyle({ existing }: { existing: Set<string> }) {
 // Section
 // ---------------------------------------------------------------------------
 
-export function ThemeStylesSection({ theme }: { theme: ThemeJson }) {
+export function ThemeStylesSection({
+  theme,
+  query = '',
+}: {
+  theme: ThemeJson;
+  query?: string;
+}) {
+  const searching = query.trim() !== '';
   const tokens = useThemeColorTokens(theme);
   const tokensJson = useMemo(() => JSON.stringify(tokens), [tokens]);
   const custom = useMemo(() => customStyleNames(theme, FORMAT), [theme]);
@@ -531,14 +539,20 @@ export function ThemeStylesSection({ theme }: { theme: ThemeJson }) {
         resolvedJson: JSON.stringify(resolved),
       };
     };
-    return [
+    const all = [
       ...NAMES.map((name) => row(name, false)),
       ...custom.map((name) => row(name, true)),
     ];
-  }, [theme, tokensJson, custom]);
+    return matchesQuery(query, 'styles', 'style')
+      ? all
+      : all.filter((entry) =>
+          matchesQuery(query, entry.name, styleLabel(entry.name))
+        );
+  }, [theme, tokensJson, custom, query]);
 
   const existing = useMemo(() => new Set([...NAMES, ...custom]), [custom]);
   const definedCount = rows.filter((r) => r.styleJson !== undefined).length;
+  if (searching && rows.length === 0) return null;
 
   return (
     <EditorSection
@@ -548,6 +562,7 @@ export function ThemeStylesSection({ theme }: { theme: ThemeJson }) {
           ? 'Paragraph styles a document names with themeStyle. A colour may be a token or a hex; sizes are points.'
           : 'Text presets a slide names by style. Sizes are points; a colour may be a token or a hex.'
       }
+      forceOpen={searching ? true : undefined}
       actions={
         <span className="text-[11px] tabular-nums text-muted-foreground">
           {definedCount}/{rows.length}

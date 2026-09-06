@@ -18,6 +18,7 @@ import {
 } from './theme-editor-shared';
 import { ColorControl, useThemeColorTokens } from './color-picker';
 import { FamilyCombobox } from './font-combobox';
+import { matchesQuery } from '../../lib/theme-editor/schema-form';
 
 /**
  * docx fonts are roles — heading, body, mono, light — each a family and a
@@ -185,15 +186,29 @@ function PptxDefaults({ theme }: { theme: ThemeJson }) {
   );
 }
 
-export function ThemeTypographySection({ theme }: { theme: ThemeJson }) {
+export function ThemeTypographySection({
+  theme,
+  query = '',
+}: {
+  theme: ThemeJson;
+  query?: string;
+}) {
+  const searching = query.trim() !== '';
+  const whole = matchesQuery(query, 'typography', 'fonts', 'font');
+  const roleMatches = (role: string) =>
+    whole || matchesQuery(query, role, FONT_ROLE_HINTS[role]);
+  const forceOpen = searching ? true : undefined;
   if (FORMAT === 'docx') {
+    const roles = DOCX_FONT_ROLES.filter(roleMatches);
+    if (searching && roles.length === 0) return null;
     return (
       <EditorSection
         title="Typography"
         hint="Four roles the styles point at. A family beyond the safe list needs a fontRegistry entry on the document to embed; the specimen shows what the browser has."
+        forceOpen={forceOpen}
       >
         <div className="grid grid-cols-1 gap-2 @[34rem]:grid-cols-2">
-          {DOCX_FONT_ROLES.map((role) => {
+          {roles.map((role) => {
             const font = getAt(theme, ['fonts', role]);
             const record =
               font && typeof font === 'object'
@@ -212,21 +227,28 @@ export function ThemeTypographySection({ theme }: { theme: ThemeJson }) {
       </EditorSection>
     );
   }
+  const roles = PPTX_FONT_ROLES.filter(roleMatches);
+  const showDefaults =
+    whole || matchesQuery(query, 'defaults', 'font size', 'font colour');
+  if (searching && roles.length === 0 && !showDefaults) return null;
   return (
     <EditorSection
       title="Typography"
       hint="Two families; every style uses one or names its own face."
+      forceOpen={forceOpen}
     >
-      <div className="flex flex-col gap-2">
-        {PPTX_FONT_ROLES.map((role) => (
-          <PptxFamilyRow
-            key={role}
-            role={role}
-            family={asString(getAt(theme, ['fonts', role]))}
-          />
-        ))}
-      </div>
-      <PptxDefaults theme={theme} />
+      {roles.length > 0 && (
+        <div className="flex flex-col gap-2">
+          {roles.map((role) => (
+            <PptxFamilyRow
+              key={role}
+              role={role}
+              family={asString(getAt(theme, ['fonts', role]))}
+            />
+          ))}
+        </div>
+      )}
+      {showDefaults && <PptxDefaults theme={theme} />}
     </EditorSection>
   );
 }

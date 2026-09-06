@@ -133,19 +133,26 @@ export function EditorSection({
   hint,
   actions,
   defaultOpen = true,
+  forceOpen,
   children,
 }: {
   title: string;
   hint?: React.ReactNode;
   actions?: React.ReactNode;
   defaultOpen?: boolean;
+  /** Held open regardless of the disclosure — while a search is filtering. */
+  forceOpen?: boolean;
   children: React.ReactNode;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [toggled, setOpen] = useState(defaultOpen);
+  const open = forceOpen ?? toggled;
   return (
     // The rule divides one section from the one above it; the first has the
     // pane's own header there instead, and two hairlines is one too many.
-    <section className="border-t border-border/60 pt-2 first:border-t-0">
+    <section
+      className="border-t border-border/60 pt-2 first:border-t-0"
+      data-crumb={title}
+    >
       <div className="flex h-7 items-center gap-1.5">
         <button
           type="button"
