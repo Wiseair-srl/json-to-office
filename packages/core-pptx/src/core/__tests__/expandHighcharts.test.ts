@@ -171,37 +171,59 @@ describe('expandHighchartsComponents', () => {
   it('uses custom serverUrl prop', async () => {
     await expand({
       options: CHART_600x400,
-      serverUrl: 'http://custom-server:9999',
+      serverUrl: 'http://custom-server.internal:9999',
     });
 
     expect(mockFetch).toHaveBeenCalledWith(
-      'http://custom-server:9999/export',
+      'http://custom-server.internal:9999/export',
       expect.any(Object)
     );
   });
 
   it('uses services config serverUrl', async () => {
     await expand({ options: CHART_600x400 }, EMPTY_THEME, {
-      serverUrl: 'http://services-server:5555',
+      serverUrl: 'http://services-server.internal:5555',
     });
 
     expect(mockFetch).toHaveBeenCalledWith(
-      'http://services-server:5555/export',
+      'http://services-server.internal:5555/export',
       expect.any(Object)
     );
   });
 
   it('prioritizes per-component serverUrl over services config', async () => {
     await expand(
-      { options: CHART_600x400, serverUrl: 'http://prop-server:7777' },
+      { options: CHART_600x400, serverUrl: 'http://prop-server.internal:7777' },
       EMPTY_THEME,
-      { serverUrl: 'http://services-server:5555' }
+      { serverUrl: 'http://services-server.internal:5555' }
     );
 
     expect(mockFetch).toHaveBeenCalledWith(
-      'http://prop-server:7777/export',
+      'http://prop-server.internal:7777/export',
       expect.any(Object)
     );
+  });
+
+  it('refuses a public export server unless allowRemote is set, then warns', async () => {
+    await expect(
+      expand({
+        options: CHART_600x400,
+        serverUrl: 'https://export.highcharts.com',
+      })
+    ).rejects.toThrow(/export\.highcharts\.com.*allowRemote/s);
+    expect(mockFetch).not.toHaveBeenCalled();
+    const { warnings } = await expand({ options: CHART_600x400 }, EMPTY_THEME, {
+      serverUrl: 'https://charts.example.com',
+      allowRemote: true,
+    });
+    expect(exportCall().url).toBe('https://charts.example.com/export');
+    expect(warnings).toEqual([
+      expect.objectContaining({
+        code: 'W_HIGHCHARTS_REMOTE_EXPORT',
+        component: 'highcharts',
+        message: expect.stringContaining('https://charts.example.com'),
+      }),
+    ]);
   });
 
   it('falls back to the local export server when nothing configures a URL', async () => {

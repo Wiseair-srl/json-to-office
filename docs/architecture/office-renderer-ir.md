@@ -933,3 +933,7 @@ The four report corpus goldens (`key-takeaways-*`, `report-chrome-*`) now use in
 ### Report data blocks (#336)
 
 Two corpus cases are added, `blocks/report-data-consulting` and `blocks/report-data-fallback`, covering `kpi-row`, `callout` and `data-table` from the playground report on the house theme and on `minimal`. No existing golden moves: the evaluator gained operands on `$if`/`$each`/`$count` and maps a repeated element to its authored item, neither of which changes what an existing definition emits.
+
+### Figures and footnotes (#337)
+
+Two corpus cases are added, `blocks/figures-consulting` and `blocks/figures-fallback`: numbered `figure` captions over `source-line`s and the `footnotes` list, on the house theme and on `minimal`. No existing golden moves. The `{SEQ:name}` placeholder is new syntax — a `SEQ name \* ARABIC` field written by both renderers with the compiler's count as its cached result (docxjs as a split complex field, office-open as `w:fldSimple`) — so no document that never used it changes. `chart-figure` has no golden: a `highcharts` chart needs the export server and a native `chart` the office-open renderer, and the corpus runs one service-free pipeline.

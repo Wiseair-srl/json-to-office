@@ -15,8 +15,11 @@ import { resolveServiceUrl, postJsonToService } from '../utils/serviceClient';
 
 // Import only the types we actually use from shared package
 import type { HighchartsProps } from '@json-to-office/shared-docx';
+import type { GenerationWarning } from '@json-to-office/shared';
 import {
   chartFamilyResolver,
+  remoteExportNotice,
+  REMOTE_EXPORT_WARNING,
   chartPointsPerPixel,
   POINTS_PER_PIXEL_96DPI,
   withChartFontFaceCss,
@@ -43,9 +46,29 @@ const DEFAULT_EXPORT_SERVER_URL = 'http://localhost:7801';
 /**
  * Generate chart using Highcharts Export Server
  */
+/**
+ * Refuse a public export server unless the caller opted in, and say so when
+ * it did: where the request goes is part of the document's confidentiality.
+ */
+export function assertExportServerAllowed(
+  serverUrl: string,
+  servicesConfig: HighchartsServiceConfig | undefined,
+  warnings: GenerationWarning[] | undefined
+): void {
+  const notice = remoteExportNotice(serverUrl, servicesConfig?.allowRemote);
+  if (notice)
+    warnings?.push({
+      component: 'highcharts',
+      severity: 'warning',
+      message: notice,
+      context: { code: REMOTE_EXPORT_WARNING, serverUrl },
+    });
+}
+
 async function generateChart(
   config: HighchartsProps,
-  servicesConfig?: HighchartsServiceConfig
+  servicesConfig?: HighchartsServiceConfig,
+  warnings?: GenerationWarning[]
 ): Promise<ChartGenerationResult> {
   // Only run in Node.js environments
   if (!isNodeEnvironment()) {
@@ -60,6 +83,7 @@ async function generateChart(
     servicesConfig?.serverUrl,
     DEFAULT_EXPORT_SERVER_URL
   );
+  assertExportServerAllowed(serverUrl, servicesConfig, warnings);
 
   const requestBody: Record<string, unknown> = {
     infile: config.options,
@@ -271,14 +295,15 @@ export async function renderChartToImageProps(
   props: HighchartsProps,
   theme: ThemeConfig,
   servicesConfig?: HighchartsServiceConfig,
-  chartFonts?: readonly RasterizeFontFace[]
+  chartFonts?: readonly RasterizeFontFace[],
+  warnings?: GenerationWarning[]
 ): Promise<Record<string, unknown>> {
   const config = withChartFontFaces(
     withThemeTypography(withThemeColors(props, theme), theme),
     theme,
     chartFonts
   );
-  const chart = await generateChart(config, servicesConfig);
+  const chart = await generateChart(config, servicesConfig, warnings);
 
   const hasConfigDimensions =
     config.width !== undefined || config.height !== undefined;

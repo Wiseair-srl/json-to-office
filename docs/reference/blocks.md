@@ -105,7 +105,7 @@ Bindings use JSON Pointers, including `~0`/`~1` escaping. Directive objects acce
 | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `{ "$slot": "/title", "default": "..." }`                  | Slot value; optional fallback if missing. For a component slot, `props: { ... }` merges beneath the slot value's own props: placement and styling defaults live here, and the slot content overrides styling but never placement.                         |
 | `{ "$theme": "/styles/label/size", "default": 10 }`        | Resolved theme token; missing token without fallback is an error.                                                                                                                                                                                         |
-| `{ "$context": "/document/title" }`                        | General engine context: document metadata, page width/height in twips, current section tracker in chrome.                                                                                                                                                 |
+| `{ "$context": "/document/title" }`                        | General engine context: document metadata, page width/height in twips, current section tracker in chrome, and `/sources` — every distinct `source`-role slot value in the document, in order.                                                             |
 | `{ "$if": "/source", "then": [...], "else": [...] }`       | Select by presence; selected sequences splice into the surrounding sequence. `else` is optional.                                                                                                                                                          |
 | `{ "$each": "/items", "template": { ... } }`               | Repeat one template value per item. `$item` binds the current item. Use a `group` for multiple flow children. A repeated element maps back to the item that produced it.                                                                                  |
 | `{ "$item": "/label" }` or `{ "$item": "" }`               | Current repeated item field, or the whole item; optional `default`.                                                                                                                                                                                       |
@@ -122,7 +122,7 @@ A DOCX definition may declare `section: { tracker?, header?, footer?, pageBreak?
 
 The engine resolves local trackers before chrome. `scope: "following"` carries the declared header/footer effect to later sections; default scope is local. Header/footer bindings see the receiving section’s page dimensions and `/section/tracker`, while retaining the declaring invocation’s slots. Last local tracker/chrome declaration wins. Explicit section `header`, `footer` and `pageBreak` take precedence. Chrome defaults to a section page break; explicit `false` remains respected. Existing `{PAGE}` / `{NUMPAGES}` paragraph fields stay native Word fields.
 
-The playground demonstrates `cover`, `key-takeaways`, `section-opener`, `running-head`, `kpi-row`, `callout`, `data-table` and the `source-line` the last two invoke. These are names in that document, not registered engine components. General document operations remain engine code; visual compositions remain JSON.
+The playground demonstrates `cover`, `key-takeaways`, `section-opener`, `running-head`, `kpi-row`, `callout`, `data-table`, `chart-figure`, `figure`, `footnotes` and the `source-line` the data and figure blocks invoke. These are names in that document, not registered engine components. General document operations remain engine code; visual compositions remain JSON.
 
 ### The report blocks
 
@@ -137,12 +137,23 @@ Every definition in `client-report-blocks.docx.json` binds its sizes and colours
 | `kpi-row`        | items 2–4 of value, unit, label, delta, trend; source                                                     | Equal columns of `statistic`, the delta and its glyph beside the figure, a sourced hairline that collapses with the source                                                                                                                                                                |
 | `callout`        | label (default "Note"), text ≤ 60 words                                                                   | One hairline down the left in the theme rule colour, no fill; the label role over body text                                                                                                                                                                                               |
 | `data-table`     | title, labelHeader, labels 1–24, columns 1–6 of header, cells 1–24, numeric (default true); notes, source | A label column, then data columns right-aligned header and cells; the row bound keeps the table on one page with its header; notes and source through the shared `source-line` block. Rounding stays the author's, and `W_QUALITY_TABLE_MIXED_DECIMALS` reports a slip at the column slot |
+| `chart-figure`   | chart (component: `highcharts`, or `chart` on office-open), caption, takeaway, source (required)          | The chart as given; `**Figure {SEQ:figure}.** caption` in the label role; the takeaway beneath in the quote role; the source through `source-line`. The block's `takeaway` and `source` slots are what `W_QUALITY_CHART_ANNOTATION` reads, so a chart placed here is annotated by them    |
+| `figure`         | image (component: `image` or `visual`), caption, source                                                   | The same numbered caption over the same `figure` sequence, so figures and charts number together; source through `source-line`                                                                                                                                                            |
+| `footnotes`      | title (default "Notes and sources")                                                                       | Nothing unless the document cites a source; otherwise a hairline, the title in the label role and a numbered list of every distinct `source`-role slot value in document order, from the engine's `/sources` context                                                                      |
 
 ![kpi-row on consulting](/blocks/kpi-row-consulting.png)
 
 ![callout on consulting](/blocks/callout-consulting.png)
 
 ![data-table on consulting](/blocks/data-table-consulting.png)
+
+![chart-figure on consulting](/blocks/chart-figure-consulting.png)
+
+![figure on consulting](/blocks/figure-consulting.png)
+
+![footnotes on consulting](/blocks/footnotes-consulting.png)
+
+Two engine capabilities the figure blocks compose rather than implement. `{SEQ:name}` in any paragraph text is a Word `SEQ` field the compiler also counts, so `Figure {SEQ:figure}.` reads 1, 2, 3 in document order in Word, in headless LibreOffice and in the preview PDF alike (see [shared text features](/reference/docx/components#shared-text-features)). `/sources` in a DOCX block context is the list of every distinct `source`-role slot value across the document's invocations, in order; `{ "$each": { "$context": "/sources" } }` walks it, and each item maps back to the slot it was written in.
 
 Word draws figures with the face's own digits: Arial, the house heading face a `statistic` figure is set in, has lining tabular figures, so a KPI row's values align without a font feature. The document model does not yet expose OpenType number spacing; a theme that sets a proportional-figure face for `stat` would not get tabular figures from this block.
 

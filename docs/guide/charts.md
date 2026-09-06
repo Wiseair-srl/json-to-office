@@ -164,6 +164,20 @@ pnpm dlx @json-to-office/jto pptx generate report.pptx.json -o report.pptx
 The export server uses Puppeteer/Chromium under the hood, so the first run downloads a browser. If a document with `highcharts` components fails with a connection error, the message will remind you of the command above.
 :::
 
+## What leaves the process
+
+Nothing is drawn locally: json-to-office POSTs one JSON body per `highcharts` component to the export server's `/export` endpoint and embeds the PNG it gets back. That body is:
+
+| Field                  | Contents                                                                                                                                                                                                                    |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `infile`               | The complete `options` object as authored — every series with every data point, category labels, titles, axis titles, tooltips — plus the theme palette written into `colors` and the theme typography into the text styles |
+| `resources`            | Your `resources` prop, with the registered non-safe theme families inlined as `@font-face` CSS (the font bytes, base64) ahead of it                                                                                         |
+| `type`, `b64`, `scale` | Export format (`png`, base64) and the raster scale                                                                                                                                                                          |
+
+Nothing else about the document goes: not its text, its other components, its metadata or its theme file. A `chart` (native, office-open) or a `visual` sends nothing anywhere.
+
+Because the body carries the data, **where it goes is opt-in**. An export server the address itself proves private — `localhost`, a loopback, RFC 1918 or link-local address, a unique-local IPv6 address, or a `.local`, `.internal` or `.home.arpa` name — needs nothing. A hostname that DNS decides (`charts`, `charts.corp`) is not guessed at: it takes the same switch as a public one. Any other URL is refused at generation time until you set `services.highcharts.allowRemote: true` (CLI, playground and MCP: `HIGHCHARTS_ALLOW_REMOTE=1`), and once allowed every generation reports `W_HIGHCHARTS_REMOTE_EXPORT` naming the URL that received the chart data — in the generation warnings, and as a warning diagnostic from `jto_generate`. A server that is down is a failed generation, not a skipped figure: the document is not produced without its chart.
+
 ## Pointing at a deployed server
 
 For CI or production you'll usually run the export server as a service — the project's own [render server](/guide/render-server) bundles a Highcharts Export Server behind an `/export` endpoint, ready to deploy.
@@ -198,6 +212,7 @@ The [CLI](/guide/cli) and [playground](/guide/playground) read the server URL fr
 
 ```bash
 export HIGHCHARTS_SERVER_URL=https://charts.example.com
+export HIGHCHARTS_ALLOW_REMOTE=1   # a public hostname: say so, or generation refuses it
 pnpm dlx @json-to-office/jto pptx generate report.pptx.json -o report.pptx
 ```
 

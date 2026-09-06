@@ -236,6 +236,12 @@ interface CompileContext {
    * before the component had styles at all.
    */
   usesStatistic: boolean;
+  /**
+   * Running count per `{SEQ:name}` sequence, in compile order — the cached
+   * value a reader that never recomputes fields (headless LibreOffice, the
+   * preview PDF) shows for a figure or table number.
+   */
+  sequences: Map<string, number>;
   /** Numbering definitions, in the order the lists that need them appear. */
   numbering: DocxIrNumbering[];
   numberingByReference: Map<string, DocxIrNumbering>;
@@ -311,6 +317,7 @@ export function compileDocument(
     nextBookmarkId: CONTENT_BOOKMARK_ID_BASE + 1,
     bookmarkNames: new Set(),
     usesStatistic: false,
+    sequences: new Map(),
     styleIds: new Set([
       ...styles.paragraph.map((s) => s.id),
       ...styles.character.map((s) => s.id),
@@ -2724,7 +2731,23 @@ function compileRuns(
 function placeholderResolver(
   ctx: CompileContext
 ): (name: string) => PlaceholderResolution | undefined {
-  return (name) => resolvePlaceholder(name, ctx.generatedAt);
+  return (name) => {
+    // `{SEQ:figure}`: Word's own numbering field, counted here as well so the
+    // document carries the number it would show — the same sequence name in
+    // every caption is what makes "Figure 3" the third figure.
+    const sequence = /^SEQ:([A-Za-z][\w-]*)$/i.exec(name);
+    if (sequence) {
+      const key = sequence[1];
+      const count = (ctx.sequences.get(key) ?? 0) + 1;
+      ctx.sequences.set(key, count);
+      return {
+        kind: 'field',
+        instruction: `SEQ ${key} \\* ARABIC`,
+        cachedText: String(count),
+      };
+    }
+    return resolvePlaceholder(name, ctx.generatedAt);
+  };
 }
 
 /** Bind the cross-reference resolver to one compilation and one path. */

@@ -18,6 +18,10 @@
  */
 
 export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
+  'blocks/figures-consulting':
+    'cbfb2035263638062ed541bbf4727429f387300e9ea7a2ace4fefacc9feabf91',
+  'blocks/figures-fallback':
+    '3204333f5e46ce832d08bc7180d0f610a80c94c940855d9239b4abced5dc90bf',
   'blocks/report-data-consulting':
     '953750d6efb63045bd97f9bc075af05eb2e2cdc17f62d2a09bc011da070e2f5c',
   'blocks/report-data-fallback':

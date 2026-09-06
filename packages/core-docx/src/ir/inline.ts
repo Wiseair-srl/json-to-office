@@ -293,7 +293,7 @@ export function parseInline(
  * the token stays as the characters the author typed.
  */
 export type PlaceholderResolution =
-  | { kind: 'field'; instruction: string }
+  | { kind: 'field'; instruction: string; cachedText?: string }
   | { kind: 'text'; text: string };
 
 /**
@@ -355,6 +355,9 @@ function parsePlaceholders(
         out.push({
           kind: 'field',
           instruction: resolved.instruction,
+          ...(resolved.cachedText !== undefined && {
+            cachedText: resolved.cachedText,
+          }),
           ...(formatting ? { formatting } : {}),
         });
       }

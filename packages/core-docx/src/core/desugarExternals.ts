@@ -18,6 +18,7 @@ import {
   DEFAULT_VISUAL_DPI,
   type RasterizeFontFace,
   type ServicesConfig,
+  type GenerationWarning,
 } from '@json-to-office/shared';
 import {
   isNativeVisualProps,
@@ -46,6 +47,8 @@ export interface DesugarExternalsOptions {
   visualFonts?: readonly RasterizeFontFace[];
   /** Font faces a chart's export server is handed as inline `@font-face`. */
   chartFonts?: readonly RasterizeFontFace[];
+  /** Where a chart posted to a remote export server is reported. */
+  warnings?: GenerationWarning[];
 }
 
 /**
@@ -98,7 +101,8 @@ export async function desugarExternals<T>(
           node.props as HighchartsProps,
           options.theme,
           options.services?.highcharts,
-          options.chartFonts
+          options.chartFonts,
+          options.warnings
         ),
       });
     }

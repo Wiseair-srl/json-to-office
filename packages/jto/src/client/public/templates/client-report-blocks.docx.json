@@ -1046,6 +1046,263 @@
             }
           }
         ]
+      },
+      "figure-caption": {
+        "description": "The numbered caption under a figure: **Figure N.** and the text, N being a Word SEQ field over the figure sequence. chart-figure and figure invoke it, so charts and images number together.",
+        "slots": {
+          "text": {
+            "type": "string",
+            "required": true,
+            "oneLine": true,
+            "maxWords": 20
+          }
+        },
+        "body": [
+          {
+            "name": "paragraph",
+            "props": {
+              "text": {
+                "$join": [
+                  "**Figure {SEQ:figure}.** ",
+                  {
+                    "$slot": "/text"
+                  }
+                ]
+              },
+              "font": {
+                "family": {
+                  "$theme": "/fonts/body/family",
+                  "default": "Calibri"
+                },
+                "size": {
+                  "$theme": "/styles/label/size",
+                  "default": 9
+                },
+                "bold": false,
+                "color": {
+                  "$theme": "/styles/label/color",
+                  "default": "textPrimary"
+                }
+              },
+              "spacing": {
+                "before": 4,
+                "after": 2
+              },
+              "keepNext": true
+            }
+          }
+        ]
+      },
+      "chart-figure": {
+        "description": "A numbered, sourced chart: the chart itself (highcharts through the export server, or a native chart on the office-open renderer), a caption that says what it shows, an optional takeaway beneath, and the source line the report cites. The source is required; the figure number is a Word SEQ field.",
+        "slots": {
+          "chart": {
+            "type": "component",
+            "required": true,
+            "description": "A highcharts or chart component. Put the unit in the value-axis title: Revenue (€m)."
+          },
+          "caption": {
+            "type": "string",
+            "required": true,
+            "oneLine": true,
+            "maxWords": 20,
+            "description": "What the chart shows, as a statement: Revenue by quarter, 2026."
+          },
+          "takeaway": {
+            "type": "string",
+            "maxWords": 30,
+            "role": "takeaway",
+            "description": "The one sentence the reader should leave with."
+          },
+          "source": {
+            "type": "string",
+            "required": true,
+            "maxWords": 20,
+            "role": "source"
+          }
+        },
+        "body": [
+          {
+            "$slot": "/chart"
+          },
+          {
+            "name": "block",
+            "props": {
+              "ref": "figure-caption",
+              "slots": {
+                "text": {
+                  "$slot": "/caption"
+                }
+              }
+            }
+          },
+          {
+            "$if": "/takeaway",
+            "then": {
+              "name": "paragraph",
+              "props": {
+                "text": {
+                  "$slot": "/takeaway"
+                },
+                "font": {
+                  "family": {
+                    "$theme": "/fonts/body/family",
+                    "default": "Calibri"
+                  },
+                  "color": {
+                    "$theme": "/styles/quote/color",
+                    "default": "textSecondary"
+                  }
+                },
+                "spacing": {
+                  "before": 0,
+                  "after": 2
+                }
+              }
+            }
+          },
+          {
+            "$if": "/source",
+            "then": {
+              "name": "block",
+              "props": {
+                "ref": "source-line",
+                "slots": {
+                  "text": {
+                    "$slot": "/source"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "figure": {
+        "description": "A numbered image with a caption and an optional source line. The image keeps its own width and alt text; the figure number is a Word SEQ field shared with chart-figure.",
+        "slots": {
+          "image": {
+            "type": "component",
+            "required": true,
+            "description": "An image or visual component. Give it alt text and a width."
+          },
+          "caption": {
+            "type": "string",
+            "required": true,
+            "oneLine": true,
+            "maxWords": 20
+          },
+          "source": {
+            "type": "string",
+            "maxWords": 20,
+            "role": "source"
+          }
+        },
+        "body": [
+          {
+            "$slot": "/image"
+          },
+          {
+            "name": "block",
+            "props": {
+              "ref": "figure-caption",
+              "slots": {
+                "text": {
+                  "$slot": "/caption"
+                }
+              }
+            }
+          },
+          {
+            "$if": "/source",
+            "then": {
+              "name": "block",
+              "props": {
+                "ref": "source-line",
+                "slots": {
+                  "text": {
+                    "$slot": "/source"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "footnotes": {
+        "description": "Notes and sources: every distinct source-role slot value the document's block invocations carry, in order, as a numbered list under a label — the engine's /sources context. Emits nothing when no invocation cites a source.",
+        "slots": {
+          "title": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 6,
+            "default": "Notes and sources"
+          }
+        },
+        "body": [
+          {
+            "$if": {
+              "$context": "/sources"
+            },
+            "then": [
+              {
+                "name": "divider",
+                "props": {
+                  "thickness": 0.5,
+                  "color": {
+                    "$theme": "/palette/rule",
+                    "default": "borderPrimary"
+                  },
+                  "spacing": {
+                    "before": 12,
+                    "after": 4
+                  }
+                }
+              },
+              {
+                "name": "paragraph",
+                "props": {
+                  "text": {
+                    "$slot": "/title"
+                  },
+                  "font": {
+                    "family": {
+                      "$theme": "/fonts/body/family",
+                      "default": "Calibri"
+                    },
+                    "size": {
+                      "$theme": "/styles/label/size",
+                      "default": 9
+                    },
+                    "bold": true,
+                    "color": {
+                      "$theme": "/styles/label/color",
+                      "default": "textPrimary"
+                    }
+                  },
+                  "spacing": {
+                    "before": 0,
+                    "after": 4
+                  },
+                  "keepNext": true
+                }
+              },
+              {
+                "name": "list",
+                "props": {
+                  "format": "decimal",
+                  "items": {
+                    "$each": {
+                      "$context": "/sources"
+                    },
+                    "template": {
+                      "$item": ""
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
       }
     }
   },
@@ -1216,6 +1473,78 @@
           "name": "paragraph",
           "props": {
             "text": "The inherited running header uses this section’s tracker and page width. Page numbers are native Word fields."
+          }
+        },
+        {
+          "name": "block",
+          "props": {
+            "ref": "chart-figure",
+            "slots": {
+              "chart": {
+                "name": "highcharts",
+                "props": {
+                  "width": "100%",
+                  "options": {
+                    "chart": {
+                      "type": "column",
+                      "width": 900,
+                      "height": 460
+                    },
+                    "title": {
+                      "text": null
+                    },
+                    "xAxis": {
+                      "categories": ["Q1", "Q2", "Q3", "Q4"]
+                    },
+                    "yAxis": {
+                      "min": 0,
+                      "title": {
+                        "text": "Revenue (€m)"
+                      }
+                    },
+                    "legend": {
+                      "enabled": false
+                    },
+                    "series": [
+                      {
+                        "name": "Revenue",
+                        "data": [1.9, 2.4, 2.7, 3.1]
+                      }
+                    ],
+                    "credits": {
+                      "enabled": false
+                    }
+                  }
+                }
+              },
+              "caption": "Revenue by quarter, 2026",
+              "takeaway": "Each quarter outgrew the last as delivery stabilised; the fourth quarter alone matched the first half of 2025.",
+              "source": "Source: quarterly operating review, 2026."
+            }
+          }
+        },
+        {
+          "name": "block",
+          "props": {
+            "ref": "figure",
+            "slots": {
+              "image": {
+                "name": "image",
+                "props": {
+                  "path": "media/client-report-blocks/delivery-model.png",
+                  "width": "100%",
+                  "alt": "Four delivery stages in sequence: intake, weekly ownership, delivery and renewal; ownership and delivery are shaded as the stages that changed"
+                }
+              },
+              "caption": "The delivery model, with the two stages that changed this year",
+              "source": "Source: operating handbook, 2026 edition."
+            }
+          }
+        },
+        {
+          "name": "block",
+          "props": {
+            "ref": "footnotes"
           }
         }
       ]

@@ -97,12 +97,16 @@ export type EmitResources = ReadonlyMap<string, ImageRunFactory>;
 export type ImageRunFactory = (image: DocxIrImageRun) => ParagraphChild;
 
 /**
- * The page-number field instructions this adapter writes as a complex field.
+ * The page-number field instructions this adapter writes as a complex field;
+ * a counted `SEQ` field joins them below.
  *
  * Anything else is refused rather than approximated: the set is an allowlist,
  * not a lookup, so a new instruction has to be added and tested deliberately.
  */
 const PAGE_FIELDS: ReadonlySet<string> = new Set(['PAGE', 'NUMPAGES']);
+/** A `SEQ name \* ARABIC` field: the compiler counted it, so it has a result. */
+const isSequenceField = (instruction: string): boolean =>
+  /^SEQ [A-Za-z][\w-]* \\\* ARABIC$/.test(instruction);
 
 /**
  * One complex field, as one run per field character.
@@ -116,18 +120,19 @@ const PAGE_FIELDS: ReadonlySet<string> = new Set(['PAGE', 'NUMPAGES']);
  * runs that each carry `rPr` is what LibreOffice honours, and it is also the
  * shape Word itself writes.
  *
- * No cached result is written between `separate` and `end`. Nothing in this
- * pipeline paginates, so the only value we could put there is a fabricated
- * one — wrong on every page but the first in any reader that shows the cached
- * result rather than recomputing. An empty result is what docx.js already
- * emitted, and it is what both Word and LibreOffice recompute on their own.
- * A cached result is not the fix either way: the single-run shape stays wrong
- * in LibreOffice even with one present.
+ * A page field carries no cached result between `separate` and `end`. Nothing
+ * in this pipeline paginates, so the only value we could put there is a
+ * fabricated one — wrong on every page but the first in any reader that shows
+ * the cached result rather than recomputing. An empty result is what docx.js
+ * already emitted, and it is what both Word and LibreOffice recompute on
+ * their own. A sequence field is the exception: the compiler counted it, so
+ * its result is real and is written, in the same run properties.
  */
 function complexField(
   instruction: string,
   formatting: DocxIrRunFormatting | undefined,
-  leading: IRunOptions
+  leading: IRunOptions,
+  cachedText?: string
 ): ParagraphChild[] {
   const options = runOptions(formatting);
   const fieldChar = (
@@ -151,6 +156,11 @@ function complexField(
     fieldChar('begin', leading),
     new TextRun({ children: [instrText], ...options }),
     fieldChar('separate'),
+    // A sequence number is the one field this pipeline can compute, so its
+    // result is written: a reader that never updates fields shows the count.
+    ...(cachedText !== undefined
+      ? [new TextRun({ text: cachedText, ...options })]
+      : []),
     fieldChar('end'),
   ];
 }
@@ -297,13 +307,21 @@ export function inlineChildren(
           out.push(new SimpleField(child.instruction, child.cachedText));
           break;
         }
-        if (!PAGE_FIELDS.has(child.instruction)) {
+        if (
+          !PAGE_FIELDS.has(child.instruction) &&
+          !isSequenceField(child.instruction)
+        ) {
           throw new Error(
             `the docxjs renderer has no emitter for the field "${child.instruction}"`
           );
         }
         out.push(
-          ...complexField(child.instruction, child.formatting, breakOption())
+          ...complexField(
+            child.instruction,
+            child.formatting,
+            breakOption(),
+            child.cachedText
+          )
         );
         break;
       }

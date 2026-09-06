@@ -115,9 +115,12 @@ the URL it will actually use.
 an internal hostname — is the same posture at team scale, and takes the same
 setting with a different URL.
 
-**A hosted endpoint is an explicit decision**, not a default. Pointing
-`HIGHCHARTS_SERVER_URL` at a third-party service means every figure in every
-chart is transmitted to it. Before doing that for anything with a client's data
+**A hosted endpoint is an explicit decision**, not a default — and the server
+enforces it: a `HIGHCHARTS_SERVER_URL` outside this machine and its private
+networks is refused at generation time until `HIGHCHARTS_ALLOW_REMOTE=1` is set
+beside it, and once allowed every `jto_generate` that used it carries a
+`W_HIGHCHARTS_REMOTE_EXPORT` warning naming the URL. Pointing at a third-party
+service means every figure in every chart is transmitted to it. Before doing that for anything with a client's data
 in it, know: what the endpoint retains and for how long, whether requests are
 logged, whether the connection is TLS end to end, and who else can reach it. If
 you cannot answer those, run it locally — it is one command.

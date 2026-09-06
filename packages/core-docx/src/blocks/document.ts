@@ -8,8 +8,10 @@ import {
   toAuthoredBlockPointer,
   type BlockSectionEffect,
   type BlockEvaluatorOptions,
+  blockPointerKey,
+  blockSlotRoles,
 } from '@json-to-office/shared';
-export { blockSlotBudgets } from '@json-to-office/shared';
+export { blockSlotBudgets, blockSlotRoles } from '@json-to-office/shared';
 export type {
   BlockSlotBudget,
   BlockSourceMap,
@@ -27,11 +29,53 @@ import {
 type Rec = Record<string, unknown>;
 export const toAuthoredPointer = toAuthoredBlockPointer;
 
+/** One source line the document cites, and the slot it was written in. */
+export interface DocumentSourceLine {
+  text: string;
+  path: string;
+}
+
+/**
+ * Every `source`-role slot value in document order, once per distinct text —
+ * what a "Notes and sources" block lists. Read from the authored invocations
+ * and their definitions; a block nested inside another's body is not in the
+ * authored document and so is not counted twice. One walk per expansion:
+ * callers compute it once and hand it to every context they build.
+ */
+export function documentSourceLines(document: unknown): DocumentSourceLine[] {
+  if (!isBlockRecord(document)) return [];
+  const invocations: string[] = [];
+  const walk = (value: unknown, path: string): void => {
+    if (Array.isArray(value)) {
+      value.forEach((item, index) => walk(item, `${path}/${index}`));
+      return;
+    }
+    if (!isBlockRecord(value) || value.enabled === false) return;
+    if (value.name === 'block') invocations.push(path);
+    for (const [key, item] of Object.entries(value)) {
+      if (path === '/props' && key === 'blocks') continue;
+      walk(item, `${path}/${blockPointerKey(key)}`);
+    }
+  };
+  walk(document, '');
+  const seen = new Set<string>();
+  const lines: DocumentSourceLine[] = [];
+  for (const slot of blockSlotRoles(document, invocations)) {
+    if (slot.role !== 'source' || typeof slot.value !== 'string') continue;
+    const text = slot.value.trim();
+    if (text === '' || seen.has(text)) continue;
+    seen.add(text);
+    lines.push({ text, path: slot.path });
+  }
+  return lines;
+}
+
 /** General document state and page geometry. No report design is registered here. */
 export function docxBlockContext(
   document: unknown,
   theme: ThemeConfig,
-  path = ''
+  path: string,
+  sources: readonly DocumentSourceLine[]
 ): Rec {
   const index = /^\/children\/(\d+)/.exec(path)?.[1];
   const section =
@@ -69,19 +113,33 @@ export function docxBlockContext(
     document: blockValueAt(document, '/props/metadata') ?? {},
     page: { width, height },
     section: {},
+    sources: sources.map((line) => line.text),
+  };
+}
+
+/** Where each context value was authored, for findings that land on it. */
+export function docxBlockContextSources(
+  sources: readonly DocumentSourceLine[]
+): Record<string, string> {
+  return {
+    '/document': '/props/metadata',
+    ...Object.fromEntries(
+      sources.map((line, index) => [`/sources/${index}`, line.path])
+    ),
   };
 }
 
 export function createDocxBlockEvaluator(
   document: unknown,
   theme: ThemeConfig,
-  extra: Partial<BlockEvaluatorOptions> = {}
+  extra: Partial<BlockEvaluatorOptions> = {},
+  sources: readonly DocumentSourceLine[] = documentSourceLines(document)
 ): JsonBlockEvaluator {
   return new JsonBlockEvaluator(readBlockDefinitions(document), {
     format: 'docx',
     theme,
-    contextAt: (path) => docxBlockContext(document, theme, path),
-    contextSources: { '/document': '/props/metadata' },
+    contextAt: (path) => docxBlockContext(document, theme, path, sources),
+    contextSources: docxBlockContextSources(sources),
     measure: (axis, unit, context) =>
       Number(blockValueAt(context, `/page/${axis}`)) /
       (unit === 'twip' ? 1 : unit === 'in' ? 1440 : 20),
@@ -94,11 +152,22 @@ export function expandBlocks<T>(
   theme: ThemeConfig
 ): ExpandedBlocks<T> {
   const effects: BlockSectionEffect[] = [];
-  const evaluator = createDocxBlockEvaluator(document, theme, {
-    onSection: (effect) => effects.push(effect),
-  });
+  const sources = documentSourceLines(document);
+  const evaluator = createDocxBlockEvaluator(
+    document,
+    theme,
+    { onSection: (effect) => effects.push(effect) },
+    sources
+  );
   const expanded = evaluator.expand(document) as T;
-  return finishDocxBlocks(expanded, document, theme, evaluator, effects);
+  return finishDocxBlocks(
+    expanded,
+    document,
+    theme,
+    evaluator,
+    effects,
+    sources
+  );
 }
 
 function validateEffects(
@@ -139,6 +208,7 @@ function finishDocxBlocks<T>(
   theme: ThemeConfig,
   evaluator: JsonBlockEvaluator,
   effects: BlockSectionEffect[],
+  sources: readonly DocumentSourceLine[],
   validate = true
 ): ExpandedBlocks<T> {
   // Section effects are evaluated separately from flow so header content sees
@@ -189,11 +259,11 @@ function finishDocxBlocks<T>(
         const environment = {
           ...chrome.environment,
           context: {
-            ...docxBlockContext(document, theme, path),
+            ...docxBlockContext(document, theme, path, sources),
             section: { tracker },
           },
           contextSources: {
-            '/document': '/props/metadata',
+            ...docxBlockContextSources(sources),
             '/section/tracker': trackerSource,
           },
         };
@@ -249,10 +319,16 @@ export async function expandBlocksWithPlugins<T>(
   preserve: ReadonlySet<string> = new Set()
 ): Promise<ExpandedBlocks<T> & { preserved: T }> {
   const effects: BlockSectionEffect[] = [];
-  const evaluator = createDocxBlockEvaluator(document, theme, {
-    reservedNames: [...plugins],
-    onSection: (effect) => effects.push(effect),
-  });
+  const sources = documentSourceLines(document);
+  const evaluator = createDocxBlockEvaluator(
+    document,
+    theme,
+    {
+      reservedNames: [...plugins],
+      onSection: (effect) => effects.push(effect),
+    },
+    sources
+  );
   const walk = (value: unknown) =>
     composeBlocksWithPlugins(evaluator, value, {
       plugins,
@@ -266,6 +342,7 @@ export async function expandBlocksWithPlugins<T>(
     theme,
     evaluator,
     effects,
+    sources,
     false
   );
   // Inherited header/footer definitions can themselves contain registered

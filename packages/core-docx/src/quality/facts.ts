@@ -36,6 +36,7 @@ import {
 import { normalizeDocument } from '../json/normalizer';
 import {
   blockSlotBudgets,
+  blockSlotRoles,
   expandBlocks,
   toAuthoredPointer,
   type BlockSourceMap,
@@ -72,6 +73,11 @@ export interface DocxChartFact extends QualityFact, ChartInfoDesign {
   componentName: string;
   /** Theme tokens a palette fix can name, in series order. */
   paletteTokens: readonly string[];
+  /**
+   * Drawn by a block definition rather than written by the author: `path`
+   * names the invocation, which has no chart props a patch could set.
+   */
+  generated: boolean;
 }
 
 export interface DocxTableColumnFact extends TableColumnInfoDesign {
@@ -391,6 +397,7 @@ function chartFact(
     path,
     componentName: typeof node.name === 'string' ? node.name : '',
     paletteTokens,
+    generated: false,
   };
 
   if (node.name === 'highcharts') {
@@ -402,7 +409,11 @@ function chartFact(
       threeD: shape.threeD,
       seriesCount: shape.seriesCount,
       categoryCount: shape.categoryCount,
-      seriesColorsStated: shape.seriesColorsStated,
+      // A config that names no `colors` is painted in the theme's chart
+      // palette at render, so the series are the document's whenever the
+      // theme has a palette to give; only a theme with none leaves them to
+      // the export server's default.
+      seriesColorsStated: shape.seriesColorsStated || paletteTokens.length > 0,
       seriesColorsPath: `${path}/props/options`,
       ...(shape.valueAxisMin !== undefined && {
         valueAxisMin: shape.valueAxisMin,
@@ -968,6 +979,18 @@ export function prepareDocxQualityDocument(
     };
   };
 
+  // Invocations whose takeaway or source slot is filled: a chart they place
+  // is annotated by them, whatever its own caption says.
+  const annotatedInvocations = new Set(
+    blockSlotRoles(themed.document, expanded.blocks)
+      .filter(
+        (slot) =>
+          (slot.role === 'takeaway' || slot.role === 'source') &&
+          typeof slot.value === 'string' &&
+          slot.value.trim() !== ''
+      )
+      .map((slot) => slot.invocation)
+  );
   for (const budget of blockSlotBudgets(themed.document, expanded.blocks)) {
     addFact({
       id: `docx:block-slot:${budget.path}`,
@@ -1108,7 +1131,37 @@ export function prepareDocxQualityDocument(
 
     if (node.name === 'chart' || node.name === 'highcharts') {
       const fact = chartFact(node, props, path, paletteTokens);
-      if (fact) addFact(fact);
+      if (fact) {
+        // A chart a block placed states its takeaway and source in the
+        // block's role slots, beside the chart rather than inside it.
+        const authored = authoredPath(path);
+        // The innermost invocation the chart sits in: a block placed inside
+        // another block's slot is the one whose slots describe the chart.
+        const invocation = expanded.blocks
+          .filter(
+            (pointer) =>
+              authored === pointer || authored.startsWith(`${pointer}/`)
+          )
+          .sort((a, b) => b.length - a.length)[0];
+        const annotated =
+          invocation !== undefined && annotatedInvocations.has(invocation);
+        // `addFact` maps the fact's own path; the chart's nested pointers
+        // must land on what the author wrote too.
+        addFact({
+          ...fact,
+          generated: !['chart', 'highcharts'].includes(
+            String(asRecord(nodeAtPointer(themed.document, authored))?.name)
+          ),
+          seriesColorsPath: authoredPath(fact.seriesColorsPath),
+          ...(fact.annotation && {
+            annotation: {
+              ...fact.annotation,
+              path: authoredPath(fact.annotation.path),
+              stated: fact.annotation.stated || annotated,
+            },
+          }),
+        });
+      }
     }
 
     if (node.name === 'paragraph' || node.name === 'text-box') {

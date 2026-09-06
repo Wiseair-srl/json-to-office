@@ -741,7 +741,7 @@ export const docxChartRule: QualityRule<DocxQualityModel, DocxQualityFact> = {
 function seriesColorFix(
   fact: DocxChartFact
 ): readonly JsonPatchOperation[] | undefined {
-  if (fact.componentName !== 'chart') return undefined;
+  if (fact.componentName !== 'chart' || fact.generated) return undefined;
   if (fact.seriesCount < 1 || fact.paletteTokens.length === 0) return undefined;
   const tokens = Array.from(
     { length: fact.seriesCount },

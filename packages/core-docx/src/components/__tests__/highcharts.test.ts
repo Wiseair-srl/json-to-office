@@ -49,6 +49,75 @@ describe('components/highcharts', { timeout: 30000 }, () => {
     vi.resetModules();
   });
 
+  describe('where the chart data goes', () => {
+    const chart = {
+      options: {
+        chart: { width: 600, height: 400 },
+        series: [{ data: [1, 2, 3] }],
+      },
+    };
+
+    it('posts to the local export server when nothing configures one', async () => {
+      await renderChartToImageProps(chart as never, createMockTheme());
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://localhost:7801/export',
+        expect.any(Object)
+      );
+    });
+
+    it.each(['http://10.0.0.5:7801', 'http://charts.internal'])(
+      'treats %s as private and posts without opting in',
+      async (url) => {
+        await renderChartToImageProps(
+          { ...chart, serverUrl: url } as never,
+          createMockTheme()
+        );
+        expect(mockFetch).toHaveBeenCalledWith(
+          `${url}/export`,
+          expect.any(Object)
+        );
+      }
+    );
+
+    it('refuses a public export server, naming the switch, before any data leaves', async () => {
+      await expect(
+        renderChartToImageProps(
+          { ...chart, serverUrl: 'https://export.highcharts.com' } as never,
+          createMockTheme()
+        )
+      ).rejects.toThrow(
+        /export\.highcharts\.com.*allowRemote.*HIGHCHARTS_ALLOW_REMOTE/s
+      );
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('posts to a public server once allowed, and says so in the warnings', async () => {
+      const warnings: { message: string; context?: Record<string, unknown> }[] =
+        [];
+      await renderChartToImageProps(
+        chart as never,
+        createMockTheme(),
+        { serverUrl: 'https://charts.example.com', allowRemote: true },
+        undefined,
+        warnings
+      );
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://charts.example.com/export',
+        expect.any(Object)
+      );
+      expect(warnings).toEqual([
+        expect.objectContaining({
+          component: 'highcharts',
+          message: expect.stringContaining('https://charts.example.com'),
+          context: {
+            code: 'W_HIGHCHARTS_REMOTE_EXPORT',
+            serverUrl: 'https://charts.example.com',
+          },
+        }),
+      ]);
+    });
+  });
+
   describe('rendering a chart', () => {
     it('should render chart with basic configuration', async () => {
       const component = {
@@ -374,7 +443,7 @@ describe('components/highcharts', { timeout: 30000 }, () => {
             chart: { width: 600, height: 400 },
             series: [{ data: [1, 2, 3] }],
           },
-          serverUrl: 'http://custom-server:9999',
+          serverUrl: 'http://custom-server.internal:9999',
         },
       };
 
@@ -384,7 +453,7 @@ describe('components/highcharts', { timeout: 30000 }, () => {
       );
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://custom-server:9999/export',
+        'http://custom-server.internal:9999/export',
         expect.any(Object)
       );
     });
@@ -402,7 +471,7 @@ describe('components/highcharts', { timeout: 30000 }, () => {
 
       const context = {
         services: {
-          highcharts: { serverUrl: 'http://services-server:5555' },
+          highcharts: { serverUrl: 'http://services-server.internal:5555' },
         },
       } as any;
 
@@ -413,7 +482,7 @@ describe('components/highcharts', { timeout: 30000 }, () => {
       );
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://services-server:5555/export',
+        'http://services-server.internal:5555/export',
         expect.any(Object)
       );
     });
@@ -426,13 +495,13 @@ describe('components/highcharts', { timeout: 30000 }, () => {
             chart: { width: 600, height: 400 },
             series: [{ data: [1, 2, 3] }],
           },
-          serverUrl: 'http://prop-server:7777',
+          serverUrl: 'http://prop-server.internal:7777',
         },
       };
 
       const context = {
         services: {
-          highcharts: { serverUrl: 'http://services-server:5555' },
+          highcharts: { serverUrl: 'http://services-server.internal:5555' },
         },
       } as any;
 
@@ -443,7 +512,7 @@ describe('components/highcharts', { timeout: 30000 }, () => {
       );
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://prop-server:7777/export',
+        'http://prop-server.internal:7777/export',
         expect.any(Object)
       );
     });

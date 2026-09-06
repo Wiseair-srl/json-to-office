@@ -181,6 +181,11 @@ export * from './blocks';
 
 // Deep merge utilities
 export { mergeWithDefaults } from './utils/deepMerge';
+export {
+  isPrivateServiceUrl,
+  remoteExportNotice,
+  REMOTE_EXPORT_WARNING,
+} from './utils/serviceUrl';
 
 // Semver utilities
 export {
