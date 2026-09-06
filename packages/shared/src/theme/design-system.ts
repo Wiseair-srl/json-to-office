@@ -262,7 +262,8 @@ export const ROLE_SCALE_STEPS: Record<TypeRoleName, number> = {
   footer: -2,
   source: -2,
 };
-type Scale = Static<typeof ScaleSchema>;
+export type TypeScale = Static<typeof ScaleSchema>;
+type Scale = TypeScale;
 
 /**
  * `base × ratio^step`, snapped to the nearest baseline multiple and clamped to
@@ -274,6 +275,21 @@ function scaledSize(scale: Scale, step: number): number {
   const baseline = scale.baselinePt ?? 4;
   const exact = scale.base * (scale.ratio ?? 1.25) ** step;
   return Math.max(5, Math.min(200, Math.round(exact / baseline) * baseline));
+}
+
+/**
+ * Every size the scale reaches between `from` and `to` steps of the base,
+ * ascending and without duplicates: what "on the theme's type scale" means
+ * for a size an author wrote by hand. The default window spans the smallest
+ * role (`footer`, -2) to one step above `display` (4), so a cover title one
+ * step past the largest role still counts as on scale.
+ */
+export function typeScaleSizes(scale: Scale, from = -2, to = 5): number[] {
+  const sizes = new Set<number>();
+  for (let step = from; step <= to; step += 1) {
+    sizes.add(scaledSize(scale, step));
+  }
+  return [...sizes].sort((a, b) => a - b);
 }
 
 /** The palette minus its ordered chart array, which no scalar resolver reads. */

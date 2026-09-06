@@ -21,8 +21,10 @@ import type {
 } from '@json-to-office/shared';
 import { DEFAULT_DOCX_RENDERER_ID } from '@json-to-office/shared-docx';
 import {
+  designCanvas,
   designColors,
   resolveDesignColor,
+  typeScaleSizes,
   type BlockSlotRole,
 } from '@json-to-office/shared';
 import type { ComponentDefinition, ReportComponentDefinition } from '../types';
@@ -209,6 +211,28 @@ export interface DocxThemeFact extends QualityFact {
   /** Token name to `#RRGGBB`, for every palette entry that resolves. */
   paletteHexes: Readonly<Record<string, string>>;
   fontFamilies: readonly string[];
+  /**
+   * Every size the theme paints, ascending: each named style, each font role
+   * and, where the theme declares a type scale, every step of it. A size an
+   * author writes by hand is on the theme's scale when it is in this list.
+   */
+  typeScalePt: readonly number[];
+  /** Style key (`heading2`, `normal`, a `themeStyle`) to the size it paints. */
+  roleSizesPt: Readonly<Record<string, number>>;
+}
+
+/**
+ * One paragraph or heading with text, and the size it paints at. `role` is
+ * the style the size belongs to; `authored` says the size was written on the
+ * node rather than inherited; `generated` says a block compiled the node, so
+ * its pointer is not the author's to patch.
+ */
+export interface DocxTextSizeFact extends QualityFact {
+  kind: 'docx/text-size';
+  role: string;
+  fontSizePt: number;
+  authored: boolean;
+  generated: boolean;
 }
 
 /** A colour written as a literal rather than as a theme token. */
@@ -284,6 +308,7 @@ export type DocxQualityFact =
   | DocxPlaceholderFact
   | DocxBlockSlotFact
   | DocxThemeFact
+  | DocxTextSizeFact
   | DocxColorFact
   | DocxFontFact
   | DocxChartFact
@@ -1096,12 +1121,37 @@ export function prepareDocxQualityDocument(
     SERIES_COLOR_TOKENS.filter((token) => paletteHexes[token] !== undefined);
   const authoredPropsAt = (pointer: string): Rec | undefined =>
     asRecord(asRecord(nodeAtPointer(context.document, pointer))?.props);
+  const roleSizesPt: Record<string, number> = {};
+  for (const key of Object.keys(typography.styles)) {
+    const size = effectiveFontSize(
+      { name: 'paragraph' },
+      { themeStyle: key },
+      typography
+    );
+    if (size) roleSizesPt[key] = size.fontSizePt;
+  }
+  const scale =
+    resolved.theme.typography?.scale?.[
+      designCanvas('docx', resolved.theme.page?.size)
+    ];
+  const typeScalePt = [
+    ...new Set([
+      ...Object.values(roleSizesPt),
+      ...(['heading', 'body', 'mono', 'light'] as const).flatMap((role) => {
+        const size = resolveFontSize(resolved.theme, role);
+        return size === undefined ? [] : [size];
+      }),
+      ...(scale ? typeScaleSizes(scale) : []),
+    ]),
+  ].sort((a, b) => a - b);
   addFact({
     id: 'docx:theme',
     kind: 'docx/theme',
     path: '/props',
     themeName: context.themeName,
     paletteHexes,
+    typeScalePt,
+    roleSizesPt,
     // `heading` and `body` only. A theme also names `mono` and `light`, but
     // those paint nothing until a component asks for them — counting an
     // unused `Courier New` against a document's family budget would flag a
@@ -1255,6 +1305,18 @@ export function prepareDocxQualityDocument(
     if (node.name === 'paragraph' || node.name === 'heading') {
       const fact = lineBoxFact(node, props, path, typography, context.document);
       if (fact) addFact(fact);
+      const size = effectiveFontSize(node, props, typography);
+      if (size && typeof props.text === 'string' && props.text.trim() !== '') {
+        addFact({
+          id: `docx:text-size:${path}`,
+          kind: 'docx/text-size',
+          path,
+          role: styleKey(node, props),
+          fontSizePt: size.fontSizePt,
+          authored: size.authored,
+          generated: authoredPath(path) !== path,
+        });
+      }
     }
 
     if (node.name === 'image' || node.name === 'visual') {

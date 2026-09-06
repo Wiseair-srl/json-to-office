@@ -95,6 +95,15 @@ interface Fixture {
   document: Record<string, unknown>;
 }
 
+/** A one-section report on the house theme, judged by the profile it names. */
+function consultingReport(children: unknown[]): Record<string, unknown> {
+  return {
+    name: 'docx',
+    props: { theme: 'consulting', qualityProfile: 'client-report' },
+    children: [{ name: 'section', children }],
+  };
+}
+
 const FIXTURES: readonly Fixture[] = [
   {
     id: 'pptx chart without a palette',
@@ -208,6 +217,28 @@ const FIXTURES: readonly Fixture[] = [
         },
       ],
     },
+  },
+  {
+    id: 'docx paragraph at a size off the theme scale',
+    format: 'docx',
+    code: 'W_QUALITY_TYPE_OFF_SCALE',
+    document: consultingReport([
+      { name: 'paragraph', props: { text: 'Body.' } },
+      { name: 'paragraph', props: { text: 'Lead.', font: { size: 14 } } },
+    ]),
+  },
+  {
+    id: 'docx heading level painted at two sizes',
+    format: 'docx',
+    code: 'W_QUALITY_TYPE_ROLE_DRIFT',
+    document: consultingReport([
+      { name: 'heading', props: { text: 'One', level: 2 } },
+      { name: 'paragraph', props: { text: 'Body.' } },
+      {
+        name: 'heading',
+        props: { text: 'Two', level: 2, font: { size: 16 } },
+      },
+    ]),
   },
 ];
 
