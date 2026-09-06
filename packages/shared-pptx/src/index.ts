@@ -88,6 +88,7 @@ export {
 export {
   addPptxBlockAuthoringSchemas,
   dispatchPptxRootByRenderer,
+  pptxDocumentBlockTargets,
 } from './schemas/block-authoring';
 
 // Component Defaults

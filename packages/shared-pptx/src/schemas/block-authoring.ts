@@ -1,4 +1,8 @@
-import { createBlockAuthoringSchema } from '@json-to-office/shared';
+import {
+  createBlockAuthoringSchema,
+  unionBranches,
+  type DocumentBlockTarget,
+} from '@json-to-office/shared';
 import {
   DEFAULT_PPTX_RENDERER_ID,
   pptxComponentDefinitionName,
@@ -104,4 +108,37 @@ export function dispatchPptxRootByRenderer(schema: Schema): void {
       then: refs.get(DEFAULT_PPTX_RENDERER_ID),
     },
   ];
+}
+
+/**
+ * Where a document's own block definitions apply in the exported schema: one
+ * target per renderer, with a component slot completing against what a slide
+ * holds. That union is inlined in each slide branch rather than published as
+ * a definition, so it is hoisted here once per renderer and referenced.
+ */
+export function pptxDocumentBlockTargets(
+  schema: Schema
+): DocumentBlockTarget[] {
+  const definitions = schema.definitions ?? {};
+  const targets: DocumentBlockTarget[] = [];
+  for (const renderer of PPTX_RENDERER_IDS) {
+    const name = pptxComponentDefinitionName(renderer);
+    const definition = definitions[name];
+    if (!definition) continue;
+    const contentName = `PptxSlotContent_${renderer}`;
+    if (!definitions[contentName]) {
+      const slide = unionBranches(definition).find(
+        (branch: Schema) => branch.properties?.name?.const === 'slide'
+      ) as Schema | undefined;
+      const items = slide?.properties?.children?.items;
+      if (items) definitions[contentName] = JSON.parse(JSON.stringify(items));
+    }
+    targets.push({
+      name,
+      ...(definitions[contentName] && {
+        componentRef: { $ref: `#/definitions/${contentName}` },
+      }),
+    });
+  }
+  return targets;
 }
