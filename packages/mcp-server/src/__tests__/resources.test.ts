@@ -221,7 +221,7 @@ describe('discovery resources', () => {
       for (const rule of guide.rules) {
         expect(guide.markdown).toContain(`\`${rule.code}\``);
         expect(rule.description.length, rule.id).toBeGreaterThan(10);
-        expect(rule.enabledByDefault).toBeTypeOf('boolean');
+        expect(rule.defaultEnabled).toBeTypeOf('boolean');
       }
       for (const block of guide.blocks) {
         expect(guide.markdown).toContain(`\`${block.name}\``);
@@ -233,6 +233,12 @@ describe('discovery resources', () => {
     const docx = await readJson(RESOURCE_URIS.designGuide('docx'));
     expect(docx.blueprints.map((b: any) => b.id)).toContain('client-report');
     expect(docx.markdown).toContain('`client-report`');
+    // The two extension mechanisms and the three document-shaped things a
+    // reader could confuse: block, blueprint, template.
+    expect(docx.markdown).toMatch(/code plugins/i);
+    expect(docx.templates.length).toBeGreaterThan(0);
+    for (const template of docx.templates)
+      expect(docx.markdown).toContain(`\`${template.name}\``);
   });
 
   it('serves non-empty built-in theme values in ESM', async () => {

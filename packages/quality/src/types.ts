@@ -208,7 +208,7 @@ export interface QualityRule<
   readonly id: string;
   readonly code: QualityCode;
   /** One sentence on what the rule reports; the design guide prints it. */
-  readonly description: string;
+  readonly description?: string;
   readonly category: QualityCategory;
   readonly defaultSeverity: DiagnosticSeverity;
   readonly defaultCertainty: QualityCertainty;

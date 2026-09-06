@@ -1021,6 +1021,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
                       },
                       required: [
                         'name',
+                        'displayName',
                         'description',
                         'whenToUse',
                         'extended',

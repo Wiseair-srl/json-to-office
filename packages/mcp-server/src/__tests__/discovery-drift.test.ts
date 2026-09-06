@@ -521,6 +521,13 @@ describe('tools and resources describe the same surface', () => {
         'jto://guide/design',
         guide.blueprints.map((b: any) => b.id)
       );
+      expectSameNames(
+        `${format.name} guide templates`,
+        'jto_discover',
+        ((format as any).gallery ?? []).map((t: any) => t.name),
+        'jto://guide/design',
+        guide.templates.map((t: any) => t.name)
+      );
       // The markdown is rendered from the same arrays, never written apart.
       for (const rule of guide.rules) {
         expect(guide.markdown, rule.id).toContain(rule.description);

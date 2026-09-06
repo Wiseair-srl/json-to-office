@@ -266,7 +266,7 @@ rules run on.
 | `docx/required-chrome`   | `W_QUALITY_CHROME_MISSING`                                                                                                                                                  | warning; off unless a profile names `required` roles       | deterministic | A block slot with a role the profile requires — a takeaway, a source — left empty                   |
 | `docx/running-head`      | `W_QUALITY_CHROME_MISSING`                                                                                                                                                  | warning; off unless a profile names `required` parts       | deterministic | A section from `fromSection` on without the header, footer or page-number field the profile expects |
 | `docx/type-scale`        | `W_QUALITY_TYPE_OFF_SCALE`                                                                                                                                                  | warning; off unless a profile enables it                   | deterministic | An authored size the theme never paints; the fix snaps it to the nearest size on the theme's scale  |
-| `docx/size-count`        | `W_QUALITY_TYPE_SIZE_COUNT`                                                                                                                                                 | warning; off unless a profile enables it                   | deterministic | More distinct text sizes than `maximumSizes` (8), blocks included                                   |
+| `docx/size-count`        | `W_QUALITY_TYPE_SIZE_COUNT`                                                                                                                                                 | warning; off unless a profile enables it                   | deterministic | More distinct text sizes in the document than `maximumSizes` (8), blocks included; no fix           |
 | `docx/role-drift`        | `W_QUALITY_TYPE_ROLE_DRIFT`                                                                                                                                                 | warning; off unless a profile enables it                   | deterministic | A heading level or paragraph style painted at two sizes; the fix restores the theme's size          |
 
 The three consistency rules divide their evidence the way the whole system
@@ -275,7 +275,13 @@ does: the theme supplies the values and the profile supplies the requirement.
 styles, its font roles, every step of its declared type scale — so a custom
 theme is judged by its own list and a block's compiled paragraphs, whose sizes
 bind to those styles, are never reported. `docx/size-count` counts what
-reaches the page, blocks included, against a ceiling only a profile sets.
+reaches the page, blocks included, against a ceiling only a profile sets; it
+counts per document, because static analysis has no page model for flowed
+text, and it offers no fix, because which size to drop is a judgement.
+`docx/type-scale` yields to `docx/role-drift` on any pointer the latter
+reports, so one size never receives two different fixes, and it reports one
+finding per role and size whose patch snaps every place together, so a repair
+never leaves the role at two sizes.
 `docx/role-drift` groups paragraphs by the style they inherit — `heading2`,
 `normal`, a `themeStyle` — and reports an authored size that departs from the
 theme's size for that role while the role is painted at more than one size; a

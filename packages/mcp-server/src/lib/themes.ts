@@ -69,11 +69,12 @@ function bodySize(theme: Rec, format: FormatName): number {
   return typeof defaults === 'number' ? defaults : format === 'docx' ? 11 : 18;
 }
 
+const isStringEntry = (entry: [string, unknown]): entry is [string, string] =>
+  typeof entry[1] === 'string';
+
 function stringMap(value: unknown): Record<string, string> {
   return Object.fromEntries(
-    Object.entries(asRecord(value) ?? {}).filter(
-      (entry): entry is [string, string] => typeof entry[1] === 'string'
-    )
+    Object.entries(asRecord(value) ?? {}).filter(isStringEntry)
   );
 }
 
@@ -100,11 +101,7 @@ export function describeTheme(
   const description: ThemeDescription = {
     ...summary,
     fonts: { heading: family(fonts.heading), body: family(fonts.body) },
-    palette: Object.fromEntries(
-      Object.entries(palette).filter(
-        (entry): entry is [string, string] => typeof entry[1] === 'string'
-      )
-    ),
+    palette: Object.fromEntries(Object.entries(palette).filter(isStringEntry)),
   };
   if (!summary.extended) return description;
   const canvas = designCanvas(
@@ -136,22 +133,25 @@ export function describeTheme(
   return description;
 }
 
+async function builtinThemes(format: FormatName): Promise<Rec[]> {
+  const themes = (await loadCore(format))?.themes ?? {};
+  return Object.keys(themes)
+    .sort()
+    .map((name) => ({ ...themes[name], name }));
+}
+
 /** Every built-in theme of a format, summarised, by name. */
 export async function themeSummaries(
   format: FormatName
 ): Promise<ThemeSummary[]> {
-  const themes = (await loadCore(format))?.themes ?? {};
-  return Object.keys(themes)
-    .sort()
-    .map((name) => summarizeTheme({ ...themes[name], name }));
+  return (await builtinThemes(format)).map(summarizeTheme);
 }
 
 /** Every built-in theme of a format, described, by name. */
 export async function themeDescriptions(
   format: FormatName
 ): Promise<ThemeDescription[]> {
-  const themes = (await loadCore(format))?.themes ?? {};
-  return Object.keys(themes)
-    .sort()
-    .map((name) => describeTheme({ ...themes[name], name }, format));
+  return (await builtinThemes(format)).map((theme) =>
+    describeTheme(theme, format)
+  );
 }

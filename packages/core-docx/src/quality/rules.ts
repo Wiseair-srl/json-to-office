@@ -973,6 +973,43 @@ function textSizeFacts(
   );
 }
 
+/**
+ * The text-size facts `docx/role-drift` reports: authored, patchable, and
+ * away from the theme size of a role that is painted at more than one size.
+ * `docx/type-scale` leaves these alone so the two rules never offer two
+ * different sizes for one pointer.
+ */
+function roleDriftFacts(
+  facts: readonly DocxQualityFact[],
+  theme: DocxThemeFact | undefined
+): Map<DocxTextSizeFact, { expected: number; sizes: number[] }> {
+  const byRole = new Map<string, DocxTextSizeFact[]>();
+  for (const fact of textSizeFacts(facts)) {
+    byRole.set(fact.role, [...(byRole.get(fact.role) ?? []), fact]);
+  }
+  const drifting = new Map<
+    DocxTextSizeFact,
+    { expected: number; sizes: number[] }
+  >();
+  for (const [role, members] of byRole) {
+    const sizes = [...new Set(members.map((fact) => fact.fontSizePt))].sort(
+      (a, b) => a - b
+    );
+    if (sizes.length < 2) continue;
+    const expected = theme?.roleSizesPt[role];
+    if (expected === undefined) continue;
+    for (const fact of members) {
+      if (
+        fact.authored &&
+        !fact.generated &&
+        Math.abs(fact.fontSizePt - expected) > SIZE_TOLERANCE_PT
+      )
+        drifting.set(fact, { expected, sizes });
+    }
+  }
+  return drifting;
+}
+
 function nearestSize(
   size: number,
   scale: readonly number[]
@@ -1011,33 +1048,54 @@ export const docxTypeScaleRule: QualityRule<DocxQualityModel, DocxQualityFact> =
       const theme = themeFact(facts);
       const scale = theme?.typeScalePt ?? [];
       if (scale.length === 0) return [];
-      return textSizeFacts(facts)
-        .filter((fact) => fact.authored && !fact.generated)
-        .filter(
-          (fact) =>
-            !scale.some(
-              (size) => Math.abs(size - fact.fontSizePt) <= SIZE_TOLERANCE_PT
-            )
-        )
-        .map((fact) => {
-          const nearest = nearestSize(fact.fontSizePt, scale)!;
-          const sizePath = `${fact.path}/props/font/size`;
-          return {
-            path: sizePath,
-            message:
-              `${fact.fontSizePt}pt is not a size the ${theme!.themeName} theme paints; ` +
-              `the nearest on its scale is ${nearest}pt.`,
-            suggestion: `Use ${nearest}pt, or drop the size and let the "${fact.role}" style set it.`,
-            context: { role: fact.role, scale },
-            evidence: {
-              actual: fact.fontSizePt,
-              expected: nearest,
-              unit: 'pt',
-              values: { source: 'theme' },
-            },
-            fixes: [{ op: 'replace' as const, path: sizePath, value: nearest }],
-          };
-        });
+      const drifting = roleDriftFacts(facts, theme);
+      const offScale = textSizeFacts(facts).filter(
+        (fact) =>
+          fact.authored &&
+          !fact.generated &&
+          !drifting.has(fact) &&
+          !scale.some(
+            (size) => Math.abs(size - fact.fontSizePt) <= SIZE_TOLERANCE_PT
+          )
+      );
+      // One finding per role and size, patching every pointer together:
+      // snapping one paragraph of a consistently sized role on its own
+      // would leave the role at two sizes, and trade this finding for a
+      // role-drift one.
+      const groups = new Map<string, DocxTextSizeFact[]>();
+      for (const fact of offScale) {
+        const key = `${fact.role}@${fact.fontSizePt}`;
+        groups.set(key, [...(groups.get(key) ?? []), fact]);
+      }
+      return [...groups.values()].map((members) => {
+        const [first] = members;
+        const nearest = nearestSize(first.fontSizePt, scale)!;
+        const sizePaths = members.map((fact) => `${fact.path}/props/font/size`);
+        const count =
+          members.length === 1
+            ? ''
+            : ` (${members.length} places, patched together)`;
+        return {
+          path: sizePaths[0],
+          ...(sizePaths.length > 1 && { relatedPaths: sizePaths.slice(1) }),
+          message:
+            `${first.fontSizePt}pt is not a size the ${theme!.themeName} theme paints; ` +
+            `the nearest on its scale is ${nearest}pt${count}.`,
+          suggestion: `Use ${nearest}pt, or drop the size and let the "${first.role}" style set it.`,
+          context: { role: first.role, scale, paths: sizePaths },
+          evidence: {
+            actual: first.fontSizePt,
+            expected: nearest,
+            unit: 'pt',
+            values: { source: 'theme' },
+          },
+          fixes: sizePaths.map((path) => ({
+            op: 'replace' as const,
+            path,
+            value: nearest,
+          })),
+        };
+      });
     },
   };
 
@@ -1097,7 +1155,8 @@ export const docxSizeCountRule: QualityRule<DocxQualityModel, DocxQualityFact> =
  * at more than one size across the document. The theme's size for the role
  * is the expected value, and every authored departure from it is reported and
  * repaired to it. A role that is consistently overridden is not drift. Off
- * until a profile turns it on, for the same reason as `docx/type-scale`.
+ * until a profile turns it on, for the same reason as `docx/type-scale`,
+ * which yields to this rule on any pointer it reports.
  */
 export const docxRoleDriftRule: QualityRule<DocxQualityModel, DocxQualityFact> =
   {
@@ -1112,44 +1171,31 @@ export const docxRoleDriftRule: QualityRule<DocxQualityModel, DocxQualityFact> =
     defaultEnabled: false,
     evaluate: ({ facts }) => {
       const theme = themeFact(facts);
-      const byRole = new Map<string, DocxTextSizeFact[]>();
-      for (const fact of textSizeFacts(facts)) {
-        byRole.set(fact.role, [...(byRole.get(fact.role) ?? []), fact]);
-      }
       const findings: QualityRuleFinding[] = [];
-      for (const [role, members] of byRole) {
-        const sizes = new Set(members.map((fact) => fact.fontSizePt));
-        if (sizes.size < 2) continue;
-        const expected = theme?.roleSizesPt[role];
-        if (expected === undefined) continue;
-        const keeper = members.find((fact) => fact.fontSizePt === expected);
-        for (const fact of members) {
-          if (
-            !fact.authored ||
-            fact.generated ||
-            Math.abs(fact.fontSizePt - expected) <= SIZE_TOLERANCE_PT
-          )
-            continue;
-          const sizePath = `${fact.path}/props/font/size`;
-          findings.push({
-            path: sizePath,
-            ...(keeper && { relatedPaths: [keeper.path] }),
-            message:
-              `"${role}" is painted at ${fact.fontSizePt}pt here and at ` +
-              `${expected}pt elsewhere; one role, one size.`,
-            suggestion: `Drop the size so "${role}" paints at the theme's ${expected}pt.`,
-            context: { role, sizes: [...sizes].sort((a, b) => a - b) },
-            evidence: {
-              actual: fact.fontSizePt,
-              expected,
-              unit: 'pt',
-              values: { role, source: 'theme' },
-            },
-            fixes: [
-              { op: 'replace' as const, path: sizePath, value: expected },
-            ],
-          });
-        }
+      for (const [fact, { expected, sizes }] of roleDriftFacts(facts, theme)) {
+        const keeper = textSizeFacts(facts).find(
+          (member) =>
+            member.role === fact.role &&
+            Math.abs(member.fontSizePt - expected) <= SIZE_TOLERANCE_PT
+        );
+        const others = sizes.filter((size) => size !== fact.fontSizePt);
+        const sizePath = `${fact.path}/props/font/size`;
+        findings.push({
+          path: sizePath,
+          ...(keeper && { relatedPaths: [keeper.path] }),
+          message:
+            `"${fact.role}" is painted at ${fact.fontSizePt}pt here and at ` +
+            `${others.join('pt, ')}pt elsewhere; the theme sets it at ${expected}pt.`,
+          suggestion: `Drop the size so "${fact.role}" paints at the theme's ${expected}pt.`,
+          context: { role: fact.role, sizes },
+          evidence: {
+            actual: fact.fontSizePt,
+            expected,
+            unit: 'pt',
+            values: { role: fact.role, source: 'theme' },
+          },
+          fixes: [{ op: 'replace' as const, path: sizePath, value: expected }],
+        });
       }
       return findings;
     },

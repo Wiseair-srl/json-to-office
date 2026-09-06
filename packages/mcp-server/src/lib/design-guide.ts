@@ -22,6 +22,7 @@ import type { FormatName } from './adapters.js';
 import { loadCore } from './core.js';
 import { themeDescriptions, type ThemeDescription } from './themes.js';
 import { blockReferenceCatalog } from '../templates/blocks.js';
+import { galleryManifests } from '../templates/gallery.js';
 
 export interface GuideRule {
   id: string;
@@ -30,7 +31,7 @@ export interface GuideRule {
   category: QualityCategory;
   defaultSeverity: string;
   certainty: string;
-  enabledByDefault: boolean;
+  defaultEnabled: boolean;
   parameters?: Readonly<Record<string, unknown>>;
 }
 
@@ -57,6 +58,14 @@ export interface GuideBlueprint {
   profile: string;
 }
 
+export interface GuideTemplate {
+  name: string;
+  archetype: string;
+  whenToUse: string;
+  theme: string;
+  pages: number;
+}
+
 export interface DesignGuide {
   format: FormatName;
   generatedFrom: string[];
@@ -65,6 +74,8 @@ export interface DesignGuide {
   rules: GuideRule[];
   blocks: GuideBlock[];
   blueprints: GuideBlueprint[];
+  /** Whole designed documents, distinct from blocks and blueprints. */
+  templates: GuideTemplate[];
   /** The same data, rendered to read. */
   markdown: string;
 }
@@ -84,11 +95,11 @@ function guideRule(rule: QualityRule): GuideRule {
   return {
     id: rule.id,
     code: rule.code,
-    description: rule.description,
+    description: rule.description ?? '',
     category: rule.category,
     defaultSeverity: rule.defaultSeverity,
     certainty: rule.defaultCertainty,
-    enabledByDefault: rule.defaultEnabled ?? true,
+    defaultEnabled: rule.defaultEnabled ?? true,
     ...(rule.defaultParameters &&
       Object.keys(rule.defaultParameters).length > 0 && {
         parameters: rule.defaultParameters,
@@ -137,7 +148,7 @@ function describeParameters(
 
 function renderTheme(theme: ThemeDescription): string {
   const lines = [
-    `- \`${theme.name}\` — ${theme.displayName}. ${theme.description}.`,
+    `- \`${theme.name}\` — ${theme.displayName}. ${theme.description.replace(/\.$/, '')}.`,
     `  Use it for: ${theme.whenToUse}`,
     `  Type: ${theme.fonts.heading} headings, ${theme.fonts.body} body.`,
   ];
@@ -185,7 +196,7 @@ function renderRules(rules: GuideRule[]): string {
         .map(
           (rule) =>
             `- \`${rule.code}\` (${rule.id}; ${rule.defaultSeverity}, ${rule.certainty}${
-              rule.enabledByDefault ? '' : '; off until a profile enables it'
+              rule.defaultEnabled ? '' : '; off until a profile enables it'
             }${describeParameters(rule.parameters)}) — ${rule.description}`
         );
       return [`### ${category}`, ...entries].join('\n');
@@ -224,7 +235,7 @@ export function renderDesignGuide(
       '',
       '## Blocks',
       '',
-      'Reusable compositions defined in JSON. Copy a definition and its dependencies from `jto://blocks` into `props.blocks`, then invoke it by name; the theme styles every slot.',
+      'Two ways to extend the format: code plugins for programmable behaviour, registered explicitly as dependencies; and JSON blocks — reusable compositions with typed slots — for anything a document can say in data. The references below are extracted from complete playground templates: copy a definition and its dependencies from `jto://blocks` into `props.blocks`, then invoke it by name, and the theme styles every slot. A block a workspace defines itself carries the same metadata; read its `/props/blocks` with `jto_workspace_inspect`. A catalogue name is never a runtime global.',
       '',
       guide.blocks
         .map(
@@ -245,6 +256,21 @@ export function renderDesignGuide(
         .map(
           (blueprint) =>
             `- \`${blueprint.id}\` — ${blueprint.title}. ${blueprint.description} Use it for: ${blueprint.whenToUse} Theme \`${blueprint.theme}\`, profile \`${blueprint.profile}\`.`
+        )
+        .join('\n')
+    );
+  }
+  if (guide.templates.length) {
+    sections.push(
+      '',
+      '## Templates',
+      '',
+      'Whole designed documents bundled with the server, distinct from a block (one composition) and a blueprint (a plan to fill). Read one from `jto://templates/<name>`, and its thumbnail first.',
+      '',
+      guide.templates
+        .map(
+          (template) =>
+            `- \`${template.name}\` — ${template.archetype}, ${template.pages} pages on \`${template.theme}\`. ${template.whenToUse}`
         )
         .join('\n')
     );
@@ -277,6 +303,13 @@ export async function designGuide(format: FormatName): Promise<DesignGuide> {
   const blueprints = Object.values(core?.blueprints ?? {})
     .map(guideBlueprint)
     .sort((a, b) => a.id.localeCompare(b.id));
+  const templates = galleryManifests(format).map((manifest) => ({
+    name: manifest.name,
+    archetype: manifest.archetype,
+    whenToUse: manifest.whenToUse,
+    theme: manifest.theme,
+    pages: manifest.pages,
+  }));
   const body = {
     format,
     generatedFrom: [
@@ -285,12 +318,14 @@ export async function designGuide(format: FormatName): Promise<DesignGuide> {
       'the rule pack',
       'the block catalogue',
       ...(blueprints.length ? ['the blueprints'] : []),
+      'the template gallery',
     ],
     themes: await themeDescriptions(format),
     profiles,
     rules,
     blocks,
     blueprints,
+    templates,
   };
   return { ...body, markdown: renderDesignGuide(body) };
 }
