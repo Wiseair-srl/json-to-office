@@ -1,0 +1,107 @@
+/**
+ * Blueprints: document archetypes as data.
+ *
+ * A blueprint is a whole-document plan — the recommended theme, the quality
+ * profile that judges the result, the playground template whose block
+ * definitions it invokes, and one or more structural variants, each an ordered
+ * list of top-level children with every slot holding an explicit `{{…}}`
+ * scaffold marker. The marker's text is the guidance for that slot; nothing in
+ * a blueprint composes, styles or registers anything. Adding one is a JSON
+ * file in a registry directory, not code.
+ */
+import { Type, type Static } from '@sinclair/typebox';
+import { Value, type ValueError } from '@sinclair/typebox/value';
+
+export const BLUEPRINT_FORMATS = ['docx', 'pptx'] as const;
+export type BlueprintFormat = (typeof BLUEPRINT_FORMATS)[number];
+
+const Identifier = Type.String({
+  pattern: '^[a-z][a-z0-9]*(-[a-z0-9]+)*$',
+  description: 'Kebab-case identifier.',
+});
+
+export const BlueprintPagesSchema = Type.Object(
+  {
+    min: Type.Integer({ minimum: 1 }),
+    max: Type.Integer({ minimum: 1 }),
+  },
+  {
+    additionalProperties: false,
+    description:
+      'Expected length once filled: pages for a document, slides for a deck.',
+  }
+);
+
+export const BlueprintVariantSchema = Type.Object(
+  {
+    description: Type.String({ minLength: 1 }),
+    whenToUse: Type.String({ minLength: 1 }),
+    pages: BlueprintPagesSchema,
+    metadata: Type.Optional(
+      Type.Record(Type.String(), Type.String(), {
+        description:
+          'Document metadata the scaffold writes; a value may be a scaffold marker.',
+      })
+    ),
+    children: Type.Array(Type.Unknown(), {
+      minItems: 1,
+      description:
+        'The top-level children of the scaffolded document, in order: sections holding block invocations and ordinary components, every slot carrying a {{…}} marker whose text is the guidance for filling it.',
+    }),
+  },
+  { additionalProperties: false }
+);
+
+export const BlueprintSchema = Type.Object(
+  {
+    id: Identifier,
+    format: Type.Union(BLUEPRINT_FORMATS.map((f) => Type.Literal(f))),
+    title: Type.String({ minLength: 1 }),
+    description: Type.String({ minLength: 1 }),
+    whenToUse: Type.String({ minLength: 1 }),
+    theme: Type.String({
+      minLength: 1,
+      description:
+        'Recommended theme. Any theme renders the scaffold; this one is the archetype’s house look.',
+    }),
+    profile: Identifier,
+    definitions: Type.String({
+      minLength: 1,
+      description:
+        'The playground template whose props.blocks the variants invoke. The scaffold copies the definitions it needs, and their dependencies, into the document.',
+    }),
+    numbering: Type.Union([Type.Literal('none'), Type.Literal('sections')], {
+      description:
+        'Whether section openers carry numbers the reader cites (01, 02, …).',
+    }),
+    toc: Type.Boolean({
+      description: 'Whether the scaffold places a table of contents.',
+    }),
+    variants: Type.Record(Identifier, BlueprintVariantSchema, {
+      minProperties: 1,
+      description:
+        'Structural variants of the same archetype, so two documents from one brief do not look alike.',
+    }),
+  },
+  { additionalProperties: false, description: 'A document archetype as data.' }
+);
+
+export type Blueprint = Static<typeof BlueprintSchema>;
+export type BlueprintVariant = Static<typeof BlueprintVariantSchema>;
+
+export interface BlueprintIssue {
+  path: string;
+  message: string;
+}
+
+/** Schema errors for a candidate blueprint, empty when it conforms. */
+export function validateBlueprint(value: unknown): BlueprintIssue[] {
+  return [...Value.Errors(BlueprintSchema, value)].map((error: ValueError) => ({
+    path: error.path,
+    message: error.message,
+  }));
+}
+
+export function isBlueprint(value: unknown): value is Blueprint {
+  return Value.Check(BlueprintSchema, value);
+}

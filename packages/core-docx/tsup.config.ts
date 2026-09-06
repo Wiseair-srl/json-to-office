@@ -38,6 +38,7 @@ export default defineConfig({
     const copyOperations = [
       { from: 'src/templates/documents', to: 'dist/templates/documents' },
       { from: 'src/templates/themes', to: 'dist/templates/themes' },
+      { from: 'src/templates/blueprints', to: 'dist/templates/blueprints' },
       { from: 'src/plugin/example', to: 'dist/plugin/example' },
     ];
 

@@ -18,6 +18,7 @@ import type { PptxQualityFact, PptxQualityModel } from './facts';
 import {
   PPTX_DEFAULT_QUALITY_PROFILE,
   pptxQualityEngine,
+  declaredPptxQualityProfile,
   resolvePptxQualityProfile,
 } from './rules';
 
@@ -93,6 +94,7 @@ export function analyzePptxQuality(
   return pptxQualityEngine.analyzeSync(prepared, {
     profile:
       resolvePptxQualityProfile(options.profile) ??
+      declaredPptxQualityProfile(doc) ??
       PPTX_DEFAULT_QUALITY_PROFILE,
     policy: options.policy,
   });

@@ -192,6 +192,13 @@ describe('JSON report blocks from playground templates', () => {
     expect(footers).toContain('PAGE');
     expect(footers).toContain('NUMPAGES');
   });
+  it('records an authored invocation once, however many blocks its definition invokes', () => {
+    const expanded = expandBlocks(example(), consultingTheme);
+    expect(new Set(expanded.blocks).size).toBe(expanded.blocks.length);
+    expect(
+      expanded.blocks.filter((path) => path === '/children/2/children/3')
+    ).toHaveLength(1); // chart-figure, whose body invokes figure-caption and source-line
+  });
   it('uses the same expanded model for quality and rendering', () => {
     const input = simple();
     const prepared = prepareDocxQualityDocument(input);

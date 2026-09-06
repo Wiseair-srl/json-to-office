@@ -164,6 +164,12 @@ export function createDocumentMetadata(
   props: ReportProps,
   generationDate = new Date()
 ): DocumentMetadata {
+  // `metadata.date` is a display date first: a value Date cannot parse — a
+  // scaffold marker, "Q3 2026" — keeps its text for the page and leaves the
+  // package timestamps to the generation date, instead of failing the build.
+  const parsed = props.metadata?.date
+    ? new Date(props.metadata.date)
+    : undefined;
   return {
     title: props.metadata?.title,
     subtitle: props.metadata?.subtitle,
@@ -172,7 +178,7 @@ export function createDocumentMetadata(
     company: props.metadata?.company,
     version: props.metadata?.version,
     tags: props.metadata?.tags,
-    date: props.metadata?.date ? new Date(props.metadata.date) : generationDate,
+    date: parsed && !Number.isNaN(parsed.getTime()) ? parsed : generationDate,
   };
 }
 

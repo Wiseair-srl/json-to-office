@@ -98,6 +98,7 @@ export {
   DOCX_QUALITY_PROFILES,
   DOCX_QUALITY_RULES,
   docxQualityEngine,
+  declaredDocxQualityProfile,
   resolveDocxQualityProfile,
 } from './quality/rules';
 export {
@@ -113,6 +114,18 @@ export {
   vermilionTheme,
   consultingTheme,
 } from './styles/index';
+
+// Document archetypes as data, and the scaffold that instantiates one.
+export {
+  DOCX_BLUEPRINTS,
+  docxBlueprint,
+  instantiateDocxBlueprint,
+} from './blueprints';
+export type {
+  BlueprintFillEntry,
+  InstantiateBlueprintOptions,
+  InstantiatedBlueprint,
+} from './blueprints';
 
 // Document-local JSON block composition.
 export { expandBlocks, toAuthoredPointer, blockSlotBudgets } from './blocks';

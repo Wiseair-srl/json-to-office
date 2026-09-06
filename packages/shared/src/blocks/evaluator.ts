@@ -1008,7 +1008,10 @@ export class JsonBlockEvaluator {
         });
       if (def.slide)
         this.options.onSlide?.({ settings: def.slide, environment: env, path });
-      this.blocks.push(source);
+      // A definition's own nested invocation maps back to the authored
+      // invocation that produced it; record each authored invocation once,
+      // or its slots would be counted twice by everything that reads `blocks`.
+      if (!this.blocks.includes(source)) this.blocks.push(source);
       const children = this.evaluate(
         def.body,
         env,

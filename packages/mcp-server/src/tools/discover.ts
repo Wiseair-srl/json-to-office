@@ -362,6 +362,12 @@ const CORE_THEMES: Record<FormatName, { specifier: string; exported: string }> =
     pptx: { specifier: '@json-to-office/core-pptx', exported: 'pptxThemes' },
   };
 
+/** The core export that holds a format's blueprints; PPTX ships none yet. */
+const CORE_BLUEPRINTS: Record<FormatName, { exported: string } | undefined> = {
+  docx: { exported: 'DOCX_BLUEPRINTS' },
+  pptx: undefined,
+};
+
 /**
  * A resolver rooted at `jto-ops`, which owns the cores — they are its
  * dependency, not ours, so under pnpm's strict layout a bare specifier here
@@ -400,6 +406,65 @@ async function builtinThemeNames(
       pathToFileURL(coreResolver.resolve(specifier)).href
     )) as Record<string, Record<string, unknown> | undefined>;
     return Object.keys(core[exported] ?? {}).sort();
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * The bundled blueprints of a format, summarised. Read through the same
+ * resolver as the themes; a core that exports none — PPTX today — lists none.
+ */
+async function builtinBlueprints(
+  format: FormatName
+): Promise<CatalogBlueprint[]> {
+  const source = CORE_BLUEPRINTS[format];
+  if (!coreResolver || !source) return [];
+  const { specifier } = CORE_THEMES[format];
+  const { exported } = source;
+  try {
+    const core = (await import(
+      pathToFileURL(coreResolver.resolve(specifier)).href
+    )) as Record<string, unknown>;
+    const registry = (core[exported] ?? {}) as Record<
+      string,
+      {
+        id: string;
+        title: string;
+        description: string;
+        whenToUse: string;
+        theme: string;
+        profile: string;
+        definitions: string;
+        numbering: string;
+        toc: boolean;
+        variants: Record<
+          string,
+          {
+            description: string;
+            whenToUse: string;
+            pages: { min: number; max: number };
+          }
+        >;
+      }
+    >;
+    return Object.values(registry)
+      .map((blueprint) => ({
+        id: blueprint.id,
+        title: blueprint.title,
+        description: blueprint.description,
+        whenToUse: blueprint.whenToUse,
+        theme: blueprint.theme,
+        profile: blueprint.profile,
+        definitions: blueprint.definitions,
+        numbering: blueprint.numbering,
+        toc: blueprint.toc,
+        variants: Object.entries(blueprint.variants).map(([id, variant]) => ({
+          id,
+          pages: variant.pages,
+        })),
+      }))
+      .sort((a, b) => a.id.localeCompare(b.id));
   } catch {
     return [];
   }
@@ -615,6 +680,22 @@ export interface CatalogRenderer {
   unsupported: string[];
 }
 
+/** A document archetype as data, summarised: the plan itself is instantiated by scaffolding. */
+export interface CatalogBlueprint {
+  id: string;
+  title: string;
+  description: string;
+  whenToUse: string;
+  theme: string;
+  profile: string;
+  /** The playground template whose block definitions the blueprint invokes. */
+  definitions: string;
+  numbering: string;
+  toc: boolean;
+  /** Variant ids with their expected length; the full plan is the scaffold's. */
+  variants: { id: string; pages: { min: number; max: number } }[];
+}
+
 export interface CatalogFormat {
   name: FormatName;
   extension: string;
@@ -636,6 +717,12 @@ export interface CatalogFormat {
     BlockReference,
     'name' | 'format' | 'template' | 'definitionPointer' | 'description'
   >[];
+  /**
+   * Bundled document archetypes: the recommended theme, the quality profile
+   * that judges the result, the template whose blocks they invoke, and the
+   * structural variants with their expected length.
+   */
+  blueprints?: CatalogBlueprint[];
 }
 
 export interface Catalog {
@@ -796,7 +883,10 @@ async function catalogFormat(
   });
 
   const gallery = galleryManifests(format);
-  const themes = await builtinThemeNames(format, deps);
+  const [themes, blueprints] = await Promise.all([
+    builtinThemeNames(format, deps),
+    builtinBlueprints(format),
+  ]);
   if (themes.length === 0) {
     diagnostics.push(
       diagnostic(
@@ -838,6 +928,7 @@ async function catalogFormat(
     themes,
     starters: STARTERS.filter((starter) => starter.format === format),
     gallery,
+    ...(blueprints.length > 0 && { blueprints }),
     blocks: blockReferenceCatalog(format).map(
       ({
         name,
@@ -1013,6 +1104,31 @@ export function register(server: McpServer, deps: ToolDeps): void {
                     description:
                       'Authoring references from playground templates. Read jto://blocks and copy definitions into the document; names are not runtime globals.',
                     items: { type: 'object', additionalProperties: true },
+                  },
+                  blueprints: {
+                    type: 'array',
+                    description:
+                      'Document archetypes as data: recommended theme, the quality profile that judges the result, the playground template whose blocks they invoke, and structural variants with expected length. Instantiated through the core library today; a scaffold tool follows.',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        id: { type: 'string' },
+                        title: { type: 'string' },
+                        description: { type: 'string' },
+                        whenToUse: { type: 'string' },
+                        theme: { type: 'string' },
+                        profile: { type: 'string' },
+                        definitions: { type: 'string' },
+                        numbering: { type: 'string' },
+                        toc: { type: 'boolean' },
+                        variants: {
+                          type: 'array',
+                          items: { type: 'object', additionalProperties: true },
+                        },
+                      },
+                      required: ['id', 'title', 'theme', 'profile', 'variants'],
+                      additionalProperties: true,
+                    },
                   },
                   gallery: {
                     type: 'array',

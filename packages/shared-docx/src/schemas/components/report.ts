@@ -25,6 +25,18 @@ export const createReportPropsSchema = (_componentRef?: TSchema) =>
         })
       ),
       themeOverrides: Type.Optional(ThemeOverridesSchema),
+      qualityProfile: Type.Optional(
+        Type.String({
+          description:
+            'The quality profile validation judges this document by when the caller names none — a blueprint scaffold writes its archetype’s profile here. A profile names required structure and content; the theme only paints. Built-ins: client-report, executive-report, technical-report, legal-appendix; an unknown name falls back to the format default.',
+          examples: [
+            'client-report',
+            'executive-report',
+            'technical-report',
+            'legal-appendix',
+          ],
+        })
+      ),
       fontRegistry: Type.Optional(FontRegistrySchema),
       componentDefaults: Type.Optional(ComponentDefaultsSchema),
       language: Type.Optional(

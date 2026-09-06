@@ -17,6 +17,7 @@ import {
 } from '@json-to-office/quality';
 import type {
   DocxChartFact,
+  DocxChromeSlotFact,
   DocxColorFact,
   DocxFontFact,
   DocxFrameTextFact,
@@ -26,6 +27,7 @@ import type {
   DocxBlockSlotFact,
   DocxQualityFact,
   DocxQualityModel,
+  DocxSectionChromeFact,
   DocxSvgTextFact,
   DocxTableColumnFact,
   DocxTableFact,
@@ -825,6 +827,107 @@ function alignColumnRight(
   return operations;
 }
 
+function stringListParameter(
+  parameters: Readonly<Record<string, unknown>>,
+  name: string
+): string[] {
+  const value = parameters[name];
+  return Array.isArray(value)
+    ? value.filter((entry): entry is string => typeof entry === 'string')
+    : [];
+}
+
+/**
+ * Chrome a profile requires, judged where the block declared the slot. Off by
+ * default: a takeaway under a chart or a source under a table is an archetype
+ * convention, and the theme that styles the slot never asks for it.
+ */
+export const docxRequiredChromeRule: QualityRule<
+  DocxQualityModel,
+  DocxQualityFact
+> = {
+  id: 'docx/required-chrome',
+  code: QUALITY_CODES.CHROME_MISSING,
+  category: 'consistency',
+  defaultSeverity: 'warning',
+  defaultCertainty: 'deterministic',
+  formats: ['docx'],
+  defaultParameters: { required: [] },
+  evaluate: ({ facts, configuration, profile }) => {
+    const required = stringListParameter(configuration.parameters, 'required');
+    if (required.length === 0) return [];
+    return facts
+      .filter(
+        (fact): fact is DocxChromeSlotFact => fact.kind === 'docx/chrome-slot'
+      )
+      .filter((fact) => required.includes(fact.role) && !fact.present)
+      .map((fact) => ({
+        path: fact.path,
+        relatedPaths: [fact.invocation],
+        message:
+          `${fact.block} states no ${fact.role} in its "${fact.slot}" slot; ` +
+          `the ${profile?.id ?? 'selected'} profile expects one on every ${fact.block}.`,
+        suggestion: `Fill the "${fact.slot}" slot. The theme already styles it.`,
+        context: { block: fact.block, slot: fact.slot, role: fact.role },
+      }));
+  },
+};
+
+const SECTION_CHROME_PARTS = ['header', 'footer', 'pageNumber'] as const;
+
+/**
+ * A running head where the profile expects one: every top-level section from
+ * `fromSection` on must carry the parts in `required` — a header, a footer,
+ * a page-number field in either. The first section is exempt by default, so
+ * a cover stays clean. Off by default; the theme only paints a running head.
+ */
+export const docxRunningHeadRule: QualityRule<
+  DocxQualityModel,
+  DocxQualityFact
+> = {
+  id: 'docx/running-head',
+  code: QUALITY_CODES.CHROME_MISSING,
+  category: 'consistency',
+  defaultSeverity: 'warning',
+  defaultCertainty: 'deterministic',
+  formats: ['docx'],
+  defaultParameters: { required: [], fromSection: 1 },
+  evaluate: ({ facts, configuration, profile }) => {
+    const required = stringListParameter(
+      configuration.parameters,
+      'required'
+    ).filter((part): part is (typeof SECTION_CHROME_PARTS)[number] =>
+      (SECTION_CHROME_PARTS as readonly string[]).includes(part)
+    );
+    if (required.length === 0) return [];
+    const from = numberParameter(configuration.parameters, 'fromSection', 1);
+    return facts
+      .filter(
+        (fact): fact is DocxSectionChromeFact =>
+          fact.kind === 'docx/section-chrome' && fact.index >= from
+      )
+      .flatMap((fact) => {
+        const missing = required.filter((part) => !fact[part]);
+        if (missing.length === 0) return [];
+        const parts = missing
+          .map((part) => (part === 'pageNumber' ? 'page-number field' : part))
+          .join(', ');
+        return [
+          {
+            path: fact.path,
+            message:
+              `Section ${fact.index + 1} carries no ${parts}; the ` +
+              `${profile?.id ?? 'selected'} profile expects a running head ` +
+              `on every section after the cover.`,
+            suggestion:
+              'Invoke a running-head block at the top of the first body section: its section effect fills every later section with the tracker and n / N.',
+            context: { section: fact.index, missing },
+          },
+        ];
+      });
+  },
+};
+
 export const DOCX_QUALITY_RULES: QualityRulePack<
   DocxQualityModel,
   DocxQualityFact
@@ -843,10 +946,30 @@ export const DOCX_QUALITY_RULES: QualityRulePack<
     docxTableDesignRule,
     docxFontCountRule,
     docxPaletteRule,
+    docxRequiredChromeRule,
+    docxRunningHeadRule,
   ],
 };
 
 export const DOCX_QUALITY_PROFILES = {
+  'client-report': {
+    id: 'client-report',
+    formats: ['docx'],
+    description:
+      'Client or public-administration report: a running head with page numbers on every section after the cover, a takeaway and a source wherever a block declares them, no heading skipped.',
+    rules: {
+      'docx/required-chrome': {
+        parameters: { required: ['takeaway', 'source'] },
+      },
+      'docx/running-head': {
+        parameters: {
+          required: ['header', 'footer', 'pageNumber'],
+          fromSection: 1,
+        },
+      },
+      'docx/heading-hierarchy': { severity: 'warning' },
+    },
+  },
   'executive-report': {
     id: 'executive-report',
     formats: ['docx'],
@@ -872,6 +995,19 @@ export const DOCX_DEFAULT_QUALITY_PROFILE: QualityProfile =
 
 const DOCX_PROFILES_BY_ID: Readonly<Record<string, QualityProfile>> =
   DOCX_QUALITY_PROFILES;
+
+/**
+ * The shipped profile a document names in `props.qualityProfile`, so that
+ * validation without arguments judges a blueprint scaffold by its archetype.
+ * An unknown name is nobody's profile: the format default applies.
+ */
+export function declaredDocxQualityProfile(
+  document: unknown
+): QualityProfile | undefined {
+  const props = (document as { props?: { qualityProfile?: unknown } })?.props;
+  const id = props?.qualityProfile;
+  return typeof id === 'string' ? DOCX_PROFILES_BY_ID[id] : undefined;
+}
 
 /**
  * Callers name a shipped profile by id — `{ id: 'executive-report', formats: ['docx'] }`.

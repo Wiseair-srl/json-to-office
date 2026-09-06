@@ -158,7 +158,10 @@ function expectedDocx(
       code: 'W_QUALITY_HEADING_SKIP',
       category: 'hierarchy',
       certainty: 'deterministic',
-      severity: profileId === 'executive-report' ? 'warning' : 'info',
+      severity:
+        profileId === 'executive-report' || profileId === 'client-report'
+          ? 'warning'
+          : 'info',
     },
     {
       code: 'W_QUALITY_TABLE_WIDTH_OVERFLOW',
@@ -276,6 +279,12 @@ export const QUALITY_REFERENCE_CROSS_PROFILE: readonly {
 
 /** Pinned authored-structure hashes; renderer/package goldens live in each core. */
 export const QUALITY_REFERENCE_DIGESTS: Readonly<Record<string, string>> = {
+  'client-report/poor':
+    'dfcf64943986670ce418593c0f1af3f7fa007ef6b2c13e9664f2eede257263eb',
+  'client-report/professional':
+    '2405d79b0e192e90922b99aadef5e3382105f7aba71633daad24c2a13da94135',
+  'client-report/excellent':
+    'f3f31cd7cea47990ed05c1ddaebe3a4e811b45d688d87c5ee9b5d1eaaca0edb6',
   'executive-report/poor':
     'b8732a4f507cfb26fc517bdab8b0215b1238648e55cecfaad501856d1148da1d',
   'executive-report/professional':

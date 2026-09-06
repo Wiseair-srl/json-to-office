@@ -124,6 +124,8 @@ The engine resolves local trackers before chrome. `scope: "following"` carries t
 
 The playground demonstrates `cover`, `key-takeaways`, `section-opener`, `running-head`, `kpi-row`, `callout`, `data-table`, `chart-figure`, `figure`, `footnotes` and the `source-line` the data and figure blocks invoke. These are names in that document, not registered engine components. General document operations remain engine code; visual compositions remain JSON.
 
+A [blueprint](/reference/blueprints) assembles these invocations into a whole-document plan: the `client-report` blueprint scaffolds a report from them, with every slot holding a marker and the `client-report` profile judging the result.
+
 ### The report blocks
 
 Every definition in `client-report-blocks.docx.json` binds its sizes and colours to the theme's type roles and chrome recipes with a safe default, so the same JSON renders on every bundled theme; the previews below are the house theme, rendered through LibreOffice. A report built from a cover, three section openers and one running head is generated on all four bundled themes in the test suite, warning-clean, and rendered through LibreOffice where one is installed: every page after the cover carries its own section's tracker and a live `n / N`, and the cover carries neither.
