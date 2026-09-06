@@ -25,12 +25,20 @@
 import { FORMAT, type FormatName } from './env';
 import type { QualitySeverity } from './quality-findings';
 
-export interface QualityRuleParameter {
-  name: string;
-  type: 'number';
-  default: number;
-  description: string;
-}
+export type QualityRuleParameter =
+  | {
+      name: string;
+      type: 'number';
+      default: number;
+      description: string;
+    }
+  | {
+      name: string;
+      /** A list of names, e.g. the slot roles a profile requires. */
+      type: 'string-list';
+      default: readonly string[];
+      description: string;
+    };
 
 export interface QualityRuleInfo {
   id: string;
@@ -412,6 +420,48 @@ export const QUALITY_RULES: Record<FormatName, readonly QualityRuleInfo[]> = {
       defaultSeverity: 'info',
       description: 'A literal colour the resolved theme does not define.',
       parameters: [],
+    },
+    {
+      id: 'pptx/slot-budget',
+      label: 'Slot budget',
+      category: 'composition',
+      defaultSeverity: 'warning',
+      description: 'A block slot over the word budget its definition declares.',
+      parameters: [],
+    },
+    {
+      id: 'pptx/required-chrome',
+      label: 'Required chrome',
+      category: 'consistency',
+      defaultSeverity: 'warning',
+      description:
+        'A block slot with a role the profile requires — a takeaway, a source — left empty. Off unless a profile names roles.',
+      parameters: [
+        {
+          name: 'required',
+          type: 'string-list',
+          default: [],
+          description:
+            'Slot roles every block that declares them must fill: actionTitle, takeaway, source, tracker, footer.',
+        },
+      ],
+    },
+    {
+      id: 'pptx/action-title',
+      label: 'Action title length',
+      category: 'hierarchy',
+      defaultSeverity: 'warning',
+      description:
+        'An action-title slot that wraps past the lines the profile allows. Off at 0.',
+      parameters: [
+        {
+          name: 'maxLines',
+          type: 'number',
+          default: 0,
+          description:
+            'Lines an action title may take in the box its definition drew; 0 disables the rule.',
+        },
+      ],
     },
   ],
 };

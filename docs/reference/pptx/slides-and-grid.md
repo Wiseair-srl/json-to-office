@@ -1,10 +1,10 @@
 # Slides & the grid
 
-The grid system turns slide layout from pixel-pushing into declarative placement: you describe _which cells_ a component occupies, and the library computes the inches. Combined with templates and placeholders — reusable slide masters with named, pre-styled content regions — it is what makes json-to-office decks robust to theme swaps, slide-size changes, and programmatic content injection.
+The grid system turns slide layout from pixel-pushing into declarative placement: you describe _which cells_ a component occupies, and the library computes the inches. Combined with groups — frames that nest a coordinate system and distribute children into cells — and with [JSON blocks](/reference/blocks#pptx), which own that geometry so a slide only supplies content, it is what makes json-to-office decks robust to theme swaps, slide-size changes, and programmatic content injection.
 
 ## Grid configuration
 
-The grid is configured once on the `pptx` root via the `grid` prop (and optionally overridden per template):
+The grid is configured once on the `pptx` root via the `grid` prop (and optionally overridden per group through `gridConfig`, or per block definition through `slide.grid`):
 
 | Field     | Type                                              | Default         | Description                                     |
 | --------- | ------------------------------------------------- | --------------- | ----------------------------------------------- |
@@ -103,60 +103,48 @@ Explicit `x`, `y`, `w`, `h` props on a component **individually override** the c
 
 Here `x`, `y`, and `w` come from the grid; `h` is pinned at 0.4 in. If an explicit value on an axis is a **percentage string** (e.g. `"h": "5%"`), the grid-resolved values on that same axis (`y`/`h`, or `x`/`w`) are converted to percentages of the slide dimensions too, so each axis reaches the underlying engine in consistent units.
 
-### Template grid merging
+### Group grid merging
 
-A template may declare its own `grid`; the effective grid for a slide using that template is the presentation grid merged with the template grid, **template winning** field by field. Nested `margin`/`gutter` objects are normalized first and shallow-merged, so a template can override just `gutter.row` while inheriting everything else.
+A `group` may declare its own `gridConfig`; the effective grid for its descendants is the enclosing grid merged with that config, **the group winning** field by field. Nested `margin`/`gutter` objects are normalized first and shallow-merged. Inside a framed group the grid spans the frame, and the enclosing margin — the slide's safe area — is dropped unless the group's own config states one. A block definition's `slide.grid` becomes the `gridConfig` of the group it expands into, so a block's body resolves its grid placements against the block's own grid.
 
-## Templates
+## Groups and frames
 
-Templates are reusable slide layouts declared once in the root `templates` array. Each becomes a slide master in the generated file; slides opt in via their `template` prop (see [Presentation & slide reference](/reference/pptx/presentation)).
+A `group` is a transparent container, and the inspectable result of block expansion. It comes in three strengths:
 
-### `TemplateSlideDefinition`
+| Group                               | Behaviour                                                                                                                                                                                                                                                                                                                                       |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No frame, no direction              | A plain sequence: its children position exactly as they would on the slide.                                                                                                                                                                                                                                                                     |
+| A frame (`x`/`y`/`w`/`h` or `grid`) | A nested coordinate system. Inside it a child's numbers are offsets from the frame origin, percentages are fractions of the frame, and an omitted `x`/`y` or `w`/`h` means the frame's. Omitted frame sides fill the enclosing extent.                                                                                                          |
+| A `direction`                       | The frame's enabled children are distributed into cells along the axis — equal, or by `weights` — separated by `gap`. A child fills its cell unless it states its own offsets. A child that is not there (an optional block slot left empty) is not counted, so the rest redistribute: two metrics take half the row each, four take a quarter. |
 
-| Field          | Type                                            | Required | Description                                                                                                                                                                                                                                                           |
-| -------------- | ----------------------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `name`         | string                                          | **yes**  | Unique template name; also the slide-master title in the generated file.                                                                                                                                                                                              |
-| `background`   | `{ color?, image? }`                            | no       | Background applied to every slide using this template.                                                                                                                                                                                                                |
-| `margin`       | number \| `[top, right, bottom, left]` (inches) | no       | Slide margin.                                                                                                                                                                                                                                                         |
-| `slideNumber`  | `{ x, y, w?, h?, color?, fontSize? }`           | no       | Automatic slide-number placement and styling (`x`/`y` required; `fontSize` in points).                                                                                                                                                                                |
-| `objects`      | content component array                         | no       | Fixed decorations rendered on every slide using the template — logos, footers, decorative shapes. Same `{ name, props }` format as slide children (text/image/shape/table/chart/highcharts), rendered through the normal component pipeline, grid placement included. |
-| `placeholders` | `PlaceholderDefinition[]`                       | no       | Named content regions (below).                                                                                                                                                                                                                                        |
-| `grid`         | GridConfig                                      | no       | Template-level grid override, merged over the presentation grid.                                                                                                                                                                                                      |
+```json
+{
+  "name": "group",
+  "props": {
+    "x": 0.5,
+    "y": 1.5,
+    "w": 12.333,
+    "h": 2.5,
+    "direction": "row",
+    "gap": 0.3
+  },
+  "children": [
+    { "name": "text", "props": { "text": "+18%", "style": "stat" } },
+    { "name": "text", "props": { "text": "94%", "style": "stat" } },
+    { "name": "text", "props": { "text": "12", "style": "stat" } }
+  ]
+}
+```
 
-### `PlaceholderDefinition`
+Three cells of `(12.333 − 2 × 0.3) / 3` inches, each text filling its cell. Add `"weights": [1.1, 1]` to a two-child row for a 1.1 : 1 split. Groups nest: a row of column groups is a row of tiles. A group holds what a slide holds — content components, blocks and groups — never a `slide` or the `pptx` root. Layout is decided once, before quality analysis and compilation, so the quality rules and the renderer read the same absolute boxes. The compiler then draws the children in order as slide elements; a group carries no geometry of its own into the file.
 
-| Field              | Type                   | Required | Description                                                                                                                                                                                |
-| ------------------ | ---------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `name`             | string                 | **yes**  | Unique placeholder name, referenced by slides.                                                                                                                                             |
-| `x`, `y`, `w`, `h` | number (in) \| `"NN%"` | no       | Explicit position for the region.                                                                                                                                                          |
-| `grid`             | GridPosition           | no       | Grid placement for the region — resolved to absolute inches against the effective (template-merged) grid when the document is processed.                                                   |
-| `defaults`         | `{ name, props }`      | no       | A partial component stub: the component type expected here plus default props (styling, alignment, style preset — not content) inherited by whatever the slide places in this placeholder. |
+### Bounded fit
 
-### Defaults precedence
-
-When a slide fills a placeholder, the final props of the rendered component are assembled from five layers, later layers winning:
-
-1. Theme `componentDefaults` (from the active [theme](/reference/theme-schema))
-2. Presentation `componentDefaults` (root prop)
-3. Placeholder position (`x`/`y`/`w`/`h`, or grid resolved to them)
-4. Placeholder `defaults.props`
-5. The component's own `props` on the slide
-
-In practice: templates own layout and look, slides own words and data.
-
-### Warnings
-
-| Code                      | Trigger                                                                 | Effect                                            |
-| ------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------- |
-| `MISSING_TEMPLATE`        | Slide's `template` names a template that doesn't exist                  | Slide renders without a master                    |
-| `UNKNOWN_PLACEHOLDER`     | Slide's `placeholders` record uses a name the template doesn't define   | That entry is skipped — it is not rendered at all |
-| `PLACEHOLDER_NO_POSITION` | A placeholder component ends up with no template and no position at all | Component is skipped                              |
-
-All three surface in the `warnings` array of `generateBufferWithWarnings` (see [API reference](/reference/api)) with the offending slide.
+A `text` may declare `fit: { maxLines, shrink }`. The engine estimates the lines the text takes at its effective size; past `maxLines` — or the box height when `h` is set and no line count is — it steps down through the `shrink` sizes in order and takes the first that fits. Nothing else is tried: when no declared size fits, generation fails with `text_fit_overflow` at the text, or at the block slot the text came from. This is the bounded adaptation a two-line action title needs; automatic shrink-to-fit outside declared steps does not exist.
 
 ## A complete example
 
-Root configuration and one template, in the style of a dense corporate deck:
+Root configuration and one block, in the style of a dense corporate deck:
 
 ```json
 {
@@ -172,86 +160,122 @@ Root configuration and one template, in the style of a dense corporate deck:
       "margin": { "top": 0.5, "right": 0.5, "bottom": 0.5, "left": 0.5 },
       "gutter": { "column": 0.16, "row": 0.16 }
     },
-    "templates": [
-      {
-        "name": "TWO_COL_TEMPLATE",
-        "background": { "color": "background" },
-        "placeholders": [
+    "blocks": {
+      "two-column": {
+        "slots": {
+          "heading": { "type": "string", "required": true, "maxWords": 12 },
+          "leftTitle": { "type": "string", "required": true },
+          "rightTitle": { "type": "string", "required": true },
+          "left": { "type": "component", "required": true },
+          "right": { "type": "component", "required": true }
+        },
+        "slide": { "background": { "color": "background" } },
+        "body": [
           {
-            "name": "heading",
-            "grid": { "column": 0, "row": 1, "columnSpan": 12, "rowSpan": 1 },
-            "defaults": {
-              "name": "text",
-              "props": { "style": "heading1", "fontSize": 28, "color": "text" }
+            "name": "text",
+            "props": {
+              "text": { "$slot": "/heading" },
+              "style": "heading1",
+              "grid": { "column": 0, "row": 1, "columnSpan": 12, "rowSpan": 1 }
             }
           },
           {
-            "name": "leftTitle",
-            "grid": { "column": 0, "row": 3, "columnSpan": 6 },
-            "defaults": { "name": "text", "props": { "style": "heading3" } }
-          },
-          {
-            "name": "rightTitle",
-            "grid": { "column": 6, "row": 3, "columnSpan": 6 },
-            "defaults": { "name": "text", "props": { "style": "heading3" } }
-          },
-          {
-            "name": "left",
-            "grid": { "column": 0, "row": 4, "columnSpan": 6, "rowSpan": 6 },
-            "defaults": {
-              "name": "text",
-              "props": { "style": "body", "fontSize": 14, "color": "text2" }
-            }
-          },
-          {
-            "name": "right",
-            "grid": { "column": 6, "row": 4, "columnSpan": 6, "rowSpan": 6 },
-            "defaults": {
-              "name": "text",
-              "props": { "style": "body", "fontSize": 14, "color": "text2" }
-            }
+            "name": "group",
+            "props": {
+              "grid": { "column": 0, "row": 3, "columnSpan": 12, "rowSpan": 7 },
+              "direction": "row",
+              "gap": 0.3
+            },
+            "children": [
+              {
+                "name": "group",
+                "props": { "direction": "column", "weights": [1, 6] },
+                "children": [
+                  {
+                    "name": "text",
+                    "props": {
+                      "text": { "$slot": "/leftTitle" },
+                      "style": "heading3"
+                    }
+                  },
+                  {
+                    "$slot": "/left",
+                    "props": {
+                      "style": "body",
+                      "fontSize": 14,
+                      "color": "text2"
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "group",
+                "props": { "direction": "column", "weights": [1, 6] },
+                "children": [
+                  {
+                    "name": "text",
+                    "props": {
+                      "text": { "$slot": "/rightTitle" },
+                      "style": "heading3"
+                    }
+                  },
+                  {
+                    "$slot": "/right",
+                    "props": {
+                      "style": "body",
+                      "fontSize": 14,
+                      "color": "text2"
+                    }
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
-    ]
+    }
   },
   "children": [
     {
       "name": "slide",
       "props": {
-        "template": "TWO_COL_TEMPLATE",
-        "notes": "Two-column content — narrative left, bullets right.",
-        "placeholders": {
-          "heading": {
-            "name": "text",
-            "props": { "text": "Detailed content in two columns" }
-          },
-          "leftTitle": { "name": "text", "props": { "text": "The problem" } },
-          "rightTitle": { "name": "text", "props": { "text": "Our take" } },
-          "left": {
-            "name": "text",
-            "props": {
-              "text": "Use this space for narrative text that provides depth and context.",
-              "lineSpacing": 24
-            }
-          },
-          "right": {
-            "name": "text",
-            "props": {
-              "text": "First key point\nSecond key point\nThird key point",
-              "lineSpacing": 28,
-              "bullet": { "type": "bullet", "style": "●" }
+        "notes": "Two-column content — narrative left, bullets right."
+      },
+      "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "two-column",
+            "slots": {
+              "heading": "Detailed content in two columns",
+              "leftTitle": "The problem",
+              "rightTitle": "Our take",
+              "left": {
+                "name": "text",
+                "props": {
+                  "text": "Use this space for narrative text that provides depth and context.",
+                  "lineSpacing": 24
+                }
+              },
+              "right": {
+                "name": "text",
+                "props": {
+                  "text": "First key point\nSecond key point\nThird key point",
+                  "lineSpacing": 28,
+                  "bullet": { "type": "bullet", "style": "●" }
+                }
+              }
             }
           }
         }
-      }
+      ]
     }
   ]
 }
 ```
 
-Note how the slide carries **zero layout information** — every position, font, and color comes from the template's placeholders and the theme. Adding a second slide with the same structure but different content is a copy-paste of the `placeholders` record.
+Note how the slide carries **zero layout information** — every position, size and colour comes from the definition and the theme, and the two columns are a row group distributing two column groups. A component supplied through a slot takes the definition's `props` beneath its own: the `style` and `color` defaults above may be overridden by the slot content, the frame may not. Adding a second slide with the same structure but different content is a copy-paste of the `slots` record.
 
-::: tip Design templates once, fill them forever
-This split is what makes json-to-office decks a good target for LLMs and automation: a designer (or the bundled starter templates) defines the `templates` array once, and content producers — human or machine — only ever write slides with `template` + `placeholders`. See [json-to-office for LLMs](/guide/llms) and the [examples](/examples/).
+::: tip Design a definition once, fill it forever
+This split is what makes json-to-office decks a good target for LLMs and automation: a designer (or a definition copied from `jto://blocks`) writes `props.blocks` once, and content producers — human or machine — only ever write slides with `ref` + `slots`. See [JSON blocks](/reference/blocks#pptx), [json-to-office for LLMs](/guide/llms) and the [examples](/examples/).
 :::

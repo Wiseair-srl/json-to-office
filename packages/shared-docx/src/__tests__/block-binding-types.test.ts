@@ -131,7 +131,7 @@ describe('type-directed block bindings', () => {
     ).toEqual(['gap']);
   });
   it.each([
-    ['$slot', '"/settings"', ['default']],
+    ['$slot', '"/settings"', ['default', 'props']],
     ['$if', '"/enabled"', ['then', 'else']],
   ])(
     'offers only %s options after it is selected',

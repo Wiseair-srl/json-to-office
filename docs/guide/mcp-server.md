@@ -131,6 +131,6 @@ Preview pixels come from LibreOffice, not Microsoft Office: line breaks, paginat
 
 ## Document-local JSON blocks
 
-Use `jto://blocks` to inspect example definitions extracted from complete playground templates, including slot schemas and source pointers. Copy chosen definitions into the document’s `props.blocks`; the catalog never registers runtime names. The client-report playground template demonstrates all four migrated report compositions and an adaptive metric row.
+Use `jto://blocks` to inspect example definitions extracted from complete playground templates, including slot schemas and source pointers, for both formats. Copy chosen definitions into the document’s `props.blocks`; the catalog never registers runtime names. The client-report playground template demonstrates all four migrated report compositions and an adaptive metric row; the consulting-deck playground template carries the `action-chart` slide block on the house theme.
 
 `jto_workspace_inspect` with `includeBlocks: true` returns that revision’s definitions, derived slot schemas and invocation fill pointers. `jto_validate` with `includeCompiled: true` returns expanded primitives and authored source maps. See [JSON blocks](/reference/blocks) for the contract and breaking changes.

@@ -155,7 +155,7 @@ Compact by design: names, not schemas.
 
 **Out** — `formats[]`, each `{name, extension, label, rootComponent, defaultRenderer, renderers[], components[], themes[], starters[]}`. A renderer is `{id, default, components[], unsupported[]}`, where `unsupported` names what another renderer of the same format accepts and this one does not. A component is `{name, category, description, hasChildren, root, renderers[], allowedChildren?, allowedParents[], stability?}`. A starter is a small valid document with `{id, format, title, description, document}`.
 
-Today: `docx` roots at `docx` and renders with `docxjs` (default) or `office-open`, themes `apex`, `corporate`, `devportal`, `minimal`, `modern`; `pptx` roots at `pptx` and renders with `pptxgenjs` (default) or `office-open`, themes `default`, `dark`, `minimal`. Read them from the server rather than from here — that list is what your installed version supports.
+Today: `docx` roots at `docx` and renders with `docxjs` (default) or `office-open`, themes `consulting`, `devportal`, `minimal`, `vermilion`; `pptx` roots at `pptx` and renders with `pptxgenjs` (default) or `office-open`, themes `consulting`, `dark`, `default`, `minimal`. Read them from the server rather than from here — that list is what your installed version supports.
 
 ### `jto_describe_component`
 

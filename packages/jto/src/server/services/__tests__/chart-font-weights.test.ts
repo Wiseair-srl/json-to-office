@@ -23,7 +23,8 @@ import {
  * run-level `fontFace` uses. The site below carries its designed weight
  * again; the remaining five name a family and genuinely want Regular.
  * (Five of the original six sat in the four legacy playground decks, dropped
- * from the repo along with them.)
+ * from the repo along with them. Every deck slide that used a template now
+ * invokes its chrome block as its first child, which moved these along by one.)
  *
  * Both lists are pinned, not merely counted, so that:
  *   - a template edit that adds a chart font reference has to come here and
@@ -32,16 +33,16 @@ import {
  *     (rather than using the weight companion) fails loudly.
  */
 const WEIGHTED_CHART_FONT_SITES = [
-  'data-report-presentation.pptx.json :: $.children[4].children[4].props.catAxisLabelFontFace :: Space Grotesk @500',
+  'data-report-presentation.pptx.json :: $.children[4].children[5].props.catAxisLabelFontFace :: Space Grotesk @500',
 ];
 
 /** Chart font references that name a family and no weight — Regular by design. */
 const WEIGHTLESS_CHART_FONT_SITES = [
-  'data-report-presentation.pptx.json :: $.children[14].children[0].props.catAxisLabelFontFace :: Space Grotesk',
-  'data-report-presentation.pptx.json :: $.children[14].children[0].props.valAxisLabelFontFace :: Space Grotesk',
-  'data-report-presentation.pptx.json :: $.children[3].children[0].props.catAxisLabelFontFace :: Space Grotesk',
-  'data-report-presentation.pptx.json :: $.children[5].children[4].props.catAxisLabelFontFace :: Space Grotesk',
-  'data-report-presentation.pptx.json :: $.children[5].children[4].props.valAxisLabelFontFace :: Space Grotesk',
+  'data-report-presentation.pptx.json :: $.children[14].children[1].props.catAxisLabelFontFace :: Space Grotesk',
+  'data-report-presentation.pptx.json :: $.children[14].children[1].props.valAxisLabelFontFace :: Space Grotesk',
+  'data-report-presentation.pptx.json :: $.children[3].children[1].props.catAxisLabelFontFace :: Space Grotesk',
+  'data-report-presentation.pptx.json :: $.children[5].children[5].props.catAxisLabelFontFace :: Space Grotesk',
+  'data-report-presentation.pptx.json :: $.children[5].children[5].props.valAxisLabelFontFace :: Space Grotesk',
 ];
 
 /**

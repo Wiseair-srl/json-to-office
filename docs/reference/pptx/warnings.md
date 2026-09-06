@@ -62,9 +62,6 @@ branch on `code`.
 | `IMAGE_PATH_OUTSIDE_ROOTS`   | An image path resolves outside the allowed document roots; the image is dropped.                                                                                           |
 | `TEXT_NO_CONTENT`            | Text has no renderable content and is skipped. With validation enabled, neither `text` nor `runs` is rejected earlier; an empty `runs` array can still reach this warning. |
 | `TEXT_OVERLAP_UNPOSITIONED`  | Two text components without `x`/`y` overlap. Give at least one explicit coordinates or use styles with different default bands.                                            |
-| `MISSING_TEMPLATE`           | A slide references a template name that is not defined.                                                                                                                    |
-| `UNKNOWN_PLACEHOLDER`        | A slide fills a placeholder name its template does not declare.                                                                                                            |
-| `PLACEHOLDER_NO_POSITION`    | A placeholder has neither template placement nor an explicit position; it is skipped.                                                                                      |
 | `THEME_COLOR_FALLBACK`       | An optional theme color slot is missing; the renderer uses `primary`.                                                                                                      |
 | `UNKNOWN_COLOR`              | A color is neither valid hex nor a semantic token, or its theme slot resolves to neither; the renderer falls back to `primary`.                                            |
 | `GRID_POSITION_CLAMPED`      | A grid column or row is outside the grid and is clamped into range.                                                                                                        |

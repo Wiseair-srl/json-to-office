@@ -312,7 +312,7 @@ Numbered headings, TOC above a heading threshold, figure and table numbering
 and cross-references come from the blueprint and its profile, not from the
 agent or theme.
 
-**PPTX blocks (#340):** migrate existing templates to the common JSON definition/slot contract; no separate layout tier. PPTX retains its geometry, objects, backgrounds and grids. #340 implements the adapter after the DOCX client-report checkpoint; #341 supplies the remaining examples inside playground templates. Planned blocks:
+**PPTX blocks (#340, shipped):** slide templates are replaced by the common JSON definition/slot contract; there is no separate layout tier. A PPTX definition expands into a transparent `group` of positioned content; the engine owns three layout operations — frames (a group with `x`/`y`/`w`/`h` or `grid` is a nested coordinate system), row/column distribution (`direction`, `gap`, `weights`, so two-to-four items redistribute without a plugin) and bounded text fit (`fit: { maxLines, shrink }`, which steps down through declared sizes and otherwise fails with `text_fit_overflow` at the authored slot) — plus slide effects (`slide.background`, `notes`, `grid`) and component-slot `props` merged beneath slot content. Slot `role`s (`actionTitle`, `takeaway`, `source`, `tracker`, `footer`) let the `consulting-deck` profile require chrome and bound the action title at two lines; the theme alone adds nothing. `action-chart` ships inside the `consulting-deck-blocks` playground template; #341 supplies the remaining four inside playground templates. Planned blocks:
 
 | Block        | Slots (bounded)                                                         | Notes                       |
 | ------------ | ----------------------------------------------------------------------- | --------------------------- |
@@ -329,7 +329,7 @@ quote, image, cards, closing, section) follow in Phase 4 once the five are
 measured.
 
 Evaluator: pure, bounded JSON operations; theme tokens + slot content + canvas → geometry (pptx) or
-flow structure (docx). DOCX currently supports bounded repetition/count, optional-group collapse, fixed readable typography and ordinary flow/column reflow. Slot cardinality and text budgets reject overflow with coded issues; automatic shrink-to-fit is not implemented. #340 owns bounded PPTX geometry/fit behavior. A source map links every emitted node to its slot pointer; the
+flow structure (docx). DOCX supports bounded repetition/count, optional-group collapse, fixed readable typography and ordinary flow/column reflow. PPTX adds frames, distribution and bounded fit within declared sizes. Slot cardinality and text budgets reject overflow with coded issues; shrinking outside declared steps is not implemented. A source map links every emitted node to its slot pointer; the
 compiled form is inspectable through `jto_workspace_inspect` and a
 `jto_validate` option. Text-dependent sizing uses the existing width model
 now and #211 metrics when they land. Layout geometry starts from the
@@ -556,9 +556,11 @@ formatting. Its required portions, in order:
    on #362.
 
 **After the checkpoint.** Technical-report variants, alternate themes (#330)
-and PPTX layouts/blueprint (#340–#342). Both-format house-theme coverage
-precedes the default switch (#331), which ships as a major with distinct
-legacy aliases and migration notes and keeps the corpus pinned. Formal
+and PPTX blocks/blueprint (#340–#342); #340 and the PPTX twin of the
+`consulting` theme (#329) landed alongside the shared contract (#370), so
+both-format house-theme coverage now exists and precedes the default switch
+(#331), which ships as a major with distinct legacy aliases and migration
+notes and keeps the corpus pinned. Formal
 critique (#345), the remaining rules and prompts (#347–#348) and the full
 matrix (#343) remain required for final acceptance.
 

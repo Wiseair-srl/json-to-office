@@ -1,6 +1,6 @@
 # Writing PPTX documents
 
-A json-to-office presentation is a single JSON tree: a `pptx` root that holds presentation-wide settings, a list of `slide` children, and content components (text, images, shapes, tables, charts) inside each slide. This page walks through authoring that tree from an empty skeleton to a templated, self-contained deck — for exhaustive prop tables, follow the links into the [reference](/reference/pptx/presentation).
+A json-to-office presentation is a single JSON tree: a `pptx` root that holds presentation-wide settings, a list of `slide` children, and content components (text, images, shapes, tables, charts) inside each slide. This page walks through authoring that tree from an empty skeleton to a block-composed, self-contained deck — for exhaustive prop tables, follow the links into the [reference](/reference/pptx/presentation).
 
 ## The presentation skeleton
 
@@ -93,7 +93,7 @@ You can position anything with explicit `x`/`y`/`w`/`h` coordinates, but hand-pl
 }
 ```
 
-`column` and `row` are **0-indexed**; spans default to 1. The library resolves each grid placement to concrete inches at generation time, so the same layout logic adapts automatically if you change the slide size or grid configuration. You can customize the grid per presentation (and per template) via the root `grid` prop — for example a dense corporate deck might use a 12 × 12 grid with tighter 0.16 in gutters for finer vertical control.
+`column` and `row` are **0-indexed**; spans default to 1. The library resolves each grid placement to concrete inches at generation time, so the same layout logic adapts automatically if you change the slide size or grid configuration. You can customize the grid per presentation (and per group, through `gridConfig`) via the root `grid` prop — for example a dense corporate deck might use a 12 × 12 grid with tighter 0.16 in gutters for finer vertical control.
 
 The full resolution math, clamping behavior, and explicit-coordinate overrides are covered in [Slides & the grid](/reference/pptx/slides-and-grid).
 
@@ -216,89 +216,97 @@ Each slide can set a background color (hex or semantic theme name) or a backgrou
 
 Using semantic colors for backgrounds (`"background"`, `"primary"`, `"background2"`) keeps dark-section slides consistent when you swap themes.
 
-## Templates and placeholders
+## Blocks: define a slide once, fill it many times
 
-Once a deck has more than a few slides, you will notice the same layouts repeating: a cover, section dividers, a two-column content slide. Templates let you define each layout **once**, at the root, and stamp it onto any number of slides. A template bundles a background, fixed decorations (`objects` — logos, footers, decorative shapes), and named `placeholders`: regions with a position and styling defaults, waiting for content.
+Once a deck has more than a few slides, you will notice the same layouts repeating: a chart with a claim above it, a section divider, a two-column content slide. Blocks let you define each layout **once**, in the deck's own `props.blocks`, and invoke it on any number of slides. A definition names its slots, binds them into ordinary slide content, and owns every coordinate; a slide invokes it with `name: "block"` and supplies words and data.
 
 ```json
 {
   "name": "pptx",
   "props": {
-    "title": "Quarterly review",
-    "slideWidth": 13.33,
+    "theme": "consulting",
+    "slideWidth": 13.333,
     "slideHeight": 7.5,
-    "grid": { "columns": 12, "rows": 12 },
-    "templates": [
-      {
-        "name": "COVER_TEMPLATE",
-        "background": { "color": "primary" },
-        "objects": [
+    "blocks": {
+      "action-chart": {
+        "slots": {
+          "title": {
+            "type": "string",
+            "required": true,
+            "maxWords": 24,
+            "role": "actionTitle"
+          },
+          "chart": { "type": "component", "required": true },
+          "source": { "type": "string", "maxWords": 24, "role": "source" }
+        },
+        "body": [
           {
-            "name": "image",
+            "name": "text",
             "props": {
-              "path": "https://example.com/logo-white.svg",
-              "w": "7.5%",
-              "h": "2.8%",
-              "grid": { "column": 0, "row": 0 }
-            }
-          }
-        ],
-        "placeholders": [
-          {
-            "name": "title",
-            "grid": { "column": 0, "row": 3, "columnSpan": 10, "rowSpan": 5 },
-            "defaults": {
-              "name": "text",
-              "props": {
-                "style": "title",
-                "color": "background",
-                "valign": "bottom"
-              }
+              "text": { "$slot": "/title" },
+              "style": "display",
+              "x": 0.5,
+              "y": 0.45,
+              "w": 12.333,
+              "h": 1.3,
+              "fit": { "maxLines": 2, "shrink": [24, 22] }
             }
           },
           {
-            "name": "subtitle",
-            "grid": { "column": 0, "row": 9, "columnSpan": 7, "rowSpan": 2 },
-            "defaults": {
+            "$slot": "/chart",
+            "props": { "x": 0.5, "y": 2.15, "w": 8.4, "h": 4.25 }
+          },
+          {
+            "$if": "/source",
+            "then": {
               "name": "text",
               "props": {
-                "style": "subtitle",
-                "fontSize": 16,
-                "color": "#9A9EB0"
+                "text": { "$slot": "/source" },
+                "style": "source",
+                "x": 0.5,
+                "y": 6.62,
+                "w": 9,
+                "h": 0.35
               }
             }
           }
         ]
       }
-    ]
+    }
   },
   "children": [
     {
       "name": "slide",
-      "props": {
-        "template": "COVER_TEMPLATE",
-        "notes": "Cover slide.",
-        "placeholders": {
-          "title": {
-            "name": "text",
-            "props": { "text": "A showcase of the 16:9\nslide system" }
-          },
-          "subtitle": {
-            "name": "text",
-            "props": { "text": "Mock deck illustrating every template" }
+      "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "action-chart",
+            "slots": {
+              "title": "Revenue grew 18% as on-time delivery reached 94%",
+              "chart": {
+                "name": "chart",
+                "props": {
+                  "type": "bar",
+                  "valAxisTitle": "Revenue (€m)",
+                  "data": []
+                }
+              },
+              "source": "Source: quarterly operating review, 2026."
+            }
           }
         }
-      }
+      ]
     }
   ]
 }
 ```
 
-The slide only supplies **content**; position and styling come from the placeholder definition. This is the core of the "documents as data" idea — an LLM or a script can fill placeholders on a well-designed template without ever touching layout. Templates can even override the grid configuration for their slides. The complete template and placeholder model — including the defaults precedence chain — is documented in [Slides & the grid](/reference/pptx/slides-and-grid).
+The slide only supplies **content**; position, type and the theme bindings come from the definition. This is the core of the "documents as data" idea — an LLM or a script can fill slots on a well-designed definition without ever touching layout. An invocation accepts no coordinates, and a component placed in a slot may not carry any. Omit an optional slot and its region collapses, decorations included; exceed a slot's word budget and validation says so at the slot; a title that cannot fit its declared lines steps down through the declared sizes and then fails generation rather than spilling. The complete contract — slide effects, frames, row and column distribution, slot roles, the reference catalog — is documented in [JSON blocks](/reference/blocks#pptx); groups and grids in [Slides & the grid](/reference/pptx/slides-and-grid).
 
 ## Inline themes: self-contained decks
 
-The root `theme` prop normally names a built-in theme (`default`, `dark`, `minimal`) or a custom theme registered via generation options. But it can also be a **full theme object inline**, which makes the JSON document completely self-contained — no external theme file, no registration code, one artifact you can store, diff, and ship:
+The root `theme` prop normally names a built-in theme (`consulting`, `default`, `dark`, `minimal`) or a custom theme registered via generation options. But it can also be a **full theme object inline**, which makes the JSON document completely self-contained — no external theme file, no registration code, one artifact you can store, diff, and ship:
 
 ```json
 {
@@ -339,7 +347,7 @@ for (const w of warnings) {
 }
 ```
 
-Generation is forgiving about recoverable content problems: instead of failing on them, it emits **pipeline warnings** and produces the best file it can. Each warning has a machine-readable `code` — for example `GRID_POSITION_CLAMPED` (a grid placement fell outside the grid and was clamped), `MISSING_TEMPLATE` (a slide referenced a template name that doesn't exist), `HYPERLINK_SLIDE_UNRESOLVED` (an internal link pointed at no emitted slide and was dropped), `IMAGE_NO_SOURCE`, `CHART_INVALID_SERIES`, `THEME_COLOR_FALLBACK`, or `FONT_UNRESOLVED` — and, where available, the component and/or slide it came from.
+Generation is forgiving about recoverable content problems: instead of failing on them, it emits **pipeline warnings** and produces the best file it can. Each warning has a machine-readable `code` — for example `GRID_POSITION_CLAMPED` (a grid placement fell outside the grid and was clamped), `HYPERLINK_SLIDE_UNRESOLVED` (an internal link pointed at no emitted slide and was dropped), `IMAGE_NO_SOURCE`, `CHART_INVALID_SERIES`, `THEME_COLOR_FALLBACK`, or `FONT_UNRESOLVED` — and, where available, the component and/or slide it came from.
 
 ::: tip Schema errors fail before any of this
 Generation validates the document against the schema first, so a wrong prop name or invalid nesting throws `PresentationValidationError` rather than reaching the warning path. Warnings only cover what the schema can't express. `validate.document(...)` and `jto pptx validate` run the same check without producing a file. See [Validation](/guide/validation).
@@ -350,7 +358,8 @@ The other hard failures at generation time: an image with more than one source (
 ## Where to go next
 
 - [Presentation & slide reference](/reference/pptx/presentation) — every root and slide prop.
-- [Slides & the grid](/reference/pptx/slides-and-grid) — grid math, templates, placeholders.
+- [Slides & the grid](/reference/pptx/slides-and-grid) — grid math, groups and frames.
+- [JSON blocks](/reference/blocks#pptx) — definitions, slots, slide effects, fit.
 - [PPTX components](/reference/pptx/components) — full prop tables for text, image, shape, table.
 - [Charts](/guide/charts) — native charts vs. Highcharts.
 - [Themes & styling](/guide/themes) — the color system and style presets.

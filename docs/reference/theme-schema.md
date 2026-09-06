@@ -41,13 +41,13 @@ Canvas keys are `a4`, `letter`, `wide169`, `standard43`. DOCX uses `theme.page.s
 
 ### `spacing`
 
-`canvas.<canvas>` accepts nonnegative `safeAreaIn` and `gutterIn`, and integer `columns`/`rows` (1–100). DOCX maps safe area to four page margins and gutter to the page gutter, converting inches to twips; section/page overrides still apply. PPTX uses them as grid defaults; document/slide/template grid overrides win. Absolute PPTX coordinates remain absolute.
+`canvas.<canvas>` accepts nonnegative `safeAreaIn` and `gutterIn`, and integer `columns`/`rows` (1–100). DOCX maps safe area to four page margins and gutter to the page gutter, converting inches to twips; section/page overrides still apply. PPTX uses them as grid defaults; the document grid and a group’s `gridConfig` win. Absolute PPTX coordinates remain absolute.
 
 `basePt` (>0) and `blockGap.tight/normal/loose` (≥0) are spacing values in points. DOCX normal-style spacing falls back to `blockGap.normal`, then `basePt`, when native normal-style spacing is absent. Its normal size similarly falls back to the selected scale base. Tight/loose gaps and DOCX grid rows/columns are reserved for semantic block consumers; they do not insert blocks or columns. PPTX block gaps are values for those later consumers, not automatic coordinate rearrangement.
 
 ### `chrome` and `motif`
 
-Visual recipes the DOCX blocks paint from. No content is inserted by a theme: a recipe says how a block looks once an author places it.
+Visual recipes the JSON blocks of both formats paint from. No content is inserted by a theme: a recipe says how a block looks once an author places it.
 
 `chrome` optionally contains `runningHead`, `tracker`, `actionTitle`, `keyTakeaways`, `sourceLine`, `confidentialFooter`, `logoSlot`, `cover`. Each recipe accepts `type` (a role name), `color`, `fill`, `rule: { weightPt, color }`, `padPt` and `alignment` (left/center/right). Weights/padding are nonnegative points. Nothing reads these recipes on its own: a [JSON block](/reference/blocks) binds the values it wants with `$theme` pointers such as `/chrome/keyTakeaways/rule/color`, so a theme swap restyles every block that binds them. A `rule.weightPt` of `0` draws no rule.
 

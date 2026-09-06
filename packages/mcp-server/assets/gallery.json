@@ -53,10 +53,10 @@
       },
       "externalAssets": [],
       "externalFonts": [],
-      "hash": "7489ad16b323a7e3848f816d40f6cff4936e579be80b459ac163273f3d5ecc5f",
+      "hash": "fd36d9084504862346b872ae382f7647c9e261936dd60102aaab3e35c965965e",
       "bytes": {
-        "document": 13397,
-        "gzipped": 2584,
+        "document": 12623,
+        "gzipped": 2563,
         "thumbnail": 18843
       }
     },
@@ -83,10 +83,10 @@
       },
       "externalAssets": [],
       "externalFonts": [],
-      "hash": "4ee25e18e641c0f5cd8f552afd72b8b423826e27772a273016568082b6360311",
+      "hash": "59a1ed103db621ff2045d71c49ae1ce051e39d4b3b9d429eb505554291379134",
       "bytes": {
-        "document": 90199,
-        "gzipped": 7339,
+        "document": 87487,
+        "gzipped": 7284,
         "thumbnail": 119370
       }
     },
@@ -159,10 +159,10 @@
         "media/minimalist-pitch-deck/image3.png"
       ],
       "externalFonts": [],
-      "hash": "ac45da89d02f2a82a806af174229e8d10a0e543e4e05538a316e91227a3299b0",
+      "hash": "8b02ffbcbcbd5537f87d82687ed9d9c74843d4406987c435ba26dbb1f7efb10a",
       "bytes": {
-        "document": 106463,
-        "gzipped": 7788,
+        "document": 106287,
+        "gzipped": 7776,
         "thumbnail": 172474
       }
     },

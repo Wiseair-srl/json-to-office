@@ -101,7 +101,7 @@ describe('/api/discovery/schemas/document', () => {
       ['$slot', '$item', '$theme', '$context', '$if', 'columns', 'gap'],
     ],
     ['{"columns":2,"|"}', ['gap']],
-    ['{"$slot":"/settings","|"}', ['default']],
+    ['{"$slot":"/settings","|"}', ['default', 'props']],
     [
       '{"$if":"/enabled","then":{"|"}}',
       ['$slot', '$item', '$theme', '$context', '$if', 'columns', 'gap'],
