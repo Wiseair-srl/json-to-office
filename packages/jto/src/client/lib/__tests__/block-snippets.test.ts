@@ -214,6 +214,8 @@ describe('blockSnippets', () => {
       label: 'action-chart',
       detail: 'block from consulting-deck-blocks',
       insertText: '"action-chart"',
+      // Monaco matches the opening quote already typed against this.
+      filterText: '"action-chart',
     });
     expect(snippet.documentation).toBe(references[0].description);
     const edited = applyTextEdits(text, [
@@ -239,6 +241,9 @@ describe('blockSnippets', () => {
       const { text, offset } = cursor(bare(child));
       const [snippet] = blockSnippets(text, offset, options);
       expect(snippet.kind).toBe('component');
+      expect(snippet.filterText).toBe(
+        child.slice(0, child.indexOf('|')) + 'action-chart'
+      );
       expect(snippet.insertText).toContain('${1:');
       expect(snippet.insertText).toContain('"ref": "action-chart"');
       const edited = applyTextEdits(text, [

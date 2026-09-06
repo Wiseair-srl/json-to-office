@@ -117,9 +117,15 @@ function EditorMonacoJson({
   // `props.blocks`.
   const debouncedSyncBlocksRef = useRef(
     debounce((monaco: Monaco, modelText: string) => {
+      // Expanded first: a long description or default sits in the model as
+      // a collapse sentinel, and the schema must carry the real value.
       updateMonacoDocumentBlocks(
         monaco,
-        readDocumentBlockDefinitions(modelText)
+        readDocumentBlockDefinitions(
+          collapseRef.current
+            ? collapseRef.current.toStorageValue(modelText)
+            : modelText
+        )
       );
     }, 400)
   );

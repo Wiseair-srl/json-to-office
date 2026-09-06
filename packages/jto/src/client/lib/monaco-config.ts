@@ -24,8 +24,9 @@ import {
 } from '@json-to-office/shared-docx';
 import { createQualityPolicySchemaConfig } from './quality-policy-schema';
 import type { BrowserComponentSchemaInfo } from '../store/browser-plugins-store';
+import { useEditorRefsStore } from '../store/editor-refs-store';
 import { FORMAT } from './env';
-import { blockReferences } from './block-references';
+import { loadBlockReferences } from './block-references';
 import { blockSnippets } from './block-snippets';
 import {
   blockDefinitionsSignature,
@@ -151,6 +152,10 @@ export function configureMonacoInstance(monaco: Monaco): void {
 
   // Register custom JSON completion provider that shows schema descriptions inline
   registerJsonCompletionProvider(monaco);
+
+  // The reference block catalog the provider offers: asked for now so the
+  // first completion does not go without it.
+  void loadBlockReferences();
 
   // Register CodeLens provider that puts a "Pick font…" action above any
   // font-name string in the active JSON doc.
@@ -440,6 +445,19 @@ function registerJsonCompletionProvider(monaco: Monaco): void {
         // slide or section takes content. Offsets from the pure module map
         // onto model positions here.
         const text = model.getValue();
+        // Long strings sit in the model as collapse sentinels; definitions
+        // and the example an invocation provides are read from the expanded
+        // document, while offsets and edits stay in model text.
+        const expanded =
+          [...useEditorRefsStore.getState().editors.values()]
+            .find((entry) => entry.editor.getModel() === model)
+            ?.toStorageValue(text) ?? text;
+        let document: unknown;
+        try {
+          document = JSON.parse(expanded);
+        } catch {
+          document = undefined;
+        }
         const toRange = (span: { offset: number; length: number }) => {
           const start = model.getPositionAt(span.offset);
           const end = model.getPositionAt(span.offset + span.length);
@@ -451,9 +469,10 @@ function registerJsonCompletionProvider(monaco: Monaco): void {
           };
         };
         for (const snippet of blockSnippets(text, model.getOffsetAt(position), {
-          references: blockReferences(),
-          definitions: readDocumentBlockDefinitions(text),
+          references: await loadBlockReferences(),
+          definitions: readDocumentBlockDefinitions(expanded),
           format: FORMAT,
+          document,
         })) {
           suggestions.push({
             label: snippet.label,
@@ -466,6 +485,7 @@ function registerJsonCompletionProvider(monaco: Monaco): void {
               ? { value: snippet.documentation }
               : undefined,
             insertText: snippet.insertText,
+            filterText: snippet.filterText,
             insertTextRules:
               snippet.kind === 'component'
                 ? monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet
