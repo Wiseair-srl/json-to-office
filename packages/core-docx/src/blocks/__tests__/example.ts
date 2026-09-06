@@ -29,3 +29,13 @@ export const on = (theme: string, ...blocks: unknown[]) => {
   doc.children = [{ name: 'section', children: blocks }];
   return doc;
 };
+/** An invocation of `ref` with the given slots. */
+export const block = (ref: string, slots: Record<string, unknown>) => ({
+  name: 'block',
+  props: { ref, slots },
+});
+export const section = (...children: unknown[]) => ({
+  name: 'section',
+  children,
+});
+export const para = (text: string) => ({ name: 'paragraph', props: { text } });
