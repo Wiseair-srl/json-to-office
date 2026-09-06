@@ -53,7 +53,7 @@ describe('bundled playground templates', () => {
         file.endsWith('.docx.json') && json.props?.blocks
           ? prepareDocxQualityDocument(json).model.context.document
           : json;
-      const names = [...collect(expanded)];
+      const names = [...new Set([...collect(json), ...collect(expanded)])];
       expect(names.length).toBeGreaterThan(0);
       // Families the document itself registers (fontRegistry with real
       // sources) are resolvable by definition — the registry is how a

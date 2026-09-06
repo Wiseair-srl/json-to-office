@@ -95,7 +95,6 @@ describe('tool surface', () => {
       props: {
         blocks: {
           local: {
-            format: 'docx',
             slots: { title: { type: 'string', required: true } },
             body: [{ name: 'paragraph', props: { text: { $slot: '/title' } } }],
           },

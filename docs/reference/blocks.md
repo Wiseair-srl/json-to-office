@@ -1,6 +1,6 @@
 # JSON blocks
 
-Blocks compose reusable document structure from JSON. Code plugins provide calculations, external I/O and programmable behavior. DOCX supports the contract below; #340 implements the PPTX adapter. A `format: "pptx"` definition already uses the shared slot/binding model, but cannot yet be rendered as a PPTX block.
+Blocks compose reusable document structure from JSON. Code plugins provide calculations, external I/O and programmable behavior. DOCX supports the contract below; #340 implements the PPTX adapter. Format is inherited from the containing document. The shared slot/binding model will also serve PPTX blocks when that adapter lands.
 
 ## Complete custom example
 
@@ -13,7 +13,6 @@ This document requires no plugin or catalog lookup. Change the definition to cha
     "theme": "consulting",
     "blocks": {
       "summary": {
-        "format": "docx",
         "description": "A short conclusion with an optional source group.",
         "slots": {
           "title": { "type": "string", "default": "Summary", "maxWords": 8 },
@@ -67,13 +66,17 @@ This document requires no plugin or catalog lookup. Change the definition to cha
 
 ## Definitions and slots
 
-`props.blocks` maps names (`^[a-zA-Z][a-zA-Z0-9_-]*$`) to `{ format, description?, slots, body, section? }`. Definitions belong to one document and must match its format. A name conflicting with a registered plugin is rejected. Standard primitives have a separate namespace; `block.props.ref` always names an inline definition.
+`props.blocks` maps names (`^[a-zA-Z][a-zA-Z0-9_-]*$`) to `{ description?, slots, body, section? }`. Definitions belong to one document and inherit its format; no `format` property is accepted. The selected renderer determines available components and operations. A name conflicting with a registered plugin is rejected. Standard primitives have a separate namespace; `block.props.ref` always names an inline definition.
 
 `slots` maps names to descriptors. Supported `type` values: `string`, `number`, `integer`, `boolean`, `object`, `array`, `component`. Descriptors support `description`, `required`, `default`, `enum`; strings support `minLength`, `maxLength`, `maxWords`, `oneLine`; numbers support `minimum`/`maximum`; arrays support `items`, `minItems`/`maxItems`; objects support named `properties` with the same descriptors. Unknown invocation slots and unknown declared-object properties are errors.
 
 Defaults apply only to missing values, including nested object properties. Empty strings, empty lists and `false` remain authored values; they do not select defaults. `required` rejects missing values; use `minLength`/`minItems` to reject empty content. Optional bindings omit undefined properties. `$if` treats missing, null, empty strings/lists and false as absent, after defaults resolve. Required-slot validation runs before omission, so optional groups cannot bypass requirements.
 
 An invocation accepts only `ref` and `slots`, with no layout overrides. Component slots accept existing primitives or registered plugin components. They reject placement props `x`, `y`, `w`, `h`, `position`, `grid`, `alignment`, `spacing`; intrinsic image `width`/`height` remain valid. Placement and typography belong in the definition. Direct primitive authoring remains available outside semantic invocations.
+
+## Editor assistance
+
+Block bodies, section headers/footers, and nested `$if`/`$each` compositions use schemas derived from the selected renderer and registered plugins. The playground suggests component names, component props and binding directives, and accepts bindings in nested property values. Ordinary document props keep their literal-value schemas. Component names remain literal discriminators; use a component slot when supplying a whole component dynamically.
 
 ## Bounded bindings
 

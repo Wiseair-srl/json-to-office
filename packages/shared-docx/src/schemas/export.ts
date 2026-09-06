@@ -7,6 +7,7 @@
 
 import { TSchema } from '@sinclair/typebox';
 import { restructureNameDiscriminatedUnions } from '@json-to-office/shared';
+import { addDocxBlockAuthoringSchemas } from './block-authoring';
 import { getContainerComponents } from './component-registry';
 
 /**
@@ -214,6 +215,8 @@ export function convertToJsonSchema(
 
   // Fix any remaining recursive references
   fixSchemaReferences(jsonSchema);
+
+  addDocxBlockAuthoringSchemas(jsonSchema);
 
   // Canonical if/then dispatch for `name`-discriminated unions (editor UX)
   restructureNameDiscriminatedUnions(jsonSchema);

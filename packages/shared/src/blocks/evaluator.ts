@@ -432,12 +432,6 @@ export function validateBlockDefinitions(
         code: 'block_name_collision',
         message: `Block '${name}' conflicts with a registered component.`,
       });
-    if (def.format !== format)
-      issues.push({
-        path: `${path}/format`,
-        code: 'block_format',
-        message: `Expected ${format} definition.`,
-      });
     if (format !== 'docx' && def.section)
       issues.push({
         path: `${path}/section`,
@@ -704,8 +698,10 @@ export class JsonBlockEvaluator {
           'block_slot_type',
           '$each requires an array slot.'
         );
-      return list.map((item, i) =>
-        this.evaluate(
+      const result: unknown[] = [];
+      list.forEach((item, i) => {
+        const pointer = `${out}/${result.length}`;
+        const evaluated = this.evaluate(
           value.template,
           {
             ...env,
@@ -714,11 +710,18 @@ export class JsonBlockEvaluator {
               ? toAuthoredBlockPointer(env.slotSources, `${value.$each}/${i}`)
               : `${env.source}/props/slots${value.$each}/${i}`,
           },
-          `${out}/${i}`,
+          pointer,
           `${definitionPath}/template`,
           depth + 1
-        )
-      );
+        );
+        if (evaluated !== undefined) result.push(evaluated);
+        else
+          for (const key of Object.keys(this.sourceMap)) {
+            if (key === pointer || key.startsWith(`${pointer}/`))
+              delete this.sourceMap[key];
+          }
+      });
+      return result;
     }
     if ('$join' in value) {
       const values = (value.$join as unknown[]).map((v, i) =>

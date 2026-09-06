@@ -3,6 +3,7 @@ import {
   BlockEvaluationError,
   readBlockDefinitions,
   blockValueAt,
+  blockPointerKey,
   isBlockRecord,
   blockWordCount,
   toAuthoredBlockPointer,
@@ -381,6 +382,16 @@ export function blockSlotBudgets(
           words: blockWordCount(value),
           maxWords: slot.maxWords,
         });
+      if (isBlockRecord(value) && slot.properties) {
+        for (const [key, property] of Object.entries(slot.properties)) {
+          visit(
+            property,
+            blockValueAt(value, `/${blockPointerKey(key)}`),
+            `${pointer}/${blockPointerKey(key)}`,
+            `${name}.${key}`
+          );
+        }
+      }
       if (Array.isArray(value) && slot.items)
         value.forEach((item, i) =>
           visit(slot.items!, item, `${pointer}/${i}`, name)
@@ -389,8 +400,8 @@ export function blockSlotBudgets(
     for (const [name, slot] of Object.entries(definition.slots))
       visit(
         slot,
-        blockValueAt(node.props.slots, `/${name}`),
-        `${path}/props/slots/${name}`,
+        blockValueAt(node.props.slots, `/${blockPointerKey(name)}`),
+        `${path}/props/slots/${blockPointerKey(name)}`,
         name
       );
   }

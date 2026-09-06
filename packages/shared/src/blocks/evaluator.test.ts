@@ -8,7 +8,6 @@ import {
 } from './index';
 
 const definition: JsonBlockDefinition = {
-  format: 'docx',
   slots: {
     title: { type: 'string', required: true, maxWords: 3 },
     subtitle: { type: 'string' },
@@ -132,7 +131,6 @@ describe('document-local JSON block evaluation', () => {
   it('bounds recursive block expansion', () => {
     const defs = {
       loop: {
-        format: 'docx' as const,
         slots: {},
         body: [{ name: 'block', props: { ref: 'loop' } }],
       },
@@ -147,7 +145,6 @@ describe('document-local JSON block evaluation', () => {
   it('maps renamed slots through nested block invocations', () => {
     const defs = {
       parent: {
-        format: 'docx' as const,
         slots: { title: { type: 'string' as const } },
         body: [
           {
@@ -157,7 +154,6 @@ describe('document-local JSON block evaluation', () => {
         ],
       },
       child: {
-        format: 'docx' as const,
         slots: { text: { type: 'string' as const } },
         body: [{ name: 'paragraph', props: { text: { $slot: '/text' } } }],
       },
@@ -174,19 +170,21 @@ describe('document-local JSON block evaluation', () => {
       )
     ).toBe('/props/slots/title');
   });
-  it('rejects plugin name collisions and format mismatches', () => {
+  it('rejects plugin collisions and format-incompatible operations', () => {
     expect(
       validateBlockDefinitions({ summary: definition }, 'docx', ['summary'])[0]
         .code
     ).toBe('block_name_collision');
     expect(
-      validateBlockDefinitions({ summary: definition }, 'pptx')[0].code
+      validateBlockDefinitions(
+        { summary: { ...definition, section: { tracker: 'Section' } } },
+        'pptx'
+      )[0].code
     ).toBe('block_format');
   });
   it('does not read inherited properties as slot bindings', () => {
     const defs = {
       safe: {
-        format: 'docx' as const,
         slots: { obj: { type: 'object' as const } },
         body: [
           {
@@ -224,7 +222,6 @@ it('describes only document-local definitions and their fill pointers', async ()
 
 it('rejects unknown nested bindings and contradictory declared bounds', () => {
   const nested = {
-    format: 'docx' as const,
     slots: {
       record: {
         type: 'object' as const,
@@ -260,7 +257,6 @@ it('rejects unknown nested bindings and contradictory declared bounds', () => {
 
 it('rejects placement hidden inside a component-slot group', () => {
   const component = {
-    format: 'docx' as const,
     slots: { content: { type: 'component' as const } },
     body: [{ $slot: '/content' }],
   };
@@ -289,4 +285,55 @@ it('rejects placement hidden inside a component-slot group', () => {
       }),
     ])
   );
+});
+
+it('drops missing repeated values and preserves their original item pointers', () => {
+  const definitions = {
+    values: {
+      slots: {
+        items: {
+          type: 'array' as const,
+          items: {
+            type: 'object' as const,
+            properties: { label: { type: 'string' as const } },
+          },
+        },
+      },
+      body: [
+        {
+          name: 'list',
+          props: {
+            items: [{ $each: '/items', template: { $item: '/label' } }],
+          },
+        },
+      ],
+    },
+  };
+  const evaluator = new JsonBlockEvaluator(definitions, { format: 'docx' });
+  const result = evaluator.expand({
+    name: 'block',
+    props: {
+      ref: 'values',
+      slots: { items: [{}, { label: 'A' }, {}, { label: 'B' }, {}] },
+    },
+  }) as any;
+  expect(result.children[0].props.items).toEqual(['A', 'B']);
+  expect(
+    toAuthoredBlockPointer(evaluator.sourceMap, '/children/0/props/items/0')
+  ).toBe('/props/slots/items/1/label');
+  expect(
+    toAuthoredBlockPointer(evaluator.sourceMap, '/children/0/props/items/1')
+  ).toBe('/props/slots/items/3/label');
+  expect(evaluator.sourceMap).not.toHaveProperty('/children/0/props/items/2');
+});
+
+it('inherits format from the host and rejects a redundant authored format field', () => {
+  expect(validateBlockDefinitions({ summary: definition }, 'docx')).toEqual([]);
+  expect(validateBlockDefinitions({ summary: definition }, 'pptx')).toEqual([]);
+  expect(
+    validateBlockDefinitions(
+      { summary: { ...definition, format: 'docx' } },
+      'docx'
+    )[0].code
+  ).toBe('block_invalid_definition');
 });

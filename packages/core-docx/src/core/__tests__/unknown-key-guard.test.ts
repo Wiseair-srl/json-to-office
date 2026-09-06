@@ -277,7 +277,6 @@ function componentDoc(name: string, props: unknown): Json {
       ...(name === 'block' && {
         blocks: {
           [String((props as Json).ref)]: {
-            format: 'docx',
             slots: {},
             body: [],
           },
