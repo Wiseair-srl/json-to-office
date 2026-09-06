@@ -52,6 +52,26 @@ export function toAuthoredBlockPointer(
     ? pointer
     : `${map[best]}${pointer.slice(best.length)}`;
 }
+/**
+ * Props a component placed in a slot may not carry: placement and group
+ * layout belong to the definition. Read by the runtime check below and by the
+ * editor schema that flags them inline.
+ */
+export const BLOCK_SLOT_PLACEMENT_PROPS: readonly string[] = [
+  'x',
+  'y',
+  'w',
+  'h',
+  'position',
+  'grid',
+  'gridConfig',
+  'direction',
+  'gap',
+  'weights',
+  'alignment',
+  'spacing',
+];
+
 export const blockWordCount = (text: string): number =>
   text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
 const present = (value: unknown): boolean =>
@@ -159,20 +179,7 @@ export function resolveBlockSlot(
         typeof node.name === 'string' && isBlockRecord(node.props)
           ? node.props
           : {};
-      for (const key of [
-        'x',
-        'y',
-        'w',
-        'h',
-        'position',
-        'grid',
-        'gridConfig',
-        'direction',
-        'gap',
-        'weights',
-        'alignment',
-        'spacing',
-      ]) {
+      for (const key of BLOCK_SLOT_PLACEMENT_PROPS) {
         if (own(props, key))
           issues.push({
             path: `${pointer}/props/${key}`,
