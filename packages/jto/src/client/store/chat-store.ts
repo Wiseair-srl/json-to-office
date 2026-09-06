@@ -18,7 +18,7 @@ export function defaultThreadTitle(): string {
   return `Chat ${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export type AiScope = 'global' | 'slides' | 'templates';
+export type AiScope = 'global' | 'slides' | 'blocks';
 export type AiModel = 'opus' | 'sonnet' | 'haiku';
 
 export type ChatState = {
@@ -208,7 +208,7 @@ export const createChatStore = (initState: ChatState = initChatStore()) => {
         }),
         {
           name: 'chat-storage',
-          version: 1,
+          version: 2,
           storage: createJSONStorage(() => idbStorage),
           partialize: (state) => ({
             threads: state.threads,
@@ -238,6 +238,11 @@ export const createChatStore = (initState: ChatState = initChatStore()) => {
                 };
               }
               return { threads: {}, activeThreadId: {} };
+            }
+            // v1 scoped edits to slide templates, which no longer exist;
+            // the same position in the document now holds block definitions.
+            if (version < 2 && persisted?.scope === 'templates') {
+              return { ...persisted, scope: 'blocks' };
             }
             return persisted as any;
           },

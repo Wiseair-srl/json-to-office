@@ -11,21 +11,22 @@ IMPORTANT: Produce ONLY the modified fragment that replaces the selected text ab
 
 ### PPTX selection editing rules
 
-- This fragment lives inside a template-based slide. The template's placeholders already define default styling.
-- **Don't add props the placeholder already defines** — `fontSize`, `fontFace`, `color`, `bold`, `italic`, `align`, `valign`, `margin`, `charSpacing`, `lineSpacing`, `style`, and position are inherited automatically.
-- Grid positions are slide-relative, not placeholder-relative.
-- Keep components minimal — only include props that differ from placeholder defaults.
+- If the fragment is a block invocation (`"name": "block"`), keep its `ref` and change only the `slots`. An invocation takes no coordinates or styling — the definition owns them.
+- If the fragment is slot content (a chart, an image, a text placed in a component slot), it may carry its data and styling but never `x`, `y`, `w`, `h`, `position` or `grid`.
+- If the fragment is a block definition, keep every slot the document's invocations fill; bindings (`$slot`, `$theme` with a `default`, `$if`) stay valid.
+- If the fragment is a coordinate-authored component, keep its position unless asked to move it, and prefer named `style` values and theme color names over raw sizes and hex.
+- Keep components minimal; do not add props a style or a definition already provides.
 
 ### Example
 
 **Selected text:**
 ```json
-{ "name": "text", "props": { "text": "Hello world", "fontSize": 14, "bold": false } }
+{ "name": "block", "props": { "ref": "action-chart", "slots": { "title": "Revenue grew 18%", "chart": { "name": "chart", "props": { "type": "bar", "data": [{ "name": "Revenue", "labels": ["Q1", "Q2"], "values": [4.2, 4.6] }] } } } } }
 ```
 
-**User request:** "Change to Welcome and make it bold"
+**User request:** "Add a takeaway saying reliability drove the gain"
 
-**Correct output** (omit fontSize if placeholder provides it):
+**Correct output** (same ref, one more slot):
 ```json
-{ "name": "text", "props": { "text": "Welcome", "bold": true } }
+{ "name": "block", "props": { "ref": "action-chart", "slots": { "title": "Revenue grew 18%", "chart": { "name": "chart", "props": { "type": "bar", "data": [{ "name": "Revenue", "labels": ["Q1", "Q2"], "values": [4.2, 4.6] }] } }, "takeaway": "Reliability, not price, drove the gain." } } }
 ```

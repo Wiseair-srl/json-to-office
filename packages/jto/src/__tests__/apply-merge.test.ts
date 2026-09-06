@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   mergeAiOutput,
+  mergeBlocksDelta,
   extractFragmentKeys,
   findKeyValueSpans,
   lineRangeSplice,
@@ -325,5 +326,33 @@ describe('mergeAiOutput — integration', () => {
     const full = JSON.stringify({ a: 10, b: 20, c: 30 });
     const r2 = mergeAiOutput(doc, full);
     expect(r2.modified).toBe(full);
+  });
+});
+
+// ── Block definition delta ─────────────────────────────────────────────
+
+describe('mergeBlocksDelta', () => {
+  const existing = {
+    cover: { slots: {}, body: [{ name: 'text', props: { text: 'a' } }] },
+    'kpi-row': { slots: { items: { type: 'array' } }, body: [] },
+  };
+
+  it('replaces the named definition, adds new ones and keeps the rest', () => {
+    const statement = { slots: { text: { type: 'string' } }, body: [] };
+    const merged = mergeBlocksDelta(existing, {
+      cover: { slots: {}, body: [] },
+      statement,
+    });
+    expect(Object.keys(merged)).toEqual(['cover', 'kpi-row', 'statement']);
+    expect(merged.cover).toEqual({ slots: {}, body: [] });
+    expect(merged['kpi-row']).toBe(existing['kpi-row']);
+    expect(merged.statement).toBe(statement);
+  });
+
+  it('deletes a definition mapped to null and ignores other scalars', () => {
+    const merged = mergeBlocksDelta(existing, { cover: null, 'kpi-row': 3 });
+    expect(Object.keys(merged)).toEqual(['kpi-row']);
+    expect(merged['kpi-row']).toBe(existing['kpi-row']);
+    expect(existing.cover).toBeDefined();
   });
 });

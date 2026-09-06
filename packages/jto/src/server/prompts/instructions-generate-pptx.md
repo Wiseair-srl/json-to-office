@@ -2,25 +2,21 @@ The user wants you to generate a complete presentation JSON from scratch.
 
 Produce a full PPTX JSON wrapped in a ```json code block:
 
-- Define 2–3 template slides (TITLE_TEMPLATE, CONTENT_TEMPLATE, and optionally TWO_COLUMN_TEMPLATE)
-- Templates should include header bars, footer bars, and branding text as `objects`
-- **Every component** (in `objects[]`, `placeholders`, `children[]`) MUST use `{ "name": "<type>", "props": { ... } }`. Never `{ "type": "...", ... }` with flat props
-- The presentation MUST include a `"grid"` prop on `pptx.props` (e.g. `"grid": { "columns": 12, "rows": 6, "margin": 0.5, "gutter": 0.2 }`)
-- Templates with header/footer bars MUST set `"grid": { "margin": { "top": <header-height + 0.2> } }` so row 0 starts below the header
-- Generate 5–8 slides that reference these templates and fill their placeholders
-- Mix component types: text, shapes, tables where appropriate
-- Include a title slide and a closing/thank-you slide
-- Use `charSpacing` on wordmarks, uppercase labels, and section identifiers for professional typography
-- For refined/elegant designs, use light font variants (e.g. `"Inter Light"`) via `fontFace` instead of relying on bold alone
+- Set `theme` (prefer `consulting`), `slideWidth: 13.333` and `slideHeight: 7.5` on `pptx.props`
+- Define the blocks the deck needs in `pptx.props.blocks`: copy the reference blocks you invoke verbatim, and define your own (a cover, a statement, a two-column comparison, a metric row) as percentage frames with type-role bindings and `$if` around optional slots
+- Generate 5–8 slides; every standard slide invokes a block with `{ "name": "block", "props": { "ref": "...", "slots": { ... } } }` and supplies content only — no coordinates on an invocation or in slot content
+- Include a cover slide and a closing slide
+- Coordinate-authored slides are for one-off layouts only
+- **Every component** (in a block `body`, a component slot, or `slide.children`) MUST use `{ "name": "<type>", "props": { ... } }`. Never `{ "type": "...", ... }` with flat props
+- Use `charSpacing` on wordmarks and uppercase labels; use theme color names, not hex
 
 Before finalizing, verify:
 
-- [ ] No two text/shape components share the same position
-- [ ] Headings fit their container (short text or reduced fontSize)
-- [ ] `slideNumber` is in the bottom-right, not overlapping content
-- [ ] All `ellipse` shapes intended as circles have equal `w` and `h`
-- [ ] Initials and short labels inside shapes have no `\n` line breaks
-- [ ] Every template with a header/footer bar sets `grid.margin` to push content clear
+- [ ] Every `ref` names a definition present in `props.blocks`
+- [ ] Every `required` slot of every invocation is filled; slot text respects `maxWords` and `oneLine`
+- [ ] No `templates`, `template`, `placeholders` or `layout` keys anywhere
+- [ ] Block bodies use percentage frames and `fit` on titles; theme bindings carry a `default`
+- [ ] Page numbers and trackers live in block bodies, not overlapping content
 - [ ] Tables specify `rowH` (0.4–0.55") and `margin` ([3, 6, 3, 6])
-- [ ] Tables use `borderRadius` (0.1–0.2) for polished appearance
+- [ ] `ellipse` shapes intended as circles have equal `w` and `h`
 - [ ] Cells with Unicode symbols (✓, —) use `fontFace: "Arial"`

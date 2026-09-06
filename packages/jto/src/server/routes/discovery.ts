@@ -23,6 +23,7 @@ import {
   BrowserPluginSchemaError,
   prepareBrowserPlugins,
 } from '../lib/browser-plugin-schema.js';
+import { discoverBlockReferences } from '../services/block-references.js';
 
 export const discoveryRouter = new Hono<AppEnv>();
 
@@ -380,6 +381,26 @@ discoveryRouter.get('/documents', async (c) => {
     return c.json({ success: true, data: documents, count: documents.length });
   } catch (error: any) {
     logger.error('Document discovery failed', { error: error.message });
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// The block definitions every discovered document of the running format
+// carries, each with a working invocation and its dependencies: the reference
+// catalog the editor completes and inserts from. A document that does not
+// parse, or whose definitions do not validate, contributes nothing — a
+// reference must be copyable as is.
+discoveryRouter.get('/blocks', async (c) => {
+  try {
+    const format = Container.getAdapter().name as 'docx' | 'pptx';
+    const references = await discoverBlockReferences(format);
+    return c.json({
+      success: true,
+      data: references,
+      count: references.length,
+    });
+  } catch (error: any) {
+    logger.error('Block discovery failed', { error: error.message });
     return c.json({ success: false, error: error.message }, 500);
   }
 });

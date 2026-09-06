@@ -1,129 +1,151 @@
 # PPTX Design Patterns & Best Practices
 
-## Recommended Template Set
+## Standard slides come from blocks
 
-Always define at least these 2-3 templates:
+Prefer the reference blocks below for standard slides: copy the definition you use into `props.blocks` verbatim, then invoke it. Define a new block yourself for any layout used more than once (a cover, a statement, a two-column comparison, a metric row): percentage frames, type-role bindings with defaults, and `$if` around every optional slot. Use a code plugin only for programmable behavior — calculations, external data, layouts that depend on logic JSON cannot express — never for a layout blocks can describe.
 
-1. **TITLE_TEMPLATE** — full-bleed title slide. Placeholders: `title`, `subtitle`
-2. **CONTENT_TEMPLATE** — standard content slide with heading + body. Placeholders: `heading`, `body`
-3. **TWO_COLUMN_TEMPLATE** — heading + left/right columns. Placeholders: `heading`, `left`, `right`
+Coordinate-authored slides (components directly in `slide.children`) are for genuinely unique, unrepeatable slides. If you have more than one such slide with the same shape, define a block instead.
 
-## Custom Slides (no template) — AVOID
+## Reference blocks
 
-For one-off layouts, skip `template`/`placeholders` and use `children` directly. **If you have more than one custom slide, you almost certainly need another template instead.**
+These definitions come from complete playground templates and validate as they are. Copy the definitions you invoke (and any block a definition itself invokes) into `props.blocks`; the names are not built into the engine.
 
-```json
-{
-  "name": "slide",
-  "props": { "background": { "color": "primary" } },
-  "children": [
-    { "name": "text", "props": { "text": "Special Layout", "grid": { "column": 1, "row": 2, "columnSpan": 10 }, "fontSize": 36, "color": "FFFFFF", "align": "center" } }
-  ]
-}
-```
+{{referenceBlocks}}
 
-Only use this for truly unique, unrepeatable slides. Prefer templates for any layout used more than once.
-
-## Complete Minimal Example
+## Complete minimal example
 
 ```json
 {
   "name": "pptx",
   "props": {
-    "title": "Quarterly Update",
-    "theme": "corporate",
-    "templates": [
-      {
-        "name": "TITLE_TEMPLATE",
-        "background": { "color": "primary" },
-        "objects": [
-          { "name": "shape", "props": { "type": "rect", "x": 0, "y": 6.8, "w": 10, "h": 0.7, "fill": { "color": "secondary" } } }
-        ],
-        "placeholders": [
-          { "name": "title", "type": "title", "style": "title", "grid": { "column": 1, "row": 1, "columnSpan": 10, "rowSpan": 2 }, "fontSize": 44, "color": "FFFFFF", "valign": "middle" },
-          { "name": "subtitle", "type": "body", "style": "subtitle", "grid": { "column": 2, "row": 3, "columnSpan": 8 }, "color": "accent" }
-        ]
-      },
-      {
-        "name": "CONTENT_TEMPLATE",
-        "grid": { "margin": { "top": 1.1 } },
-        "objects": [
-          { "name": "shape", "props": { "type": "rect", "x": 0, "y": 0, "w": 10, "h": 0.9, "fill": { "color": "primary" } } },
-          { "name": "text", "props": { "text": "COMPANY", "x": 0.6, "y": 0.15, "w": 4, "h": 0.6, "fontSize": 14, "bold": true, "color": "FFFFFF" } }
-        ],
-        "slideNumber": { "x": 9, "y": 6.85, "w": 0.5, "h": 0.5, "color": "text2", "fontSize": 8 },
-        "placeholders": [
-          { "name": "heading", "type": "title", "style": "heading1", "grid": { "column": 0, "row": 0, "columnSpan": 12 } },
-          { "name": "body", "type": "body", "style": "body", "grid": { "column": 0, "row": 1, "columnSpan": 12, "rowSpan": 4 } }
+    "title": "Quarterly update",
+    "theme": "consulting",
+    "slideWidth": 13.333,
+    "slideHeight": 7.5,
+    "blocks": {
+      "cover": {
+        "description": "Title slide: eyebrow, title, subtitle over an accent rule.",
+        "slots": {
+          "eyebrow": { "type": "string", "maxWords": 8, "oneLine": true },
+          "title": { "type": "string", "required": true, "maxWords": 16, "role": "actionTitle" },
+          "subtitle": { "type": "string", "maxWords": 16 }
+        },
+        "body": [
+          {
+            "name": "shape",
+            "props": {
+              "type": "line",
+              "x": "3.75%", "y": "31%", "w": "15%", "h": 0,
+              "line": { "color": "accent", "width": 3 }
+            }
+          },
+          {
+            "$if": "/eyebrow",
+            "then": {
+              "name": "text",
+              "props": {
+                "text": { "$slot": "/eyebrow" },
+                "style": "eyebrow",
+                "fontSize": { "$theme": "/styles/eyebrow/fontSize", "default": 10 },
+                "x": "3.75%", "y": "34%", "w": "90%", "h": "5%"
+              }
+            }
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": { "$slot": "/title" },
+              "style": "title",
+              "x": "3.75%", "y": "40%", "w": "82%", "h": "23%",
+              "valign": "top",
+              "fit": { "maxLines": 2, "shrink": [28, 24] }
+            }
+          },
+          {
+            "$if": "/subtitle",
+            "then": {
+              "name": "text",
+              "props": {
+                "text": { "$slot": "/subtitle" },
+                "style": "subtitle",
+                "x": "3.75%", "y": "64%", "w": "82%", "h": "7%"
+              }
+            }
+          }
         ]
       }
-    ]
+    }
   },
   "children": [
     {
       "name": "slide",
-      "props": {
-        "template": "TITLE_TEMPLATE",
-        "placeholders": {
-          "title": { "name": "text", "props": { "text": "Q1 2026 Update" } },
-          "subtitle": { "name": "text", "props": { "text": "Engineering Division" } }
+      "props": { "meta": { "title": "Cover" } },
+      "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "cover",
+            "slots": {
+              "eyebrow": "Engineering · Q1 2026",
+              "title": "Search v2 shipped; auth rewrite lands next quarter",
+              "subtitle": "Quarterly engineering update"
+            }
+          }
         }
-      }
+      ]
     },
     {
       "name": "slide",
-      "props": {
-        "template": "CONTENT_TEMPLATE",
-        "placeholders": {
-          "heading": { "name": "text", "props": { "text": "Highlights" } },
-          "body": { "name": "table", "props": { "rows": [["Feature", "Status"], ["Search v2", "Shipped"], ["Auth rewrite", "In Progress"]], "grid": { "column": 0, "row": 3, "columnSpan": 12, "rowSpan": 2 }, "fontSize": 12, "border": { "type": "solid", "pt": 0.5, "color": "E2E8F0" } } }
+      "props": { "meta": { "title": "Highlights" } },
+      "children": [
+        {
+          "name": "text",
+          "props": { "text": "Highlights", "style": "heading1", "x": 0.5, "y": 0.45, "w": 12.333, "h": 0.9 }
+        },
+        {
+          "name": "table",
+          "props": {
+            "rows": [["Feature", "Status"], ["Search v2", "Shipped"], ["Auth rewrite", "In progress"]],
+            "x": 0.5, "y": 1.6, "w": 12.333, "h": 1.5,
+            "rowH": 0.45,
+            "margin": [3, 6, 3, 6],
+            "fontSize": 12,
+            "border": { "type": "solid", "pt": 0.5, "color": "rule" }
+          }
         }
-      }
+      ]
     }
   ]
 }
 ```
 
-## Common Layout Pitfalls
+## Common layout pitfalls
 
 ### Text overflow
-PPTX does not auto-shrink text. If text is too long for its container it will clip or overflow.
-- Keep heading text short (≤ 6 words) or reduce `fontSize` for longer headings
-- Always give headings full width (`columnSpan: 12`) unless the layout genuinely needs a narrower column
-- For long text, prefer a smaller `fontSize` over truncation
+PPTX does not auto-shrink text outside a block. Inside a block, give titles a `fit` with declared `shrink` sizes; outside, keep headings short (≤ 6 words) or reduce `fontSize`. Give headings full width unless the layout genuinely needs a narrower column.
 
-### Slide number placement
-Never position `slideNumber` where it overlaps content. Safe defaults:
-- Bottom-right corner: `{ "x": 9.2, "y": 7.0, "w": 0.5, "h": 0.3, "fontSize": 8 }`
-- Ensure the heading placeholder's grid row does **not** share space with the slide number
+### Page numbers and chrome
+Put page numbers, trackers and confidentiality footers in the block definitions (a text component with `{PAGE_NUMBER}` in the body) so every slide that invokes the block gets them in the same place — never overlapping content. A block's `slide.background` gives every invoking slide the same background.
 
 ### Element overlap
-Multiple text or shape components in the same region will render on top of each other. Prevent this:
-- Give each element its own grid row, or use explicit `y` offsets so they stack vertically
-- When placing a label below a title (e.g. name + role), put the title in row N and the label in row N+1, or use different `y` values with enough gap (≥ 0.35")
-- Never place two text components at the same `x`/`y` unless one is intentionally a background layer
+Multiple text or shape components in the same region render on top of each other. Give each element its own grid row or `y` offset (≥ 0.35" gap between a title and the label under it). Inside a block, use a `group` with `direction` to distribute items rather than hand-placing each.
 
 ### Circles vs stretched ellipses
-An `ellipse` shape renders as a circle **only** when `w === h`. If `w ≠ h` it stretches.
-- For avatar circles, badges, or step indicators: always set equal `w` and `h` (e.g. `"w": 0.6, "h": 0.6`)
-- When using grid positioning for ellipses, ensure the grid cell is square. If not, use explicit `w`/`h` to force a 1:1 ratio — explicit dimensions override grid sizing.
+An `ellipse` renders as a circle **only** when `w === h`. For avatars, badges and step indicators set equal `w` and `h`; explicit dimensions override grid sizing.
 
 ### Text inside small shapes
-When placing text inside a shape (initials, numbers, icons):
-- Keep text on a single line — never use `\n` in initials or short labels (use `"PB"` not `"P\nB"`)
-- Set `"align": "center"` and `"valign": "middle"` for proper centering
-- Ensure fontSize is small enough to fit the shape (rule of thumb: fontSize ≤ shape width in inches × 40)
+Keep text on a single line (`"PB"`, not `"P\nB"`), set `"align": "center"` and `"valign": "middle"`, and keep fontSize ≤ shape width in inches × 40.
 
-## Table Best Practices
+## Table best practices
 
 ### Row heights & margins
-Always specify `rowH` for consistent, compact rows (recommended 0.4–0.55"). Always specify `margin` for cell padding (recommended `[3, 6, 3, 6]`). Without these, rows expand unpredictably.
+Always specify `rowH` (0.4–0.55") and `margin` (`[3, 6, 3, 6]`). Without them rows expand unpredictably.
 
 ### Rounded corners
-Use `borderRadius` (e.g. `0.15`) for polished rounded-corner tables. This renders a `roundRect` shape behind the table. When using `borderRadius`, set outer borders to `"none"` and keep internal borders only. **`borderRadius` requires explicit numeric `x`/`y` (inches, not `%` or grid-only)** — if the table is grid-positioned without explicit `x`/`y`, rounded corners are silently skipped.
+`borderRadius` (e.g. `0.15`) draws a `roundRect` behind the table; set outer borders to `"none"` and keep internal borders only. It requires explicit numeric `x`/`y` (inches).
 
 ### Unicode symbols
-PowerPoint may render ✓✔✗✘ as color emoji. The renderer auto-appends a text variation selector to force text rendering. For best results, use `fontFace: "Arial"` on cells with Unicode symbols (✓, —, •) since Arial has reliable glyph coverage.
+PowerPoint may render ✓✔✗✘ as emoji; use `fontFace: "Arial"` on cells with Unicode symbols (✓, —, •).
 
 ### Example: polished comparison table
 ```json
@@ -152,38 +174,27 @@ PowerPoint may render ✓✔✗✘ as color emoji. The renderer auto-appends a t
     "borderRadius": 0.15,
     "border": { "type": "solid", "pt": 0.5, "color": "E2E8F0" },
     "fontSize": 12,
-    "grid": { "column": 1, "row": 2, "columnSpan": 10, "rowSpan": 3 }
+    "x": 1, "y": 2, "w": 11.333, "h": 1.5
   }
 }
 ```
 
-## PPTX Rendering Limitations & Workarounds
+## PPTX rendering limitations & workarounds
 
 ### Character spacing (`charSpacing`)
-Use `charSpacing` (number, in points) on text and shape components to control letter-spacing/tracking.
-- Wordmarks/logos: `"charSpacing": 3` to `6`
-- Uppercase labels/section identifiers: `"charSpacing": 1` to `3`
-- Normal body text: omit (0 default)
+`charSpacing` (points) controls tracking on text and shape components: wordmarks `3`–`6`, uppercase labels `1`–`3`, body text omit.
 
 ### Font weight
-pptxgenjs only supports `bold: true/false`, not CSS font-weight values (300/400/500/600/700). To achieve light/thin text, use font family variants in `fontFace`:
-- `"Inter Light"`, `"Inter Thin"`, `"Helvetica Neue Light"`, `"Montserrat Light"`
-- Use light font variants for elegant/refined designs rather than relying on bold alone.
+Only `bold: true/false`, not numeric weights. For light text use font family variants in `fontFace` (`"Inter Light"`, `"Helvetica Neue Light"`).
 
 ### Text opacity
-PPTX text doesn't support opacity. To achieve semi-transparent text effects, pre-compute muted hex colors:
-- White at ~50% on dark bg → `"808080"`
-- White at ~35% on dark bg → `"595959"`
-- For secondary/tertiary text on dark backgrounds, use muted hex colors rather than expecting opacity support.
+Not supported. Pre-compute muted hex colors (white at ~50% on dark → `"808080"`, ~35% → `"595959"`) or use the theme's `text2`.
 
 ### Decorative elements
-SVGs are not supported. For decorative elements:
-- Use `ellipse` shapes for dot patterns
-- Use `rect` shapes for dividers/bars
-- Use pre-rendered PNG images (base64) for complex decorations
+SVGs are not supported as shapes. Use `ellipse` for dots, `rect` and `line` for dividers, pre-rendered PNG (base64) for complex decorations.
 
-### Multi-element cards / Rich text in shapes
-For metric cards with per-segment formatting (large number, small label, colored indicator), use **rich text segments** in a single shape instead of overlaying multiple elements:
+### Multi-element cards / rich text in shapes
+For metric cards with per-segment formatting, use **rich text segments** in a single shape:
 ```json
 {
   "name": "shape",
@@ -194,16 +205,11 @@ For metric cards with per-segment formatting (large number, small label, colored
     "valign": "middle",
     "text": [
       { "text": "124K", "fontSize": 36, "bold": true, "color": "primary" },
-      { "text": "Active Users", "fontSize": 12, "color": "text2", "breakLine": true },
-      { "text": "▲ 34% YoY", "fontSize": 11, "color": "22C55E", "breakLine": true }
+      { "text": "Active users", "fontSize": 12, "color": "text2", "breakLine": true },
+      { "text": "▲ 34% YoY", "fontSize": 11, "color": "positive", "breakLine": true }
     ],
-    "grid": { "column": 0, "row": 2, "columnSpan": 4, "rowSpan": 2 }
+    "x": "0%", "y": "0%", "w": "100%", "h": "100%"
   }
 }
 ```
-Each segment can have its own `fontSize`, `fontFace`, `color`, `bold`, `italic`, `breakLine`, `spaceBefore`, and `spaceAfter`. Use `breakLine: true` to start a new line after the segment. Shape-level font props (`fontSize`, `fontColor`, `bold`) apply as defaults when segments omit them.
-
-For truly complex layouts needing independent positioning, fall back to overlaying separate components:
-- Use a `roundRect` shape as the card background (no text)
-- Overlay positioned `text` components on top with explicit x/y/w/h
-- All components share the same grid area but use absolute offsets within
+Each segment can have its own `fontSize`, `fontFace`, `color`, `bold`, `italic`, `breakLine`, `spaceBefore` and `spaceAfter`. Inside a block, wrap such cards in a `group` with `"direction": "row"` and an `$each` over an array slot so two to four cards distribute themselves.

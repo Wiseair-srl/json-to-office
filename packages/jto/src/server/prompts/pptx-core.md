@@ -2,57 +2,109 @@
 
 ## Architecture
 
-A PPTX presentation has this structure:
+A PPTX presentation is one JSON tree:
 
 ```
-pptx.props.templates[]        → reusable slide layouts (defined once)
-pptx.children[].props.template → slide references a template by name
-pptx.children[].props.placeholders → slide fills template's named regions
+pptx.props                     → deck settings: title, theme, slideWidth/slideHeight, grid
+pptx.props.blocks              → reusable slide layouts, defined once as JSON (name → definition)
+pptx.children[]                → slides
+slide.children[]               → content: block invocations and/or positioned components
 ```
 
-**Template slides are the foundation of every presentation.** Every slide MUST reference a template. Templates enforce visual consistency, reduce repetition, and let placeholders carry default styling so slides stay minimal. Custom (templateless) slides are an absolute last resort.
+**Blocks are the foundation of every presentation.** A block definition owns a layout — every coordinate, every type role, every theme binding — and names the content it takes as `slots`. A slide invokes it with `{ "name": "block", "props": { "ref": "<name>", "slots": { ... } } }` and supplies only words and data. Define each standard layout once in `props.blocks` and invoke it on every slide that uses it; coordinate-authored slides are for one-off layouts only.
 
-## Template Slide Definition
+There are no slide templates, placeholders or a `layout` prop. Never emit `templates`, `template` or `placeholders` keys: they are rejected.
 
-Each template has:
-- `name` — unique identifier (SCREAMING_SNAKE_CASE)
-- `background` — optional, color or image
-- `objects[]` — fixed components (shapes, text, images) that appear on every slide using this template. Uses the same `{ name, props }` format as slide children
-- `placeholders[]` — named content regions that slides fill with components
-- `slideNumber` — optional, position and style of auto slide numbers
-- `grid` — optional grid override, merged with the presentation grid. Use this to shift the content area below header bars. Example: `"grid": { "margin": { "top": 1.1 } }` pushes row 0 below a 0.9" header.
-
-### Fixed objects in `objects[]`
-
-Template objects use the **same `{ name, props }` component format** as slide children. Any content component (shape, text, image, table, chart) can be used as a template object.
-
-**Important:** Fixed decorations (header bars, footer bars) should use absolute `x`/`y`/`w`/`h`, not grid — because the template's `grid` override shifts grid positions, and decorations shouldn't shift themselves.
+## Block definitions
 
 ```json
-{ "name": "shape", "props": { "type": "rect", "x": 0, "y": 0, "w": 10, "h": 0.9, "fill": { "color": "primary" } } }
-{ "name": "shape", "props": { "type": "roundRect", "x": 0, "y": 0, "w": 10, "h": 0.9, "fill": { "color": "primary" }, "rectRadius": 0.15 } }
-{ "name": "text", "props": { "text": "COMPANY", "x": 0.6, "y": 0.15, "w": 4, "h": 0.6, "fontSize": 14, "bold": true, "color": "FFFFFF" } }
-{ "name": "shape", "props": { "type": "line", "x": 0.5, "y": 2, "w": 9, "h": 0, "line": { "color": "accent", "width": 1 } } }
-{ "name": "image", "props": { "path": "logo.png", "x": 8.5, "y": 0.15, "w": 1, "h": 0.6 } }
-```
-
-Template objects support all component props including `rectRadius`, `shadow`, `rotate`, `fill.transparency`, `line.dashType`, rich text segments, etc.
-
-### Placeholder definition
-
-```json
-{
-  "name": "body",
-  "grid": { "column": 0, "row": 2, "columnSpan": 12, "rowSpan": 3 },
-  "defaults": { "name": "text", "props": { "style": "body", "fontSize": 14 } }
+"blocks": {
+  "statement": {
+    "description": "One sentence on an otherwise empty slide.",
+    "slots": {
+      "text": { "type": "string", "required": true, "maxWords": 30, "role": "actionTitle" },
+      "source": { "type": "string", "maxWords": 20, "role": "source" }
+    },
+    "body": [
+      {
+        "name": "text",
+        "props": {
+          "text": { "$slot": "/text" },
+          "style": "display",
+          "fontSize": { "$theme": "/styles/display/fontSize", "default": 28 },
+          "x": "3.75%", "y": "30%", "w": "92.5%", "h": "30%",
+          "valign": "middle",
+          "fit": { "maxLines": 3, "shrink": [24, 22] }
+        }
+      },
+      {
+        "$if": "/source",
+        "then": {
+          "name": "text",
+          "props": {
+            "text": { "$slot": "/source" },
+            "style": "source",
+            "fontSize": { "$theme": "/styles/source/fontSize", "default": 9 },
+            "x": "3.75%", "y": "94.5%", "w": "75%", "h": "5%"
+          }
+        }
+      }
+    ]
+  }
 }
 ```
 
-- `name` — key used in `slide.props.placeholders` to fill this region
-- Position via `grid` (preferred) or `x`/`y`/`w`/`h`
-- `defaults` — optional component stub (`{ name, props }`) whose props are inherited by the component placed in this placeholder. Supports any component type — text defaults for text placeholders, chart defaults for chart placeholders, etc.
+- `slots` — named inputs: `type` (`string`, `number`, `integer`, `boolean`, `object`, `array`, `component`), `required`, `default`, `description`, constraints (`maxWords`, `oneLine`, `minItems`/`maxItems`, `enum`), and an optional `role` (`actionTitle`, `takeaway`, `source`, `tracker`, `footer`) so a quality profile can require or measure it.
+- `body` — ordinary slide content, expanded at the invocation. Bindings read inputs: `{ "$slot": "/title" }`, `{ "$theme": "/styles/display/fontSize", "default": 28 }` (always give theme bindings a `default`), `{ "$context": "/slide/width" }`, `{ "$if": "/source", "then": [...] , "else": [...] }` (an omitted optional slot collapses its region, decorations included), `{ "$each": "/items", "template": { ... } }` with `{ "$item": "/label" }`, `{ "$count": "/items" }`, `{ "$join": [...], "separator": " " }`, `{ "$measure": "width", "fraction": 0.5, "unit": "in" }`.
+- A component slot is placed with `{ "$slot": "/chart", "props": { "x": "0%", "y": "29%", "w": "68%", "h": "62%", ... } }`: the definition's props sit beneath the slot content's own. The content may not carry `x`, `y`, `w`, `h`, `position` or `grid`.
+- `slide` — optional `{ "background", "notes", "grid" }` the invoking slide inherits unless it states its own.
+- **Geometry as percentages of the slide** (`"x": "3.75%"`) so the definition lays out on every canvas; sizes bound to type roles with defaults so it renders on every theme.
 
-## Grid Positioning (preferred)
+### Engine operations inside a body
+
+- **Frame** — a `group` with `x`/`y`/`w`/`h` (or `grid`) is a nested coordinate system: children position relative to it; omitted `x`/`y` or `w`/`h` mean the frame's own.
+- **Distribution** — a `group` with `"direction": "row" | "column"`, optional `gap` and `weights`, gives each child an equal or weighted cell. An `$each` inside a row redistributes for two, three or four items; an `$if` child that collapsed is not counted.
+- **Bounded fit** — `text.fit: { "maxLines", "shrink": [24, 22] }` steps a title down through the declared sizes when it does not fit, then fails generation rather than spilling.
+- **Nested grid** — `group.gridConfig` for grid placements inside the group.
+
+## Invoking a block on a slide
+
+```json
+{
+  "name": "slide",
+  "props": { "meta": { "title": "Revenue" } },
+  "children": [
+    {
+      "name": "block",
+      "props": {
+        "ref": "action-chart",
+        "slots": {
+          "title": "Revenue grew 18% as on-time delivery reached 94% of contracted work",
+          "tracker": "Performance",
+          "chart": {
+            "name": "chart",
+            "props": {
+              "type": "bar",
+              "valAxisTitle": "Revenue (€m)",
+              "data": [{ "name": "Revenue", "labels": ["Q1", "Q2", "Q3", "Q4"], "values": [4.2, 4.6, 5.1, 5.6] }]
+            }
+          },
+          "takeaway": "Reliability, not price, drove the gain.",
+          "source": "Source: quarterly operating review, 2026."
+        }
+      }
+    }
+  ]
+}
+```
+
+- An invocation accepts only `ref` and `slots` — no coordinates, no styling. The `ref` must name a definition in this document's `props.blocks`; nothing is built in.
+- Fill every `required` slot; omit an optional slot and its region disappears.
+- Slot content honours the slot's constraints (`maxWords`, `oneLine`); a chart or image placed in a component slot carries its data, never its position.
+- Blocks and coordinate-authored components mix freely on one slide; a block with `slide` effects must be a direct child of the slide.
+- Label every slide with `"meta": { "title": "..." }` (authoring-only, never rendered) so editors show a navigable outline.
+
+## Grid positioning (coordinate-authored content)
 
 Grid is a **presentation-level** prop (on `pptx.props`), not a theme-level setting:
 
@@ -60,95 +112,23 @@ Grid is a **presentation-level** prop (on `pptx.props`), not a theme-level setti
 {
   "name": "pptx",
   "props": {
-    "theme": "corporate",
-    "grid": { "columns": 12, "rows": 6, "margin": { "top": 0.75, "right": 0.6, "bottom": 0.5, "left": 0.6 }, "gutter": { "column": 0.2, "row": 0.15 } }
+    "theme": "consulting",
+    "slideWidth": 13.333,
+    "slideHeight": 7.5,
+    "grid": { "columns": 12, "rows": 8, "margin": 0.5, "gutter": 0.2 }
   }
 }
 ```
 
-Use the 12-column × 6-row grid instead of absolute x/y/w/h:
+Use the grid instead of absolute x/y/w/h for one-off slides: `"grid": { "column": 0, "row": 1, "columnSpan": 6, "rowSpan": 2 }`. Columns 0–11, rows 0–(rows−1). Explicit `x`/`y`/`w`/`h` override grid when both are present. Always declare `slideWidth`/`slideHeight` (13.333 × 7.5 for 16:9); omitted, the deck falls back to 4:3.
 
-```json
-"grid": { "column": 0, "row": 1, "columnSpan": 6, "rowSpan": 2 }
-```
+## Semantic colors
 
-- Columns: 0–11, Rows: 0–5
-- Grid respects presentation-level margins (default 0.5") and gutters (default 0.2")
-- Use `columnSpan`/`rowSpan` to size elements
-- Explicit `x`/`y`/`w`/`h` override grid when both are present
+Use theme color names, not hex codes: `primary`, `secondary`, `accent` (brand), `background`, `background2` (surfaces), `text`, `text2` (text), `accent4`, `accent5`, `accent6` (additional accents). Only use hex (e.g. `"FFFFFF"`) for absolute white/black when needed.
 
-## Filling Placeholders (Slide Level)
+## Named styles
 
-Slides reference a template and fill each placeholder with a single component:
-
-```json
-{
-  "name": "slide",
-  "props": {
-    "template": "CONTENT_TEMPLATE",
-    "placeholders": {
-      "heading": { "name": "text", "props": { "text": "Slide Title" } },
-      "body": { "name": "text", "props": { "text": "Key insight here." } }
-    }
-  }
-}
-```
-
-Each placeholder maps to exactly one component (not an array). The component inherits the placeholder's position and `defaults` props.
-
-### Placeholder inheritance
-
-Placeholders provide default props via `defaults`. The component placed in the placeholder inherits these — **do NOT re-specify a prop if `defaults` already defines it.**
-
-Resolution order (most specific wins): `component props → defaults props → position from placeholder`
-
-This is a simple spread: `{ ...position, ...defaults.props, ...component.props }`.
-
-**Good** — defaults defines `fontSize: 14` and `style: "body"`, component omits them:
-```json
-{ "name": "text", "props": { "text": "Key insight here." } }
-```
-
-**Bad** — redundantly re-specifying what defaults already provides:
-```json
-{ "name": "text", "props": { "text": "Key insight here.", "fontSize": 14, "style": "body" } }
-```
-
-Only override a defaults prop when you genuinely need a different value for that specific component.
-
-## Semantic Colors
-
-Use theme color names, not hex codes:
-- `primary`, `secondary`, `accent` — brand colors
-- `background`, `background2` — surface colors
-- `text`, `text2` — text colors
-- `accent4`, `accent5`, `accent6` — additional accents
-
-Only use hex (e.g. `"FFFFFF"`) for absolute white/black when needed.
-
-## Named Styles
-
-Themes define a `styles` map with predefined text style presets. Use `"style"` on text/shape components to apply formatting without repeating props.
-
-**Available style names:** `title`, `subtitle`, `heading1`, `heading2`, `heading3`, `body`, `caption`
-
-**Usage on components:**
-```json
-{ "name": "text", "props": { "text": "My Title", "style": "title" } }
-{ "name": "shape", "props": { "type": "roundRect", "text": "KPI", "style": "caption", "fill": { "color": "background2" } } }
-```
-
-**Usage on placeholder defaults:**
-```json
-{ "name": "heading", "grid": { "column": 0, "row": 0, "columnSpan": 12 }, "defaults": { "name": "text", "props": { "style": "heading1" } } }
-```
-
-**Resolution cascade (most specific wins):**
-`component props → component style → defaults props → defaults style → theme defaults`
-
-Explicit props always override style values. Example: `"style": "heading1", "fontSize": 32` → uses 32pt, not the style's fontSize.
-
-**Built-in defaults (all themes):**
+Themes define a `styles` map of text presets. Use `"style"` on text/shape components to apply formatting without repeating props: `title`, `subtitle`, `heading1`, `heading2`, `heading3`, `body`, `caption`, plus the type roles a theme declares (`display`, `eyebrow`, `stat`, `quote`, `label`, `footer`, `tracker`, `source`). Explicit props override style values; inside a block, bind the size to the role and give it a default: `"fontSize": { "$theme": "/styles/display/fontSize", "default": 28 }`.
 
 | Style    | fontSize | bold | italic | fontColor | align  |
 |----------|----------|------|--------|-----------|--------|
@@ -162,19 +142,16 @@ Explicit props always override style values. Example: `"style": "heading1", "fon
 
 Heading styles (`title`, `heading1-3`) auto-use `theme.fonts.heading`; others use `theme.fonts.body`.
 
-Themes can override styles in the `styles` key:
-```json
-"styles": {
-  "title": { "fontSize": 40, "bold": true, "fontColor": "accent", "align": "left" }
-}
-```
+## Available components
 
-## Available Components
-
-Use these inside `placeholders`, `children`, or template `objects`:
-- **text** — headings, paragraphs, bullets. Props: `text`, `fontSize`, `bold`, `italic`, `color`, `align`, `bullet`, `lineSpacing`, `charSpacing`, `paraSpaceAfter`
-- **shape** — rectangles, circles, arrows, etc. Props: `type` (rect, roundRect, ellipse, triangle, etc.), `fill`, `text` (string or `[{ text, fontSize?, color?, bold?, italic?, breakLine? }]` for rich text), `fontSize`, `fontColor`, `charSpacing`
+Use these inside `slide.children`, a block `body`, or a component slot:
+- **text** — headings, paragraphs, bullets. Props: `text`, `style`, `fontSize`, `bold`, `italic`, `color`, `align`, `valign`, `bullet`, `lineSpacing`, `charSpacing`, `paraSpaceAfter`, `fit`
+- **shape** — rectangles, circles, lines, arrows. Props: `type` (rect, roundRect, ellipse, line, triangle, …), `fill`, `line`, `text` (string or rich segments), `fontSize`, `fontColor`, `charSpacing`
 - **table** — data grids. Props: `rows` (2D array of strings or cell objects), `colW`, `rowH`, `border`, `fontSize`, `margin`, `borderRadius`
 - **image** — pictures. Props: `path` or `base64`, `sizing` ({ type: "cover"|"contain" })
-- **chart** — **DEFAULT for all charts.** Native PowerPoint chart — editable, no external server. Always use this unless the user explicitly asks for Highcharts. Title, legend, and axis label colors auto-default to the theme's `text` color for proper contrast on any background. Props: `type` (area, bar, bar3D, bubble, doughnut, line, pie, radar, scatter), `data` (array of `{ name?, labels?, values?, sizes? }`), `showLegend`, `showTitle`, `title`, `titleColor`, `chartColors` (hex or semantic), `legendPos`, `legendColor`, axis options (`catAxisTitle`, `valAxisTitle`, `valAxisMinVal`, `valAxisMaxVal`, `valAxisLabelFormatCode`, `catAxisLabelColor`, `valAxisLabelColor`), bar options (`barDir`, `barGrouping`, `barGapWidthPct`), line options (`lineSmooth`, `lineDataSymbol`, `lineSize`), pie/doughnut (`firstSliceAng`, `holeSize`), radar (`radarStyle`), data labels (`dataLabelColor`, `dataLabelFontSize`, `dataLabelPosition`)
-- **highcharts** — **ONLY use when the user explicitly requests Highcharts.** Renders charts via Highcharts as images (not editable in PowerPoint). Props: `chartOptions` (Highcharts options object), `width`, `height`
+- **chart** — **DEFAULT for all charts.** Native PowerPoint chart — editable, no external server. Props: `type` (area, bar, bar3D, bubble, doughnut, line, pie, radar, scatter), `data` (array of `{ name?, labels?, values?, sizes? }`), `showLegend`, `legendPos`, `chartColors` (semantic names), `title`, axis options (`catAxisTitle`, `valAxisTitle`, `valAxisMinVal`, `valAxisMaxVal`, `valAxisLabelFormatCode`), bar options (`barDir`, `barGrouping`), line options (`lineSmooth`, `lineDataSymbol`), pie/doughnut (`holeSize`), data labels (`dataLabelPosition`)
+- **highcharts** — **ONLY when the user explicitly requests Highcharts.** Renders as an image. Props: `chartOptions`, `width`, `height`
+- **group** — transparent container; a frame with `x`/`y`/`w`/`h`, a row or column with `direction`
+- **block** — invoke a definition from `props.blocks`
+
+Every component is `{ "name": "<type>", "props": { ... } }`. Never `{ "type": "...", ... }` with flat props. For page numbers, use a text component with `"text": "{PAGE_NUMBER} / {PAGE_COUNT}"`.
