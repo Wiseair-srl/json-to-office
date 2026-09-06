@@ -515,6 +515,9 @@ importers:
       typescript:
         specifier: 5.3.3
         version: 5.3.3
+      vscode-json-languageservice:
+        specifier: 5.4.0
+        version: 5.4.0
 
   packages/jto-cli:
     dependencies:

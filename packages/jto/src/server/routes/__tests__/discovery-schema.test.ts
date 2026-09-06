@@ -13,6 +13,7 @@
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { Hono } from 'hono';
+import { getLanguageService, TextDocument } from 'vscode-json-languageservice';
 import { discoveryRouter } from '../discovery';
 import { Container } from '../../container';
 import { DocxFormatAdapter, PluginRegistry } from '@json-to-office/jto-cli';
@@ -64,6 +65,34 @@ describe('/api/discovery/schemas/document', () => {
     expect(names).toContain('weather');
     expect(names).toContain('heading');
     expect(names).not.toContain('not-a-plugin');
+  });
+
+  it('serves block property completion before slots or a component name exist', async () => {
+    const res = await app.request('/discovery/schemas/document?plugins=');
+    expect(res.status).toBe(200);
+    const { data: schema } = (await res.json()) as any;
+    const service = getLanguageService({});
+    service.configure({
+      schemas: [
+        { uri: 'test://discovery', fileMatch: ['*.docx.json'], schema },
+      ],
+    });
+    const text =
+      '{"name":"docx","props":{"blocks":{"prova":{"description":"Blocco di prova","body":[{"|"}]}}},"children":[]}';
+    const doc = TextDocument.create(
+      'test://prova.docx.json',
+      'json',
+      1,
+      text.replace('|', '')
+    );
+    const result = await service.doComplete(
+      doc,
+      doc.positionAt(text.indexOf('|')),
+      service.parseJSONDocument(doc)
+    );
+    expect(result?.items.map((item) => item.label)).toEqual(
+      expect.arrayContaining(['name', '$slot', '$if'])
+    );
   });
 
   it('keeps an explicit empty selection plugin-free', async () => {
