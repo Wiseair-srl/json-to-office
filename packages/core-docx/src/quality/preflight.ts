@@ -16,6 +16,7 @@ import type { DocxQualityFact, DocxQualityModel } from './facts';
 import {
   DOCX_DEFAULT_QUALITY_PROFILE,
   docxQualityEngine,
+  declaredDocxQualityProfile,
   resolveDocxQualityProfile,
 } from './rules';
 
@@ -91,6 +92,7 @@ export function analyzeDocxQuality(
   return docxQualityEngine.analyzeSync(prepared, {
     profile:
       resolveDocxQualityProfile(options.profile) ??
+      declaredDocxQualityProfile(doc) ??
       DOCX_DEFAULT_QUALITY_PROFILE,
     policy: options.policy,
   });

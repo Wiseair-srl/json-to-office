@@ -20,7 +20,11 @@ import type {
   GenerationWarning,
 } from '@json-to-office/shared';
 import { DEFAULT_DOCX_RENDERER_ID } from '@json-to-office/shared-docx';
-import { designColors, resolveDesignColor } from '@json-to-office/shared';
+import {
+  designColors,
+  resolveDesignColor,
+  type BlockSlotRole,
+} from '@json-to-office/shared';
 import type { ComponentDefinition, ReportComponentDefinition } from '../types';
 import type { ThemeConfig } from '../styles';
 import {
@@ -241,7 +245,37 @@ export interface DocxPlaceholderFact extends QualityFact {
   excerpt: string;
 }
 
+/**
+ * A role-bearing slot of a block invocation, present or not. A profile reads
+ * these to require a takeaway under every chart or a source under every
+ * table; the theme that styles them never adds a requirement.
+ */
+export interface DocxChromeSlotFact extends QualityFact {
+  kind: 'docx/chrome-slot';
+  block: string;
+  slot: string;
+  role: BlockSlotRole;
+  present: boolean;
+  /** The invocation the slot belongs to. */
+  invocation: string;
+}
+
+/**
+ * What a top-level section carries once blocks have expanded: a header, a
+ * footer, and a page-number field in either. A profile decides whether a
+ * body section owes a running head; the first section is where a cover lives.
+ */
+export interface DocxSectionChromeFact extends QualityFact {
+  kind: 'docx/section-chrome';
+  index: number;
+  header: boolean;
+  footer: boolean;
+  pageNumber: boolean;
+}
+
 export type DocxQualityFact =
+  | DocxChromeSlotFact
+  | DocxSectionChromeFact
   | DocxTableWidthFact
   | DocxHeadingFact
   | DocxFrameTextFact
@@ -998,6 +1032,43 @@ export function prepareDocxQualityDocument(
       ...budget,
     });
   }
+  for (const role of blockSlotRoles(themed.document, expanded.blocks)) {
+    addFact({
+      id: `docx:chrome-slot:${role.path}`,
+      kind: 'docx/chrome-slot',
+      path: role.path,
+      relatedPaths: [role.invocation],
+      block: role.block,
+      slot: role.slot,
+      role: role.role,
+      present: slotIsFilled(role.value),
+      invocation: role.invocation,
+    });
+  }
+  const topLevel = Array.isArray(context.document.children)
+    ? (context.document.children as unknown as Rec[])
+    : [];
+  // A section that links a part to the previous section carries whatever
+  // that section drew there, page field included.
+  let inherited: { header?: unknown; footer?: unknown } = {};
+  topLevel.forEach((node, index) => {
+    if (node?.name !== 'section') return;
+    const props = asRecord(node.props) ?? {};
+    const part = (kind: 'header' | 'footer'): unknown =>
+      props[kind] === 'linkToPrevious' ? inherited[kind] : props[kind];
+    const header = part('header');
+    const footer = part('footer');
+    inherited = { header, footer };
+    addFact({
+      id: `docx:section-chrome:${index}`,
+      kind: 'docx/section-chrome',
+      path: `/children/${index}`,
+      index,
+      header: partPresent(header),
+      footer: partPresent(footer),
+      pageNumber: hasPageField(header) || hasPageField(footer),
+    });
+  });
 
   const paletteHexes: Record<string, string> = {};
   const visualColors = designColors(
@@ -1252,4 +1323,24 @@ export function prepareDocxQualityDocument(
       },
     }),
   };
+}
+
+function slotIsFilled(value: unknown): boolean {
+  return (
+    value !== undefined &&
+    value !== null &&
+    value !== '' &&
+    value !== false &&
+    (!Array.isArray(value) || value.length > 0)
+  );
+}
+
+/** A header or footer part that draws something. */
+function partPresent(part: unknown): boolean {
+  return Array.isArray(part) && part.length > 0;
+}
+
+const PAGE_FIELD = /\{(PAGE|PAGE_NUMBER|TOTAL_PAGES|NUMPAGES)\}/;
+function hasPageField(part: unknown): boolean {
+  return Array.isArray(part) && PAGE_FIELD.test(JSON.stringify(part));
 }

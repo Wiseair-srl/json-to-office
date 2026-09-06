@@ -224,6 +224,47 @@ export const QUALITY_RULES: Record<FormatName, readonly QualityRuleInfo[]> = {
       description: 'A literal colour the resolved theme does not define.',
       parameters: [],
     },
+    {
+      id: 'docx/required-chrome',
+      label: 'Required chrome',
+      category: 'consistency',
+      defaultSeverity: 'warning',
+      description:
+        'A block slot with a role the profile requires — a takeaway, a source — left empty. Off unless a profile names roles.',
+      parameters: [
+        {
+          name: 'required',
+          type: 'string-list',
+          default: [],
+          description:
+            'Slot roles every block that declares them must fill: actionTitle, takeaway, source, tracker, footer.',
+        },
+      ],
+    },
+    {
+      id: 'docx/running-head',
+      label: 'Running head',
+      category: 'consistency',
+      defaultSeverity: 'warning',
+      description:
+        'A body section without the running head the profile expects. Off unless a profile names parts.',
+      parameters: [
+        {
+          name: 'required',
+          type: 'string-list',
+          default: [],
+          description:
+            'Parts every section from fromSection on must carry: header, footer, pageNumber.',
+        },
+        {
+          name: 'fromSection',
+          type: 'number',
+          default: 1,
+          description:
+            'Zero-based index of the first section that owes a running head; 1 leaves the cover section clean.',
+        },
+      ],
+    },
   ],
   pptx: [
     {

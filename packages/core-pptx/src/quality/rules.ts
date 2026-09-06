@@ -1201,6 +1201,19 @@ const PPTX_PROFILES_BY_ID: Readonly<Record<string, QualityProfile>> =
   PPTX_QUALITY_PROFILES;
 
 /**
+ * The shipped profile a deck names in `props.qualityProfile`, so that
+ * validation without arguments judges a blueprint scaffold by its archetype.
+ * An unknown name is nobody's profile: the format default applies.
+ */
+export function declaredPptxQualityProfile(
+  document: unknown
+): QualityProfile | undefined {
+  const props = (document as { props?: { qualityProfile?: unknown } })?.props;
+  const id = props?.qualityProfile;
+  return typeof id === 'string' ? PPTX_PROFILES_BY_ID[id] : undefined;
+}
+
+/**
  * Callers name a shipped profile by id — `{ id: 'executive-presentation', formats: ['pptx'] }`.
  * Without this lookup that request reaches the engine carrying nothing but its id,
  * so the analysis runs on defaults while stamping the requested profileId.

@@ -1,0 +1,473 @@
+{
+  "id": "client-report",
+  "format": "docx",
+  "title": "Client report",
+  "description": "A report for a client or a public administration: a cover, key takeaways, KPIs, chart-first sections with a takeaway and a source under every figure, data tables, notes and sources, under a running head that tracks the section and numbers the pages.",
+  "whenToUse": "A periodic or one-off report to a client, a board or a public body that reads for the conclusion first and checks the evidence second. Not for a memo or a technical specification.",
+  "theme": "consulting",
+  "profile": "client-report",
+  "definitions": "client-report-blocks.docx.json",
+  "numbering": "sections",
+  "toc": false,
+  "variants": {
+    "data-heavy": {
+      "description": "Evidence-led: a KPI row under the takeaways, a chart with its takeaway in the second section, a data table with a note in the third, next steps last.",
+      "whenToUse": "The brief comes with numbers: performance, finance, operations, anything the reader will check against a figure.",
+      "pages": {
+        "min": 4,
+        "max": 8
+      },
+      "metadata": {
+        "title": "{{Title: as on the cover}}",
+        "author": "{{Author or team}}",
+        "company": "{{Client name}}",
+        "date": "{{Month YYYY}}"
+      },
+      "children": [
+        {
+          "name": "section",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "cover",
+                "slots": {
+                  "title": "{{Title: the report's conclusion in one sentence}}",
+                  "subtitle": "{{Subtitle: what the report answers, for whom}}",
+                  "client": "{{Client name}}",
+                  "date": "{{Month YYYY}}",
+                  "confidentiality": "{{Confidentiality: Confidential, or For internal use}}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "section",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "running-head",
+                "slots": {
+                  "confidentiality": "{{Confidentiality: as on the cover}}",
+                  "date": "{{Month YYYY}}"
+                }
+              }
+            },
+            {
+              "name": "block",
+              "props": {
+                "ref": "section-opener",
+                "slots": {
+                  "number": "01",
+                  "title": "{{Section title: the finding, as a statement}}",
+                  "tracker": "{{Tracker: one or two words}}"
+                }
+              }
+            },
+            {
+              "name": "block",
+              "props": {
+                "ref": "key-takeaways",
+                "slots": {
+                  "items": [
+                    "{{Takeaway 1: one claim, one sentence, with its number}}",
+                    "{{Takeaway 2: one claim, one sentence, with its number}}",
+                    "{{Takeaway 3: the recommendation that follows}}"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "block",
+              "props": {
+                "ref": "kpi-row",
+                "slots": {
+                  "items": [
+                    {
+                      "value": "{{0.0}}",
+                      "label": "{{What it measures}}"
+                    },
+                    {
+                      "value": "{{0.0}}",
+                      "label": "{{What it measures}}"
+                    },
+                    {
+                      "value": "{{0.0}}",
+                      "label": "{{What it measures}}"
+                    }
+                  ],
+                  "source": "{{Source: system or document, date}}"
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "{{Body: two or three short paragraphs of evidence for the section title, each opening with its claim}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "section",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "section-opener",
+                "slots": {
+                  "number": "02",
+                  "title": "{{Section title: the finding, as a statement}}",
+                  "tracker": "{{Tracker: one or two words}}"
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "{{Body: two or three short paragraphs of evidence for the section title, each opening with its claim}}"
+              }
+            },
+            {
+              "name": "block",
+              "props": {
+                "ref": "chart-figure",
+                "slots": {
+                  "chart": {
+                    "name": "highcharts",
+                    "props": {
+                      "width": "100%",
+                      "options": {
+                        "chart": {
+                          "type": "column",
+                          "width": 900,
+                          "height": 460
+                        },
+                        "title": {
+                          "text": null
+                        },
+                        "xAxis": {
+                          "categories": [
+                            "{{Period 1}}",
+                            "{{Period 2}}",
+                            "{{Period 3}}"
+                          ]
+                        },
+                        "yAxis": {
+                          "title": {
+                            "text": "{{Measure (unit)}}"
+                          }
+                        },
+                        "series": [
+                          {
+                            "name": "{{Series name}}",
+                            "data": [0, 0, 0]
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "caption": "{{Caption: what the chart shows, as a statement}}",
+                  "takeaway": "{{Takeaway: the one sentence the reader should keep}}",
+                  "source": "{{Source: system or document, date}}"
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "{{Body: two or three short paragraphs of evidence for the section title, each opening with its claim}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "section",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "section-opener",
+                "slots": {
+                  "number": "03",
+                  "title": "{{Section title: the finding, as a statement}}",
+                  "tracker": "{{Tracker: one or two words}}"
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "{{Body: two or three short paragraphs of evidence for the section title, each opening with its claim}}"
+              }
+            },
+            {
+              "name": "block",
+              "props": {
+                "ref": "data-table",
+                "slots": {
+                  "title": "{{Table title: what it compares, and the period}}",
+                  "labelHeader": "{{Row label}}",
+                  "labels": ["{{Row 1}}", "{{Row 2}}", "{{Row 3}}"],
+                  "columns": [
+                    {
+                      "header": "{{Measure (unit)}}",
+                      "cells": ["{{0.0}}", "{{0.0}}", "{{0.0}}"]
+                    },
+                    {
+                      "header": "{{Change}}",
+                      "cells": ["{{0.0}}", "{{0.0}}", "{{0.0}}"]
+                    }
+                  ],
+                  "source": "{{Source: system or document, date}}"
+                }
+              }
+            },
+            {
+              "name": "block",
+              "props": {
+                "ref": "callout",
+                "slots": {
+                  "label": "{{Note label}}",
+                  "text": "{{Note: a caveat about the numbers, a definition or the method}}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "section",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "section-opener",
+                "slots": {
+                  "number": "04",
+                  "title": "{{Section title: the finding, as a statement}}",
+                  "tracker": "{{Tracker: one or two words}}"
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "{{Body: two or three short paragraphs of evidence for the section title, each opening with its claim}}"
+              }
+            },
+            {
+              "name": "block",
+              "props": {
+                "ref": "footnotes"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "narrative": {
+      "description": "Argument-led: takeaways, then three sections of prose with one KPI row and one note as evidence, next steps last.",
+      "whenToUse": "The brief is a position, an assessment or a recommendation with few numbers; the reader follows an argument.",
+      "pages": {
+        "min": 3,
+        "max": 6
+      },
+      "metadata": {
+        "title": "{{Title: as on the cover}}",
+        "author": "{{Author or team}}",
+        "company": "{{Client name}}",
+        "date": "{{Month YYYY}}"
+      },
+      "children": [
+        {
+          "name": "section",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "cover",
+                "slots": {
+                  "title": "{{Title: the report's conclusion in one sentence}}",
+                  "subtitle": "{{Subtitle: what the report answers, for whom}}",
+                  "client": "{{Client name}}",
+                  "date": "{{Month YYYY}}",
+                  "confidentiality": "{{Confidentiality: Confidential, or For internal use}}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "section",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "running-head",
+                "slots": {
+                  "confidentiality": "{{Confidentiality: as on the cover}}",
+                  "date": "{{Month YYYY}}"
+                }
+              }
+            },
+            {
+              "name": "block",
+              "props": {
+                "ref": "section-opener",
+                "slots": {
+                  "number": "01",
+                  "title": "{{Section title: the finding, as a statement}}",
+                  "tracker": "{{Tracker: one or two words}}"
+                }
+              }
+            },
+            {
+              "name": "block",
+              "props": {
+                "ref": "key-takeaways",
+                "slots": {
+                  "items": [
+                    "{{Takeaway 1: one claim, one sentence, with its number}}",
+                    "{{Takeaway 2: one claim, one sentence, with its number}}",
+                    "{{Takeaway 3: the recommendation that follows}}"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "{{Body: two or three short paragraphs of evidence for the section title, each opening with its claim}}"
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "{{Body: two or three short paragraphs of evidence for the section title, each opening with its claim}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "section",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "section-opener",
+                "slots": {
+                  "number": "02",
+                  "title": "{{Section title: the finding, as a statement}}",
+                  "tracker": "{{Tracker: one or two words}}"
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "{{Body: two or three short paragraphs of evidence for the section title, each opening with its claim}}"
+              }
+            },
+            {
+              "name": "block",
+              "props": {
+                "ref": "callout",
+                "slots": {
+                  "label": "{{Note label}}",
+                  "text": "{{Note: a caveat about the numbers, a definition or the method}}"
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "{{Body: two or three short paragraphs of evidence for the section title, each opening with its claim}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "section",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "section-opener",
+                "slots": {
+                  "number": "03",
+                  "title": "{{Section title: the finding, as a statement}}",
+                  "tracker": "{{Tracker: one or two words}}"
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "{{Body: two or three short paragraphs of evidence for the section title, each opening with its claim}}"
+              }
+            },
+            {
+              "name": "block",
+              "props": {
+                "ref": "kpi-row",
+                "slots": {
+                  "items": [
+                    {
+                      "value": "{{0.0}}",
+                      "label": "{{What it measures}}"
+                    },
+                    {
+                      "value": "{{0.0}}",
+                      "label": "{{What it measures}}"
+                    },
+                    {
+                      "value": "{{0.0}}",
+                      "label": "{{What it measures}}"
+                    }
+                  ],
+                  "source": "{{Source: system or document, date}}"
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "{{Body: two or three short paragraphs of evidence for the section title, each opening with its claim}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "section",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "section-opener",
+                "slots": {
+                  "number": "04",
+                  "title": "{{Section title: the finding, as a statement}}",
+                  "tracker": "{{Tracker: one or two words}}"
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "{{Body: two or three short paragraphs of evidence for the section title, each opening with its claim}}"
+              }
+            },
+            {
+              "name": "block",
+              "props": {
+                "ref": "footnotes"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

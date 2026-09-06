@@ -639,6 +639,29 @@ describe('shipped profiles', () => {
     ]);
   });
 
+  it('judges by the profile the deck names when the caller names none', () => {
+    const declared = {
+      ...small,
+      props: { ...small.props, qualityProfile: 'executive-presentation' },
+    };
+    const analysis = analyzePptxQuality(declared);
+    expect(analysis.profileId).toBe('executive-presentation');
+    expect(analysis.diagnostics.map((finding) => finding.code)).toEqual([
+      QUALITY_CODES.FONT_SIZE_MIN,
+    ]);
+    expect(
+      analyzePptxQuality(declared, {
+        profile: { id: 'technical-presentation', formats: ['pptx'] },
+      }).profileId
+    ).toBe('technical-presentation');
+    expect(
+      analyzePptxQuality({
+        ...small,
+        props: { ...small.props, qualityProfile: 'no-such-profile' },
+      }).profileId
+    ).toBe('technical-presentation');
+  });
+
   it("merges the caller's rules over the registered ones", () => {
     const dense = deck(CANVAS, [
       {

@@ -84,6 +84,7 @@ export {
   PPTX_QUALITY_PROFILES,
   PPTX_QUALITY_RULES,
   pptxQualityEngine,
+  declaredPptxQualityProfile,
   resolvePptxQualityProfile,
 } from './quality/rules';
 

@@ -176,11 +176,34 @@ describe('jto_discover', () => {
     }
   });
 
+  it('lists the bundled DOCX blueprints as summaries, variants included', async () => {
+    const { formats } = await discover();
+    const docx = formats.find((format) => format.name === 'docx')!;
+    const blueprints = (docx as { blueprints?: Array<Record<string, unknown>> })
+      .blueprints;
+    expect(blueprints?.map((blueprint) => blueprint.id)).toEqual([
+      'client-report',
+    ]);
+    expect(blueprints?.[0]).toMatchObject({
+      theme: 'consulting',
+      profile: 'client-report',
+      definitions: 'client-report-blocks.docx.json',
+    });
+    expect(
+      (blueprints?.[0].variants as Array<{ id: string }>).map((v) => v.id)
+    ).toEqual(['data-heavy', 'narrative']);
+    // A summary, never the plan: the children are the scaffold's to hand out.
+    expect(JSON.stringify(blueprints)).not.toContain('"children"');
+  });
+
   it('stays small enough to be the first call', async () => {
     const result = await discover();
     // The DOCX document schema is over 3 MB. Whatever else changes here, this
-    // tool must never start shipping schemas.
-    expect(JSON.stringify(result).length).toBeLessThan(32 * 1024);
+    // tool must never start shipping schemas. The ceiling grew from 32 KB to
+    // 36 KB when the blueprint summaries joined the gallery and block
+    // references; a full blueprint plan would blow it, and belongs to the
+    // scaffold, never to discovery.
+    expect(JSON.stringify(result).length).toBeLessThan(36 * 1024);
     expect(JSON.stringify(result)).not.toContain('"$schema"');
   });
 

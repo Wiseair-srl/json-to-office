@@ -28,6 +28,12 @@ export const QUALITY_PROFILES: Record<
 > = {
   docx: [
     {
+      id: 'client-report',
+      label: 'Client report',
+      description:
+        'Running head with page numbers after the cover; takeaway and source wherever a block declares them',
+    },
+    {
       id: 'executive-report',
       label: 'Executive report',
       description: 'Short decision document with strict outline continuity',

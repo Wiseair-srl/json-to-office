@@ -113,6 +113,7 @@ export default defineConfig({
             { text: 'CLI', link: '/reference/cli' },
             { text: 'Library API', link: '/reference/api' },
             { text: 'JSON Blocks', link: '/reference/blocks' },
+            { text: 'Blueprints', link: '/reference/blueprints' },
             { text: 'JSON Schemas', link: '/reference/json-schemas' },
           ],
         },

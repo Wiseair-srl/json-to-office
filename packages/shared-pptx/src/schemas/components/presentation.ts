@@ -77,6 +77,17 @@ export const PresentationPropsSchema = Type.Object(
     componentDefaults: Type.Optional(PptxComponentDefaultsSchema),
     grid: Type.Optional(GridConfigSchema),
     blocks: Type.Optional(BlockDefinitionsSchema),
+    qualityProfile: Type.Optional(
+      Type.String({
+        description:
+          'The quality profile validation judges this deck by when the caller names none — a blueprint scaffold writes its archetype’s profile here. A profile names required structure and content; the theme only paints. Built-ins: consulting-deck, executive-presentation, technical-presentation; an unknown name falls back to the format default.',
+        examples: [
+          'consulting-deck',
+          'executive-presentation',
+          'technical-presentation',
+        ],
+      })
+    ),
   },
   {
     description: 'Presentation container props',
