@@ -48,6 +48,11 @@ import { PUBLISHED_SURFACE } from './fixtures/published-surface.js';
 
 let client: Client;
 let deps: ToolDeps;
+const publishedSchemaValidator = new Ajv({
+  strict: false,
+  allErrors: true,
+  validateFormats: false,
+});
 
 interface Component {
   name: string;
@@ -489,15 +494,12 @@ describe('tools and resources describe the same surface', () => {
     // one by design — which is exactly why a starter has to satisfy both: one
     // that passes here and fails there is a document we hand an agent that its
     // own tooling then calls invalid.
-    const ajv = new Ajv({
-      strict: false,
-      allErrors: true,
-      validateFormats: false,
-    });
     const formats = await discover();
     const broken: string[] = [];
     for (const format of formats) {
-      const validate = ajv.compile(formatSchemas(format.name).document);
+      const validate = publishedSchemaValidator.compile(
+        formatSchemas(format.name).document
+      );
       for (const starter of format.starters) {
         if (!validate(starter.document)) {
           broken.push(
@@ -509,6 +511,41 @@ describe('tools and resources describe the same surface', () => {
       }
     }
     expect(broken, broken.join('\n')).toEqual([]);
+  });
+
+  it('publishes typed block bindings through the MCP document-schema resource', async () => {
+    const resource = await client.readResource({
+      uri: 'jto://schema/docx/document',
+    });
+    const text = resource.contents.find((content) => 'text' in content);
+    expect(text && 'text' in text).toBe(true);
+    const schema = JSON.parse((text as { text: string }).text);
+    // Verify the resource payload before reusing the compiled graph by $id;
+    // a stale resource with the same identifier must not pass unnoticed.
+    expect(schema).toEqual(formatSchemas('docx').document);
+    const validate =
+      publishedSchemaValidator.getSchema(schema.$id) ??
+      publishedSchemaValidator.compile(schema);
+    const document = (props: unknown) => ({
+      name: 'docx',
+      props: {
+        blocks: {
+          example: {
+            slots: { items: { type: 'array', items: { type: 'string' } } },
+            body: [{ name: 'columns', props }],
+          },
+        },
+      },
+      children: [],
+    });
+    expect(validate(document({ columns: { $count: '/items' }, gap: 12 }))).toBe(
+      true
+    );
+    expect(validate(document({ $count: '/items' }))).toBe(false);
+    expect(validate(document({ $slot: '/settings', default: 42 }))).toBe(false);
+    expect(validate(document({ $if: '/enabled', then: { columns: 2 } }))).toBe(
+      true
+    );
   });
 
   it('discovery reports no drift diagnostics of its own', async () => {

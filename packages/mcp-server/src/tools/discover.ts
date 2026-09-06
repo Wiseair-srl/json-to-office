@@ -23,6 +23,7 @@ import type { McpServer } from '@modelcontextprotocol/server';
 import { convertToJsonSchema, unionBranches } from '@json-to-office/shared';
 import {
   STANDARD_COMPONENTS_REGISTRY,
+  convertToJsonSchema as convertDocxToJsonSchema,
   ThemeConfigSchema as DocxThemeConfigSchema,
   generateUnifiedDocumentSchema as generateDocxDocumentSchema,
 } from '@json-to-office/shared-docx';
@@ -71,7 +72,7 @@ export type SchemaNode = Record<string, unknown>;
  */
 function generateDocumentSchema(format: FormatName): SchemaNode {
   return format === 'docx'
-    ? (convertToJsonSchema(
+    ? (convertDocxToJsonSchema(
         generateDocxDocumentSchema({
           includeStandardComponents: true,
           includeTheme: false,
