@@ -23,6 +23,10 @@ import type { ToolDeps } from '../lib/deps.js';
 import { FORMAT_NAMES } from '../lib/schema.js';
 import { buildCatalog, formatSchemas } from '../tools/discover.js';
 import {
+  blockReferenceCatalog,
+  BLOCK_REFERENCE_GUIDANCE,
+} from '../templates/blocks.js';
+import {
   galleryDocument,
   galleryManifests,
   galleryThumbnail,
@@ -34,6 +38,7 @@ export const RESOURCE_URIS = {
   themes: 'jto://themes',
   themeValues: 'jto://themes/values',
   templates: 'jto://templates',
+  blocks: 'jto://blocks',
   template: (name: string) => `jto://templates/${name}`,
   templateThumbnail: (name: string) => `jto://templates/${name}/thumbnail`,
   documentSchema: (format: FormatName) => `jto://schema/${format}/document`,
@@ -64,6 +69,21 @@ function jsonContents(uri: URL, body: unknown) {
 }
 
 export function register(server: McpServer, deps: ToolDeps): void {
+  server.registerResource(
+    'blocks',
+    RESOURCE_URIS.blocks,
+    {
+      title: 'JSON block authoring references',
+      description: BLOCK_REFERENCE_GUIDANCE,
+      mimeType: JSON_MIME,
+    },
+    async (uri) =>
+      jsonContents(uri, {
+        purpose: 'authoring-reference',
+        guidance: BLOCK_REFERENCE_GUIDANCE,
+        blocks: blockReferenceCatalog(),
+      })
+  );
   server.registerResource(
     'catalog',
     RESOURCE_URIS.catalog,

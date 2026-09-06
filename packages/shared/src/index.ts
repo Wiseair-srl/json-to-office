@@ -177,6 +177,7 @@ export {
 export { DEFAULT_CHART_THEME_COLORS } from './theme/chart-palette';
 export * from './theme/design-system';
 export * from './theme/chart-typography';
+export * from './blocks';
 
 // Deep merge utilities
 export { mergeWithDefaults } from './utils/deepMerge';

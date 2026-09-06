@@ -175,28 +175,23 @@ A later section can reuse the previous section's header or footer by passing the
 }
 ```
 
-### Report chrome from a block
+### Report chrome from a JSON block
 
-For a report, do not hand-build the header and footer. A `running-head` block, declared once as a child of the first section after the cover, writes a themed header (document title left, section tracker right, hairline beneath) and footer (confidentiality, page `n / N`, date) into that section and every later one, and each section's `section-opener` changes the tracker. A section that authors its own `header` or `footer` keeps it.
+Open the **client-report-blocks.docx.json** playground template for a complete report with inline definitions for cover, takeaways, section openers, running heads and an adaptive metric row. Copy its `props.blocks` definitions along with the invocations you use. These names are template examples, not engine components.
+
+A running-head definition supplies general `section.header` / `section.footer` effects with `scope: "following"`. Each section-opener updates `section.tracker`; inherited chrome resolves the current tracker and section page width. An authored section header, footer or page-break setting takes precedence. Keep the cover in its own earlier section to omit the running head there.
 
 ```json
 {
-  "name": "section",
-  "children": [
-    {
-      "name": "running-head",
-      "props": { "confidentiality": "Confidential", "date": "September 2026" }
-    },
-    {
-      "name": "section-opener",
-      "props": { "number": "01", "title": "Summary" }
-    },
-    { "name": "paragraph", "props": { "text": "The year in one page." } }
-  ]
+  "name": "block",
+  "props": {
+    "ref": "section-opener",
+    "slots": { "number": "01", "title": "Summary" }
+  }
 }
 ```
 
-The `cover` block goes in a section of its own before it, so the cover page carries no running head. See the [block reference](/reference/docx/components#cover) for every slot.
+This invocation requires the definition in the document. See [JSON blocks](/reference/blocks) for a standalone worked example and the full contract.
 
 ## Tables
 

@@ -118,7 +118,6 @@ import {
   type PlaceholderResolution,
 } from './inline';
 import type { DocxFeature } from './features';
-import { isBlockName } from '../blocks';
 import {
   DOCX_IR_SCHEMA_VERSION,
   type DocxIR,
@@ -1040,7 +1039,7 @@ function compileComponent(
     case 'table':
       return compileTable(component, scope);
     default:
-      if (isBlockName(component.name)) {
+      if (component.name === 'group') {
         // Expansion leaves a disabled block unlowered; containers that forward
         // their children unfiltered still hand it here, where it is nothing.
         if ((component as { enabled?: boolean }).enabled === false) return [];

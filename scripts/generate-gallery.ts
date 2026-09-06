@@ -167,8 +167,21 @@ function slideCount(document: unknown): number {
 
 async function main(): Promise<void> {
   const check = process.argv.includes('--check');
+  const onlyIndex = process.argv.indexOf('--only');
+  const only = onlyIndex === -1 ? undefined : process.argv[onlyIndex + 1];
+  const previous = fs.existsSync(MANIFEST_FILE)
+    ? (
+        JSON.parse(fs.readFileSync(MANIFEST_FILE, 'utf8')) as {
+          templates: TemplateManifest[];
+        }
+      ).templates
+    : [];
   const notes = JSON.parse(fs.readFileSync(NOTES_FILE, 'utf8')) as Notes;
   const names = Object.keys(notes.templates).sort();
+  if (onlyIndex !== -1 && (!only || !names.includes(only) || check))
+    throw new Error(
+      '--only requires an existing template name and cannot be combined with --check.'
+    );
 
   const missing = names.filter(
     (name) => !fs.existsSync(path.join(SOURCE_DIR, name))
@@ -203,6 +216,13 @@ async function main(): Promise<void> {
 
   const manifests: TemplateManifest[] = [];
   for (const name of names) {
+    if (only && name !== only) {
+      const existing = previous.find((entry) => entry.name === name);
+      if (!existing)
+        throw new Error(`${name}: regenerate the full gallery first.`);
+      manifests.push(existing);
+      continue;
+    }
     const source = fs.readFileSync(path.join(SOURCE_DIR, name), 'utf8');
     const document = JSON.parse(source) as Rec;
     const format = name.endsWith('.pptx.json') ? 'pptx' : 'docx';

@@ -89,6 +89,57 @@ afterEach(async () => {
 });
 
 describe('tool surface', () => {
+  it('inspects definition-derived slots and fill pointers without cross-workspace references', async () => {
+    const document = {
+      name: 'docx',
+      props: {
+        blocks: {
+          local: {
+            format: 'docx',
+            slots: { title: { type: 'string', required: true } },
+            body: [{ name: 'paragraph', props: { text: { $slot: '/title' } } }],
+          },
+        },
+      },
+      children: [
+        {
+          name: 'section',
+          children: [
+            {
+              name: 'block',
+              props: { ref: 'local', slots: { title: 'Local title' } },
+            },
+          ],
+        },
+      ],
+    };
+    const created = await ok('jto_workspace_create', {
+      format: 'docx',
+      document,
+    });
+    const inspected = await ok('jto_workspace_inspect', {
+      handle: created.workspace.handle,
+      includeDocument: false,
+      includeBlocks: true,
+    });
+    expect(inspected.blocks.definitions[0].slotsSchema.required).toEqual([
+      'title',
+    ]);
+    expect(inspected.blocks.invocations[0]).toMatchObject({
+      ref: 'local',
+      slotsPath: '/children/0/children/0/props/slots',
+    });
+    const other = await ok('jto_workspace_create', {
+      format: 'docx',
+      document: { name: 'docx', children: [] },
+    });
+    const separate = await ok('jto_workspace_inspect', {
+      handle: other.workspace.handle,
+      includeBlocks: true,
+    });
+    expect(separate.blocks.definitions).toEqual([]);
+  });
+
   it('advertises all six workspace tools with enforceable schemas', async () => {
     const { tools } = await client.listTools();
     const names = tools.map((tool) => tool.name);

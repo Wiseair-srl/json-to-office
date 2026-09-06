@@ -22,10 +22,6 @@ export * from './highcharts';
 export * from './chart';
 export * from './visual';
 export * from './statistic';
-export * from './key-takeaways';
-export * from './cover';
-export * from './section-opener';
-export * from './running-head';
 export * from './table';
 export * from './list';
 export * from './toc';
@@ -36,3 +32,5 @@ export {
   ComponentDefinitionSchema,
   StandardComponentDefinitionSchema,
 } from '../components';
+
+export * from './block';

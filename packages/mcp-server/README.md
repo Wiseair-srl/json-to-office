@@ -223,7 +223,7 @@ Handles become cross-connection when this is on, so point it at a directory you 
 
 **`jto_workspace_create`** — in: `format` (required), `document` (omit to open an empty skeleton and patch into it), `title` (your own label). Out: `workspace`. Nothing is validated here.
 
-**`jto_workspace_inspect`** — in: `handle` (required), `revision` (the current one, or one pinned by a snapshot; anything else fails rather than quietly returning newer JSON), `paths[]` (project only these pointers), `includeDocument` (default false when `paths` is given, true otherwise). Out: `workspace`, `document`, `projection` (pointer → value), `missingPaths[]` — so "absent" stays distinguishable from "present and null".
+**`jto_workspace_inspect`** — `includeBlocks: true` adds document-local definitions, derived slot schemas and invocation fill pointers, without catalog references. In: `handle` (required), `revision` (the current one, or one pinned by a snapshot; anything else fails rather than quietly returning newer JSON), `paths[]` (project only these pointers), `includeDocument` (default false when `paths` is given, true otherwise). Out: `workspace`, `document`, `projection` (pointer → value), `missingPaths[]` — so "absent" stays distinguishable from "present and null".
 
 **`jto_workspace_patch`** — in: `handle` and `operations[]` (required; RFC 6902 `add` / `remove` / `replace` / `move` / `copy` / `test`, applied in order), `baseRevision` (makes the write conditional; a mismatch fails with `E_STALE_REVISION`). Out: `workspace`. Atomic: the whole patch is checked, applied to a copy, and committed only if every operation lands — a failure leaves the document exactly as it was and does not burn a revision. Invalid intermediate states are allowed on purpose; validate when you are ready.
 
@@ -239,17 +239,18 @@ A `workspace` record is `{handle, format, revision, bytes, createdAt, updatedAt,
 
 The same catalogues, for clients that read resources. URIs are stable.
 
-| URI                          | Contents                                                                  |
-| ---------------------------- | ------------------------------------------------------------------------- |
-| `jto://catalog`              | The resource form of `jto_discover`: every format, in full.               |
-| `jto://renderers`            | Renderer ids per format, which is default, what each profile can draw.    |
-| `jto://themes`               | Built-in theme names per format.                                          |
-| `jto://themes/values`        | What each built-in theme actually is: palette, fonts, style tables.       |
-| `jto://templates`            | Every starter document.                                                   |
-| `jto://schema/docx/document` | Generated JSON Schema for a complete `.docx` document, by renderer.       |
-| `jto://schema/pptx/document` | The same for `.pptx`.                                                     |
-| `jto://schema/docx/theme`    | Generated JSON Schema for a `.docx` theme file, as passed to `themePath`. |
-| `jto://schema/pptx/theme`    | The same for `.pptx`.                                                     |
+| URI                          | Contents                                                                                                          |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `jto://catalog`              | The resource form of `jto_discover`: every format, in full.                                                       |
+| `jto://renderers`            | Renderer ids per format, which is default, what each profile can draw.                                            |
+| `jto://themes`               | Built-in theme names per format.                                                                                  |
+| `jto://themes/values`        | What each built-in theme actually is: palette, fonts, style tables.                                               |
+| `jto://blocks`               | JSON block authoring references derived from playground templates; copy definitions into the document before use. |
+| `jto://templates`            | Every starter document.                                                                                           |
+| `jto://schema/docx/document` | Generated JSON Schema for a complete `.docx` document, by renderer.                                               |
+| `jto://schema/pptx/document` | The same for `.pptx`.                                                                                             |
+| `jto://schema/docx/theme`    | Generated JSON Schema for a `.docx` theme file, as passed to `themePath`.                                         |
+| `jto://schema/pptx/theme`    | The same for `.pptx`.                                                                                             |
 
 All `application/json`. The document schemas are megabytes — prefer `jto_describe_component` unless you genuinely need the whole thing. Tools and resources are generated from the same registries, and a drift test fails the build if they disagree.
 

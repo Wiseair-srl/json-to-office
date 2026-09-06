@@ -923,3 +923,7 @@ spans. Chrome/motif contracts do not render until #361.
 Import discipline: only `renderers/pptxgenjs/` may import `pptxgenjs`; only
 `renderers/docxjs/` may import `docx`; only `renderers/office-open/` may import
 `@office-open/*`. Compiler and IR files import no renderer at all.
+
+### JSON block migration (#370)
+
+The four report corpus goldens (`key-takeaways-*`, `report-chrome-*`) now use inline definitions copied from the complete playground report. Their hashes deliberately change: generic groups replace privileged named compilers, and template-authored typography/spacing replaces the historical recipes. Other corpus goldens stay unchanged. Native headings, page fields, tracker transitions and explicit section overrides remain covered by tests. The three-page playground report was rendered through LibreOffice for its shipped contact sheet; native Microsoft Word visual testing remains a separate interoperability check.

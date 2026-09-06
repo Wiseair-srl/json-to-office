@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 /**
  * `jto_validate`, over a real protocol round trip.
  *
@@ -834,19 +835,33 @@ describe('jto_validate', () => {
 describe('includeCompiled', () => {
   const withBlock = {
     name: 'docx',
-    props: { theme: 'consulting' },
+    props: {
+      theme: 'consulting',
+      blocks: JSON.parse(
+        readFileSync(
+          new URL(
+            '../../../jto/src/client/public/templates/client-report-blocks.docx.json',
+            import.meta.url
+          ),
+          'utf8'
+        )
+      ).props.blocks,
+    },
     children: [
       {
         name: 'section',
         children: [
           {
-            name: 'key-takeaways',
+            name: 'block',
             props: {
-              items: [
-                'First conclusion.',
-                'Second conclusion.',
-                'Third conclusion.',
-              ],
+              ref: 'key-takeaways',
+              slots: {
+                items: [
+                  'First conclusion.',
+                  'Second conclusion.',
+                  'Third conclusion.',
+                ],
+              },
             },
           },
         ],
@@ -864,10 +879,10 @@ describe('includeCompiled', () => {
     expect(result.compiled.blocks).toEqual(['/children/0/children/0']);
     expect(result.compiled.sourceMap).toMatchObject({
       '/children/0/children/0/children/2/props/items':
-        '/children/0/children/0/props/items',
+        '/children/0/children/0/props/slots/items',
     });
     const block = result.compiled.document.children[0].children[0];
-    expect(block.name).toBe('key-takeaways');
+    expect(block.name).toBe('group');
     expect(block.children.map((child: { name: string }) => child.name)).toEqual(
       ['divider', 'paragraph', 'list', 'divider']
     );
@@ -899,8 +914,11 @@ describe('includeCompiled', () => {
             name: 'section',
             children: [
               {
-                name: 'key-takeaways',
-                props: { items: ['One.', long, 'Three.'] },
+                name: 'block',
+                props: {
+                  ref: 'key-takeaways',
+                  slots: { items: ['One.', long, 'Three.'] },
+                },
               },
             ],
           },
@@ -908,11 +926,11 @@ describe('includeCompiled', () => {
       },
     });
     const budget = result.diagnostics.find(
-      (entry: { code: string }) => entry.code === 'W_QUALITY_SLOT_BUDGET'
+      (entry: { code: string }) => entry.code === 'E_BLOCK_SLOT_BUDGET'
     );
     expect(budget).toMatchObject({
-      path: '/children/0/children/0/props/items/1',
-      severity: 'warning',
+      path: '/children/0/children/0/props/slots/items/1',
+      severity: 'error',
     });
   });
 });

@@ -138,48 +138,6 @@ export function presentImageSources(props: unknown): string[] {
 }
 
 /**
- * A `running-head` is page chrome for the section it sits in and takes effect
- * only as a direct child of a top-level section. Anywhere else — a section's
- * own `header`, a column, a table cell, a text box — it would lower to nothing
- * and the page would silently lose its chrome, so it is refused here with the
- * place named.
- */
-export function collectChromeBlockPlacement(data: unknown): ValidationError[] {
-  const errors: ValidationError[] = [];
-  const allowed = new Set<string>();
-  const root = data as { name?: unknown; children?: unknown } | null;
-  if (root && Array.isArray(root.children)) {
-    root.children.forEach((section: any, s: number) => {
-      if (section?.name === 'section' && Array.isArray(section.children)) {
-        section.children.forEach((_: unknown, c: number) =>
-          allowed.add(`/children/${s}/children/${c}`)
-        );
-      }
-    });
-  }
-  const visit = (node: any, path: string): void => {
-    if (Array.isArray(node)) {
-      node.forEach((item, i) => visit(item, `${path}/${i}`));
-      return;
-    }
-    if (!node || typeof node !== 'object') return;
-    if (node.name === 'running-head' && !allowed.has(path)) {
-      errors.push({
-        path,
-        message:
-          "A running-head must be a direct child of a top-level section: it writes that section's header and footer and every later one's. Move it out of the header, column, cell or text box it is in.",
-        code: 'invalid_placement',
-      });
-    }
-    for (const key of Object.keys(node)) {
-      visit(node[key], `${path}/${key}`);
-    }
-  };
-  visit(data, '');
-  return errors;
-}
-
-/**
  * Collect "more than one image source" conflicts anywhere in a document.
  *
  * `path`, `base64`, and `svg` are mutually exclusive on the image component, but
@@ -208,26 +166,6 @@ export function collectImageSourceConflicts(data: unknown): ValidationError[] {
           message: `Image component accepts only one source, but found ${present
             .map((f) => `"${f}"`)
             .join(', ')}. Use exactly one of "path", "base64", or "svg".`,
-          code: 'mutually_exclusive',
-        });
-      }
-    }
-
-    // A cover's logo lowers to an image, so it is held to the same rule — and
-    // to its converse: a logo slot with no source at all draws nothing, which
-    // is never what the author meant. The schema's `anyOf` says so too, but
-    // the structural check does not evaluate it, so it is enforced here.
-    if (node.name === 'cover' && node.props && node.props.logo) {
-      const present = presentImageSources(node.props.logo);
-      if (present.length !== 1) {
-        errors.push({
-          path: `${path}/props/logo`,
-          message:
-            present.length === 0
-              ? 'Cover logo has no source. Give it exactly one of "path", "base64", or "svg".'
-              : `Cover logo accepts only one source, but found ${present
-                  .map((f) => `"${f}"`)
-                  .join(', ')}. Use exactly one of "path", "base64", or "svg".`,
           code: 'mutually_exclusive',
         });
       }

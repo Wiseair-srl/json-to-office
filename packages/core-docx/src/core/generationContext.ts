@@ -44,6 +44,9 @@ export interface ThemeContextOptions {
 }
 
 export interface GenerationThemeContext {
+  /** Provenance supplied by the shared plugin/block expansion stage. */
+  blockPaths?: readonly string[];
+  sourceMap?: Readonly<Record<string, string>>;
   /** The document after the export-mode pre-pass rewrote font references. */
   document: ReportComponentDefinition;
   theme: ThemeConfig;

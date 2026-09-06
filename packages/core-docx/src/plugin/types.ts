@@ -220,6 +220,8 @@ export interface FileGenerationResult<
  * any of the rendering work.
  */
 export interface StandardDefinitionResult {
+  /** Expanded component/slot pointers mapped to authored input. */
+  sourceMap?: Readonly<Record<string, string>>;
   /** Post-expansion, post-normalization standard JSON tree (custom plugins resolved). */
   standardDefinition: ReportComponentDefinition;
   /** Warnings collected during expansion, null if no warnings */

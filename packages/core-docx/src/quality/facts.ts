@@ -38,7 +38,6 @@ import {
   blockSlotBudgets,
   expandBlocks,
   toAuthoredPointer,
-  type BlockName,
   type BlockSourceMap,
 } from '../blocks';
 import { resolveFontSize } from '../styles/utils/styleHelpers';
@@ -215,7 +214,7 @@ export interface DocxFontFact extends QualityFact {
  */
 export interface DocxBlockSlotFact extends QualityFact {
   kind: 'docx/block-slot';
-  block: BlockName;
+  block: string;
   slot: string;
   words: number;
   maxWords: number;
@@ -943,7 +942,10 @@ export function prepareDocxQualityDocument(
   // came from, so a finding inside a block points at what the author wrote,
   // never at a node they never saw.
   const authoredPath = (path: string): string =>
-    toAuthoredPointer(expanded.sourceMap, path);
+    toAuthoredPointer(
+      themed.sourceMap ?? {},
+      toAuthoredPointer(expanded.sourceMap, path)
+    );
   const addFact = (raw: DocxQualityFact): void => {
     const fact: DocxQualityFact = {
       ...raw,
@@ -959,7 +961,7 @@ export function prepareDocxQualityDocument(
     };
   };
 
-  for (const budget of blockSlotBudgets(context.document, expanded.blocks)) {
+  for (const budget of blockSlotBudgets(themed.document, expanded.blocks)) {
     addFact({
       id: `docx:block-slot:${budget.path}`,
       kind: 'docx/block-slot',
@@ -1152,11 +1154,20 @@ export function prepareDocxQualityDocument(
     facts,
     provenance,
     renderer: options.renderer ?? DEFAULT_DOCX_RENDERER_ID,
-    ...(expanded.blocks.length > 0 && {
+    ...((expanded.blocks.length > 0 ||
+      (themed.blockPaths?.length ?? 0) > 0) && {
       metadata: {
         blocks: {
-          sourceMap: expanded.sourceMap,
-          blocks: expanded.blocks,
+          sourceMap: {
+            ...themed.sourceMap,
+            ...Object.fromEntries(
+              Object.entries(expanded.sourceMap).map(([key, value]) => [
+                key,
+                toAuthoredPointer(themed.sourceMap ?? {}, value),
+              ])
+            ),
+          },
+          blocks: [...(themed.blockPaths ?? []), ...expanded.blocks],
           document: context.document,
         } satisfies DocxBlocksMetadata,
       },

@@ -13,6 +13,8 @@
  * - Build-time JSON schemas
  */
 
+import { BlockInvocationPropsSchema } from '@json-to-office/shared';
+import { GroupPropsSchema } from './components/block';
 import { Type, TSchema } from '@sinclair/typebox';
 // Import directly from individual component files to avoid circular dependency
 // (components.ts imports from this file, so we can't import from components.ts)
@@ -27,10 +29,6 @@ import { ParagraphPropsSchema } from './components/paragraph';
 import { TextBoxPropsSchema } from './components/text-box';
 import { ImagePropsSchema } from './components/image';
 import { StatisticPropsSchema } from './components/statistic';
-import { KeyTakeawaysPropsSchema } from './components/key-takeaways';
-import { CoverPropsSchema } from './components/cover';
-import { SectionOpenerPropsSchema } from './components/section-opener';
-import { RunningHeadPropsSchema } from './components/running-head';
 import { TablePropsSchema, createTablePropsSchema } from './components/table';
 import { ListPropsSchema } from './components/list';
 import { TocPropsSchema } from './components/toc';
@@ -166,6 +164,8 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
       ],
       hasChildren: true,
       allowedChildren: [
+        'block',
+        'group',
         'heading',
         'paragraph',
         'image',
@@ -179,10 +179,6 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
         'visual',
         'columns',
         'text-box',
-        'key-takeaways',
-        'cover',
-        'section-opener',
-        'running-head',
       ],
       category: 'container',
       description:
@@ -193,6 +189,8 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
       propsSchema: ColumnsPropsSchema,
       hasChildren: true,
       allowedChildren: [
+        'block',
+        'group',
         'heading',
         'paragraph',
         'image',
@@ -205,7 +203,6 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
         'chart',
         'visual',
         'text-box',
-        'key-takeaways',
       ],
       category: 'layout',
       description:
@@ -257,36 +254,37 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
         'Statistic display - shows a number with description. Perfect for KPIs and metrics.',
     },
     {
-      name: 'key-takeaways',
-      propsSchema: KeyTakeawaysPropsSchema,
+      name: 'block',
+      propsSchema: BlockInvocationPropsSchema,
       hasChildren: false,
       category: 'content',
       description:
-        "Key-takeaways block - 3–5 one-sentence takeaways under a label, drawn as the theme's takeaways recipe (rule, label role, list). Opens a report or a major section with its conclusions; the theme styles it, so never hand-build one from paragraphs.",
+        'Invoke a JSON block defined in this document’s props.blocks. Fill its named slots; no block names are built into the engine.',
     },
     {
-      name: 'cover',
-      propsSchema: CoverPropsSchema,
-      hasChildren: false,
-      category: 'content',
+      name: 'group',
+      propsSchema: GroupPropsSchema,
+      hasChildren: true,
+      allowedChildren: [
+        'group',
+        'block',
+        'heading',
+        'paragraph',
+        'image',
+        'statistic',
+        'table',
+        'list',
+        'toc',
+        'divider',
+        'highcharts',
+        'chart',
+        'visual',
+        'columns',
+        'text-box',
+      ],
+      category: 'container',
       description:
-        "Cover block - title, subtitle, client, date, confidentiality and an optional logo, drawn as the theme's cover recipe. Put it in a section of its own so the report starts on a fresh page; never hand-build a cover from paragraphs and spacing.",
-    },
-    {
-      name: 'section-opener',
-      propsSchema: SectionOpenerPropsSchema,
-      hasChildren: false,
-      category: 'content',
-      description:
-        'Section-opener block - number, title and running-head tracker for a major section. The title is a level-1 heading (TOC, cross-references and numbering see it); the number is an eyebrow above it; the tracker is what the running head shows for the enclosing section.',
-    },
-    {
-      name: 'running-head',
-      propsSchema: RunningHeadPropsSchema,
-      hasChildren: false,
-      category: 'content',
-      description:
-        "Running-head block - the header (document title, section tracker) and footer (confidentiality, page n / N, date) from the theme's chrome recipes, for its section and every later one that authors no chrome of its own. Declare it once, as a child of the first section that should carry chrome.",
+        'Transparent group of flow components; also the inspectable result of block expansion.',
     },
     {
       name: 'table',
@@ -589,6 +587,24 @@ export function createAllComponentSchemasNarrowed(
     for (let i = pending.length - 1; i >= 0; i--) {
       const comp = pending[i];
 
+      if (comp.name === 'group') {
+        // Transparent flow groups recurse without admitting document/section roots.
+        const flow = Type.Intersect([
+          selfRef,
+          Type.Object({
+            name: Type.Union([
+              ...comp.allowedChildren!.map((name) => Type.Literal(name)),
+              ...pluginSchemas.map((schema) => schema.properties.name),
+            ]),
+          }),
+        ]);
+        resolved.set(
+          comp.name,
+          createComponentSchemaObject(comp, flow, selfRef, profile)
+        );
+        pending.splice(i, 1);
+        continue;
+      }
       if (!comp.allowedChildren) {
         // No allowedChildren declared — fallback to full recursive ref
         resolved.set(

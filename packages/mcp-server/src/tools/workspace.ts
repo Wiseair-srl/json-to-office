@@ -23,6 +23,7 @@
  * protocol-ish error instead of the repairable one it is.
  */
 
+import { documentBlockMetadata } from '@json-to-office/shared';
 import type { McpServer } from '@modelcontextprotocol/server';
 
 import type { ToolDeps } from '../lib/deps.js';
@@ -273,6 +274,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
         revision?: number;
         paths?: string[];
         includeDocument?: boolean;
+        includeBlocks?: boolean;
       }>({
         type: 'object',
         properties: {
@@ -288,6 +290,11 @@ export function register(server: McpServer, deps: ToolDeps): void {
             items: { type: 'string', description: pointerDescription },
             description:
               'Project only these locations. Omit to read the whole document.',
+          },
+          includeBlocks: {
+            type: 'boolean',
+            description:
+              'Return definitions, derived slot schemas and invocation fill pointers from this workspace revision; excludes catalog references.',
           },
           includeDocument: {
             type: 'boolean',
@@ -313,6 +320,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
               'Requested pointer → value, for the pointers that resolved.',
             additionalProperties: true,
           },
+          blocks: { type: 'object', additionalProperties: true },
           missingPaths: {
             type: 'array',
             items: { type: 'string' },
@@ -359,6 +367,9 @@ export function register(server: McpServer, deps: ToolDeps): void {
           return success(
             {
               workspace: read.record,
+              ...(args.includeBlocks && {
+                blocks: documentBlockMetadata(read.document),
+              }),
               ...(includeDocument && { document: read.document }),
               ...(projecting && { projection, missingPaths }),
             },

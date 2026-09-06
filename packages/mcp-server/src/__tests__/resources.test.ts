@@ -51,6 +51,7 @@ describe('discovery resources', () => {
     const byUri = new Map(resources.map((entry) => [entry.uri, entry]));
 
     for (const uri of [
+      RESOURCE_URIS.blocks,
       RESOURCE_URIS.catalog,
       RESOURCE_URIS.renderers,
       RESOURCE_URIS.themes,
@@ -79,6 +80,41 @@ describe('discovery resources', () => {
       'paragraph'
     );
     expect(docx.renderers.map((entry: any) => entry.id)).toContain('docxjs');
+  });
+
+  it('derives block references from templates without registering runtime names', async () => {
+    const { galleryDocument } = await import('../templates/gallery.js');
+    const { validateDocument } = await import('@json-to-office/shared-docx');
+    const catalog = await readJson(RESOURCE_URIS.blocks);
+    expect(catalog.purpose).toBe('authoring-reference');
+    const cover = catalog.blocks.find((entry: any) => entry.name === 'cover');
+    expect(cover.definition).toEqual(
+      (galleryDocument(cover.template) as any).props.blocks.cover
+    );
+    expect(cover.definitionPointer).toBe('/props/blocks/cover');
+    expect(cover.slotsSchema.required).toContain('title');
+    const document: any = {
+      name: 'docx',
+      props: {},
+      children: [
+        {
+          name: 'section',
+          children: [
+            {
+              name: 'block',
+              props: { ref: 'cover', slots: { title: 'Copied definition' } },
+            },
+          ],
+        },
+      ],
+    };
+    expect(validateDocument(document).errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'block_unknown_reference' }),
+      ])
+    );
+    document.props.blocks = { cover: structuredClone(cover.definition) };
+    expect(validateDocument(document).valid).toBe(true);
   });
 
   it('serves the generated document schemas, not a digest of them', async () => {

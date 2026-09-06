@@ -4,30 +4,29 @@ The complete catalog of DOCX components: what each one does, every prop it accep
 
 ## Overview
 
-| Component                                     | Category                | Children allowed                                                                                                                                                  |
-| --------------------------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`docx`](/reference/docx/document#docx-root)  | container               | `section` only                                                                                                                                                    |
-| [`section`](/reference/docx/document#section) | container               | heading, paragraph, image, statistic, table, list, toc, divider, highcharts, chart, visual, columns, text-box, key-takeaways, cover, section-opener, running-head |
-| [`columns`](#columns)                         | layout                  | same as section, minus `columns` (no nesting)                                                                                                                     |
-| [`text-box`](#text-box)                       | layout                  | heading, paragraph, image, divider                                                                                                                                |
-| [`heading`](#heading)                         | content                 | —                                                                                                                                                                 |
-| [`paragraph`](#paragraph)                     | content                 | —                                                                                                                                                                 |
-| [`image`](#image)                             | content                 | —                                                                                                                                                                 |
-| [`statistic`](#statistic)                     | content                 | —                                                                                                                                                                 |
-| [`table`](#table)                             | content                 | — (cells nest components via `content`)                                                                                                                           |
-| [`list`](#list)                               | content                 | —                                                                                                                                                                 |
-| [`toc`](#toc)                                 | content                 | —                                                                                                                                                                 |
-| [`divider`](#divider)                         | content                 | —                                                                                                                                                                 |
-| [`highcharts`](#highcharts)                   | content                 | —                                                                                                                                                                 |
-| [`key-takeaways`](#key-takeaways)             | block                   | —                                                                                                                                                                 |
-| [`cover`](#cover)                             | block                   | —                                                                                                                                                                 |
-| [`section-opener`](#section-opener)           | block                   | —                                                                                                                                                                 |
-| [`running-head`](#running-head)               | block (page chrome)     | —                                                                                                                                                                 |
-| [`chart`](#chart)                             | content (`office-open`) | —                                                                                                                                                                 |
-| [`visual`](#visual)                           | content                 | —                                                                                                                                                                 |
-| [`text-space-after`](#text-space-after)       | legacy custom (opt-in)  | —                                                                                                                                                                 |
+| Component                                     | Category                | Children allowed                                                                                                            |
+| --------------------------------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| [`docx`](/reference/docx/document#docx-root)  | container               | `section` only                                                                                                              |
+| [`section`](/reference/docx/document#section) | container               | heading, paragraph, image, statistic, table, list, toc, divider, highcharts, chart, visual, columns, text-box, block, group |
+| [`columns`](#columns)                         | layout                  | same as section, minus `columns` (no nesting)                                                                               |
+| [`text-box`](#text-box)                       | layout                  | heading, paragraph, image, divider                                                                                          |
+| [`heading`](#heading)                         | content                 | —                                                                                                                           |
+| [`paragraph`](#paragraph)                     | content                 | —                                                                                                                           |
+| [`image`](#image)                             | content                 | —                                                                                                                           |
+| [`statistic`](#statistic)                     | content                 | —                                                                                                                           |
+| [`table`](#table)                             | content                 | — (cells nest components via `content`)                                                                                     |
+| [`list`](#list)                               | content                 | —                                                                                                                           |
+| [`toc`](#toc)                                 | content                 | —                                                                                                                           |
+| [`divider`](#divider)                         | content                 | —                                                                                                                           |
+| [`highcharts`](#highcharts)                   | content                 | —                                                                                                                           |
+| [`chart`](#chart)                             | content (`office-open`) | —                                                                                                                           |
+| [`visual`](#visual)                           | content                 | —                                                                                                                           |
+| [`text-space-after`](#text-space-after)       | legacy custom (opt-in)  | —                                                                                                                           |
 
 Every node is `{ name, props, children? }` plus optional `id` and `enabled` fields; `enabled: false` removes the node from the render. Custom plugin components (see [API reference](/reference/api)) are allowed as children of any container.
+
+| [`block`](#block) | composition | — (defined by `props.blocks`) |
+| [`group`](#group) | container | flow components |
 
 ### Units at a glance
 
@@ -576,135 +575,13 @@ Two further warnings report a downgrade inside shape mode rather than a fallback
 
 A shape cannot carry both `style.shading.fill` and `style.border`: docx 9.7.1 writes the two fill groups in an order Word rejects, so when both are given the fill is kept, the border dropped, and a warning raised. Use one or the other, or stay on the table path.
 
-## `key-takeaways`
+## `block`
 
-The first **block**: a content component with bounded slots that the pipeline lowers to the primitives above, styled entirely from the theme. Three to five one-sentence takeaways under a label, drawn as the theme's takeaways recipe — a rule in the accent, the label in the theme's `label` type role, the items as a list the theme's list defaults already style, a hairline to close the box. It opens a report or a major section with its conclusions. Never hand-build one from paragraphs: the block is what a blueprint places, and what the theme restyles when the theme changes.
+Invokes a definition in the current document’s `props.blocks`. `props.ref` names the definition; `props.slots` supplies its declared content. Unknown names fail even when the MCP catalog contains an example with that name. See the [JSON block contract](/reference/blocks) for a complete example, constraints and expansion rules.
 
-| Prop    | Type                   | Required | Default           | Description                                                                     |
-| ------- | ---------------------- | -------- | ----------------- | ------------------------------------------------------------------------------- |
-| `items` | `string[]` (3–5 items) | **yes**  | —                 | One claim per item, one sentence, at most 25 words. The count is a schema bound |
-| `label` | `string`               | no       | `"Key takeaways"` | The box label, set in the theme's `label` role                                  |
+## `group`
 
-```json
-{
-  "name": "key-takeaways",
-  "props": {
-    "items": [
-      "Revenue grew in every region for a third consecutive quarter.",
-      "The gap between the strongest and weakest region narrowed from 31 to 19 points.",
-      "Islands remains below plan; a targeted channel review is recommended."
-    ]
-  }
-}
-```
-
-![The key-takeaways block on the consulting theme](/blocks/key-takeaways-consulting.png)
-
-**What it compiles to.** The block stays where you put it; its `children` are filled with `divider`, `paragraph`, `list`, `divider`, read from the theme's `chrome.keyTakeaways` recipe (`rule.weightPt` and `rule.color` for the top rule, `type` for the label role, `padPt` for the space inside). A theme without a recipe gets a 1.5pt accent rule and a bold label. The compiled tree is what validation, quality analysis and both renderers see; `jto_validate` returns it with `includeCompiled: true`. A source map ties every compiled node back to its slot, so a finding on the second item is reported at `/props/items/1`, never at a node you did not write.
-
-**What is checked.** Fewer than three or more than five items is a schema error at `/props/items`. An item over 25 words is `W_QUALITY_SLOT_BUDGET` at that item. Placeholder text inside an item is reported at the item, like anywhere else.
-
-## `cover`
-
-A report's first page as a **block**: title, subtitle, client, date and confidentiality, with an optional logo, drawn as the theme's `chrome.cover` recipe. Put it in a section of its own — a block cannot break the page after itself, and a section already starts on a fresh page — so the report proper begins on page two with its own running head.
-
-| Prop              | Type                                               | Required | Default | Description                                                                                                           |
-| ----------------- | -------------------------------------------------- | -------- | ------- | --------------------------------------------------------------------------------------------------------------------- |
-| `title`           | `string` (one line)                                | **yes**  | —       | The report title, at most 12 words. Set in the recipe's type role (`display` on `consulting`), else the `title` style |
-| `subtitle`        | `string` (one line)                                | no       | —       | What the report answers, at most 30 words. Set in the theme's `subtitle` style                                        |
-| `client`          | `string` (one line)                                | no       | —       | Who the report is for. Drawn as an eyebrow above the title                                                            |
-| `date`            | `string` (one line)                                | no       | —       | The report date as it should read (`"September 2026"`). Never reformatted                                             |
-| `confidentiality` | `string` (one line)                                | no       | —       | `"Confidential"`, `"For internal use"`. Drawn on the meta line with the date                                          |
-| `logo`            | `{ path \| base64 \| svg, alt?, width?, height? }` | no       | —       | One image source, plus a size (default a quarter of the measure). Placed by the theme's `logoSlot` recipe             |
-
-```json
-{
-  "name": "section",
-  "children": [
-    {
-      "name": "cover",
-      "props": {
-        "title": "Annual performance review",
-        "subtitle": "What changed in 2026 and what to do about it",
-        "client": "Acme Holdings",
-        "date": "September 2026",
-        "confidentiality": "Confidential"
-      }
-    }
-  ]
-}
-```
-
-![The cover block on the consulting theme](/blocks/cover-consulting.png)
-
-**What it compiles to.** In order: the logo (an `image`, aligned as `chrome.logoSlot.alignment` says), the cover rule (a `divider` of `chrome.cover.rule`, dropped 30% of the page's body height — 22% with a logo above it), the client as an `eyebrow` paragraph, the title, the subtitle, and the meta line (`date  ·  confidentiality`) in the `label` role. A theme without the recipe draws a 3pt accent rule, the `title` style and small bold runs where the roles would have been. Every emitted node maps back to its slot: a finding on the subtitle is reported at `/props/subtitle`.
-
-**What is checked.** A missing or multi-line title is a schema error at `/props/title`; a logo with no source, or more than one, is a coded error at `/props/logo`. A title over 12 words or a subtitle over 30 is `W_QUALITY_SLOT_BUDGET` at that slot.
-
-## `section-opener`
-
-What starts a major section of a report, as a **block**: a number, a title and the tracker label the running head shows while the section lasts. The title lowers to a level-1 `heading` — a real one, so the table of contents, heading numbering and cross-references see the section the way Word does — with the number drawn above it in the theme's `eyebrow` role. The tracker is never drawn in the flow: it is what the [`running-head`](#running-head) in force reads for the enclosing docx `section`.
-
-| Prop        | Type                             | Required | Default   | Description                                                                                                        |
-| ----------- | -------------------------------- | -------- | --------- | ------------------------------------------------------------------------------------------------------------------ |
-| `title`     | `string` (one line)              | **yes**  | —         | The section title, at most 12 words. Say what the section concludes                                                |
-| `number`    | `string` (one line) \| `integer` | no       | —         | `"02"`, `"Part II"`, `2`. Drawn as an eyebrow; omit for an unnumbered section                                      |
-| `tracker`   | `string` (one line)              | no       | the title | The running-head label for this section, at most 6 words                                                           |
-| `pageBreak` | `boolean`                        | no       | `false`   | Start on a new page. Leave it off when the opener is the first child of a docx `section`, which already starts one |
-
-```json
-{
-  "name": "section-opener",
-  "props": {
-    "number": "02",
-    "title": "Results by region",
-    "tracker": "Results"
-  }
-}
-```
-
-![The section-opener block on the consulting theme](/blocks/section-opener-consulting.png)
-
-**What it compiles to.** A `paragraph` for the number (`eyebrow` role, or a small bold accent run on a theme without one) and a `heading` at level 1; `pageBreak` lands on whichever comes first. `/props/number` and `/props/title` are the source-map targets. One opener per docx `section` sets its tracker; a second opener in the same section is a heading like any other, and the first one's tracker stands.
-
-**What is checked.** A multi-line title or tracker is a schema error at the slot; a title over 12 words or a tracker over 6 is `W_QUALITY_SLOT_BUDGET`.
-
-## `running-head`
-
-The page chrome of a report, as a **block** that lowers to nothing where it stands: its output is a header and a footer for the docx `section` it sits in and for every later section that authors none of its own. The header is the document title on the left and the section tracker on the right, set in the `chrome.runningHead` recipe's role (`tracker` on `consulting`) over a hairline; the footer is a hairline, then the confidentiality line on the left, the page as `n / N` in the centre and the date on the right, in the `chrome.confidentialFooter` role (`footer`). Declare it once, as a direct child of the first section that should carry chrome — usually the one after the cover — and let each section's [`section-opener`](#section-opener) change the tracker.
-
-| Prop              | Type                | Required | Default          | Description                                                                                          |
-| ----------------- | ------------------- | -------- | ---------------- | ---------------------------------------------------------------------------------------------------- |
-| `title`           | `string` (one line) | no       | `metadata.title` | The header's left-hand text, at most 12 words                                                        |
-| `tracker`         | `string` (one line) | no       | —                | The header's right-hand label for sections with no opener, at most 6 words. An opener's tracker wins |
-| `confidentiality` | `string` (one line) | no       | —                | The footer's left-hand text, at most 6 words                                                         |
-| `date`            | `string` (one line) | no       | —                | The footer's right-hand date as it should read, at most 6 words. Never reformatted                   |
-| `pageNumbers`     | `boolean`           | no       | `true`           | Draw `{PAGE} / {TOTAL_PAGES}` in the footer centre                                                   |
-
-```json
-{
-  "name": "section",
-  "children": [
-    {
-      "name": "running-head",
-      "props": { "confidentiality": "Confidential", "date": "September 2026" }
-    },
-    {
-      "name": "section-opener",
-      "props": { "number": "01", "title": "Summary" }
-    },
-    { "name": "paragraph", "props": { "text": "The year in one page." } }
-  ]
-}
-```
-
-![The running head on the consulting theme](/blocks/running-head-consulting.png)
-
-**What it compiles to.** Each section in reach gains `props.header` — a `paragraph` `title\ttracker` with a right tab stop at the theme's measure, then a `divider` of `chrome.runningHead.rule` — and `props.footer` — a `divider` of `chrome.confidentialFooter.rule`, then `confidentiality\t{PAGE} / {TOTAL_PAGES}\tdate` with a centre and a right tab stop. Text is set explicitly on every run, resolved from the role, so LibreOffice paints the page field in the same face and size as Word. Every section in reach also starts on a new page unless it states `pageBreak: false` — a header belongs to the section a page starts in, so a section that flowed on would show the previous tracker. A section that authored a `header` (an array, or `'linkToPrevious'`) keeps it and takes only the `footer` it lacks, and vice versa; a later `running-head` replaces the first from its section onward. A theme with no recipes gets 8pt muted runs, uppercase in the header, and 0.5pt `border` hairlines. The source map ties the generated chrome to the slot that produced it: the header text to the opener's `tracker` (or `title`) when one set it, else to this block's; the footer text to `confidentiality`, else `date`.
-
-Tab stops follow each section's own page setup when it overrides the theme's size or side margins. When only one of the three footer parts is present there is no tab stop: a lone page number is centred, a lone confidentiality line or date takes `chrome.confidentialFooter.alignment` (left by default), and a lone tracker takes `chrome.runningHead.alignment` (right). Word counts pages from the first page of the document, so with a cover the first content page reads `2 / N`.
-
-**What is checked.** A multi-line slot is a schema error at the slot; any slot over its word budget is `W_QUALITY_SLOT_BUDGET`. A `running-head` anywhere but directly under a top-level section — a section's `header`, a column, a table cell — is a coded error (`invalid_placement`) at that path.
+A transparent sequence of flow components with optional `children` and empty `props`. Blocks expand into groups, preserving their authored order. Groups can contain flow primitives, columns, other groups and registered plugin components; they cannot contain document or section roots.
 
 ## `highcharts`
 

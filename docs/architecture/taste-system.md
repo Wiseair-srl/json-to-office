@@ -340,3 +340,7 @@ Revisit these choices when a third format lands, rule plugins need isolation, re
 analysis becomes a service, or profiles require versioned distribution. Until then,
 keep prepared models internal, rules pure, diagnostics serialisable, and the package
 free of renderer dependencies.
+
+## JSON composition boundary
+
+JSON blocks resolve from each document’s `props.blocks` through the common evaluator before quality analysis and rendering. Generated primitives retain authored-slot provenance. Code plugins may emit blocks, and block bodies or component slots may invoke registered plugins. Slot cardinality/text limits are hard validation errors; quality policy still applies to the resulting document. Concrete examples live inside playground templates; the MCP catalog is a derived authoring reference. See [JSON blocks](/reference/blocks).

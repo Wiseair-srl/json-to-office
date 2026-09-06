@@ -3,7 +3,10 @@
  */
 
 import { Type, Static, TSchema } from '@sinclair/typebox';
-import { FontRegistrySchema } from '@json-to-office/shared';
+import {
+  FontRegistrySchema,
+  BlockDefinitionsSchema,
+} from '@json-to-office/shared';
 import { ComponentDefaultsSchema } from '../component-defaults';
 import { NoProofWordsSchema } from '../font';
 import { ThemeOverridesSchema } from '../theme';
@@ -12,6 +15,7 @@ import { ThemeOverridesSchema } from '../theme';
 export const createReportPropsSchema = (_componentRef?: TSchema) =>
   Type.Object(
     {
+      blocks: Type.Optional(BlockDefinitionsSchema),
       theme: Type.Optional(
         Type.String({
           description: 'Theme name to apply (default: "minimal")',

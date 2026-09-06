@@ -45,6 +45,7 @@ describe('discovery resources over stdio', () => {
         .filter((uri) => !uri.startsWith('jto://templates/'))
         .sort();
       expect(discovery).toEqual([
+        'jto://blocks',
         'jto://catalog',
         'jto://renderers',
         'jto://schema/docx/document',
