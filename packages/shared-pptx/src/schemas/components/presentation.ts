@@ -28,7 +28,9 @@ export const PresentationPropsSchema = Type.Object(
       Type.Union(
         [
           Type.String({
-            description: 'Theme name to apply (default: "default")',
+            description:
+              'Theme name to apply (default: "default"). Built-ins: consulting (the house style), default, dark, minimal.',
+            examples: ['consulting', 'default', 'dark', 'minimal'],
             default: 'default',
           }),
           ThemeConfigSchema,
