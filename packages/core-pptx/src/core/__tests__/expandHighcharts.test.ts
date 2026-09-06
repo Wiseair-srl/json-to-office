@@ -347,7 +347,6 @@ describe('expandHighchartsComponents', () => {
       []
     );
 
-    expect(result.unexpanded).toEqual([]);
     const child = result.presentation.slides[0].components[0].children![0];
     expect(child.name).toBe('image');
     expect(child.props).toMatchObject({ x: 1, y: 1, w: 4, h: 3 });

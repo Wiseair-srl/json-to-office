@@ -903,6 +903,113 @@ export const pptxPaletteRule: QualityRule<PptxQualityModel, PptxQualityFact> = {
   },
 };
 
+const DEFAULT_OFF_CANVAS_TOLERANCE_PT = 2;
+
+/**
+ * Text drawn past the edge of the slide.
+ *
+ * Only text: a decorative shape or a photograph that bleeds off the canvas is
+ * a technique, a word that does is a defect nobody can read. Judged on the
+ * ink, not the box — a short left-aligned label in a box that overhangs the
+ * edge by a few points loses nothing, while a wrapped title whose box sits an
+ * inch off the slide loses a line. The ink is placed inside the box by the
+ * text's alignment and estimated with the same width model as `text-fit`, so
+ * a block body drawn for a wider canvas is caught on the narrower one it was
+ * never designed for.
+ */
+export const pptxOffCanvasRule: QualityRule<PptxQualityModel, PptxQualityFact> =
+  {
+    id: 'pptx/off-canvas',
+    code: QUALITY_CODES.OFF_CANVAS,
+    category: 'integrity',
+    defaultSeverity: 'warning',
+    defaultCertainty: 'measured',
+    formats: ['pptx'],
+    defaultParameters: {
+      tolerancePt: DEFAULT_OFF_CANVAS_TOLERANCE_PT,
+      characterWidthFactor: DEFAULT_CHAR_WIDTH_FACTOR,
+    },
+    evaluate: ({ facts, configuration }) => {
+      const tolerance = numberParameter(
+        configuration.parameters,
+        'tolerancePt',
+        DEFAULT_OFF_CANVAS_TOLERANCE_PT
+      );
+      const canvas = facts.find(
+        (fact): fact is PptxCanvasFact => fact.kind === 'pptx/canvas'
+      );
+      const widthPt = (canvas?.widthIn ?? RENDERER_DEFAULT_WIDTH_IN) * 72;
+      const heightPt = (canvas?.heightIn ?? RENDERER_DEFAULT_HEIGHT_IN) * 72;
+      const factor = numberParameter(
+        configuration.parameters,
+        'characterWidthFactor',
+        DEFAULT_CHAR_WIDTH_FACTOR
+      );
+      const findings: QualityRuleFinding[] = [];
+      for (const fact of textFacts(facts)) {
+        if (
+          fact.boxXPt === undefined ||
+          fact.boxYPt === undefined ||
+          fact.boxWidthPt === undefined ||
+          fact.boxHeightPt === undefined
+        )
+          continue;
+        const longestLinePt =
+          Math.max(
+            0,
+            ...fact.text.split('\n').map((line) => line.trimEnd().length)
+          ) *
+          fact.fontSizePt *
+          factor;
+        const inkWidthPt = Math.min(fact.boxWidthPt, longestLinePt);
+        const inkHeightPt = Math.min(
+          fact.boxHeightPt,
+          estimateTextHeightPt(fact, factor)?.heightPt ?? fact.boxHeightPt
+        );
+        const inkLeft =
+          fact.align === 'right'
+            ? fact.boxXPt + fact.boxWidthPt - inkWidthPt
+            : fact.align === 'center'
+              ? fact.boxXPt + (fact.boxWidthPt - inkWidthPt) / 2
+              : fact.boxXPt;
+        const inkTop =
+          fact.verticalAlign === 'bottom'
+            ? fact.boxYPt + fact.boxHeightPt - inkHeightPt
+            : fact.verticalAlign === 'middle'
+              ? fact.boxYPt + (fact.boxHeightPt - inkHeightPt) / 2
+              : fact.boxYPt;
+        const overRight = inkLeft + inkWidthPt - widthPt;
+        const overBottom = inkTop + inkHeightPt - heightPt;
+        const overLeft = -inkLeft;
+        const overTop = -inkTop;
+        const worst = Math.max(overRight, overBottom, overLeft, overTop);
+        if (worst <= tolerance) continue;
+        const edge =
+          worst === overRight
+            ? 'right'
+            : worst === overBottom
+              ? 'bottom'
+              : worst === overLeft
+                ? 'left'
+                : 'top';
+        findings.push({
+          path: fact.path,
+          message: `Text runs ${Math.round(worst)}pt past the ${edge} edge of the slide; the reader never sees it.`,
+          suggestion:
+            'Move or narrow the box, or size the layout from the slide (percentages, a frame) rather than in fixed inches.',
+          context: {
+            edge,
+            overrunPt: Math.round(worst * 10) / 10,
+            slideWidthPt: widthPt,
+            slideHeightPt: heightPt,
+          },
+          evidence: { actual: Math.round(worst), expected: 0, unit: 'pt' },
+        });
+      }
+      return findings;
+    },
+  };
+
 /** A block slot over the word budget its definition declares. */
 export const pptxSlotBudgetRule: QualityRule<
   PptxQualityModel,
@@ -1050,6 +1157,7 @@ export const PPTX_QUALITY_RULES: QualityRulePack<
     pptxTableRule,
     pptxFontCountRule,
     pptxPaletteRule,
+    pptxOffCanvasRule,
     pptxSlotBudgetRule,
     pptxRequiredChromeRule,
     pptxActionTitleRule,

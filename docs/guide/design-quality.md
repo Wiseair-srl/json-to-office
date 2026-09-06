@@ -48,9 +48,9 @@ the selected quality gate is not satisfied.
 ## How analysis works
 
 The format core first resolves the authored document into a prepared model. It
-applies the information the renderer will use — themes, defaults, templates,
-placeholders, grids, disabled state and section geometry — while preserving RFC
-6901 pointers back to the source JSON. Rules then inspect facts from that model.
+applies the information the renderer will use — themes, defaults, blocks,
+groups, grids, disabled state and section geometry — while preserving RFC
+6901 pointers back to the source JSON, through block expansion. Rules then inspect facts from that model.
 
 This makes checks such as effective font size and available table width more
 useful than scanning raw props. It also lets generation and quality analysis
@@ -115,19 +115,23 @@ true.
 
 ## Built-in PPTX rules
 
-| Rule                     | Codes                                                                                                                                                                       | Default                                                 | Certainty     | What it checks                                                |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- | ------------- | ------------------------------------------------------------- |
-| `pptx/canvas`            | `W_QUALITY_CANVAS_UNSPECIFIED`, `W_QUALITY_CANVAS_NONSTANDARD`, `W_QUALITY_CANVAS_LEGACY`                                                                                   | warning when missing; otherwise info                    | deterministic | Missing, legacy 4:3 or nonstandard canvas dimensions          |
-| `pptx/minimum-font-size` | `W_QUALITY_FONT_SIZE_MIN`                                                                                                                                                   | warning                                                 | measured      | Effective text size below `minimumFontPt` (7pt by default)    |
-| `pptx/text-fit`          | `W_QUALITY_TEXT_OVERFLOW`, `W_QUALITY_TEXT_TIGHT`                                                                                                                           | warning for overflow; otherwise info                    | estimated     | Estimated text height exceeds, or nearly fills, its box       |
-| `pptx/slide-density`     | `W_QUALITY_SLIDE_DENSITY`                                                                                                                                                   | warning                                                 | estimated     | Body text exceeds `maximumBodyWords` (130 by default)         |
-| `pptx/text-contrast`     | `W_QUALITY_TEXT_CONTRAST`                                                                                                                                                   | warning                                                 | deterministic | Text falls below WCAG AA against the surface behind it        |
-| `pptx/placeholder-text`  | `W_QUALITY_SCAFFOLD_MARKER`, `W_QUALITY_PLACEHOLDER_TEXT`                                                                                                                   | warning                                                 | deterministic | An unfilled scaffold slot, or leftover filler text            |
-| `pptx/box-overlap`       | `W_QUALITY_BOX_OVERLAP`                                                                                                                                                     | warning for a duplicate or covered data; otherwise info | deterministic | Two opaque boxes on one slide that land on each other         |
-| `pptx/chart-design`      | `W_QUALITY_CHART_3D`, `W_QUALITY_CHART_OVERLOADED`, `W_QUALITY_CHART_AXIS_BASELINE`, `W_QUALITY_CHART_SERIES_COLORS`, `W_QUALITY_CHART_UNITS`, `W_QUALITY_CHART_ANNOTATION` | warning, except units and caption, which are info       | deterministic | What a chart claims about its numbers                         |
-| `pptx/table-design`      | `W_QUALITY_TABLE_NUMERIC_ALIGN`, `W_QUALITY_TABLE_MIXED_DECIMALS`, `W_QUALITY_TABLE_GRID`, `W_QUALITY_TABLE_ROW_COUNT`                                                      | warning, except the grid, which is info                 | deterministic | How a table lays its numbers out, and how long it runs        |
-| `pptx/font-count`        | `W_QUALITY_FONT_COUNT`                                                                                                                                                      | warning                                                 | deterministic | More than `maximumFamilies` (3) font families in one document |
-| `pptx/palette-adherence` | `W_QUALITY_OFF_PALETTE`                                                                                                                                                     | info                                                    | deterministic | A literal colour the resolved theme does not define           |
+| Rule                     | Codes                                                                                                                                                                       | Default                                                 | Certainty     | What it checks                                                                   |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- | ------------- | -------------------------------------------------------------------------------- |
+| `pptx/canvas`            | `W_QUALITY_CANVAS_UNSPECIFIED`, `W_QUALITY_CANVAS_NONSTANDARD`, `W_QUALITY_CANVAS_LEGACY`                                                                                   | warning when missing; otherwise info                    | deterministic | Missing, legacy 4:3 or nonstandard canvas dimensions                             |
+| `pptx/minimum-font-size` | `W_QUALITY_FONT_SIZE_MIN`                                                                                                                                                   | warning                                                 | measured      | Effective text size below `minimumFontPt` (7pt by default)                       |
+| `pptx/text-fit`          | `W_QUALITY_TEXT_OVERFLOW`, `W_QUALITY_TEXT_TIGHT`                                                                                                                           | warning for overflow; otherwise info                    | estimated     | Estimated text height exceeds, or nearly fills, its box                          |
+| `pptx/slide-density`     | `W_QUALITY_SLIDE_DENSITY`                                                                                                                                                   | warning                                                 | estimated     | Body text exceeds `maximumBodyWords` (130 by default)                            |
+| `pptx/text-contrast`     | `W_QUALITY_TEXT_CONTRAST`                                                                                                                                                   | warning                                                 | deterministic | Text falls below WCAG AA against the surface behind it                           |
+| `pptx/placeholder-text`  | `W_QUALITY_SCAFFOLD_MARKER`, `W_QUALITY_PLACEHOLDER_TEXT`                                                                                                                   | warning                                                 | deterministic | An unfilled scaffold slot, or leftover filler text                               |
+| `pptx/box-overlap`       | `W_QUALITY_BOX_OVERLAP`                                                                                                                                                     | warning for a duplicate or covered data; otherwise info | deterministic | Two opaque boxes on one slide that land on each other                            |
+| `pptx/chart-design`      | `W_QUALITY_CHART_3D`, `W_QUALITY_CHART_OVERLOADED`, `W_QUALITY_CHART_AXIS_BASELINE`, `W_QUALITY_CHART_SERIES_COLORS`, `W_QUALITY_CHART_UNITS`, `W_QUALITY_CHART_ANNOTATION` | warning, except units and caption, which are info       | deterministic | What a chart claims about its numbers                                            |
+| `pptx/table-design`      | `W_QUALITY_TABLE_NUMERIC_ALIGN`, `W_QUALITY_TABLE_MIXED_DECIMALS`, `W_QUALITY_TABLE_GRID`, `W_QUALITY_TABLE_ROW_COUNT`                                                      | warning, except the grid, which is info                 | deterministic | How a table lays its numbers out, and how long it runs                           |
+| `pptx/font-count`        | `W_QUALITY_FONT_COUNT`                                                                                                                                                      | warning                                                 | deterministic | More than `maximumFamilies` (3) font families in one document                    |
+| `pptx/palette-adherence` | `W_QUALITY_OFF_PALETTE`                                                                                                                                                     | info                                                    | deterministic | A literal colour the resolved theme does not define                              |
+| `pptx/off-canvas`        | `W_QUALITY_OFF_CANVAS`                                                                                                                                                      | warning                                                 | measured      | Text ink, placed by its alignment, more than `tolerancePt` (2) past a slide edge |
+| `pptx/slot-budget`       | `W_QUALITY_SLOT_BUDGET`                                                                                                                                                     | warning                                                 | deterministic | A block slot over the word budget its definition declares                        |
+| `pptx/required-chrome`   | `W_QUALITY_CHROME_MISSING`                                                                                                                                                  | warning; off unless a profile names `required` roles    | deterministic | A block slot with a role the profile requires left empty                         |
+| `pptx/action-title`      | `W_QUALITY_ACTION_TITLE_LENGTH`                                                                                                                                             | warning; off unless a profile sets `maxLines`           | estimated     | An action-title slot wrapping past the lines the profile allows                  |
 
 The canvas rule recognizes these deliberate presets: 16:9 standard
 (`13.333 × 7.5`), 16:9 small (`10 × 5.625`), square (`7.5 × 7.5`), 4:5
@@ -436,13 +440,14 @@ You can create a profile with any unique string `id`; it does not need to be
 registered with json-to-office. Save the object as JSON for the CLI, or pass the
 same object directly through the library, HTTP or MCP APIs.
 
-| Profile                  | Format | Difference from the format default                 |
-| ------------------------ | ------ | -------------------------------------------------- |
-| `technical-presentation` | PPTX   | Default PPTX profile                               |
-| `executive-presentation` | PPTX   | 14pt minimum font; at most 70 body words per slide |
-| `technical-report`       | DOCX   | Default DOCX profile                               |
-| `executive-report`       | DOCX   | Promotes heading skips from info to warning        |
-| `legal-appendix`         | DOCX   | Current integrity-focused DOCX defaults            |
+| Profile                  | Format | Difference from the format default                                                               |
+| ------------------------ | ------ | ------------------------------------------------------------------------------------------------ |
+| `technical-presentation` | PPTX   | Default PPTX profile                                                                             |
+| `executive-presentation` | PPTX   | 14pt minimum font; at most 70 body words per slide                                               |
+| `consulting-deck`        | PPTX   | Requires `takeaway` and `source` slots, bounds action titles at two lines, at most 90 body words |
+| `technical-report`       | DOCX   | Default DOCX profile                                                                             |
+| `executive-report`       | DOCX   | Promotes heading skips from info to warning                                                      |
+| `legal-appendix`         | DOCX   | Current integrity-focused DOCX defaults                                                          |
 
 ### Create a profile
 

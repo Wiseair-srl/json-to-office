@@ -10,7 +10,12 @@ import {
   type BlockEvaluatorOptions,
 } from '@json-to-office/shared';
 export { blockSlotBudgets } from '@json-to-office/shared';
-export type { BlockSlotBudget } from '@json-to-office/shared';
+export type {
+  BlockSlotBudget,
+  BlockSourceMap,
+  ExpandedBlocks,
+} from '@json-to-office/shared';
+import type { ExpandedBlocks } from '@json-to-office/shared';
 import { validateDocument } from '@json-to-office/shared-docx';
 import type { ThemeConfig } from '../styles';
 import { getDocumentMargins, getPageDimensions } from '../styles';
@@ -20,12 +25,6 @@ import {
 } from '../utils/widthUtils';
 
 type Rec = Record<string, unknown>;
-export type BlockSourceMap = Readonly<Record<string, string>>;
-export interface ExpandedBlocks<T> {
-  document: T;
-  sourceMap: BlockSourceMap;
-  blocks: readonly string[];
-}
 export const toAuthoredPointer = toAuthoredBlockPointer;
 
 /** General document state and page geometry. No report design is registered here. */

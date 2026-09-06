@@ -9,7 +9,7 @@
     "slideHeight": 7.5,
     "blocks": {
       "action-chart": {
-        "description": "The consulting workhorse: an action title over one chart, an optional takeaway beside it and an optional source beneath. Copy and adapt this document-local example; the consulting-deck quality profile requires the takeaway and the source, the theme only styles them. Sizes bind to the theme's type roles with safe defaults, so the block renders on any bundled theme.",
+        "description": "The consulting workhorse: an action title over one chart, an optional takeaway beside it and an optional source beneath. Copy and adapt this document-local example; the consulting-deck quality profile requires the takeaway and the source, the theme only styles them. Geometry is a frame of the slide in percentages, so the same definition lays out on every canvas; sizes bind to the theme's type roles with safe defaults, so it renders on any bundled theme.",
         "slots": {
           "title": {
             "type": "string",
@@ -46,152 +46,64 @@
         },
         "body": [
           {
-            "name": "text",
+            "name": "group",
             "props": {
-              "text": {
-                "$slot": "/title"
-              },
-              "style": "display",
-              "x": 0.5,
-              "y": 0.45,
-              "w": 12.333,
-              "h": 1.3,
-              "valign": "top",
-              "fit": {
-                "maxLines": 2,
-                "shrink": [24, 22]
-              },
-              "fontSize": {
-                "$theme": "/styles/display/fontSize",
-                "default": 28
-              }
-            }
-          },
-          {
-            "$if": "/tracker",
-            "then": {
-              "name": "text",
-              "props": {
-                "text": {
-                  "$slot": "/tracker"
-                },
-                "style": "tracker",
-                "x": 9.833,
-                "y": 0.15,
-                "w": 3,
-                "h": 0.3,
-                "align": "right",
-                "fontSize": {
-                  "$theme": "/styles/tracker/fontSize",
-                  "default": 10
-                }
-              }
-            }
-          },
-          {
-            "name": "shape",
-            "props": {
-              "type": "line",
-              "x": 0.5,
-              "y": 1.9,
-              "w": 12.333,
-              "h": 0,
-              "line": {
-                "color": {
-                  "$theme": "/palette/rule",
-                  "default": "background2"
-                },
-                "width": 0.5
-              }
-            }
-          },
-          {
-            "$slot": "/chart",
-            "props": {
-              "x": 0.5,
-              "y": 2.15,
-              "w": 8.4,
-              "h": 4.25,
-              "chartColors": [
-                "accent",
-                "secondary",
-                "accent4",
-                "accent6",
-                "accent5"
-              ],
-              "showLegend": true,
-              "legendPos": "b"
-            }
-          },
-          {
-            "$if": "/takeaway",
-            "then": [
+              "x": "3.75%",
+              "y": "4.5%",
+              "w": "92.5%",
+              "h": "91%"
+            },
+            "children": [
               {
-                "name": "shape",
-                "props": {
-                  "type": "line",
-                  "x": 9.3,
-                  "y": 2.15,
-                  "w": 3.533,
-                  "h": 0,
-                  "line": {
-                    "color": {
-                      "$theme": "/chrome/keyTakeaways/rule/color",
-                      "default": "accent"
+                "$if": "/tracker",
+                "then": {
+                  "name": "text",
+                  "props": {
+                    "text": {
+                      "$slot": "/tracker"
                     },
-                    "width": {
-                      "$theme": "/chrome/keyTakeaways/rule/weightPt",
-                      "default": 2
-                    }
+                    "style": "tracker",
+                    "fontSize": {
+                      "$theme": "/styles/tracker/fontSize",
+                      "default": 10
+                    },
+                    "x": "70%",
+                    "y": "0%",
+                    "w": "30%",
+                    "h": "4.5%",
+                    "align": "right"
                   }
-                }
-              },
-              {
-                "name": "text",
-                "props": {
-                  "text": "Takeaway",
-                  "style": "eyebrow",
-                  "x": 9.3,
-                  "y": 2.3,
-                  "w": 3.533,
-                  "h": 0.3,
-                  "fontSize": {
-                    "$theme": "/styles/eyebrow/fontSize",
-                    "default": 10
-                  },
-                  "bold": true
                 }
               },
               {
                 "name": "text",
                 "props": {
                   "text": {
-                    "$slot": "/takeaway"
+                    "$slot": "/title"
                   },
-                  "style": "quote",
-                  "x": 9.3,
-                  "y": 2.7,
-                  "w": 3.533,
-                  "h": 3.4,
-                  "valign": "top",
+                  "style": "display",
                   "fontSize": {
-                    "$theme": "/styles/quote/fontSize",
-                    "default": 18
+                    "$theme": "/styles/display/fontSize",
+                    "default": 28
+                  },
+                  "x": "0%",
+                  "y": "5%",
+                  "w": "100%",
+                  "h": "19%",
+                  "valign": "top",
+                  "fit": {
+                    "maxLines": 2,
+                    "shrink": [24, 22]
                   }
                 }
-              }
-            ]
-          },
-          {
-            "$if": "/source",
-            "then": [
+              },
               {
                 "name": "shape",
                 "props": {
                   "type": "line",
-                  "x": 0.5,
-                  "y": 6.55,
-                  "w": 12.333,
+                  "x": "0%",
+                  "y": "26%",
+                  "w": "100%",
                   "h": 0,
                   "line": {
                     "color": {
@@ -203,39 +115,141 @@
                 }
               },
               {
+                "$slot": "/chart",
+                "props": {
+                  "x": "0%",
+                  "y": "29%",
+                  "w": "68%",
+                  "h": "62%",
+                  "chartColors": [
+                    "accent",
+                    "secondary",
+                    "accent4",
+                    "accent6",
+                    "accent5"
+                  ],
+                  "showLegend": true,
+                  "legendPos": "b"
+                }
+              },
+              {
+                "$if": "/takeaway",
+                "then": [
+                  {
+                    "name": "shape",
+                    "props": {
+                      "type": "line",
+                      "x": "71%",
+                      "y": "29%",
+                      "w": "29%",
+                      "h": 0,
+                      "line": {
+                        "color": {
+                          "$theme": "/chrome/keyTakeaways/rule/color",
+                          "default": "accent"
+                        },
+                        "width": {
+                          "$theme": "/chrome/keyTakeaways/rule/weightPt",
+                          "default": 2
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "name": "text",
+                    "props": {
+                      "text": "Takeaway",
+                      "style": "eyebrow",
+                      "fontSize": {
+                        "$theme": "/styles/eyebrow/fontSize",
+                        "default": 10
+                      },
+                      "bold": true,
+                      "x": "71%",
+                      "y": "31%",
+                      "w": "29%",
+                      "h": "4.5%"
+                    }
+                  },
+                  {
+                    "name": "text",
+                    "props": {
+                      "text": {
+                        "$slot": "/takeaway"
+                      },
+                      "style": "quote",
+                      "fontSize": {
+                        "$theme": "/styles/quote/fontSize",
+                        "default": 18
+                      },
+                      "x": "71%",
+                      "y": "37%",
+                      "w": "29%",
+                      "h": "54%",
+                      "valign": "top",
+                      "fit": {
+                        "shrink": [16, 14, 12]
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "$if": "/source",
+                "then": [
+                  {
+                    "name": "shape",
+                    "props": {
+                      "type": "line",
+                      "x": "0%",
+                      "y": "93.5%",
+                      "w": "100%",
+                      "h": 0,
+                      "line": {
+                        "color": {
+                          "$theme": "/palette/rule",
+                          "default": "background2"
+                        },
+                        "width": 0.5
+                      }
+                    }
+                  },
+                  {
+                    "name": "text",
+                    "props": {
+                      "text": {
+                        "$slot": "/source"
+                      },
+                      "style": "source",
+                      "fontSize": {
+                        "$theme": "/styles/source/fontSize",
+                        "default": 9
+                      },
+                      "x": "0%",
+                      "y": "94.5%",
+                      "w": "75%",
+                      "h": "5%"
+                    }
+                  }
+                ]
+              },
+              {
                 "name": "text",
                 "props": {
-                  "text": {
-                    "$slot": "/source"
-                  },
-                  "style": "source",
-                  "x": 0.5,
-                  "y": 6.62,
-                  "w": 9,
-                  "h": 0.35,
+                  "text": "{PAGE_NUMBER} / {PAGE_COUNT}",
+                  "style": "footer",
                   "fontSize": {
-                    "$theme": "/styles/source/fontSize",
+                    "$theme": "/styles/footer/fontSize",
                     "default": 9
-                  }
+                  },
+                  "x": "88%",
+                  "y": "96%",
+                  "w": "12%",
+                  "h": "4%",
+                  "align": "right"
                 }
               }
             ]
-          },
-          {
-            "name": "text",
-            "props": {
-              "text": "{PAGE_NUMBER} / {PAGE_COUNT}",
-              "style": "footer",
-              "x": 11.333,
-              "y": 6.9,
-              "w": 1.5,
-              "h": 0.3,
-              "align": "right",
-              "fontSize": {
-                "$theme": "/styles/footer/fontSize",
-                "default": 9
-              }
-            }
           }
         ]
       }

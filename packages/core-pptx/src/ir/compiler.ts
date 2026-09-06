@@ -1,53 +1,4 @@
 /**
- * Compile a hyperlink, dropping unresolvable slide refs with a warning.
- *
- * An unresolved ref must never reach a renderer: it would emit a relationship
- * to a slide part that is not in the archive, which PowerPoint reports as a
- * damaged file.
- */
-function compileHyperlink(
-  hyperlink: HyperlinkProps | undefined,
-  componentName: string,
-  ctx: CompileContext,
-  path: string
-): PptxIrHyperlink | undefined {
-  if (!hyperlink) return undefined;
-
-  if (hyperlink.url) {
-    ctx.features.require('external-links', path);
-    return {
-      kind: 'external',
-      url: hyperlink.url,
-      ...(hyperlink.tooltip ? { tooltip: hyperlink.tooltip } : {}),
-    };
-  }
-
-  if (hyperlink.unresolvedSlideRef != null) {
-    // HYPERLINK_SLIDE_UNRESOLVED lives outside the `W` registry (it is owned by
-    // utils/hyperlink.ts), so push it the same way `applyHyperlink` does.
-    ctx.warnings.push({
-      code: HYPERLINK_SLIDE_UNRESOLVED,
-      message:
-        `hyperlink.slide ${hyperlink.unresolvedSlideRef} matches no slide in the generated ` +
-        `presentation (slide disabled, or index out of range) — hyperlink dropped`,
-      component: componentName,
-    });
-    return undefined;
-  }
-
-  if (hyperlink.slide) {
-    ctx.features.require('internal-links', path);
-    return {
-      kind: 'slide',
-      slideIndex: hyperlink.slide,
-      ...(hyperlink.tooltip ? { tooltip: hyperlink.tooltip } : {}),
-    };
-  }
-
-  return undefined;
-}
-
-/**
  * Compile a processed presentation into PptxIR.
  *
  * The input is `ProcessedPresentation` — the authoring tree after schema
@@ -307,8 +258,8 @@ function compileSlide(
 
   // A `group` is transparent: layout already resolved its children to
   // absolute boxes, so the compiler draws them in order as slide elements.
-  // Grid placement is resolved again here for callers that hand the compiler
-  // a processed tree of their own; on the normal path it is a no-op.
+  // Grid placement was resolved by layout too; resolving it again is a no-op
+  // that keeps the compiler correct on a tree that skipped that pass.
   const visit = (components: readonly PptxComponentInput[]): void => {
     for (const component of components) {
       if (component.name === 'group') {
@@ -2370,4 +2321,53 @@ function compileShadow(
     angleDegrees: shadow.angle ?? 45,
     opacity: shadow.opacity ?? 0.5,
   };
+}
+
+/**
+ * Compile a hyperlink, dropping unresolvable slide refs with a warning.
+ *
+ * An unresolved ref must never reach a renderer: it would emit a relationship
+ * to a slide part that is not in the archive, which PowerPoint reports as a
+ * damaged file.
+ */
+function compileHyperlink(
+  hyperlink: HyperlinkProps | undefined,
+  componentName: string,
+  ctx: CompileContext,
+  path: string
+): PptxIrHyperlink | undefined {
+  if (!hyperlink) return undefined;
+
+  if (hyperlink.url) {
+    ctx.features.require('external-links', path);
+    return {
+      kind: 'external',
+      url: hyperlink.url,
+      ...(hyperlink.tooltip ? { tooltip: hyperlink.tooltip } : {}),
+    };
+  }
+
+  if (hyperlink.unresolvedSlideRef != null) {
+    // HYPERLINK_SLIDE_UNRESOLVED lives outside the `W` registry (it is owned by
+    // utils/hyperlink.ts), so push it the same way `applyHyperlink` does.
+    ctx.warnings.push({
+      code: HYPERLINK_SLIDE_UNRESOLVED,
+      message:
+        `hyperlink.slide ${hyperlink.unresolvedSlideRef} matches no slide in the generated ` +
+        `presentation (slide disabled, or index out of range) — hyperlink dropped`,
+      component: componentName,
+    });
+    return undefined;
+  }
+
+  if (hyperlink.slide) {
+    ctx.features.require('internal-links', path);
+    return {
+      kind: 'slide',
+      slideIndex: hyperlink.slide,
+      ...(hyperlink.tooltip ? { tooltip: hyperlink.tooltip } : {}),
+    };
+  }
+
+  return undefined;
 }

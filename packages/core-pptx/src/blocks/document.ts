@@ -35,16 +35,12 @@ export { blockSlotBudgets, blockSlotRoles } from '@json-to-office/shared';
 export type {
   BlockSlotBudget,
   BlockSlotRoleValue,
+  BlockSourceMap,
+  ExpandedBlocks,
 } from '@json-to-office/shared';
+import type { ExpandedBlocks } from '@json-to-office/shared';
 
 type Rec = Record<string, unknown>;
-export type BlockSourceMap = Readonly<Record<string, string>>;
-export interface ExpandedBlocks<T> {
-  document: T;
-  sourceMap: BlockSourceMap;
-  /** Authored pointers of every expanded invocation, in document order. */
-  blocks: readonly string[];
-}
 export const toAuthoredPointer = toAuthoredBlockPointer;
 
 /** Deck metadata and the slide's canvas. No slide design is registered here. */
@@ -188,12 +184,11 @@ function applySlideEffects(
 function finishPptxBlocks<T>(
   expanded: T,
   evaluator: JsonBlockEvaluator,
-  effects: BlockSlideEffect[],
-  validate = true
+  effects: BlockSlideEffect[]
 ): ExpandedBlocks<T> {
   applySlideEffects(expanded, evaluator, effects);
   validateEffects(expanded, effects);
-  if (evaluator.blocks.length && validate) {
+  if (evaluator.blocks.length) {
     const result = validatePresentationDocument(expanded);
     if (!result.valid)
       throw new BlockEvaluationError(
@@ -236,11 +231,6 @@ export async function expandPptxBlocksWithPlugins<T>(
     render,
     preserve,
   });
-  const finished = finishPptxBlocks(
-    composed.standard as T,
-    evaluator,
-    effects,
-    true
-  );
+  const finished = finishPptxBlocks(composed.standard as T, evaluator, effects);
   return { ...finished, preserved: composed.preserved as T };
 }

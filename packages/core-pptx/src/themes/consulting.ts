@@ -13,9 +13,10 @@
  * SAFE_FONTS only: nothing here needs a font registry on any Office install.
  *
  * One projection differs from the report: the small roles — footer, tracker,
- * source — take `text2` rather than `textMuted`. On a projected slide a 9pt
- * run in the light grey sits under the 4.5 : 1 the contrast rule asks of
- * small text; the darker grey passes it and reads as the same voice.
+ * source — and the chrome recipes that paint them take `text2` rather than
+ * `textMuted`. On a projected slide a 9pt run in the light grey sits under
+ * the 4.5 : 1 the contrast rule asks of small text; the darker grey passes it
+ * and reads as the same voice. The agreement test knows this one substitution.
  */
 
 import type { PptxThemeConfig } from '../types';
@@ -120,11 +121,11 @@ export const CONSULTING_PPTX_THEME: PptxThemeConfig = {
   chrome: {
     runningHead: {
       type: 'tracker',
-      color: 'textMuted',
+      color: 'text2',
       rule: { weightPt: 0.5, color: 'rule' },
       alignment: 'right',
     },
-    tracker: { type: 'tracker', color: 'textMuted', alignment: 'right' },
+    tracker: { type: 'tracker', color: 'text2', alignment: 'right' },
     actionTitle: { type: 'display', color: 'primary' },
     keyTakeaways: {
       type: 'label',
@@ -132,10 +133,10 @@ export const CONSULTING_PPTX_THEME: PptxThemeConfig = {
       rule: { weightPt: 2, color: 'accent' },
       padPt: 8,
     },
-    sourceLine: { type: 'source', color: 'textMuted' },
+    sourceLine: { type: 'source', color: 'text2' },
     confidentialFooter: {
       type: 'footer',
-      color: 'textMuted',
+      color: 'text2',
       rule: { weightPt: 0.5, color: 'rule' },
       alignment: 'left',
     },

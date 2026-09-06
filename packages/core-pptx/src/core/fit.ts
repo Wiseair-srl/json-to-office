@@ -20,6 +20,7 @@ import {
   defaultLineHeightPt,
   estimateTextHeightPt,
 } from '../utils/textMetrics';
+import { dimensionInches } from './dimensions';
 
 export interface TextFitOptions {
   theme: PptxThemeConfig;
@@ -34,15 +35,6 @@ type Props = Record<string, unknown>;
 interface Fit {
   maxLines?: number;
   shrink?: number[];
-}
-
-function inches(value: unknown, axisIn: number): number | undefined {
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  if (typeof value === 'string' && value.trim().endsWith('%')) {
-    const pct = Number(value.trim().slice(0, -1));
-    return Number.isFinite(pct) ? (pct / 100) * axisIn : undefined;
-  }
-  return undefined;
 }
 
 function textOf(props: Props): string | undefined {
@@ -96,11 +88,11 @@ function fitOne(
     typeof props.fontSize === 'number'
       ? props.fontSize
       : style?.fontSize ?? options.theme.defaults.fontSize;
-  const x = inches(props.x, options.slideWidth) ?? 0;
+  const x = dimensionInches(props.x, options.slideWidth) ?? 0;
   const widthIn =
-    inches(props.w, options.slideWidth) ??
+    dimensionInches(props.w, options.slideWidth) ??
     Math.max(0.1, options.slideWidth - x);
-  const heightIn = inches(props.h, options.slideHeight);
+  const heightIn = dimensionInches(props.h, options.slideHeight);
   const explicitSpacing =
     typeof props.lineSpacing === 'number'
       ? props.lineSpacing

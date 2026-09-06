@@ -102,7 +102,15 @@ describe('the consulting twin', () => {
 
   it('shares palette roles, chart series, chrome recipes and motif with the report theme', () => {
     expect(pptx.palette).toEqual(docx.palette);
-    expect(pptx.chrome).toEqual(docx.chrome);
+    // One deliberate substitution: the recipes that paint small projected
+    // text use the darker grey so a 9pt run clears the contrast rule.
+    const projected = JSON.parse(
+      JSON.stringify(pptx.chrome).replace(
+        /"color":"text2"/g,
+        '"color":"textMuted"'
+      )
+    );
+    expect(projected).toEqual(docx.chrome);
     expect(pptx.motif).toEqual(docx.motif);
   });
 

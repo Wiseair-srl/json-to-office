@@ -14,8 +14,6 @@ import {
   readBlockDefinitions,
 } from './evaluator';
 
-type Rec = Record<string, unknown>;
-
 export function blockSlotsJsonSchema(
   definition: JsonBlockDefinition
 ): Record<string, unknown> {
@@ -83,6 +81,16 @@ export function documentBlockMetadata(document: unknown) {
   };
 }
 
+/** Compiled pointer → authored pointer. */
+export type BlockSourceMap = Readonly<Record<string, string>>;
+/** A document with every block lowered in place, and how to get back. */
+export interface ExpandedBlocks<T> {
+  document: T;
+  sourceMap: BlockSourceMap;
+  /** Authored pointers of every expanded invocation, in document order. */
+  blocks: readonly string[];
+}
+
 export interface BlockSlotBudget {
   block: string;
   slot: string;
@@ -108,7 +116,6 @@ function visitInvocationSlots(
   document: unknown,
   blocks: readonly string[],
   visit: (
-    node: Rec,
     ref: string,
     slot: BlockSlot,
     value: unknown,
@@ -134,7 +141,7 @@ function visitInvocationSlots(
       pointer: string,
       name: string
     ): void => {
-      visit(node, ref, slot, value, pointer, name);
+      visit(ref, slot, value, pointer, name);
       if (isBlockRecord(value) && slot.properties) {
         for (const [key, property] of Object.entries(slot.properties)) {
           walk(
@@ -173,20 +180,16 @@ export function blockSlotBudgets(
   blocks: readonly string[]
 ): BlockSlotBudget[] {
   const result: BlockSlotBudget[] = [];
-  visitInvocationSlots(
-    document,
-    blocks,
-    (_node, ref, slot, value, pointer, name) => {
-      if (typeof value === 'string' && slot.maxWords !== undefined)
-        result.push({
-          block: ref,
-          slot: name,
-          path: pointer,
-          words: blockWordCount(value),
-          maxWords: slot.maxWords,
-        });
-    }
-  );
+  visitInvocationSlots(document, blocks, (ref, slot, value, pointer, name) => {
+    if (typeof value === 'string' && slot.maxWords !== undefined)
+      result.push({
+        block: ref,
+        slot: name,
+        path: pointer,
+        words: blockWordCount(value),
+        maxWords: slot.maxWords,
+      });
+  });
   return result;
 }
 
@@ -200,20 +203,16 @@ export function blockSlotRoles(
   blocks: readonly string[]
 ): BlockSlotRoleValue[] {
   const result: BlockSlotRoleValue[] = [];
-  visitInvocationSlots(
-    document,
-    blocks,
-    (_node, ref, slot, value, pointer, name) => {
-      if (!slot.role) return;
-      result.push({
-        block: ref,
-        invocation: pointer.replace(/\/props\/slots\/.*$/, ''),
-        slot: name,
-        role: slot.role,
-        path: pointer,
-        value,
-      });
-    }
-  );
+  visitInvocationSlots(document, blocks, (ref, slot, value, pointer, name) => {
+    if (!slot.role) return;
+    result.push({
+      block: ref,
+      invocation: pointer.replace(/\/props\/slots\/.*$/, ''),
+      slot: name,
+      role: slot.role,
+      path: pointer,
+      value,
+    });
+  });
   return result;
 }
