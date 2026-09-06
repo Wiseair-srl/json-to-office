@@ -43,7 +43,7 @@ The root component additionally allows a `$schema` field, so editors can wire up
 A disabled slide is never written into the file. Two consequences follow:
 
 - **Slide numbers are computed after the drop.** `{PAGE_NUMBER}` / `{PAGE_COUNT}` and PowerPoint's native slide numbers count only the emitted slides, so a three-slide deck with the middle slide disabled renders as `1/2` and `2/2`.
-- **`hyperlink.slide` is rebased, not broken.** The internal-link target on `text` and `image` is a 1-based index over the **authored** slides, disabled slides included; generation remaps it onto the emitted slide numbering, so the link keeps pointing at the slide the author meant. If the target is itself disabled, or the index falls outside the authored range, the link is dropped and a `HYPERLINK_SLIDE_UNRESOLVED` warning is reported — rather than written as a relationship to a slide that is not in the file, which PowerPoint reports as a damaged package. Remapping covers every place a slide ref can be authored: slide children, slide `placeholders`, template `objects`, and a template placeholder's `defaults`. A `hyperlink.url` outranks `slide` and is never touched.
+- **`hyperlink.slide` is rebased, not broken.** The internal-link target on `text` and `image` is a 1-based index over the **authored** slides, disabled slides included; generation remaps it onto the emitted slide numbering, so the link keeps pointing at the slide the author meant. If the target is itself disabled, or the index falls outside the authored range, the link is dropped and a `HYPERLINK_SLIDE_UNRESOLVED` warning is reported — rather than written as a relationship to a slide that is not in the file, which PowerPoint reports as a damaged package. Remapping covers every place a slide ref can be authored: slide children, group children, and the content a block definition or a component slot supplies. A `hyperlink.url` outranks `slide` and is never touched.
 
 To keep a slide in the file but skip it during the slideshow, use the slide prop [`hidden`](#notes-and-hidden) instead.
 
@@ -124,7 +124,7 @@ A per-type map of default props, each entry a partial of that component's props:
 }
 ```
 
-Supported keys: `text`, `image`, `shape`, `table`, `highcharts`, `chart`. Themes can define `componentDefaults` too; presentation-level defaults merge **on top of** theme-level ones, and a component's own props always win. Inside template placeholders the full precedence chain also includes placeholder defaults — see [Slides & the grid](/reference/pptx/slides-and-grid).
+Supported keys: `text`, `image`, `shape`, `table`, `highcharts`, `chart`. Themes can define `componentDefaults` too; presentation-level defaults merge **on top of** theme-level ones, and a component's own props always win. A component supplied through a block's component slot also takes the definition's `props` beneath its own — see [JSON blocks](/reference/blocks#pptx).
 
 ## Slide props
 

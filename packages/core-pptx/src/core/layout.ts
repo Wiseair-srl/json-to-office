@@ -29,6 +29,7 @@
  */
 
 import type { GridConfig, PipelineWarning, PptxComponentInput } from '../types';
+import { dimensionInches } from './dimensions';
 import {
   mergeGridConfigs,
   resolveComponentGridPosition,
@@ -50,15 +51,6 @@ interface Extent {
 }
 
 type Props = Record<string, unknown>;
-
-function inches(value: unknown, axisIn: number): number | undefined {
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  if (typeof value === 'string' && value.trim().endsWith('%')) {
-    const pct = Number(value.trim().slice(0, -1));
-    return Number.isFinite(pct) ? (pct / 100) * axisIn : undefined;
-  }
-  return undefined;
-}
 
 function hasFrame(props: Props): boolean {
   return ['x', 'y', 'w', 'h', 'grid'].some((key) => props[key] !== undefined);
@@ -144,10 +136,10 @@ function boxWithin(
     ? resolveGridPosition(grid, config, extent.w, extent.h, options.warnings)
     : { x: 0, y: 0, w: extent.w, h: extent.h };
   return {
-    x: extent.x + (inches(props.x, extent.w) ?? base.x),
-    y: extent.y + (inches(props.y, extent.h) ?? base.y),
-    w: inches(props.w, extent.w) ?? base.w,
-    h: inches(props.h, extent.h) ?? base.h,
+    x: extent.x + (dimensionInches(props.x, extent.w) ?? base.x),
+    y: extent.y + (dimensionInches(props.y, extent.h) ?? base.y),
+    w: dimensionInches(props.w, extent.w) ?? base.w,
+    h: dimensionInches(props.h, extent.h) ?? base.h,
   };
 }
 

@@ -146,6 +146,22 @@ describe('the action-chart playground template', () => {
         }),
       ])
     );
+    const groupInSlot = actionChart({
+      title: 'T',
+      chart: {
+        name: 'group',
+        props: { direction: 'row', gap: 1 },
+        children: [chart],
+      },
+    });
+    expect(
+      validatePresentationDocument(groupInSlot).errors.map((e) => e.path)
+    ).toEqual(
+      expect.arrayContaining([
+        '/children/0/children/0/props/slots/chart/props/direction',
+        '/children/0/children/0/props/slots/chart/props/gap',
+      ])
+    );
     const withCoords = actionChart({ title: 'T', chart });
     (withCoords.children![0].children![0] as any).props.x = 1;
     expect(validatePresentationDocument(withCoords).valid).toBe(false);
@@ -167,14 +183,16 @@ describe('the action-chart playground template', () => {
 
   describe.each(Object.keys(pptxThemes))('on the %s theme', (theme) => {
     it.each(CANVASES)(
-      'renders warning-clean on a %s × %s canvas, in both pipelines',
+      'renders warning-clean on a %s × %s canvas, in both pipelines and both renderers',
       async (slideWidth, slideHeight) => {
         const doc = actionChart(
           {
             title:
               'Revenue grew 18% as on-time delivery reached 94% of contracted work',
+            tracker: 'Performance',
             chart,
-            takeaway: 'Reliability, not price, drove the gain.',
+            takeaway:
+              'Reliability, not price, drove the gain: retained clients expanded scope in every quarter after delivery stabilised, and the pipeline followed.',
             source: 'Source: quarterly operating review, 2026.',
           },
           { theme, slideWidth, slideHeight }
@@ -185,6 +203,14 @@ describe('the action-chart playground template', () => {
           structuredClone(doc) as never
         );
         expect(plugin.warnings).toEqual([]);
+        const officeOpen = await generateBufferWithWarnings({
+          ...structuredClone(doc),
+          renderer: 'office-open',
+        } as never);
+        expect(officeOpen.warnings).toEqual([]);
+        // Warning-clean includes staying on the canvas: every text box the
+        // definition draws lands inside the slide, on the small and 4:3
+        // canvases as much as on the wide one.
         expect(
           analyzePptxQuality(doc).diagnostics.filter(
             (finding) => finding.severity !== 'info'
@@ -199,14 +225,50 @@ describe('the action-chart playground template', () => {
     );
   });
 
-  it('renders through the office-open profile as well', async () => {
-    const doc = actionChart(
-      { title: 'T', chart, takeaway: 'Take', source: 'Source: s' },
-      {}
-    );
+  it('reports a backend limitation inside a block as a capability diagnostic', () => {
+    const doc = actionChart({
+      title: 'T',
+      chart: {
+        name: 'chart',
+        props: {
+          type: 'bubble',
+          data: [{ name: 'a', labels: ['x'], values: [1], sizes: [1] }],
+        },
+      },
+    });
     (doc as any).renderer = 'office-open';
-    const { warnings } = await generateBufferWithWarnings(doc);
-    expect(warnings).toEqual([]);
+    expect(validatePresentationDocument(doc).errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'unsupported_renderer_feature',
+          path: '/children/0/children/0/props/slots/chart/props/type',
+        }),
+      ])
+    );
+  });
+
+  it('catches a definition drawn in fixed inches for a wider canvas', () => {
+    const doc = actionChart(
+      {
+        title: 'A title long enough to wrap in a box that hangs off the slide',
+        chart,
+      },
+      { slideWidth: 10, slideHeight: 5.625 }
+    );
+    doc.props.blocks['action-chart'].body = [
+      {
+        name: 'text',
+        props: { text: { $slot: '/title' }, x: 9.3, y: 0.5, w: 3.5, h: 0.5 },
+      },
+    ];
+    expect(analyzePptxQuality(doc).diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: QUALITY_CODES.OFF_CANVAS,
+          path: '/children/0/children/0',
+        }),
+      ])
+    );
   });
 
   it('fails the box, not the reader, when a title cannot fit its declared bounds', () => {
@@ -266,7 +328,11 @@ describe('the consulting profile against the theme', () => {
       chart,
     });
     doc.props.blocks['action-chart'].slots.title.maxWords = 200;
-    doc.props.blocks['action-chart'].body[0].props.fit = { maxLines: 3 };
+    // The title is the second child of the definition's frame; allow it three
+    // lines so the fit pass keeps the size and the profile can judge it.
+    doc.props.blocks['action-chart'].body[0].children[1].props.fit = {
+      maxLines: 3,
+    };
     const base = '/children/0/children/0/props/slots';
     expect(
       findings(doc).filter((finding) =>

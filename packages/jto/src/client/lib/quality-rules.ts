@@ -422,6 +422,28 @@ export const QUALITY_RULES: Record<FormatName, readonly QualityRuleInfo[]> = {
       parameters: [],
     },
     {
+      id: 'pptx/off-canvas',
+      label: 'Off canvas',
+      category: 'integrity',
+      defaultSeverity: 'warning',
+      description: 'Text ink drawn past the edge of the slide.',
+      parameters: [
+        {
+          name: 'tolerancePt',
+          type: 'number',
+          default: 2,
+          description: 'Overrun in points to forgive as renderer rounding.',
+        },
+        {
+          name: 'characterWidthFactor',
+          type: 'number',
+          default: 0.46,
+          description:
+            'Average glyph advance as a fraction of the font size, for the ink estimate.',
+        },
+      ],
+    },
+    {
       id: 'pptx/slot-budget',
       label: 'Slot budget',
       category: 'composition',

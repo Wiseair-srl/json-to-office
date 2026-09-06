@@ -68,6 +68,8 @@ export interface PptxTextFact extends QualityFact {
   boxWidthPt?: number;
   boxHeightPt?: number;
   verticalAlign: 'top' | 'middle' | 'bottom';
+  /** Horizontal alignment: the prop, else the named style's, else left. */
+  align: 'left' | 'center' | 'right' | 'justify';
   rotationDeg: number;
   /**
    * True when neither `h` nor a grid supplies a height. The compiler resolves
@@ -349,6 +351,21 @@ function containsCentre(surface: Box, text: Box): boolean {
     cy >= surface.yPt &&
     cy <= surface.yPt + surface.heightPt
   );
+}
+
+const HORIZONTAL_ALIGNMENTS = new Set(['left', 'center', 'right', 'justify']);
+
+function horizontalAlign(props: Rec, ctx: ThemeContext): PptxTextFact['align'] {
+  const own = typeof props.align === 'string' ? props.align : undefined;
+  if (own && HORIZONTAL_ALIGNMENTS.has(own))
+    return own as PptxTextFact['align'];
+  const styled =
+    typeof props.style === 'string'
+      ? ctx.styles[props.style]?.align
+      : undefined;
+  return styled && HORIZONTAL_ALIGNMENTS.has(styled)
+    ? (styled as PptxTextFact['align'])
+    : 'left';
 }
 
 function themeContext(theme: PptxThemeConfig): ThemeContext {
@@ -1154,6 +1171,7 @@ function addSlideFacts(
         node.props.valign === 'middle' || node.props.valign === 'bottom'
           ? node.props.valign
           : 'top',
+      align: horizontalAlign(node.props, ctx),
       rotationDeg: asNumber(node.props.rotate) ?? 0,
       bold: typography.bold,
       autoFit: node.props.h === undefined && gridPos === undefined,

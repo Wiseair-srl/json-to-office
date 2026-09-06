@@ -179,8 +179,8 @@ Each document class contains:
 - cross-renderer cases separating portability defects from renderer-specific craft.
 
 Initial profiles: `executive-presentation`, `technical-presentation`,
-`executive-report`, `technical-report`, and `legal-appendix`. Their 15 executable
-cases and authored-structure digests live in
+`consulting-deck`, `executive-report`, `technical-report`, and `legal-appendix`.
+Their 18 executable cases and authored-structure digests live in
 `packages/jto-ops/src/quality-reference-corpus.ts`; the core renderer corpora retain
 the package-part goldens.
 

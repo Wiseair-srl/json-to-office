@@ -166,6 +166,10 @@ export function resolveBlockSlot(
         'h',
         'position',
         'grid',
+        'gridConfig',
+        'direction',
+        'gap',
+        'weights',
         'alignment',
         'spacing',
       ]) {

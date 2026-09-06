@@ -289,8 +289,7 @@ export const BlockInvocationPropsSchema = Type.Object(
 
 /** Portable JSON Schema for a single slot, also used by catalog/inspect clients. */
 export function blockSlotJsonSchema(slot: BlockSlot): Record<string, unknown> {
-  const { oneLine, properties, items, role, ...rest } = slot;
-  void role;
+  const { oneLine, properties, items, role: _role, ...rest } = slot; // eslint-disable-line @typescript-eslint/no-unused-vars
   delete rest.required;
   delete rest.maxWords;
   if (slot.type === 'component') {

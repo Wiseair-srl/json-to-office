@@ -41,6 +41,7 @@
       "components": {
         "block": 2,
         "chart": 2,
+        "group": 1,
         "pptx": 1,
         "shape": 4,
         "slide": 4,
@@ -53,11 +54,11 @@
       },
       "externalAssets": [],
       "externalFonts": [],
-      "hash": "fd36d9084504862346b872ae382f7647c9e261936dd60102aaab3e35c965965e",
+      "hash": "24aa1a6d2f27efa8100114bd285b4ad409dd8fe83395829ecfe4d2ef7340a48b",
       "bytes": {
-        "document": 12623,
-        "gzipped": 2563,
-        "thumbnail": 18843
+        "document": 14764,
+        "gzipped": 2714,
+        "thumbnail": 18393
       }
     },
     {

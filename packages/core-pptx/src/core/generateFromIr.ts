@@ -113,11 +113,7 @@ export async function compileDocumentToIr(
       warnings
     );
     const laidOut = await resolveImageLayout(expansion.presentation, warnings);
-    const compiled = compilePresentation(laidOut, warnings);
-    return {
-      ...compiled,
-      unsupported: [...compiled.unsupported, ...expansion.unexpanded],
-    };
+    return compilePresentation(laidOut, warnings);
   });
 
   return {
@@ -212,9 +208,8 @@ export async function renderProcessedViaIr(
   const laidOut = await resolveImageLayout(expansion.presentation, warnings);
   const compiled = compilePresentation(laidOut, warnings);
 
-  const missing = [...compiled.unsupported, ...expansion.unexpanded];
-  if (missing.length > 0) {
-    throw new UncompiledComponentError(missing);
+  if (compiled.unsupported.length > 0) {
+    throw new UncompiledComponentError(compiled.unsupported);
   }
 
   const renderer = await resolvePptxRenderer(options?.renderer);

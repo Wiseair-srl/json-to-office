@@ -37,12 +37,6 @@ const DEFAULT_EXPORT_SERVER_URL = 'http://localhost:7801';
 
 export interface HighchartsExpansionResult {
   presentation: ProcessedPresentation;
-  /**
-   * Highcharts components this pass did not reach. Empty since layout resolves
-   * every box before this pass runs; kept so a caller can still tell "not
-   * expanded" from "expanded to nothing".
-   */
-  unexpanded: Array<{ name: string; path: string }>;
 }
 
 /**
@@ -57,7 +51,6 @@ export async function expandHighchartsComponents(
   warnings: PipelineWarning[],
   chartFonts?: readonly RasterizeFontFace[]
 ): Promise<HighchartsExpansionResult> {
-  const unexpanded: HighchartsExpansionResult['unexpanded'] = [];
   const scope: ExpansionScope = {
     theme: presentation.theme,
     slideWidth: presentation.slideWidth,
@@ -77,10 +70,7 @@ export async function expandHighchartsComponents(
     }))
   );
 
-  return {
-    presentation: { ...presentation, slides },
-    unexpanded,
-  };
+  return { presentation: { ...presentation, slides } };
 }
 
 /** What one expansion needs from the presentation and the caller. */
