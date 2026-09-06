@@ -20,6 +20,8 @@ import type { McpServer } from '@modelcontextprotocol/server';
 
 import type { FormatName } from '../lib/adapters.js';
 import { loadCore } from '../lib/core.js';
+import { designGuide } from '../lib/design-guide.js';
+import { themeDescriptions } from '../lib/themes.js';
 import type { ToolDeps } from '../lib/deps.js';
 import { FORMAT_NAMES } from '../lib/schema.js';
 import { buildCatalog, formatSchemas } from '../tools/discover.js';
@@ -45,6 +47,7 @@ export const RESOURCE_URIS = {
   templateThumbnail: (name: string) => `jto://templates/${name}/thumbnail`,
   documentSchema: (format: FormatName) => `jto://schema/${format}/document`,
   themeSchema: (format: FormatName) => `jto://schema/${format}/theme`,
+  designGuide: (format: FormatName) => `jto://guide/design/${format}`,
 } as const;
 
 const JSON_MIME = 'application/json';
@@ -148,18 +151,18 @@ export function register(server: McpServer, deps: ToolDeps): void {
     {
       title: 'Built-in themes',
       description:
-        'Theme names shipped with each format, usable as a document’s props.theme or as the tools’ theme option. jto://themes/values carries what each name actually looks like.',
+        'Every theme shipped with each format, described: its visual voice, when to use it, its typefaces and palette, and for an extended theme its resolved type roles, scale, spacing, chrome recipes and motif. Usable as a document’s props.theme or the tools’ theme option; jto://themes/values carries the raw style tables.',
       mimeType: JSON_MIME,
     },
-    async (uri) => {
-      const catalog = await buildCatalog(deps);
-      return jsonContents(uri, {
-        formats: catalog.formats.map((format) => ({
-          format: format.name,
-          themes: format.themes,
-        })),
-      });
-    }
+    async (uri) =>
+      jsonContents(uri, {
+        formats: await Promise.all(
+          FORMAT_NAMES.map(async (format) => ({
+            format,
+            themes: await themeDescriptions(format),
+          }))
+        ),
+      })
   );
 
   server.registerResource(
@@ -275,6 +278,17 @@ export function register(server: McpServer, deps: ToolDeps): void {
         mimeType: JSON_MIME,
       },
       async (uri) => jsonContents(uri, formatSchemas(format).document)
+    );
+
+    server.registerResource(
+      `${format}-design-guide`,
+      RESOURCE_URIS.designGuide(format),
+      {
+        title: `${format.toUpperCase()} design guide`,
+        description: `Concise design guidance for .${format}, generated from the theme registry, the quality profiles, the rule pack, the block catalogue and the blueprints — the same data jto_validate enforces. markdown carries the rendered guide; the arrays beside it are what it was rendered from.`,
+        mimeType: JSON_MIME,
+      },
+      async (uri) => jsonContents(uri, await designGuide(format))
     );
 
     server.registerResource(

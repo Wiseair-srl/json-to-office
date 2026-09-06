@@ -40,6 +40,11 @@ const DEFAULT_STYLES: Partial<Record<StyleName, TextStyle>> = {
 
 export const DEFAULT_PPTX_THEME: PptxThemeConfig = {
   name: 'default',
+  displayName: 'Office Default',
+  description:
+    'The stock Office look: blue primary, orange and green accents, Arial throughout, centred titles',
+  whenToUse:
+    'A deck that has to match a plain PowerPoint look; pick a designed theme for anything a client will see.',
   colors: {
     primary: '#4472C4',
     secondary: '#ED7D31',
@@ -69,6 +74,11 @@ const PPTX_THEMES: Record<string, PptxThemeConfig> = {
   consulting: CONSULTING_PPTX_THEME,
   dark: {
     name: 'dark',
+    displayName: 'Dark',
+    description:
+      'Light text on a near-black ground with a bright accent, for screens and projectors',
+    whenToUse:
+      'Keynote-style talks and product launches shown on a projector or a screen, where light-on-dark reads best.',
     colors: {
       primary: '#5B9BD5',
       secondary: '#FF6F61',
@@ -94,6 +104,11 @@ const PPTX_THEMES: Record<string, PptxThemeConfig> = {
   },
   minimal: {
     name: 'minimal',
+    displayName: 'Minimal',
+    description:
+      'Ink on white, one accent, no decoration; the content carries the slide',
+    whenToUse:
+      'Internal decks and working sessions where the material should speak and decoration would distract.',
     colors: {
       primary: '#000000',
       secondary: '#666666',

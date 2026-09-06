@@ -62,6 +62,8 @@ describe('discovery resources', () => {
       RESOURCE_URIS.documentSchema('pptx'),
       RESOURCE_URIS.themeSchema('docx'),
       RESOURCE_URIS.themeSchema('pptx'),
+      RESOURCE_URIS.designGuide('docx'),
+      RESOURCE_URIS.designGuide('pptx'),
     ]) {
       const entry = byUri.get(uri);
       expect(entry, `missing resource ${uri}`).toBeDefined();
@@ -166,6 +168,71 @@ describe('discovery resources', () => {
     for (const entry of themes.formats) {
       expect(entry.themes.length).toBeGreaterThan(0);
     }
+  });
+
+  it('describes every theme: its voice, when to use it, and the extended values it carries', async () => {
+    const themes = await readJson(RESOURCE_URIS.themes);
+    for (const entry of themes.formats) {
+      expect(entry.themes.length).toBeGreaterThan(0);
+      for (const theme of entry.themes) {
+        expect(theme.name).toBeTypeOf('string');
+        expect(theme.description.length, `${theme.name} voice`).toBeGreaterThan(
+          10
+        );
+        expect(theme.whenToUse.length, `${theme.name} use`).toBeGreaterThan(10);
+        expect(theme.extended).toBeTypeOf('boolean');
+        expect(theme.fonts.heading).toBeTypeOf('string');
+        expect(theme.fonts.body).toBeTypeOf('string');
+      }
+      // The house theme is a complete visual system, and the resource says
+      // so in values an agent can read without the raw style table.
+      const house = entry.themes.find(
+        (theme: any) => theme.name === 'consulting'
+      );
+      expect(house.extended).toBe(true);
+      expect(house.typography.roles.display).toBeTypeOf('number');
+      expect(house.typography.roles.source).toBeTypeOf('number');
+      expect(house.chrome).toContain('runningHead');
+      expect(house.motif).toBe('rule');
+      expect(house.palette.accent).toMatch(/^#[0-9A-F]{6}$/i);
+      // A plain theme says it is one rather than inventing values.
+      const plain = entry.themes.find((theme: any) => theme.name === 'minimal');
+      expect(plain.extended).toBe(false);
+      expect(plain.typography).toBeUndefined();
+    }
+  });
+
+  it('serves a design guide per format, generated from the registries it describes', async () => {
+    for (const format of ['docx', 'pptx'] as const) {
+      const guide = await readJson(RESOURCE_URIS.designGuide(format));
+      expect(guide.format).toBe(format);
+      expect(guide.markdown).toBeTypeOf('string');
+      expect(guide.themes.length).toBeGreaterThan(0);
+      expect(guide.profiles.length).toBeGreaterThan(1);
+      expect(guide.rules.length).toBeGreaterThan(10);
+      expect(guide.blocks.length).toBeGreaterThan(0);
+      for (const theme of guide.themes) {
+        expect(guide.markdown).toContain(`\`${theme.name}\``);
+        expect(guide.markdown).toContain(theme.whenToUse);
+      }
+      for (const profile of guide.profiles) {
+        expect(guide.markdown).toContain(`\`${profile.id}\``);
+      }
+      for (const rule of guide.rules) {
+        expect(guide.markdown).toContain(`\`${rule.code}\``);
+        expect(rule.description.length, rule.id).toBeGreaterThan(10);
+        expect(rule.enabledByDefault).toBeTypeOf('boolean');
+      }
+      for (const block of guide.blocks) {
+        expect(guide.markdown).toContain(`\`${block.name}\``);
+      }
+      // The boundary the guide exists to teach: themes paint, profiles require.
+      expect(guide.markdown).toMatch(/theme[^.]*paints?/i);
+      expect(guide.markdown).toMatch(/profile[^.]*requires?/i);
+    }
+    const docx = await readJson(RESOURCE_URIS.designGuide('docx'));
+    expect(docx.blueprints.map((b: any) => b.id)).toContain('client-report');
+    expect(docx.markdown).toContain('`client-report`');
   });
 
   it('serves non-empty built-in theme values in ESM', async () => {

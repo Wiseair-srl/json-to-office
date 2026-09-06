@@ -4,6 +4,7 @@ import type { QualityRule } from './types';
 
 const rule: QualityRule = {
   id: 'test/rule',
+  description: 'A test rule.',
   code: 'W_TEST_RULE',
   category: 'integrity',
   defaultSeverity: 'warning',

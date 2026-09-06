@@ -114,7 +114,18 @@ export const ThemeConfigSchema = Type.Object(
   {
     ...DesignSystemProperties,
     displayName: Type.Optional(Type.String()),
-    description: Type.Optional(Type.String()),
+    description: Type.Optional(
+      Type.String({
+        description:
+          'The visual voice: what the theme looks like, in one sentence.',
+      })
+    ),
+    whenToUse: Type.Optional(
+      Type.String({
+        description:
+          'The decks the theme suits; discovery and the design guide quote it.',
+      })
+    ),
     version: Type.Optional(Type.String()),
     name: Type.String({ description: 'Theme name' }),
     colors: Type.Object(

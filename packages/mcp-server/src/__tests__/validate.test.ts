@@ -665,6 +665,7 @@ describe('jto_validate', () => {
     // that as "nothing to fix" rather than "nobody looked".
     const exploding: QualityRule = {
       id: 'pptx/explodes',
+      description: 'A test rule.',
       code: 'W_QUALITY_TEXT_OVERFLOW',
       category: 'layout',
       defaultSeverity: 'warning',

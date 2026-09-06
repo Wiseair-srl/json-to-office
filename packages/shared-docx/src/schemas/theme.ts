@@ -438,7 +438,16 @@ export const ThemeConfigSchema = Type.Object(
     $schema: Type.Optional(Type.String()),
     name: Type.String(),
     displayName: Type.String(),
-    description: Type.String(),
+    description: Type.String({
+      description:
+        'The visual voice: what the theme looks like, in one sentence.',
+    }),
+    whenToUse: Type.Optional(
+      Type.String({
+        description:
+          'The documents the theme suits; discovery and the design guide quote it.',
+      })
+    ),
     version: Type.String(),
     colors: ThemeColorsSchema,
     fonts: FontsSchema,

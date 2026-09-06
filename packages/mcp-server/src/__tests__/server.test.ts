@@ -241,6 +241,10 @@ describe('instructions', () => {
     expect(SERVER_INSTRUCTIONS).not.toMatch(/not built yet/);
     expect(SERVER_INSTRUCTIONS).toMatch(/generationReady/);
     expect(SERVER_INSTRUCTIONS).toMatch(/contactSheet/);
+    // The guide is where taste lives as data (#333); an agent that never
+    // hears of it authors from memory.
+    expect(SERVER_INSTRUCTIONS).toMatch(/jto:\/\/guide\/design\/<format>/);
+    expect(SERVER_INSTRUCTIONS).toMatch(/theme paints, a profile requires/);
   });
 
   it('names the design findings an agent has to repair', () => {

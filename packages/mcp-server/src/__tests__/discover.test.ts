@@ -40,7 +40,7 @@ interface DiscoverResult {
       allowedChildren?: string[];
       allowedParents: string[];
     }>;
-    themes: string[];
+    themes: Array<{ name: string; whenToUse: string; extended: boolean }>;
     starters: Array<{ id: string; title: string; document?: unknown }>;
   }>;
 }

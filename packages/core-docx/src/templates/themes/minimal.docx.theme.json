@@ -2,6 +2,7 @@
   "name": "minimal",
   "displayName": "Minimal Clean",
   "description": "A quiet, warm minimal theme — Calibri throughout, sage-green ink on ivory neutrals, a large tracked-tight bold title, wide margins and hairline rules",
+  "whenToUse": "Quiet documents where the type carries the tone: notes, briefs, drafts and internal papers that want warmth without decoration.",
   "version": "4.0.0",
   "colors": {
     "primary": "#2B302B",
@@ -22,10 +23,22 @@
     "accent6": "#B5AC9D"
   },
   "fonts": {
-    "heading": { "family": "Calibri", "size": 21 },
-    "body": { "family": "Calibri", "size": 10 },
-    "mono": { "family": "Courier New", "size": 10 },
-    "light": { "family": "Calibri", "size": 21 }
+    "heading": {
+      "family": "Calibri",
+      "size": 21
+    },
+    "body": {
+      "family": "Calibri",
+      "size": 10
+    },
+    "mono": {
+      "family": "Courier New",
+      "size": 10
+    },
+    "light": {
+      "family": "Calibri",
+      "size": 21
+    }
   },
   "page": {
     "size": "A4",
@@ -43,9 +56,14 @@
     "normal": {
       "font": "body",
       "color": "textPrimary",
-      "lineSpacing": { "type": "multiple", "value": 1.35 },
+      "lineSpacing": {
+        "type": "multiple",
+        "value": 1.35
+      },
       "alignment": "left",
-      "spacing": { "after": 8 }
+      "spacing": {
+        "after": 8
+      }
     },
     "title": {
       "font": "heading",
@@ -53,9 +71,18 @@
       "bold": true,
       "color": "primary",
       "alignment": "left",
-      "lineSpacing": { "type": "multiple", "value": 1.0 },
-      "characterSpacing": { "type": "condensed", "value": 20 },
-      "spacing": { "before": 0, "after": 11 }
+      "lineSpacing": {
+        "type": "multiple",
+        "value": 1.0
+      },
+      "characterSpacing": {
+        "type": "condensed",
+        "value": 20
+      },
+      "spacing": {
+        "before": 0,
+        "after": 11
+      }
     },
     "subtitle": {
       "font": "body",
@@ -63,16 +90,28 @@
       "italic": false,
       "color": "textSecondary",
       "alignment": "left",
-      "lineSpacing": { "type": "multiple", "value": 1.2 },
-      "spacing": { "before": 0, "after": 22 }
+      "lineSpacing": {
+        "type": "multiple",
+        "value": 1.2
+      },
+      "spacing": {
+        "before": 0,
+        "after": 22
+      }
     },
     "heading1": {
       "font": "heading",
       "size": 21,
       "bold": true,
       "color": "primary",
-      "lineSpacing": { "type": "multiple", "value": 1.15 },
-      "spacing": { "before": 30, "after": 10 },
+      "lineSpacing": {
+        "type": "multiple",
+        "value": 1.15
+      },
+      "spacing": {
+        "before": 30,
+        "after": 10
+      },
       "keepNext": true,
       "alignment": "left"
     },
@@ -81,8 +120,14 @@
       "size": 14.5,
       "bold": true,
       "color": "primary",
-      "lineSpacing": { "type": "multiple", "value": 1.15 },
-      "spacing": { "before": 22, "after": 8 },
+      "lineSpacing": {
+        "type": "multiple",
+        "value": 1.15
+      },
+      "spacing": {
+        "before": 22,
+        "after": 8
+      },
       "keepNext": true,
       "alignment": "left"
     },
@@ -91,7 +136,10 @@
       "size": 12,
       "bold": true,
       "color": "primary",
-      "spacing": { "before": 16, "after": 6 },
+      "spacing": {
+        "before": 16,
+        "after": 6
+      },
       "keepNext": true,
       "alignment": "left"
     },
@@ -100,7 +148,10 @@
       "size": 10.5,
       "bold": true,
       "color": "primary",
-      "spacing": { "before": 12, "after": 4 },
+      "spacing": {
+        "before": 12,
+        "after": 4
+      },
       "keepNext": true,
       "alignment": "left"
     },
@@ -110,7 +161,10 @@
       "bold": false,
       "italic": true,
       "color": "textSecondary",
-      "spacing": { "before": 10, "after": 4 },
+      "spacing": {
+        "before": 10,
+        "after": 4
+      },
       "keepNext": true,
       "alignment": "left"
     },
@@ -119,8 +173,14 @@
       "size": 10,
       "bold": false,
       "color": "textMuted",
-      "characterSpacing": { "type": "expanded", "value": 20 },
-      "spacing": { "before": 10, "after": 4 },
+      "characterSpacing": {
+        "type": "expanded",
+        "value": 20
+      },
+      "spacing": {
+        "before": 10,
+        "after": 4
+      },
       "keepNext": true,
       "alignment": "left"
     },
@@ -129,45 +189,89 @@
       "size": 10.5,
       "bold": true,
       "color": "textPrimary",
-      "spacing": { "before": 4, "after": 3 },
-      "tabStops": [{ "type": "right", "position": 8506, "leader": "none" }]
+      "spacing": {
+        "before": 4,
+        "after": 3
+      },
+      "tabStops": [
+        {
+          "type": "right",
+          "position": 8506,
+          "leader": "none"
+        }
+      ]
     },
     "TOC2": {
       "font": "body",
       "size": 10.5,
       "color": "textSecondary",
-      "indent": { "left": 240 },
-      "spacing": { "after": 2 },
-      "tabStops": [{ "type": "right", "position": 8506, "leader": "none" }]
+      "indent": {
+        "left": 240
+      },
+      "spacing": {
+        "after": 2
+      },
+      "tabStops": [
+        {
+          "type": "right",
+          "position": 8506,
+          "leader": "none"
+        }
+      ]
     },
     "TOC3": {
       "font": "body",
       "size": 10,
       "color": "textMuted",
-      "indent": { "left": 480 },
-      "spacing": { "after": 2 },
-      "tabStops": [{ "type": "right", "position": 8506, "leader": "none" }]
+      "indent": {
+        "left": 480
+      },
+      "spacing": {
+        "after": 2
+      },
+      "tabStops": [
+        {
+          "type": "right",
+          "position": 8506,
+          "leader": "none"
+        }
+      ]
     }
   },
   "componentDefaults": {
     "table": {
       "borderColor": "#D8D3C8",
       "borderSize": 0.5,
-      "hideBorders": { "left": true, "right": true, "insideVertical": true },
+      "hideBorders": {
+        "left": true,
+        "right": true,
+        "insideVertical": true
+      },
       "cellDefaults": {
-        "padding": { "top": 3, "bottom": 3 }
+        "padding": {
+          "top": 3,
+          "bottom": 3
+        }
       },
       "headerCellDefaults": {
-        "font": { "bold": true },
+        "font": {
+          "bold": true
+        },
         "color": "#2B302B",
-        "borderColor": { "bottom": "#2B302B" },
-        "borderSize": { "bottom": 1 }
+        "borderColor": {
+          "bottom": "#2B302B"
+        },
+        "borderSize": {
+          "bottom": 1
+        }
       }
     },
     "list": {
       "format": "bullet",
       "bullet": "–",
-      "spacing": { "item": 2 }
+      "spacing": {
+        "item": 2
+      }
     },
     "image": {
       "alignment": "left"

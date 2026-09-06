@@ -33,7 +33,7 @@ import {
 
 import type { FormatName } from '../lib/adapters.js';
 import { loadCore } from '../lib/core.js';
-import { builtinThemeNames } from '../lib/render-options.js';
+import { themeSummaries, type ThemeSummary } from '../lib/themes.js';
 import type { ToolDeps } from '../lib/deps.js';
 import { designNote } from '../lib/design-notes.js';
 import {
@@ -617,7 +617,8 @@ export interface CatalogFormat {
   defaultRenderer: string;
   renderers: CatalogRenderer[];
   components: CatalogComponent[];
-  themes: string[];
+  /** Built-in themes, described enough to choose one; jto://themes carries the values. */
+  themes: ThemeSummary[];
   starters: Starter[];
   /**
    * The designed templates bundled with this package, as manifests. Read the
@@ -797,7 +798,7 @@ async function catalogFormat(
 
   const gallery = galleryManifests(format);
   const [themes, blueprints] = await Promise.all([
-    builtinThemeNames(deps.getAdapter(format)),
+    themeSummaries(format),
     builtinBlueprints(format),
   ]);
   if (themes.length === 0) {
@@ -1007,9 +1008,25 @@ export function register(server: McpServer, deps: ToolDeps): void {
                   },
                   themes: {
                     type: 'array',
-                    items: { type: 'string' },
                     description:
-                      'Built-in theme names, usable as the document’s props.theme or the tools’ theme option.',
+                      'Built-in themes: name, visual voice, when to use it, and whether it is an extended visual system. The name goes on the document’s props.theme or the tools’ theme option; jto://themes carries the values.',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        name: { type: 'string' },
+                        displayName: { type: 'string' },
+                        description: { type: 'string' },
+                        whenToUse: { type: 'string' },
+                        extended: { type: 'boolean' },
+                      },
+                      required: [
+                        'name',
+                        'description',
+                        'whenToUse',
+                        'extended',
+                      ],
+                      additionalProperties: false,
+                    },
                   },
                   starters: { type: 'array', items: starterSchema },
                   blocks: {

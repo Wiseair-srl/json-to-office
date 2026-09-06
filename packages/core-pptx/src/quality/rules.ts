@@ -107,6 +107,7 @@ function estimateTextHeightPt(
 
 export const pptxCanvasRule: QualityRule<PptxQualityModel, PptxQualityFact> = {
   id: 'pptx/canvas',
+  description: 'Slide dimensions: legacy 4:3, or a partially declared size.',
   code: QUALITY_CODES.CANVAS_UNSPECIFIED,
   category: 'composition',
   defaultSeverity: 'info',
@@ -187,6 +188,7 @@ export const pptxMinimumFontRule: QualityRule<
   PptxQualityFact
 > = {
   id: 'pptx/minimum-font-size',
+  description: 'Text below the size a projected slide can carry.',
   code: QUALITY_CODES.FONT_SIZE_MIN,
   category: 'legibility',
   defaultSeverity: 'warning',
@@ -258,6 +260,8 @@ function fittingFontSizePt(
 
 export const pptxTextFitRule: QualityRule<PptxQualityModel, PptxQualityFact> = {
   id: 'pptx/text-fit',
+  description:
+    'Estimated text height against its box. An estimate, not a measurement.',
   code: QUALITY_CODES.TEXT_TIGHT,
   category: 'integrity',
   defaultSeverity: 'info',
@@ -359,6 +363,7 @@ export const pptxSlideDensityRule: QualityRule<
   PptxQualityFact
 > = {
   id: 'pptx/slide-density',
+  description: 'Body word count per slide.',
   code: QUALITY_CODES.SLIDE_DENSITY,
   category: 'information-design',
   defaultSeverity: 'warning',
@@ -428,6 +433,8 @@ export const pptxTextContrastRule: QualityRule<
   PptxQualityFact
 > = {
   id: 'pptx/text-contrast',
+  description:
+    'Text against the surface behind it, judged by WCAG AA. Text over an image or a chart is skipped.',
   code: QUALITY_CODES.TEXT_CONTRAST,
   category: 'accessibility',
   defaultSeverity: 'warning',
@@ -520,6 +527,7 @@ export const pptxPlaceholderRule: QualityRule<
   PptxQualityFact
 > = {
   id: 'pptx/placeholder-text',
+  description: 'An unfilled scaffold slot, or leftover filler copy.',
   code: QUALITY_CODES.PLACEHOLDER_TEXT,
   category: 'integrity',
   defaultSeverity: 'warning',
@@ -613,6 +621,8 @@ export const pptxBoxOverlapRule: QualityRule<
   PptxQualityFact
 > = {
   id: 'pptx/box-overlap',
+  description:
+    'Two opaque boxes on one slide that land on each other. A duplicate, or anything covering data, is a warning.',
   code: QUALITY_CODES.BOX_OVERLAP,
   category: 'integrity',
   defaultSeverity: 'info',
@@ -726,6 +736,8 @@ const DEFAULT_MAX_TABLE_ROWS_PER_SLIDE = 12;
 /** Information design for charts: the comparison, the scale and the palette. */
 export const pptxChartRule: QualityRule<PptxQualityModel, PptxQualityFact> = {
   id: 'pptx/chart-design',
+  description:
+    'What a chart claims about its numbers: the comparison, the scale, the palette and the unit.',
   code: QUALITY_CODES.CHART_3D,
   category: 'information-design',
   defaultSeverity: 'warning',
@@ -781,6 +793,8 @@ function seriesColorFix(
 /** Information design for tables: alignment, rounding, rules and length. */
 export const pptxTableRule: QualityRule<PptxQualityModel, PptxQualityFact> = {
   id: 'pptx/table-design',
+  description:
+    'How a table lays its numbers out: alignment, rounding, rules and length.',
   code: QUALITY_CODES.TABLE_NUMERIC_ALIGN,
   category: 'information-design',
   defaultSeverity: 'warning',
@@ -838,6 +852,7 @@ const DEFAULT_MAX_FONT_FAMILIES = 3;
 export const pptxFontCountRule: QualityRule<PptxQualityModel, PptxQualityFact> =
   {
     id: 'pptx/font-count',
+    description: 'Distinct font families the deck can paint.',
     code: QUALITY_CODES.FONT_COUNT,
     category: 'brand',
     defaultSeverity: 'warning',
@@ -877,6 +892,7 @@ export const pptxFontCountRule: QualityRule<PptxQualityModel, PptxQualityFact> =
 /** A literal colour the resolved theme does not define. */
 export const pptxPaletteRule: QualityRule<PptxQualityModel, PptxQualityFact> = {
   id: 'pptx/palette-adherence',
+  description: 'A literal colour the resolved theme does not define.',
   code: QUALITY_CODES.OFF_PALETTE,
   category: 'brand',
   defaultSeverity: 'info',
@@ -920,6 +936,7 @@ const DEFAULT_OFF_CANVAS_TOLERANCE_PT = 2;
 export const pptxOffCanvasRule: QualityRule<PptxQualityModel, PptxQualityFact> =
   {
     id: 'pptx/off-canvas',
+    description: 'Text ink drawn past the edge of the slide.',
     code: QUALITY_CODES.OFF_CANVAS,
     category: 'integrity',
     defaultSeverity: 'warning',
@@ -1016,6 +1033,7 @@ export const pptxSlotBudgetRule: QualityRule<
   PptxQualityFact
 > = {
   id: 'pptx/slot-budget',
+  description: 'A block slot over the word budget its definition declares.',
   code: QUALITY_CODES.SLOT_BUDGET,
   category: 'composition',
   defaultSeverity: 'warning',
@@ -1067,6 +1085,8 @@ export const pptxRequiredChromeRule: QualityRule<
   PptxQualityFact
 > = {
   id: 'pptx/required-chrome',
+  description:
+    'A block slot with a role the profile requires — a takeaway, a source — left empty. Off unless a profile names roles.',
   code: QUALITY_CODES.CHROME_MISSING,
   category: 'consistency',
   defaultSeverity: 'warning',
@@ -1104,6 +1124,8 @@ export const pptxActionTitleRule: QualityRule<
   PptxQualityFact
 > = {
   id: 'pptx/action-title',
+  description:
+    'An action-title slot that wraps past the lines the profile allows. Off at 0.',
   code: QUALITY_CODES.ACTION_TITLE_LENGTH,
   category: 'hierarchy',
   defaultSeverity: 'warning',

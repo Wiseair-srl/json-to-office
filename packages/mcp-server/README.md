@@ -154,7 +154,7 @@ Compact by design: names, not schemas.
 
 **In** — `format` (`docx` | `pptx`, optional — omit for both); `includeStarters` (boolean, default true).
 
-**Out** — `formats[]`, each `{name, extension, label, rootComponent, defaultRenderer, renderers[], components[], themes[], starters[]}`. A renderer is `{id, default, components[], unsupported[]}`, where `unsupported` names what another renderer of the same format accepts and this one does not. A component is `{name, category, description, hasChildren, root, renderers[], allowedChildren?, allowedParents[], stability?}`. A starter is a small valid document with `{id, format, title, description, document}`.
+**Out** — `formats[]`, each `{name, extension, label, rootComponent, defaultRenderer, renderers[], components[], themes[], starters[]}`. A renderer is `{id, default, components[], unsupported[]}`, where `unsupported` names what another renderer of the same format accepts and this one does not. A component is `{name, category, description, hasChildren, root, renderers[], allowedChildren?, allowedParents[], stability?}`. A theme is `{name, displayName, description, whenToUse, extended}` — the voice, the documents it suits and whether it is a complete visual system; `jto://themes` carries its values. A starter is a small valid document with `{id, format, title, description, document}`.
 
 Today: `docx` roots at `docx` and renders with `docxjs` (default) or `office-open`, themes `consulting`, `devportal`, `minimal`, `vermilion`; `pptx` roots at `pptx` and renders with `pptxgenjs` (default) or `office-open`, themes `consulting`, `dark`, `default`, `minimal`. Read them from the server rather than from here — that list is what your installed version supports.
 
@@ -252,19 +252,21 @@ A `workspace` record is `{handle, format, revision, bytes, createdAt, updatedAt,
 
 The same catalogues, for clients that read resources. URIs are stable.
 
-| URI                          | Contents                                                                                                             |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `jto://catalog`              | The resource form of `jto_discover`: every format, in full.                                                          |
-| `jto://renderers`            | Renderer ids per format, which is default, what each profile can draw.                                               |
-| `jto://themes`               | Built-in theme names per format.                                                                                     |
-| `jto://themes/values`        | What each built-in theme actually is: palette, fonts, style tables.                                                  |
-| `jto://blocks`               | JSON block authoring references derived from playground templates; copy definitions into the document before use.    |
-| `jto://blueprints`           | Every blueprint in full — theme, profile, definitions and each variant's plan; `jto_discover` carries the summaries. |
-| `jto://templates`            | Every starter document.                                                                                              |
-| `jto://schema/docx/document` | Generated JSON Schema for a complete `.docx` document, by renderer.                                                  |
-| `jto://schema/pptx/document` | The same for `.pptx`.                                                                                                |
-| `jto://schema/docx/theme`    | Generated JSON Schema for a `.docx` theme file, as passed to `themePath`.                                            |
-| `jto://schema/pptx/theme`    | The same for `.pptx`.                                                                                                |
+| URI                          | Contents                                                                                                              |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `jto://catalog`              | The resource form of `jto_discover`: every format, in full.                                                           |
+| `jto://renderers`            | Renderer ids per format, which is default, what each profile can draw.                                                |
+| `jto://themes`               | Every built-in theme described: voice, when to use it, typefaces, palette, and the extended values it carries.        |
+| `jto://themes/values`        | The raw theme objects behind those names: palette, fonts, style tables.                                               |
+| `jto://guide/design/docx`    | The DOCX design guide, generated from the themes, profiles, rule pack, blocks and blueprints `jto_validate` enforces. |
+| `jto://guide/design/pptx`    | The same for PPTX.                                                                                                    |
+| `jto://blocks`               | JSON block authoring references derived from playground templates; copy definitions into the document before use.     |
+| `jto://blueprints`           | Every blueprint in full — theme, profile, definitions and each variant's plan; `jto_discover` carries the summaries.  |
+| `jto://templates`            | Every starter document.                                                                                               |
+| `jto://schema/docx/document` | Generated JSON Schema for a complete `.docx` document, by renderer.                                                   |
+| `jto://schema/pptx/document` | The same for `.pptx`.                                                                                                 |
+| `jto://schema/docx/theme`    | Generated JSON Schema for a `.docx` theme file, as passed to `themePath`.                                             |
+| `jto://schema/pptx/theme`    | The same for `.pptx`.                                                                                                 |
 
 All `application/json`. The document schemas are megabytes — prefer `jto_describe_component` unless you genuinely need the whole thing. Tools and resources are generated from the same registries, and a drift test fails the build if they disagree.
 

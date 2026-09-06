@@ -25,6 +25,7 @@ const COMPLETE: ThemeConfigJson = {
   name: 'round-trip',
   displayName: 'Round Trip',
   description: 'Every root key the schema allows.',
+  whenToUse: 'Round-trip tests.',
   version: '1.0.0',
   palette: { rule: '#123456', chart: ['rule', 'primary'] },
   typography: { roles: { display: { size: 32 } }, scale: { a4: { base: 12 } } },

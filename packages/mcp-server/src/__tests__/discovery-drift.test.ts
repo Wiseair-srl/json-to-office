@@ -42,6 +42,7 @@ import {
   formatSchemas,
   registryEntries,
 } from '../tools/discover.js';
+import { loadCore } from '../lib/core.js';
 import { RESOURCE_URIS } from '../resources/index.js';
 import { designNote, designNoteNames } from '../lib/design-notes.js';
 import { PUBLISHED_SURFACE } from './fixtures/published-surface.js';
@@ -69,7 +70,7 @@ interface Format {
   defaultRenderer: string;
   renderers: Array<{ id: string; default: boolean; components: string[] }>;
   components: Component[];
-  themes: string[];
+  themes: Array<{ name: string; description: string; whenToUse: string }>;
   starters: Array<{ id: string; format: FormatName; document: unknown }>;
 }
 
@@ -411,9 +412,9 @@ describe('tools and resources describe the same surface', () => {
       expectSameNames(
         `${format.name} themes`,
         'jto_discover',
-        format.themes,
+        format.themes.map((theme) => theme.name),
         'jto://themes',
-        published?.themes ?? []
+        (published?.themes ?? []).map((theme: any) => theme.name)
       );
     }
 
@@ -424,6 +425,107 @@ describe('tools and resources describe the same surface', () => {
       'jto://templates',
       templates.starters.map((entry: any) => entry.id)
     );
+  });
+
+  it('the theme catalogue, the theme resource and the theme values agree on every voice', async () => {
+    // Three surfaces describe a theme: the catalogue summary, jto://themes
+    // and the raw values behind jto://themes/values. One sentence written in
+    // one of them and not the others is the drift #333 exists to stop.
+    const formats = await discover();
+    const [themes, values] = await Promise.all([
+      readJson(RESOURCE_URIS.themes),
+      readJson(RESOURCE_URIS.themeValues),
+    ]);
+    for (const format of formats) {
+      const published = themes.formats.find(
+        (entry: any) => entry.format === format.name
+      );
+      const raw = values.formats.find(
+        (entry: any) => entry.format === format.name
+      );
+      expectSameNames(
+        `${format.name} themes`,
+        'jto_discover',
+        format.themes.map((theme) => theme.name),
+        'jto://themes',
+        published.themes.map((theme: any) => theme.name)
+      );
+      expectSameNames(
+        `${format.name} theme values`,
+        'jto://themes',
+        published.themes.map((theme: any) => theme.name),
+        'jto://themes/values',
+        Object.keys(raw.themes)
+      );
+      for (const theme of format.themes) {
+        const resource = published.themes.find(
+          (entry: any) => entry.name === theme.name
+        );
+        const value = raw.themes[theme.name];
+        expect(resource.description, theme.name).toBe(theme.description);
+        expect(resource.whenToUse, theme.name).toBe(theme.whenToUse);
+        expect(value.description, theme.name).toBe(theme.description);
+        expect(value.whenToUse, theme.name).toBe(theme.whenToUse);
+        expect(resource.extended, theme.name).toBe(
+          value.typography !== undefined
+        );
+      }
+    }
+  });
+
+  it('the design guide names exactly the themes, profiles, rules and blocks the registries hold', async () => {
+    const formats = await discover();
+    const [themes, blocks] = await Promise.all([
+      readJson(RESOURCE_URIS.themes),
+      readJson(RESOURCE_URIS.blocks),
+    ]);
+    for (const format of formats) {
+      const guide = await readJson(RESOURCE_URIS.designGuide(format.name));
+      const core = await loadCore(format.name);
+      expectSameNames(
+        `${format.name} guide themes`,
+        'jto://themes',
+        themes.formats
+          .find((entry: any) => entry.format === format.name)
+          .themes.map((theme: any) => theme.name),
+        'jto://guide/design',
+        guide.themes.map((theme: any) => theme.name)
+      );
+      expectSameNames(
+        `${format.name} guide rules`,
+        'rule pack',
+        (core?.rules ?? []).map((rule) => rule.id),
+        'jto://guide/design',
+        guide.rules.map((rule: any) => rule.id)
+      );
+      expectSameNames(
+        `${format.name} guide profiles`,
+        'profile registry',
+        Object.keys(core?.profiles ?? {}),
+        'jto://guide/design',
+        guide.profiles.map((profile: any) => profile.id)
+      );
+      expectSameNames(
+        `${format.name} guide blocks`,
+        'jto://blocks',
+        blocks.blocks
+          .filter((block: any) => block.format === format.name)
+          .map((block: any) => block.name),
+        'jto://guide/design',
+        guide.blocks.map((block: any) => block.name)
+      );
+      expectSameNames(
+        `${format.name} guide blueprints`,
+        'jto_discover',
+        ((format as any).blueprints ?? []).map((b: any) => b.id),
+        'jto://guide/design',
+        guide.blueprints.map((b: any) => b.id)
+      );
+      // The markdown is rendered from the same arrays, never written apart.
+      for (const rule of guide.rules) {
+        expect(guide.markdown, rule.id).toContain(rule.description);
+      }
+    }
   });
 
   it('the blueprint resource carries the plans the catalogue summarises', async () => {

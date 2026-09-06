@@ -2,6 +2,7 @@
   "name": "vermilion",
   "displayName": "Vermilion Editorial",
   "description": "Poster-red editorial system — vermilion display headings, ink text, warm creams and hairline rules",
+  "whenToUse": "Editorial and annual-report work that wants a strong red display voice: covers, feature-style sections, reports built around a few large headings.",
   "version": "1.0.0",
   "colors": {
     "primary": "#282829",
@@ -180,23 +181,40 @@
         "insideVertical": true
       },
       "cellDefaults": {
-        "font": { "size": 9.5 },
-        "padding": { "top": 7, "bottom": 7 },
+        "font": {
+          "size": 9.5
+        },
+        "padding": {
+          "top": 7,
+          "bottom": 7
+        },
         "verticalAlignment": "middle"
       },
       "headerCellDefaults": {
         "color": "#EF4130",
-        "font": { "size": 9.5, "bold": true },
-        "padding": { "top": 0, "bottom": 8 },
+        "font": {
+          "size": 9.5,
+          "bold": true
+        },
+        "padding": {
+          "top": 0,
+          "bottom": 8
+        },
         "verticalAlignment": "bottom",
-        "borderColor": { "bottom": "#EF4130" },
-        "borderSize": { "bottom": 0.5 }
+        "borderColor": {
+          "bottom": "#EF4130"
+        },
+        "borderSize": {
+          "bottom": 0.5
+        }
       }
     },
     "list": {
       "format": "bullet",
       "bullet": "—",
-      "spacing": { "item": 2 }
+      "spacing": {
+        "item": 2
+      }
     },
     "image": {
       "alignment": "center"
