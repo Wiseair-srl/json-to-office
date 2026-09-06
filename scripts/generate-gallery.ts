@@ -112,10 +112,15 @@ const SLOT_KEYS: Readonly<Record<string, string>> = {
   alt: 'alt-text',
 };
 
-function countSlots(document: unknown): Record<string, number> {
+function countSlots(
+  document: unknown,
+  format: 'docx' | 'pptx'
+): Record<string, number> {
   const counts: Record<string, number> = {};
   walk(document, (node) => {
     for (const [key, kind] of Object.entries(SLOT_KEYS)) {
+      // Only a slide has speaker notes; a table's `notes` are text.
+      if (key === 'notes' && format === 'docx') continue;
       const value = node[key];
       if (typeof value === 'string' && value.trim() !== '') {
         counts[kind] = (counts[kind] ?? 0) + 1;
@@ -267,7 +272,7 @@ async function main(): Promise<void> {
       theme: themeOf(document),
       pages,
       components: countComponents(document),
-      slots: countSlots(document),
+      slots: countSlots(document, format),
       externalAssets: externalFiles(document).assets,
       externalFonts: externalFiles(document).fonts,
       hash: createHash('sha256').update(source).digest('hex'),

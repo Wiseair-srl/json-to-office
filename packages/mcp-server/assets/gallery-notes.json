@@ -39,7 +39,7 @@
     },
     "client-report-blocks.docx.json": {
       "archetype": "client report with document-local JSON blocks",
-      "whenToUse": "Learn, copy and customize JSON definitions for cover, section-opener, key-takeaways and running-head. Definitions and invocations are embedded in the complete playground document."
+      "whenToUse": "Learn, copy and customize JSON definitions for cover, section-opener, key-takeaways, kpi-row, callout, data-table and running-head. Definitions and invocations are embedded in the complete playground document."
     },
     "consulting-deck-blocks.pptx.json": {
       "archetype": "consulting deck with document-local JSON blocks",

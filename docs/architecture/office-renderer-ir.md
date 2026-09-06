@@ -929,3 +929,7 @@ Five corpus cases carry new goldens: `block/background-and-body`, `block/slots-a
 ### JSON block migration (#370)
 
 The four report corpus goldens (`key-takeaways-*`, `report-chrome-*`) now use inline definitions copied from the complete playground report. Their hashes deliberately change: generic groups replace privileged named compilers, and template-authored typography/spacing replaces the historical recipes. Other corpus goldens stay unchanged. Native headings, page fields, tracker transitions and explicit section overrides remain covered by tests. The three-page playground report was rendered through LibreOffice for its shipped contact sheet; native Microsoft Word visual testing remains a separate interoperability check.
+
+### Report data blocks (#336)
+
+Two corpus cases are added, `blocks/report-data-consulting` and `blocks/report-data-fallback`, covering `kpi-row`, `callout` and `data-table` from the playground report on the house theme and on `minimal`. No existing golden moves: the evaluator gained operands on `$if`/`$each`/`$count` and maps a repeated element to its authored item, neither of which changes what an existing definition emits.
