@@ -44,6 +44,13 @@ export interface BlockSnippet {
   documentation: string;
   /** Monaco snippet syntax (`${1:text}`) for `component`, plain JSON for `ref`. */
   insertText: string;
+  /**
+   * What Monaco matches the typed text against. The editor filters an item
+   * by the text between its range start and the cursor — the opening quote
+   * of a reference, the brace of a fresh object — so that text leads here,
+   * or the label never matches and the item is dropped silently.
+   */
+  filterText: string;
   /** What the insert replaces; zero-length when inserting at the cursor. */
   replace: { offset: number; length: number };
   /** Definitions to add elsewhere in the document, applied with the insert. */
@@ -55,6 +62,14 @@ export interface BlockSnippetOptions {
   /** The definitions the document already carries (see document-blocks). */
   definitions: DocumentBlockDefinitions;
   format: 'docx' | 'pptx';
+  /**
+   * The document as data, for the example a local definition's own
+   * invocation provides. The editor passes the expanded document here — its
+   * model text stands in collapsed-string sentinels for long values, which
+   * must not reach a snippet — and `text` stays the model text the offsets
+   * belong to. Omitted, `text` is parsed.
+   */
+  document?: unknown;
 }
 
 /** Containers whose `children` take a block invocation directly. */
@@ -300,6 +315,7 @@ export function blockSnippets(
       reference.format === options.format &&
       !(reference.name in options.definitions)
   );
+  const typed = text.slice(context.replace.offset, offset);
   if (context.kind === 'ref')
     return references.map((reference) => ({
       kind: 'ref' as const,
@@ -307,6 +323,7 @@ export function blockSnippets(
       detail: `block from ${reference.template}`,
       documentation: reference.description,
       insertText: JSON.stringify(reference.name),
+      filterText: typed + reference.name,
       replace: context.replace,
       additionalEdits: insertBlockDefinitions(
         text,
@@ -314,11 +331,13 @@ export function blockSnippets(
       ),
     }));
   const unit = indentUnit(text);
-  let document: unknown;
-  try {
-    document = parse(text, [], { allowTrailingComma: true });
-  } catch {
-    document = undefined;
+  let document: unknown = options.document;
+  if (document === undefined) {
+    try {
+      document = parse(text, [], { allowTrailingComma: true });
+    } catch {
+      document = undefined;
+    }
   }
   const local = Object.entries(options.definitions).map(
     ([name, definition]) => ({
@@ -333,6 +352,7 @@ export function blockSnippets(
         }),
         unit
       ),
+      filterText: typed + name,
       replace: context.replace,
       additionalEdits: [],
     })
@@ -343,6 +363,7 @@ export function blockSnippets(
     detail: `block from ${reference.template}`,
     documentation: reference.description,
     insertText: invocationSnippet(reference.example, unit),
+    filterText: typed + reference.name,
     replace: context.replace,
     additionalEdits: insertBlockDefinitions(
       text,

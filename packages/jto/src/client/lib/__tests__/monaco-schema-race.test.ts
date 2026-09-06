@@ -55,6 +55,9 @@ vi.mock('../quality-policy-schema', () => ({
   }),
 }));
 vi.mock('../monaco-fonts-codelens', () => ({ registerFontCodeLens: vi.fn() }));
+vi.mock('../block-references', () => ({
+  loadBlockReferences: async () => [],
+}));
 vi.mock('../monaco-theme', () => ({ registerMonacoThemes: vi.fn() }));
 
 import { updateMonacoWithPlugins } from '../monaco-config';
