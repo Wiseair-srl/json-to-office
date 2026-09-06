@@ -78,6 +78,19 @@ An invocation accepts only `ref` and `slots`, with no layout overrides. Componen
 
 Block bodies, section headers/footers, and nested `$if`/`$each` compositions use schemas derived from the selected renderer and registered plugins. The playground suggests component names, component props and binding directives, and accepts bindings in nested property values. Ordinary document props keep their literal-value schemas. Component names remain literal discriminators; use a component slot when supplying a whole component dynamically.
 
+Autocomplete follows the expected value type, including unions and referenced plugin schemas:
+
+| Expected value    | Additional directives                              |
+| ----------------- | -------------------------------------------------- |
+| Number or integer | `$count`, `$measure`                               |
+| String            | `$join`                                            |
+| Array             | `$each`, with its template typed as one array item |
+| Object or boolean | References and `$if` only                          |
+
+`$slot`, `$item`, `$theme`, `$context` and `$if` can supply any compatible value. Their `default`, `then` and `else` values retain the surrounding type. Starting a normal property hides whole-object directive alternatives; selecting a directive offers only its own options. A directive object cannot mix those options with ordinary component props.
+
+Inside arrays, `$if` and `$each` may also insert a sequence of items. This is how a block body can repeat components; it does not make `$each` valid as the entire object-valued `props`. Evaluated values still pass runtime type, constraint and placement validation.
+
 ## Bounded bindings
 
 Bindings use JSON Pointers, including `~0`/`~1` escaping. Directive objects accept only the fields listed below; they never execute JavaScript or load code.

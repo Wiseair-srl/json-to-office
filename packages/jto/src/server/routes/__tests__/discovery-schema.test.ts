@@ -95,6 +95,47 @@ describe('/api/discovery/schemas/document', () => {
     );
   });
 
+  it.each([
+    [
+      '{"|"}',
+      ['$slot', '$item', '$theme', '$context', '$if', 'columns', 'gap'],
+    ],
+    ['{"columns":2,"|"}', ['gap']],
+    ['{"$slot":"/settings","|"}', ['default']],
+    [
+      '{"$if":"/enabled","then":{"|"}}',
+      ['$slot', '$item', '$theme', '$context', '$if', 'columns', 'gap'],
+    ],
+  ])(
+    'serves type-directed columns props completion: %s',
+    async (props, expected) => {
+      const res = await app.request('/discovery/schemas/document?plugins=');
+      expect(res.status).toBe(200);
+      const { data: schema } = (await res.json()) as any;
+      const service = getLanguageService({});
+      service.configure({
+        schemas: [
+          { uri: 'test://bindings', fileMatch: ['*.docx.json'], schema },
+        ],
+      });
+      const text = `{"name":"docx","props":{"blocks":{"prova":{"body":[{"name":"columns","props":${props}}]}}},"children":[]}`;
+      const doc = TextDocument.create(
+        'test://prova.docx.json',
+        'json',
+        1,
+        text.replace('|', '')
+      );
+      const result = await service.doComplete(
+        doc,
+        doc.positionAt(text.indexOf('|')),
+        service.parseJSONDocument(doc)
+      );
+      expect(result?.items.map((item) => item.label).sort()).toEqual(
+        [...expected].sort()
+      );
+    }
+  );
+
   it('keeps an explicit empty selection plugin-free', async () => {
     // registry is populated from the previous request; selection still wins
     const res = await app.request('/discovery/schemas/document?plugins=');

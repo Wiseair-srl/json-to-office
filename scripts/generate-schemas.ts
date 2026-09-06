@@ -20,6 +20,7 @@ async function main() {
   // DOCX document schema
   const {
     generateUnifiedDocumentSchema: generateDocx,
+    convertToJsonSchema: convertDocxToJsonSchema,
     ThemeConfigSchema: DocxThemeSchema,
   } = await import(pathToFileURL(SHARED_DOCX).href);
 
@@ -30,7 +31,7 @@ async function main() {
     title: 'JSON Document Definition',
     description: 'Document definition with standard components',
   });
-  const docxJson = convertToJsonSchema(docxSchema, {
+  const docxJson = convertDocxToJsonSchema(docxSchema, {
     $id: 'document.schema.json',
   });
   await exportSchemaToFile(

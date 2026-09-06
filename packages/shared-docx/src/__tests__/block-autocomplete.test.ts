@@ -85,16 +85,13 @@ describe('block authoring through the real JSON language service', () => {
     expect(descriptions.$if).toContain('zero selects then');
   });
   it.each([
-    [
-      '{"name":"paragraph","props":{"text":{|}}}',
-      ['$count', '$join', '$measure'],
-    ],
+    ['{"name":"paragraph","props":{"text":{|}}}', ['$join']],
     [
       '{"name":"paragraph","props":{"text":{"$join":[],|}}}',
       ['separator', 'keepEmpty'],
     ],
     [
-      '{"name":"paragraph","props":{"text":{"$measure":"width",|}}}',
+      '{"name":"columns","props":{"gap":{"$measure":"width",|}}}',
       ['fraction', 'unit'],
     ],
   ])('describes scalar bindings and options: %s', async (body, fields) => {

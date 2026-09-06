@@ -1,3 +1,4 @@
+import { BLOCK_DIRECTIVES } from './directives';
 import { Value } from '@sinclair/typebox/value';
 import {
   BlockDefinitionsSchema,
@@ -219,17 +220,12 @@ function resolveBlockSlots(
   return out;
 }
 
-const DIRECTIVES: Record<string, readonly string[]> = {
-  $slot: ['$slot', 'default'],
-  $item: ['$item', 'default'],
-  $theme: ['$theme', 'default'],
-  $context: ['$context', 'default'],
-  $count: ['$count'],
-  $if: ['$if', 'then', 'else'],
-  $each: ['$each', 'template'],
-  $join: ['$join', 'separator', 'keepEmpty'],
-  $measure: ['$measure', 'fraction', 'unit'],
-};
+const DIRECTIVES: Record<string, readonly string[]> = Object.fromEntries(
+  Object.entries(BLOCK_DIRECTIVES).map(([key, directive]) => [
+    key,
+    directive.keys,
+  ])
+);
 function slotDescriptorAt(
   slots: Record<string, BlockSlot>,
   pointer: string
