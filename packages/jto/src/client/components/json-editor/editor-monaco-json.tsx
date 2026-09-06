@@ -129,6 +129,12 @@ function EditorMonacoJson({
       );
     }, 400)
   );
+  // The document changed under the editor, or became the one being edited:
+  // hand its definitions over now rather than after the typing debounce.
+  const syncBlocksNow = useCallback((monaco: Monaco, modelText: string) => {
+    debouncedSyncBlocksRef.current(monaco, modelText);
+    debouncedSyncBlocksRef.current.flush();
+  }, []);
 
   // Setup Monaco editor for JSON with schema validation
   // Note: schema configuration is handled by configureMonaco() at startup
@@ -177,12 +183,8 @@ function EditorMonacoJson({
 
     // This document's blocks, now and whenever this editor becomes the one
     // being edited.
-    debouncedSyncBlocksRef.current(monaco, editor.getValue());
-    debouncedSyncBlocksRef.current.flush();
-    editor.onDidFocusEditorText(() => {
-      debouncedSyncBlocksRef.current(monaco, editor.getValue());
-      debouncedSyncBlocksRef.current.flush();
-    });
+    syncBlocksNow(monaco, editor.getValue());
+    editor.onDidFocusEditorText(() => syncBlocksNow(monaco, editor.getValue()));
 
     // Register editor in the refs store. Pass the sentinel reconstructor so any
     // consumer reading live text (preview/build) expands collapsed strings, and
@@ -359,11 +361,8 @@ function EditorMonacoJson({
     const model = editorRef.current?.getModel();
     if (model && model.getValue() !== value) model.setValue(value);
     setEditorValue(value);
-    if (monacoRef.current) {
-      debouncedSyncBlocksRef.current(monacoRef.current, value);
-      debouncedSyncBlocksRef.current.flush();
-    }
-  }, [value]);
+    if (monacoRef.current) syncBlocksNow(monacoRef.current, value);
+  }, [value, syncBlocksNow]);
 
   // When an external change actually lands, Monaco replaces the model — re-run
   // the collapse pass on the new text. Skip the first run: the initial collapse

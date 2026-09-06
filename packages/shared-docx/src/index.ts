@@ -439,3 +439,6 @@ export {
   GroupPropsSchema,
 } from './schemas/components/block';
 export type { BlockComponent, GroupComponent } from './types/components';
+
+// Where a document's own block definitions apply in the exported schema
+export { docxDocumentBlockTargets } from './schemas/block-authoring';

@@ -4,7 +4,11 @@ import { DefaultChatTransport, type UIMessage, type FileUIPart } from 'ai';
 import { useChatStore } from '../store/chat-store-provider';
 import { useDocumentsStore } from '../store/documents-store-provider';
 import { FORMAT } from '../lib/env';
-import { mergeAiOutput, applyId, mergeBlocksDelta } from '../lib/apply-merge';
+import {
+  mergeAiOutput,
+  applyId,
+  applyBlocksFragment,
+} from '../lib/apply-merge';
 import type { SelectionContext } from '../lib/monaco-selection-utils';
 import type { AiScope } from '../store/chat-store';
 
@@ -44,17 +48,13 @@ function scopedMerge(
     const fragment = JSON.parse(aiOutput);
     if (scope === 'slides' && Array.isArray(fragment.children)) {
       doc.children = fragment.children;
-    } else if (
-      scope === 'blocks' &&
-      fragment.blocks &&
-      typeof fragment.blocks === 'object' &&
-      !Array.isArray(fragment.blocks)
-    ) {
-      if (!doc.props) doc.props = {};
-      doc.props.blocks = mergeBlocksDelta(
-        doc.props.blocks || {},
-        fragment.blocks
-      );
+    } else if (scope === 'blocks') {
+      const merged = applyBlocksFragment(doc, fragment);
+      if (!merged) return null;
+      return {
+        original: currentDoc,
+        modified: JSON.stringify(merged, null, 2),
+      };
     } else {
       return null; // unexpected shape, fall back
     }

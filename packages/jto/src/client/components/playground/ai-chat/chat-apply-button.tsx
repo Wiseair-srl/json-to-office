@@ -6,7 +6,7 @@ import { useDocumentsStore } from '../../../store/documents-store-provider';
 import {
   mergeAiOutput,
   applyId as stableId,
-  mergeBlocksDelta,
+  applyBlocksFragment,
 } from '../../../lib/apply-merge';
 import type { SelectionContext } from '../../../lib/monaco-selection-utils';
 import type { AiScope } from '../../../store/chat-store';
@@ -73,19 +73,12 @@ export function ChatApplyButton({
         // Scope-aware merge for a block-definition delta
         if (scope === 'blocks') {
           try {
-            const currentDoc = JSON.parse(original);
-            const fragment = JSON.parse(json);
-            if (
-              fragment.blocks &&
-              typeof fragment.blocks === 'object' &&
-              !Array.isArray(fragment.blocks)
-            ) {
-              if (!currentDoc.props) currentDoc.props = {};
-              currentDoc.props.blocks = mergeBlocksDelta(
-                currentDoc.props.blocks || {},
-                fragment.blocks
-              );
-              const modified = JSON.stringify(currentDoc, null, 2);
+            const merged = applyBlocksFragment(
+              JSON.parse(original),
+              JSON.parse(json)
+            );
+            if (merged) {
+              const modified = JSON.stringify(merged, null, 2);
               setPendingDiff(activeTab, original, modified, applyId);
               return;
             }

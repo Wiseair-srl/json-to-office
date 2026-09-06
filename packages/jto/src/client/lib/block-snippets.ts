@@ -27,6 +27,7 @@ import {
   type BlockInvocationExample,
   type BlockReference,
   type JsonBlockDefinition,
+  type OfficeFormat,
 } from '@json-to-office/shared';
 import type { DocumentBlockDefinitions } from './document-blocks';
 
@@ -47,8 +48,10 @@ export interface BlockSnippet {
   /**
    * What Monaco matches the typed text against. The editor filters an item
    * by the text between its range start and the cursor — the opening quote
-   * of a reference, the brace of a fresh object — so that text leads here,
-   * or the label never matches and the item is dropped silently.
+   * of a reference, the brace of a fresh object, then whatever the author
+   * typed — so the fixed lead goes first and the label after it: a bare
+   * label never matches the quote and is dropped silently, while a lead that
+   * swallowed the typed letters would match everything.
    */
   filterText: string;
   /** What the insert replaces; zero-length when inserting at the cursor. */
@@ -61,7 +64,7 @@ export interface BlockSnippetOptions {
   references: readonly BlockReference[];
   /** The definitions the document already carries (see document-blocks). */
   definitions: DocumentBlockDefinitions;
-  format: 'docx' | 'pptx';
+  format: OfficeFormat;
   /**
    * The document as data, for the example a local definition's own
    * invocation provides. The editor passes the expanded document here — its
@@ -73,7 +76,7 @@ export interface BlockSnippetOptions {
 }
 
 /** Containers whose `children` take a block invocation directly. */
-const CONTENT_OWNERS: Record<'docx' | 'pptx', readonly string[]> = {
+const CONTENT_OWNERS: Record<OfficeFormat, readonly string[]> = {
   pptx: ['slide', 'group'],
   docx: ['docx', 'section', 'group'],
 };
@@ -107,9 +110,9 @@ function parseTolerant(text: string): Node | undefined {
 export function blockCompletionContext(
   text: string,
   offset: number,
-  format: 'docx' | 'pptx'
+  format: OfficeFormat,
+  root: Node | undefined = parseTolerant(text)
 ): BlockCompletionContext | null {
-  const root = parseTolerant(text);
   if (!root) return null;
   const location = getLocation(text, offset);
   const path = location.path;
@@ -220,9 +223,9 @@ function indentLines(json: string, indent: string): string {
  */
 export function insertBlockDefinitions(
   text: string,
-  definitions: Record<string, JsonBlockDefinition>
+  definitions: Record<string, JsonBlockDefinition>,
+  root: Node | undefined = parseTolerant(text)
 ): TextEdit[] {
-  const root = parseTolerant(text);
   if (!root || root.type !== 'object') return [];
   const unit = indentUnit(text);
   const blocks = findNodeAtLocation(root, ['props', 'blocks']);
@@ -308,28 +311,54 @@ export function blockSnippets(
   offset: number,
   options: BlockSnippetOptions
 ): BlockSnippet[] {
-  const context = blockCompletionContext(text, offset, options.format);
+  const root = parseTolerant(text);
+  const context = blockCompletionContext(text, offset, options.format, root);
   if (!context) return [];
+  // The fixed lead Monaco will match first: what stands between the range
+  // start and the author's own letters (`"`, `{"name": "`), never the
+  // letters themselves.
+  const lead = text
+    .slice(context.replace.offset, offset)
+    .replace(/[\w-]*$/, '');
+  const snippet = (
+    kind: BlockSnippet['kind'],
+    label: string,
+    detail: string,
+    documentation: string,
+    insertText: string,
+    additionalEdits: TextEdit[]
+  ): BlockSnippet => ({
+    kind,
+    label,
+    detail,
+    documentation,
+    insertText,
+    filterText: lead + label,
+    replace: context.replace,
+    additionalEdits,
+  });
   const references = options.references.filter(
     (reference) =>
       reference.format === options.format &&
       !(reference.name in options.definitions)
   );
-  const typed = text.slice(context.replace.offset, offset);
+  const edits = (reference: BlockReference) =>
+    insertBlockDefinitions(
+      text,
+      definitionsToInsert(reference, options.references, options.definitions),
+      root
+    );
   if (context.kind === 'ref')
-    return references.map((reference) => ({
-      kind: 'ref' as const,
-      label: reference.name,
-      detail: `block from ${reference.template}`,
-      documentation: reference.description,
-      insertText: JSON.stringify(reference.name),
-      filterText: typed + reference.name,
-      replace: context.replace,
-      additionalEdits: insertBlockDefinitions(
-        text,
-        definitionsToInsert(reference, options.references, options.definitions)
-      ),
-    }));
+    return references.map((reference) =>
+      snippet(
+        'ref',
+        reference.name,
+        `block from ${reference.template}`,
+        reference.description,
+        JSON.stringify(reference.name),
+        edits(reference)
+      )
+    );
   const unit = indentUnit(text);
   let document: unknown = options.document;
   if (document === undefined) {
@@ -339,36 +368,31 @@ export function blockSnippets(
       document = undefined;
     }
   }
-  const local = Object.entries(options.definitions).map(
-    ([name, definition]) => ({
-      kind: 'component' as const,
-      label: name,
-      detail: 'block defined in this document',
-      documentation: definition.description ?? '',
-      insertText: invocationSnippet(
+  const local = Object.entries(options.definitions).map(([name, definition]) =>
+    snippet(
+      'component',
+      name,
+      'block defined in this document',
+      definition.description ?? '',
+      invocationSnippet(
         blockInvocationExample(name, definition, {
           document,
           format: options.format,
         }),
         unit
       ),
-      filterText: typed + name,
-      replace: context.replace,
-      additionalEdits: [],
-    })
+      []
+    )
   );
-  const remote = references.map((reference) => ({
-    kind: 'component' as const,
-    label: reference.name,
-    detail: `block from ${reference.template}`,
-    documentation: reference.description,
-    insertText: invocationSnippet(reference.example, unit),
-    filterText: typed + reference.name,
-    replace: context.replace,
-    additionalEdits: insertBlockDefinitions(
-      text,
-      definitionsToInsert(reference, options.references, options.definitions)
-    ),
-  }));
+  const remote = references.map((reference) =>
+    snippet(
+      'component',
+      reference.name,
+      `block from ${reference.template}`,
+      reference.description,
+      invocationSnippet(reference.example, unit),
+      edits(reference)
+    )
+  );
   return [...local, ...remote];
 }

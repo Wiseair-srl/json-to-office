@@ -26,8 +26,12 @@ describe('block reference catalog', () => {
       references.filter((entry) => entry.name === 'action-chart')
     );
     expect(text).toContain('### `action-chart` (from consulting-deck-blocks)');
-    expect(text).toContain('- `title` — string, required, role actionTitle');
-    expect(text).toContain('- `chart` — component, required');
+    expect(text).toContain(
+      '- `title` — string, Required, at most 24 words, one line, Role: actionTitle'
+    );
+    expect(text).toContain(
+      '- `chart` — component, Required, A component; placement stays in the definition'
+    );
     expect(text).toContain('"action-chart": {');
     expect(text).toContain('"ref": "action-chart"');
     expect(text).not.toMatch(/placeholders|"template"/);

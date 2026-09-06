@@ -17,11 +17,8 @@ import {
   unionBranches,
   type DocumentBlockTarget,
 } from '@json-to-office/shared';
-import { pptxDocumentBlockTargets } from '@json-to-office/shared-pptx';
-import {
-  DOCX_RENDERER_IDS,
-  docxComponentDefinitionName,
-} from '@json-to-office/shared-docx';
+import { preparePptxDocumentBlockTargets } from '@json-to-office/shared-pptx';
+import { docxDocumentBlockTargets } from '@json-to-office/shared-docx';
 import { createQualityPolicySchemaConfig } from './quality-policy-schema';
 import type { BrowserComponentSchemaInfo } from '../store/browser-plugins-store';
 import { useEditorRefsStore } from '../store/editor-refs-store';
@@ -178,11 +175,9 @@ export function configureMonacoInstance(monaco: Monaco): void {
 
 /** Where a document's own block definitions apply in the running format. */
 function documentBlockTargets(schema: any): DocumentBlockTarget[] {
-  if (FORMAT === 'pptx') return pptxDocumentBlockTargets(schema);
-  return DOCX_RENDERER_IDS.map((renderer) => {
-    const name = docxComponentDefinitionName(renderer);
-    return { name, componentRef: { $ref: `#/definitions/${name}` } };
-  });
+  return FORMAT === 'pptx'
+    ? preparePptxDocumentBlockTargets(schema)
+    : docxDocumentBlockTargets(schema);
 }
 
 /**
@@ -449,8 +444,9 @@ function registerJsonCompletionProvider(monaco: Monaco): void {
         // and the example an invocation provides are read from the expanded
         // document, while offsets and edits stay in model text.
         const expanded =
-          [...useEditorRefsStore.getState().editors.values()]
-            .find((entry) => entry.editor.getModel() === model)
+          useEditorRefsStore
+            .getState()
+            .getEditorForModel(model)
             ?.toStorageValue(text) ?? text;
         let document: unknown;
         try {

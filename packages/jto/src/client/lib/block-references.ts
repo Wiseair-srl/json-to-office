@@ -2,21 +2,16 @@
  * The reference block catalog: every definition the server's discovered
  * documents carry, with a working invocation and dependencies each. Fetched
  * once and shared — completion asks for it on every keystroke, and the list
- * only changes when a document on disk does.
+ * only changes when a document on disk does. A failed fetch is remembered
+ * for a while rather than retried on the next keystroke.
  */
 import type { BlockReference } from '@json-to-office/shared';
 import { API_BASE_URL } from '../config/api';
 
+const RETRY_AFTER_MS = 30_000;
 let catalog: Promise<BlockReference[]> | null = null;
-let current: BlockReference[] = [];
 
-/** What is known right now; `[]` until the first fetch answers. */
-export function blockReferences(): readonly BlockReference[] {
-  if (!catalog) void loadBlockReferences();
-  return current;
-}
-
-export async function loadBlockReferences(): Promise<BlockReference[]> {
+export function loadBlockReferences(): Promise<BlockReference[]> {
   catalog ??= fetch(`${API_BASE_URL}/discovery/blocks`)
     .then(async (response) => {
       if (!response.ok)
@@ -28,18 +23,14 @@ export async function loadBlockReferences(): Promise<BlockReference[]> {
       };
       if (!result.success || !result.data)
         throw new Error(result.error || 'Block discovery failed');
-      current = result.data;
-      return current;
+      return result.data;
     })
     .catch((error) => {
       console.warn('[blocks] reference catalog unavailable:', error);
-      catalog = null;
-      return current;
+      setTimeout(() => {
+        catalog = null;
+      }, RETRY_AFTER_MS);
+      return [];
     });
   return catalog;
-}
-
-/** Forget the catalog so the next completion fetches it again. */
-export function invalidateBlockReferences(): void {
-  catalog = null;
 }

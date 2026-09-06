@@ -1,4 +1,7 @@
-import { createBlockAuthoringSchema } from '@json-to-office/shared';
+import {
+  createBlockAuthoringSchema,
+  type DocumentBlockTarget,
+} from '@json-to-office/shared';
 import { docxComponentDefinitionName, DOCX_RENDERER_IDS } from './renderer';
 
 type Schema = Record<string, any>;
@@ -36,4 +39,22 @@ export function addDocxBlockAuthoringSchemas(schema: Schema): void {
     Object.values(value).forEach(visit);
   };
   visit(schema);
+}
+
+/**
+ * Where a document's own block definitions apply in the exported schema:
+ * one target per renderer's component definition. A component slot accepts
+ * flow content, which the definition itself already is — a section or the
+ * root placed in a slot is the runtime's to reject.
+ */
+export function docxDocumentBlockTargets(
+  schema: Schema
+): DocumentBlockTarget[] {
+  const definitions = schema.definitions ?? {};
+  return DOCX_RENDERER_IDS.filter(
+    (renderer) => definitions[docxComponentDefinitionName(renderer)]
+  ).map((renderer) => {
+    const name = docxComponentDefinitionName(renderer);
+    return { name, componentRef: { $ref: `#/definitions/${name}` } };
+  });
 }

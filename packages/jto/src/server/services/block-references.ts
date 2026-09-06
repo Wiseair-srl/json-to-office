@@ -13,6 +13,7 @@ import { readFile } from 'node:fs/promises';
 import { PluginDiscoveryService } from '@json-to-office/jto-cli';
 import {
   blockReferencesFromDocument,
+  blockSlotFacts,
   type BlockReference,
 } from '@json-to-office/shared';
 
@@ -47,11 +48,6 @@ export async function discoverBlockReferences(
   return references;
 }
 
-/** Forget the catalog; the next call rescans. */
-export function resetBlockReferenceCache(): void {
-  cache.clear();
-}
-
 /**
  * The catalog as prompt text: each block's name, source, description, slot
  * contract, the definition to copy and an invocation that fills it.
@@ -64,19 +60,8 @@ export function blockReferencesPrompt(
   return references
     .map((reference) => {
       const slots = Object.entries(reference.definition.slots).map(
-        ([name, slot]) => {
-          const facts = [
-            slot.type,
-            slot.required && slot.default === undefined ? 'required' : '',
-            slot.role ? `role ${slot.role}` : '',
-            slot.maxWords ? `≤ ${slot.maxWords} words` : '',
-            slot.oneLine ? 'one line' : '',
-            slot.default !== undefined
-              ? `default ${JSON.stringify(slot.default)}`
-              : '',
-          ].filter(Boolean);
-          return `- \`${name}\` — ${facts.join(', ')}${slot.description ? `: ${slot.description}` : ''}`;
-        }
+        ([name, slot]) =>
+          `- \`${name}\` — ${[slot.type, ...blockSlotFacts(slot)].join(', ')}${slot.description ? `: ${slot.description}` : ''}`
       );
       const dependencies = reference.dependencies.length
         ? `\nAlso copy: ${reference.dependencies.map((name) => `\`${name}\``).join(', ')} (invoked by this definition).`

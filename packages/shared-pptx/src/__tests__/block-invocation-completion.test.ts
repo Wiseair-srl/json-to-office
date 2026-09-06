@@ -24,7 +24,7 @@ import {
 import {
   convertToJsonSchema,
   generateUnifiedDocumentSchema,
-  pptxDocumentBlockTargets,
+  preparePptxDocumentBlockTargets,
 } from '../index';
 
 const published = convertToJsonSchema(
@@ -47,7 +47,7 @@ function documentSchema(definitions: Record<string, JsonBlockDefinition>) {
   applyDocumentBlocksToSchema(
     schema,
     definitions,
-    pptxDocumentBlockTargets(schema)
+    preparePptxDocumentBlockTargets(schema)
   );
   return schema;
 }
@@ -82,7 +82,17 @@ async function inspect(
     offset < 0
       ? []
       : (await ls.doComplete(doc, doc.positionAt(offset), parsed))?.items ?? [];
+  const hover =
+    offset < 0 ? null : await ls.doHover(doc, doc.positionAt(offset), parsed);
+  const contents = hover?.contents;
   return {
+    hover: Array.isArray(contents)
+      ? contents
+          .map((entry) => (typeof entry === 'string' ? entry : entry.value))
+          .join('\n')
+      : typeof contents === 'object' && contents && 'value' in contents
+        ? contents.value
+        : '',
     labels: completions.map((item) => item.label.replace(/"/g, '')),
     descriptions: Object.fromEntries(
       completions.map((item) => [
@@ -188,6 +198,32 @@ describe('document-local block invocations through the language service', () => 
     );
     expect(descriptions.tracker).toContain('Default: `"Overview"`');
     expect(inserts.tracker).toContain('Overview');
+  });
+  it('hovers a slot key with its description and contract', async () => {
+    const { hover } = await inspect(
+      withInvocation(
+        '{"name":"block","props":{"ref":"action-chart","slots":{"ti|tle":"Growth"}}}'
+      )
+    );
+    expect(hover).toContain(
+      definitions()['action-chart'].slots.title.description
+    );
+    expect(hover).toContain('Required · at most 24 words · one line');
+    expect(hover).toContain('Role: actionTitle');
+  });
+  it('completes a block placed inside a component slot', async () => {
+    const { labels } = await inspect(
+      withInvocation(
+        '{"name":"block","props":{"ref":"action-chart","slots":{"chart":{"name":"block","props":{"ref":"|"}}}}}'
+      )
+    );
+    expect(labels).toEqual(['action-chart']);
+    const slots = await inspect(
+      withInvocation(
+        '{"name":"block","props":{"ref":"action-chart","slots":{"chart":{"name":"block","props":{"ref":"action-chart","slots":{"|"}}}}}}'
+      )
+    );
+    expect(slots.labels).toContain('takeaway');
   });
   it('completes a component slot against the renderer surface, props included', async () => {
     const chart = await inspect(

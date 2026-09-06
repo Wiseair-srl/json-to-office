@@ -217,6 +217,12 @@ describe('blockSnippets', () => {
       // Monaco matches the opening quote already typed against this.
       filterText: '"action-chart',
     });
+    // Letters the author typed are theirs to match, not part of the lead:
+    // a lead that swallowed them would match every block.
+    const typed = cursor(bare('{"name": "block", "props": {"ref": "chr|"}}'));
+    expect(
+      blockSnippets(typed.text, typed.offset, options).map((s) => s.filterText)
+    ).toEqual(['"action-chart']);
     expect(snippet.documentation).toBe(references[0].description);
     const edited = applyTextEdits(text, [
       { ...snippet.replace, content: snippet.insertText },
@@ -244,6 +250,11 @@ describe('blockSnippets', () => {
       expect(snippet.filterText).toBe(
         child.slice(0, child.indexOf('|')) + 'action-chart'
       );
+      const typed = cursor(bare(child.replace('|', 'act|')));
+      if (child !== '|')
+        expect(
+          blockSnippets(typed.text, typed.offset, options)[0].filterText
+        ).toBe(child.slice(0, child.indexOf('|')) + 'action-chart');
       expect(snippet.insertText).toContain('${1:');
       expect(snippet.insertText).toContain('"ref": "action-chart"');
       const edited = applyTextEdits(text, [

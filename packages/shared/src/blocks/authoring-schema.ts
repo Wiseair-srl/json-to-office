@@ -1,3 +1,4 @@
+import type { OfficeFormat } from '../rendering/types';
 import { BLOCK_DIRECTIVES, type BlockDirective } from './directives';
 import {
   arrayItemSchema,
@@ -17,8 +18,7 @@ const pointer = (description: string): Schema => ({
   pattern: '^(|/.*)$',
   description,
 });
-export type BlockAuthoringFormat = 'docx' | 'pptx';
-const referenceDescriptions = (format: BlockAuthoringFormat) => ({
+const referenceDescriptions = (format: OfficeFormat) => ({
   $slot:
     'Read a named input slot by JSON Pointer, e.g. /title or /client/name.',
   $item:
@@ -30,7 +30,7 @@ const referenceDescriptions = (format: BlockAuthoringFormat) => ({
       ? 'Read deck or slide context by JSON Pointer, e.g. /document/title, /slide/width or /slide/index.'
       : 'Read document or section context by JSON Pointer, e.g. /document/title or /section/tracker.',
 });
-const measureDescriptions = (format: BlockAuthoringFormat) =>
+const measureDescriptions = (format: OfficeFormat) =>
   format === 'pptx'
     ? {
         axis: 'Measure the slide canvas width or height, in the unit given.',
@@ -72,7 +72,7 @@ export function createBlockAuthoringSchema(
   definitions: Record<string, Schema>,
   componentDefinition: string,
   excludedComponents: readonly string[] = [],
-  format: BlockAuthoringFormat = 'docx'
+  format: OfficeFormat = 'docx'
 ): Schema {
   const prefix = `BlockTemplate_${componentDefinition}`;
   const references = referenceDescriptions(format);
