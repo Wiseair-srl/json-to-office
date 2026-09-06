@@ -1,5 +1,24 @@
 # @json-to-office/core-pptx
 
+## 3.0.0
+
+### Major Changes
+
+- 7143379: Replace PPTX slide templates with document-local JSON blocks on the shared contract. The root `templates` array, the slide `template`, `placeholders` and `layout` props, the `MISSING_TEMPLATE`, `UNKNOWN_PLACEHOLDER` and `PLACEHOLDER_NO_POSITION` warnings and the `masters`/`placeholders` renderer capabilities are removed without aliases. A deck defines blocks in `props.blocks` and invokes them with `name: "block"`; a block expands into a transparent `group` of positioned primitives with a source map.
+
+  New engine operations: `group` frames (nested coordinates), `direction`/`gap`/`weights` distribution, `gridConfig`, bounded text `fit` (`maxLines`, `shrink`; `text_fit_overflow` at the authored slot), definition `slide` effects (background, notes, grid) and component-slot `props` merged beneath slot content. Slot `role`s feed the new `pptx/required-chrome`, `pptx/action-title` and `pptx/slot-budget` rules; the `consulting-deck` profile requires takeaway and source and bounds the title at two lines.
+
+  The `consulting` PPTX theme twins the DOCX house theme. The three shipped playground decks are converted; the new `consulting-deck-blocks` template carries the `action-chart` definition and `jto://blocks` lists both formats. Starters adopt the house theme. Corpus template cases are replaced by block cases with new goldens.
+
+### Patch Changes
+
+- Updated dependencies [1812512]
+- Updated dependencies [4807d5d]
+- Updated dependencies [7143379]
+  - @json-to-office/shared@3.0.0
+  - @json-to-office/shared-pptx@3.0.0
+  - @json-to-office/quality@3.0.0
+
 ## 2.6.0
 
 ### Minor Changes

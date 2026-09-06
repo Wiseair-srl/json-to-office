@@ -1,5 +1,26 @@
 # @json-to-office/core-docx
 
+## 3.0.0
+
+### Major Changes
+
+- 1812512: Replace named DOCX report components with document-local JSON blocks. Definitions live in `props.blocks`; invoke with `name: "block"`, `props.ref` and `props.slots`. Remove the four old component schemas and composition compilers without aliases. Support typed slots, bounded repetition, optional regions, theme bindings, section effects and registered plugin composition with authored source maps.
+
+  Ship complete playground examples and a derived MCP authoring-reference catalog. Workspace inspection exposes local definitions, derived slot schemas and fill pointers. Catalog names are never implicit runtime blocks. The report examples deliberately change typography/spacing; content budgets now fail validation before rendering. PPTX migration follows separately.
+
+  Block definitions inherit their format from the document. Generated authoring schemas provide component, plugin-property and binding completion inside block bodies, nested compositions and section chrome, with descriptions for directives, options and slot constraints. Component and plugin property descriptions are preserved through binding wrappers. Repeated omission, nested budget metadata, plugin validation errors and partial gallery regeneration are covered by regression tests.
+
+  Binding completion follows the expected value type through references, unions, defaults, conditionals and repetition. Directive options narrow after selection, and normal properties exclude whole-object directive alternatives. Ordinary document schemas remain unchanged.
+
+### Patch Changes
+
+- Updated dependencies [1812512]
+- Updated dependencies [4807d5d]
+- Updated dependencies [7143379]
+  - @json-to-office/shared@3.0.0
+  - @json-to-office/shared-docx@3.0.0
+  - @json-to-office/quality@3.0.0
+
 ## 2.7.0
 
 ### Minor Changes

@@ -1,5 +1,28 @@
 # @json-to-office/shared-pptx
 
+## 3.0.0
+
+### Major Changes
+
+- 7143379: Replace PPTX slide templates with document-local JSON blocks on the shared contract. The root `templates` array, the slide `template`, `placeholders` and `layout` props, the `MISSING_TEMPLATE`, `UNKNOWN_PLACEHOLDER` and `PLACEHOLDER_NO_POSITION` warnings and the `masters`/`placeholders` renderer capabilities are removed without aliases. A deck defines blocks in `props.blocks` and invokes them with `name: "block"`; a block expands into a transparent `group` of positioned primitives with a source map.
+
+  New engine operations: `group` frames (nested coordinates), `direction`/`gap`/`weights` distribution, `gridConfig`, bounded text `fit` (`maxLines`, `shrink`; `text_fit_overflow` at the authored slot), definition `slide` effects (background, notes, grid) and component-slot `props` merged beneath slot content. Slot `role`s feed the new `pptx/required-chrome`, `pptx/action-title` and `pptx/slot-budget` rules; the `consulting-deck` profile requires takeaway and source and bounds the title at two lines.
+
+  The `consulting` PPTX theme twins the DOCX house theme. The three shipped playground decks are converted; the new `consulting-deck-blocks` template carries the `action-chart` definition and `jto://blocks` lists both formats. Starters adopt the house theme. Corpus template cases are replaced by block cases with new goldens.
+
+### Minor Changes
+
+- 4807d5d: PPTX blocks in the editor. The exported presentation schema names each renderer's component definition stably, derives binding-aware block-body completion from it (as the DOCX export does), lays versioned plugin branches flat so the if/then dispatch sees them, and dispatches the root on `renderer` so diagnostics come from the profile the deck names. Every PPTX schema producer routes through `@json-to-office/shared-pptx`.
+
+  The playground completes block invocations against the document being edited: `ref` offers the defined names, `slots` the selected block's slots with descriptions, defaults and constraints, a component slot the renderer's slide content, and invalid slots, bindings and smuggled placement are flagged inline. Reference blocks from every discovered document (`GET /api/discovery/blocks`) are offered as snippets that insert the definition and its dependencies with the invocation. The AI assistant's PPTX prompts are rewritten around blocks and carry the reference catalog; the chat scope `templates` becomes `blocks`. `@json-to-office/shared` gains `applyDocumentBlocksToSchema`, `blockInvocationExample`, `blockDependencies` and `blockReferencesFromDocument`.
+
+### Patch Changes
+
+- Updated dependencies [1812512]
+- Updated dependencies [4807d5d]
+- Updated dependencies [7143379]
+  - @json-to-office/shared@3.0.0
+
 ## 2.5.0
 
 ### Minor Changes

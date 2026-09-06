@@ -1,5 +1,23 @@
 # @json-to-office/jto-cli
 
+## 3.0.0
+
+### Patch Changes
+
+- 4807d5d: PPTX blocks in the editor. The exported presentation schema names each renderer's component definition stably, derives binding-aware block-body completion from it (as the DOCX export does), lays versioned plugin branches flat so the if/then dispatch sees them, and dispatches the root on `renderer` so diagnostics come from the profile the deck names. Every PPTX schema producer routes through `@json-to-office/shared-pptx`.
+
+  The playground completes block invocations against the document being edited: `ref` offers the defined names, `slots` the selected block's slots with descriptions, defaults and constraints, a component slot the renderer's slide content, and invalid slots, bindings and smuggled placement are flagged inline. Reference blocks from every discovered document (`GET /api/discovery/blocks`) are offered as snippets that insert the definition and its dependencies with the invocation. The AI assistant's PPTX prompts are rewritten around blocks and carry the reference catalog; the chat scope `templates` becomes `blocks`. `@json-to-office/shared` gains `applyDocumentBlocksToSchema`, `blockInvocationExample`, `blockDependencies` and `blockReferencesFromDocument`.
+
+- Updated dependencies [1812512]
+- Updated dependencies [4807d5d]
+- Updated dependencies [7143379]
+  - @json-to-office/shared@3.0.0
+  - @json-to-office/shared-docx@3.0.0
+  - @json-to-office/core-docx@3.0.0
+  - @json-to-office/shared-pptx@3.0.0
+  - @json-to-office/core-pptx@3.0.0
+  - @json-to-office/jto-ops@3.0.0
+
 ## 2.5.0
 
 ### Patch Changes
