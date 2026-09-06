@@ -4,33 +4,37 @@
       "name": "client-report-blocks.docx.json",
       "format": "docx",
       "archetype": "client report with document-local JSON blocks",
-      "whenToUse": "Learn, copy and customize JSON definitions for cover, section-opener, key-takeaways, kpi-row, callout, data-table and running-head. Definitions and invocations are embedded in the complete playground document.",
+      "whenToUse": "Learn, copy and customize JSON definitions for a client report: cover, section-opener, key-takeaways, kpi-row, callout, data-table, chart-figure, figure, footnotes and running-head. Definitions and invocations are embedded in the complete playground document; the chart draws through the Highcharts export server.",
       "theme": "consulting",
-      "pages": 3,
+      "pages": 4,
       "components": {
-        "block": 10,
+        "block": 17,
         "columns": 1,
-        "divider": 6,
+        "divider": 7,
         "docx": 1,
         "heading": 1,
-        "list": 1,
-        "paragraph": 17,
+        "highcharts": 1,
+        "image": 1,
+        "list": 2,
+        "paragraph": 20,
         "section": 3,
         "statistic": 1,
         "table": 1,
         "text-box": 1
       },
       "slots": {
-        "text": 3,
+        "alt-text": 1,
+        "caption": 2,
+        "text": 4,
         "title": 6
       },
-      "externalAssets": [],
+      "externalAssets": ["media/client-report-blocks/delivery-model.png"],
       "externalFonts": [],
-      "hash": "9f045f4c25af8e749a6fba5ada54a3ca0c994be4702a3841a8a79a5a31f49503",
+      "hash": "6c51a8a26e075346207dffd0830ad4c3dda328ed56ce2e99cd3583ce70a6ebe3",
       "bytes": {
-        "document": 35669,
-        "gzipped": 4556,
-        "thumbnail": 22020
+        "document": 45682,
+        "gzipped": 5785,
+        "thumbnail": 32233
       }
     },
     {

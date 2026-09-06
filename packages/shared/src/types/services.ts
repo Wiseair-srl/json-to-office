@@ -31,6 +31,13 @@ export type HighchartsHeadersResolver = (
 export interface HighchartsServiceConfig {
   serverUrl?: string;
   headers?: HighchartsHeaders | HighchartsHeadersResolver;
+  /**
+   * Allow an export server outside this machine and its private networks.
+   * A chart is posted whole — every series, label and title — so a remote
+   * server is a decision, not a default: without this, generation refuses a
+   * public URL; with it, every generation says which URL received the data.
+   */
+  allowRemote?: boolean;
 }
 
 // ============================================================================

@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
 import AdmZip from 'adm-zip';
 import { Type } from '@sinclair/typebox';
@@ -22,17 +21,7 @@ import { createDocumentGenerator } from '../../plugin/createDocumentGenerator';
 import { createComponent } from '../../plugin/createComponent';
 import { prepareDocxQualityDocument } from '../../quality/facts';
 
-// Parsed once; every helper hands out a copy.
-const EXAMPLE = JSON.parse(
-  readFileSync(
-    new URL(
-      '../../../../jto/src/client/public/templates/client-report-blocks.docx.json',
-      import.meta.url
-    ),
-    'utf8'
-  )
-);
-const example = () => structuredClone(EXAMPLE);
+import { example, invocation, on } from './example';
 const simple = () => {
   const doc = example();
   doc.children = [
@@ -52,21 +41,6 @@ const simple = () => {
   return doc;
 };
 const para = (text: string) => ({ name: 'paragraph', props: { text } });
-/** The example's first invocation of a block, with its real content. */
-const invocation = (ref: string) => {
-  for (const section of EXAMPLE.children)
-    for (const child of section.children)
-      if (child.name === 'block' && child.props.ref === ref)
-        return structuredClone(child);
-  throw new Error(`no ${ref} invocation in the example`);
-};
-/** A one-section document on `theme` holding the given invocations. */
-const on = (theme: string, ...blocks: unknown[]) => {
-  const doc = example();
-  doc.props.theme = theme;
-  doc.children = [{ name: 'section', children: blocks }];
-  return doc;
-};
 
 describe('JSON report blocks from playground templates', () => {
   it('validates the complete example and rejects absent definitions', () => {
@@ -189,7 +163,18 @@ describe('JSON report blocks from playground templates', () => {
     );
   });
   it('keeps native page fields and real headings in the generated Word package', async () => {
-    const zip = new AdmZip(await generateBufferFromJson(example()));
+    // The figures need an export server and a media directory; the page
+    // fields and headings under test do not.
+    const doc = example();
+    for (const section of doc.children)
+      section.children = section.children.filter(
+        (child: any) =>
+          !(
+            child.name === 'block' &&
+            ['chart-figure', 'figure'].includes(child.props.ref)
+          )
+      );
+    const zip = new AdmZip(await generateBufferFromJson(doc));
     const main = zip.readAsText('word/document.xml');
     const headers = zip
       .getEntries()
@@ -642,6 +627,101 @@ describe('JSON report blocks from playground templates', () => {
           consultingTheme
         ).document.children[0].children[0].children.map((c: any) => c.name)
       ).toEqual(['paragraph', 'table']);
+    });
+  });
+
+  describe('sources and figures', () => {
+    const chart = {
+      name: 'chart',
+      props: {
+        type: 'bar',
+        valAxisTitle: 'Revenue (€m)',
+        data: [{ name: 'Revenue', labels: ['Q1', 'Q2'], values: [4.2, 4.6] }],
+      },
+    };
+    const withDefinitions = (doc: any) => {
+      doc.renderer = 'office-open';
+      doc.props.blocks.figure = {
+        slots: {
+          chart: { type: 'component', required: true },
+          takeaway: { type: 'string', role: 'takeaway' },
+          source: { type: 'string', role: 'source' },
+        },
+        body: [{ $slot: '/chart' }],
+      };
+      doc.props.blocks.sources = {
+        slots: {},
+        body: [
+          {
+            $if: { $context: '/sources' },
+            then: {
+              name: 'list',
+              props: {
+                format: 'decimal',
+                items: {
+                  $each: { $context: '/sources' },
+                  template: { $item: '' },
+                },
+              },
+            },
+          },
+        ],
+      };
+      return doc;
+    };
+
+    it('exposes every distinct source line, in order, at the slot it was written', () => {
+      const doc = withDefinitions(
+        on(
+          'consulting',
+          {
+            name: 'block',
+            props: { ref: 'figure', slots: { chart, source: 'Source: A.' } },
+          },
+          {
+            name: 'block',
+            props: { ref: 'figure', slots: { chart, source: 'Source: B.' } },
+          },
+          {
+            name: 'block',
+            props: { ref: 'figure', slots: { chart, source: 'Source: A.' } },
+          },
+          { name: 'block', props: { ref: 'sources' } }
+        )
+      );
+      const expanded = expandBlocks(doc, consultingTheme);
+      const list = expanded.document.children[0].children[3].children[0];
+      expect(list.props.items).toEqual(['Source: A.', 'Source: B.']);
+      expect(
+        toAuthoredPointer(
+          expanded.sourceMap,
+          '/children/0/children/3/children/0/props/items/1'
+        )
+      ).toBe('/children/0/children/1/props/slots/source');
+      doc.children[0].children = [{ name: 'block', props: { ref: 'sources' } }];
+      expect(
+        expandBlocks(doc, consultingTheme).document.children[0].children[0]
+          .children
+      ).toEqual([]);
+    });
+
+    it('reads a chart’s takeaway and source from the block that placed it', () => {
+      const annotation = (slots: Record<string, unknown>) =>
+        analyzeDocxQuality(
+          withDefinitions(
+            on('consulting', {
+              name: 'block',
+              props: { ref: 'figure', slots: { chart, ...slots } },
+            })
+          )
+        ).diagnostics.filter((d) => d.code === QUALITY_CODES.CHART_ANNOTATION);
+      expect(annotation({ source: 'Source: A.' })).toEqual([]);
+      expect(annotation({ takeaway: 'Growth held.' })).toEqual([]);
+      expect(annotation({})).toEqual([
+        expect.objectContaining({
+          path: '/children/0/children/0/props/slots/chart',
+        }),
+      ]);
     });
   });
 

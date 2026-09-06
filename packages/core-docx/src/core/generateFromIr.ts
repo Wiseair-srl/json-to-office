@@ -194,6 +194,7 @@ async function compileDocumentScoped(
     ...(options.baseDir !== undefined ? { baseDir: options.baseDir } : {}),
     ...(visualFonts.length > 0 ? { visualFonts } : {}),
     ...(chartFonts.length > 0 ? { chartFonts } : {}),
+    warnings,
   });
 
   // One date for the whole build: the metadata Word shows, the `{DATE}` a

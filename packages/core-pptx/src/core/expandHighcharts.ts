@@ -11,6 +11,8 @@
  */
 
 import {
+  remoteExportNotice,
+  REMOTE_EXPORT_WARNING,
   chartFamilyResolver,
   chartPointsPerPixel,
   withChartFontFaceCss,
@@ -124,7 +126,8 @@ async function expandOne(
       scope.theme,
       scope.chartFonts
     ),
-    scope.services
+    scope.services,
+    scope.warnings
   );
 
   void path;
@@ -147,9 +150,25 @@ interface RenderedChart {
   heightPx: number;
 }
 
+/** A public export server is a decision: refused without `allowRemote`, announced with it. */
+function assertExportServerAllowed(
+  serverUrl: string,
+  services: HighchartsServiceConfig | undefined,
+  warnings: PipelineWarning[]
+): void {
+  const notice = remoteExportNotice(serverUrl, services?.allowRemote);
+  if (notice)
+    warnings.push({
+      code: REMOTE_EXPORT_WARNING,
+      component: 'highcharts',
+      message: notice,
+    });
+}
+
 async function renderChart(
   config: PptxHighchartsProps,
-  services: HighchartsServiceConfig | undefined
+  services: HighchartsServiceConfig | undefined,
+  warnings: PipelineWarning[]
 ): Promise<RenderedChart> {
   if (!isNodeEnvironment()) {
     throw new Error(
@@ -159,6 +178,7 @@ async function renderChart(
   }
 
   const serverUrl = exportServerUrl(config.serverUrl, services?.serverUrl);
+  assertExportServerAllowed(serverUrl, services, warnings);
   const requestBody = {
     infile: config.options,
     type: 'png',

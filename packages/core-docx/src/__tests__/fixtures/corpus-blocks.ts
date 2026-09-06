@@ -5,9 +5,12 @@
  * than as text: `image` (inline and floating, with captions and alt text),
  * `statistic`, and `text-box` (both `table` and `shape` renderings) — and the
  * bounded-slot blocks: `key-takeaways`, the report architecture of `cover`,
- * `section-opener` and `running-head`, and the report's data blocks
- * `kpi-row`, `callout` and `data-table`, each on the house theme that declares
- * its recipes and on one that does not.
+ * `section-opener` and `running-head`, the report's data blocks `kpi-row`,
+ * `callout` and `data-table`, and the numbered `figure` with the `footnotes`
+ * that collect its sources, each on the house theme that declares its recipes
+ * and on one that does not. `chart-figure` is absent: its chart needs an
+ * export server (`highcharts`) or the office-open renderer (`chart`), and the
+ * corpus runs one deterministic pipeline with no service.
  *
  * Every image here is an inline base64 data URI: a corpus case is identified by
  * the SHA-256 of the package it produces, so nothing may reach outside the
@@ -406,6 +409,87 @@ export const CASES: CorpusCase[] = [
               ],
             },
           },
+        },
+      ]),
+    ]),
+  },
+  // --------------------------------------------------------------------------
+  // figure and footnotes: numbered captions and the sources they cite
+  // --------------------------------------------------------------------------
+  {
+    // Two figures number themselves through a SEQ field with its cached
+    // count, each over a source line; the footnotes block lists the two
+    // distinct sources once each, under the label role and a hairline.
+    name: 'blocks/figures-consulting',
+    document: doc(
+      [
+        section([
+          {
+            name: 'block',
+            props: {
+              ref: 'figure',
+              slots: {
+                image: {
+                  name: 'image',
+                  props: { base64: PNG_4X2, width: '60%', alt: 'Swatch' },
+                },
+                caption: 'The delivery model',
+                source: 'Source: operating handbook, 2026 edition.',
+              },
+            },
+          },
+          {
+            name: 'block',
+            props: {
+              ref: 'figure',
+              slots: {
+                image: {
+                  name: 'image',
+                  props: { base64: PNG_4X2, width: '40%', alt: 'Swatch' },
+                },
+                caption: 'Ownership by stage',
+                source: 'Source: operating handbook, 2026 edition.',
+              },
+            },
+          },
+          {
+            name: 'block',
+            props: {
+              ref: 'kpi-row',
+              slots: {
+                items: [
+                  { value: '12', label: 'Sites' },
+                  { value: '3', label: 'Regions' },
+                ],
+                source: 'Source: site register, September 2026.',
+              },
+            },
+          },
+          { name: 'block', props: { ref: 'footnotes' } },
+        ]),
+      ],
+      { theme: 'consulting' }
+    ),
+  },
+  {
+    // No roles: the defaults — a 9pt caption with the bold figure lead — and a
+    // figure with no source, so the footnotes block finds nothing to list.
+    name: 'blocks/figures-fallback',
+    document: doc([
+      section([
+        {
+          name: 'block',
+          props: {
+            ref: 'figure',
+            slots: {
+              image: { name: 'image', props: { base64: PNG_4X2, width: 120 } },
+              caption: 'A swatch',
+            },
+          },
+        },
+        {
+          name: 'block',
+          props: { ref: 'footnotes', slots: { title: 'Notes' } },
         },
       ]),
     ]),

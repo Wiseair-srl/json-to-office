@@ -183,13 +183,19 @@ function buildServicesFromEnv(): ServicesConfig | undefined {
   const serverUrl = process.env.HIGHCHARTS_SERVER_URL;
   const apiKey = process.env.HIGHCHARTS_API_KEY;
   const apiKeyHeader = process.env.HIGHCHARTS_API_KEY_HEADER ?? 'x-api-key';
+  // A public export server receives every chart's data; the switch that
+  // permits it is deliberate and separate from naming the URL.
+  const allowRemote = /^(1|true|yes)$/i.test(
+    process.env.HIGHCHARTS_ALLOW_REMOTE ?? ''
+  );
 
-  if (!serverUrl && !apiKey) return undefined;
+  if (!serverUrl && !apiKey && !allowRemote) return undefined;
 
   return {
     highcharts: {
       serverUrl,
       ...(apiKey && { headers: { [apiKeyHeader]: apiKey } }),
+      ...(allowRemote && { allowRemote }),
     },
   };
 }
@@ -220,6 +226,25 @@ function getPptxBatchRasterizer(): PptxBatchRasterizer {
  * `services.pptx.serverUrl`, but the default is the in-process LibreOffice
  * renderer.
  */
+/**
+ * Services a caller asked for win over the environment, service by service:
+ * a test that names an unreachable export server must reach it, whatever
+ * `HIGHCHARTS_SERVER_URL` says.
+ */
+function withRequestedServices(
+  base: ServicesConfig | undefined,
+  requested: ServicesConfig | undefined
+): ServicesConfig | undefined {
+  if (!requested) return base;
+  return {
+    ...base,
+    ...requested,
+    ...(base?.highcharts || requested.highcharts
+      ? { highcharts: { ...base?.highcharts, ...requested.highcharts } }
+      : {}),
+  };
+}
+
 function buildDocxServices(): ServicesConfig {
   const base = buildServicesFromEnv() ?? {};
   const serverUrl = process.env.JTO_PPTX_RASTERIZER_URL?.trim();
@@ -295,6 +320,12 @@ export interface GeneratorOptions {
     allowUnknownFields?: boolean;
   };
   fonts?: FontRuntimeOpts;
+  /**
+   * External services for this generation: an export server for
+   * `highcharts`, a rasterizer for `visual`. Wins over the environment,
+   * service by service.
+   */
+  services?: ServicesConfig;
   deterministic?: boolean;
   generatedAt?: string | Date;
   /**
@@ -497,7 +528,10 @@ export class DocxFormatAdapter implements FormatAdapter {
       docDefinition = normalized.document;
       customThemes = normalized.customThemes;
     }
-    const services = buildDocxServices();
+    const services = withRequestedServices(
+      buildDocxServices(),
+      options.services
+    );
     // Collect rather than swallow: without a sink, core warnings (an
     // unresolvable `props.theme` among them) never reach the terminal and the
     // render just comes back looking subtly wrong.
@@ -530,7 +564,10 @@ export class DocxFormatAdapter implements FormatAdapter {
     const core = await import('@json-to-office/core-docx');
     const hasPlugins = plugins.length > 0;
     const pluginNames = plugins.map((p) => p.name);
-    const services = buildDocxServices();
+    const services = withRequestedServices(
+      buildDocxServices(),
+      options.services
+    );
 
     // Resolve once unless the canonical model already carries the result.
     const prepared =
@@ -962,7 +999,10 @@ export class PptxFormatAdapter implements FormatAdapter {
       docDefinition = normalized.document;
       customThemes = normalized.customThemes;
     }
-    const services = buildServicesFromEnv();
+    const services = withRequestedServices(
+      buildServicesFromEnv(),
+      options.services
+    );
     // The warnings-returning entry point: `generateBufferFromJson` allocates
     // the pipeline's warning array internally and throws it away, so core
     // warnings (FONT_UNRESOLVED among them) never reached the terminal or the
@@ -996,7 +1036,10 @@ export class PptxFormatAdapter implements FormatAdapter {
     const core = await import('@json-to-office/core-pptx');
     const hasPlugins = plugins.length > 0;
     const pluginNames = plugins.map((p) => p.name);
-    const services = buildServicesFromEnv();
+    const services = withRequestedServices(
+      buildServicesFromEnv(),
+      options.services
+    );
 
     // Resolve once unless the canonical model already carries the result.
     const prepared =
@@ -1208,7 +1251,10 @@ export class PptxFormatAdapter implements FormatAdapter {
       {
         customThemes: normalized.customThemes,
         fonts: options.fonts,
-        services: buildServicesFromEnv(),
+        services: withRequestedServices(
+          buildServicesFromEnv(),
+          options.services
+        ),
         renderer: options.renderer ?? documentRenderer(parsed),
         warnings,
       }

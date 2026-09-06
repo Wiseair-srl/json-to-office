@@ -539,6 +539,10 @@ shared contract (#370), #336 lands `kpi-row`, `callout` and `data-table` as
 JSON definitions in the same playground report; the only engine change is
 that `$if`, `$each` and `$count` accept a reference to the current repeated
 item, which is what lets a table repeat its columns and each column its cells.
+#337 follows with `chart-figure`, `figure` and `footnotes` on two engine
+capabilities — the `{SEQ:name}` numbering field and the `/sources` block
+context — and closes the chart-data question: an export server outside the
+private network is refused without `allowRemote` and announced with it.
 
 **Next milestone: a complete client-report workflow (#362).** Given a real
 brief and data, Claude Desktop scaffolds, fills, validates, previews, repairs
