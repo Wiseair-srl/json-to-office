@@ -24,13 +24,16 @@ import {
   readDocumentBlockDefinitions,
 } from '../document-blocks';
 
+// LF regardless of how git checked the file out: the fixtures below splice a
+// cursor into it by matching whole lines, which CRLF (a Windows runner with
+// autocrlf) silently defeats.
 const deckText = readFileSync(
   new URL(
     '../../public/templates/consulting-deck-blocks.pptx.json',
     import.meta.url
   ),
   'utf8'
-);
+).replace(/\r\n/g, '\n');
 const deck = () => JSON.parse(deckText);
 const references: BlockReference[] = blockReferencesFromDocument(deck(), {
   template: 'consulting-deck-blocks',
