@@ -111,12 +111,15 @@ export function dispatchPptxRootByRenderer(schema: Schema): void {
 }
 
 /**
- * Where a document's own block definitions apply in the exported schema: one
- * target per renderer, with a component slot completing against what a slide
- * holds. That union is inlined in each slide branch rather than published as
- * a definition, so it is hoisted here once per renderer and referenced.
+ * Prepare the targets a document's own block definitions apply to, and
+ * return them. One target per renderer's component definition, plus one per
+ * slot-content definition, so a block placed inside a component slot
+ * completes too. A component slot accepts what a slide holds; that union is
+ * inlined in each slide branch rather than published, so this hoists it
+ * under `PptxSlotContent_<renderer>` once — the one write it makes to the
+ * schema — and references it.
  */
-export function pptxDocumentBlockTargets(
+export function preparePptxDocumentBlockTargets(
   schema: Schema
 ): DocumentBlockTarget[] {
   const definitions = schema.definitions ?? {};
@@ -133,12 +136,12 @@ export function pptxDocumentBlockTargets(
       const items = slide?.properties?.children?.items;
       if (items) definitions[contentName] = JSON.parse(JSON.stringify(items));
     }
-    targets.push({
-      name,
-      ...(definitions[contentName] && {
-        componentRef: { $ref: `#/definitions/${contentName}` },
-      }),
-    });
+    if (!definitions[contentName]) {
+      targets.push({ name });
+      continue;
+    }
+    const componentRef = { $ref: `#/definitions/${contentName}` };
+    targets.push({ name, componentRef }, { name: contentName, componentRef });
   }
   return targets;
 }

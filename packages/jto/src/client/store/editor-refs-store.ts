@@ -53,6 +53,10 @@ interface EditorRefsActions {
   setActiveEditor: (documentName: string | null) => void;
   getActiveEditor: () => EditorReference | null;
   getEditor: (documentName: string) => EditorReference | null;
+  /** The editor showing this model — how a language feature finds its document. */
+  getEditorForModel: (
+    model: MonacoEditorType.ITextModel
+  ) => EditorReference | null;
 }
 
 export type EditorRefsStore = EditorRefsState & EditorRefsActions;
@@ -109,5 +113,11 @@ export const useEditorRefsStore = create<EditorRefsStore>((set, get) => ({
 
   getEditor: (documentName) => {
     return get().editors.get(documentName) || null;
+  },
+
+  getEditorForModel: (model) => {
+    for (const entry of get().editors.values())
+      if (entry.editor.getModel() === model) return entry;
+    return null;
   },
 }));

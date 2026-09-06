@@ -17,6 +17,23 @@ export function mergeBlocksDelta(
   return result;
 }
 
+/**
+ * Apply a block-scoped AI answer — `{ "blocks": { name: definition | null } }`
+ * — to a document. Returns the merged document, or null when the answer is
+ * not that shape and the caller should fall back to a text merge.
+ */
+export function applyBlocksFragment(
+  currentDoc: any,
+  fragment: any
+): Record<string, unknown> | null {
+  const blocks = fragment?.blocks;
+  if (!blocks || typeof blocks !== 'object' || Array.isArray(blocks))
+    return null;
+  const doc = { ...currentDoc, props: { ...(currentDoc?.props ?? {}) } };
+  doc.props.blocks = mergeBlocksDelta(doc.props.blocks || {}, blocks);
+  return doc;
+}
+
 /** Deterministic hash of a string — used as a stable apply-diff ID. */
 export function applyId(str: string): string {
   let h = 0;

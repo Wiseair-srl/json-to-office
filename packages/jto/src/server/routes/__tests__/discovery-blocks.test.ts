@@ -6,6 +6,7 @@
  * leave nothing unresolved: the example agrees with its definition, and the
  * definition plus its dependencies validate on their own in a fresh document.
  */
+import { readdirSync, readFileSync } from 'node:fs';
 import { describe, it, expect, beforeAll } from 'vitest';
 import { Hono } from 'hono';
 import { discoveryRouter } from '../discovery';
@@ -71,23 +72,32 @@ describe('/api/discovery/blocks', () => {
     });
 
     it('covers every block of every shipped deck, and each snippet validates on its own', () => {
+      // Exactly what the template files on disk define, block for block: a
+      // deck whose definitions stopped validating would otherwise vanish
+      // from the catalog without a test noticing.
+      const templates = new URL(
+        '../../../client/public/templates/',
+        import.meta.url
+      );
+      const expected = readdirSync(templates)
+        .filter((file) => file.endsWith('.pptx.json'))
+        .flatMap((file) => {
+          const template = file.replace(/\.pptx\.json$/, '');
+          const document = JSON.parse(
+            readFileSync(new URL(file, templates), 'utf8')
+          );
+          return Object.keys(document.props?.blocks ?? {}).map(
+            (name) => `${template}/${name}`
+          );
+        })
+        .sort();
       const shipped = references.filter((entry) =>
-        [
-          'consulting-deck-blocks',
-          'data-report-presentation',
-          'management-plan',
-          'minimalist-pitch-deck',
-        ].includes(entry.template)
+        expected.some((key) => key.startsWith(`${entry.template}/`))
       );
-      expect(shipped.map((entry) => entry.name)).toEqual(
-        expect.arrayContaining([
-          'action-chart',
-          'chrome-ink',
-          'chrome-paper',
-          'grid',
-          'veil-bottom-right',
-        ])
-      );
+      expect(
+        shipped.map((entry) => `${entry.template}/${entry.name}`).sort()
+      ).toEqual(expected);
+      expect(expected.length).toBeGreaterThanOrEqual(8);
       for (const reference of shipped) {
         const document = {
           name: 'pptx',

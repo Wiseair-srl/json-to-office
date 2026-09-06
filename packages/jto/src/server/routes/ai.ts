@@ -7,6 +7,7 @@ import {
   getSchemaString,
   getFormatFromContainer,
 } from '../services/ai-schema.js';
+import { blockSlotFacts, type BlockSlot } from '@json-to-office/shared';
 import { loadPrompt } from '../services/prompt-loader.js';
 import {
   blockReferencesPrompt,
@@ -262,14 +263,14 @@ export function createAiRouter() {
             if (scope === 'slides') {
               const blocksSummary = Object.entries(blocks)
                 .map(([name, definition]: [string, any]) => {
-                  const slots = Object.entries(definition.slots || {})
-                    .map(([slot, spec]: [string, any]) => {
-                      const facts = [
-                        spec.type,
-                        spec.required ? 'required' : '',
-                        spec.role ? `role ${spec.role}` : '',
-                        spec.maxWords ? `≤ ${spec.maxWords} words` : '',
-                      ].filter(Boolean);
+                  const slots = (
+                    Object.entries(definition.slots || {}) as [
+                      string,
+                      BlockSlot,
+                    ][]
+                  )
+                    .map(([slot, spec]) => {
+                      const facts = [spec.type, ...blockSlotFacts(spec)];
                       const description = spec.description
                         ? `: ${spec.description}`
                         : '';

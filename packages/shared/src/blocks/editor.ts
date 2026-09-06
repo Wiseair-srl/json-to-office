@@ -11,6 +11,8 @@
  * constraints, and the placement a component slot may not carry.
  */
 import { Value } from '@sinclair/typebox/value';
+import type { OfficeFormat } from '../rendering/types';
+import { blockSlotsJsonSchema } from './metadata';
 import {
   BLOCK_SLOT_PLACEMENT_PROPS,
   blockPointerKey,
@@ -25,7 +27,6 @@ import {
 } from './schema';
 
 type Schema = Record<string, any>;
-export type BlockEditorFormat = 'docx' | 'pptx';
 
 /** A block invocation as authored: the component the editor inserts. */
 export interface BlockInvocationExample {
@@ -49,8 +50,12 @@ function range(
   return undefined;
 }
 
-/** The hover text for a slot: its description, then its contract in one line. */
-export function blockSlotMarkdown(slot: BlockSlot): string {
+/**
+ * A slot's contract as short facts, in one order, for every place that shows
+ * it: the editor hover, the AI prompt, a catalog summary. "Required" means
+ * the caller must supply a value — a slot with a default never is.
+ */
+export function blockSlotFacts(slot: BlockSlot): string[] {
   const facts: string[] = [];
   if (slot.required && slot.default === undefined) facts.push('Required');
   if (slot.default !== undefined)
@@ -70,8 +75,14 @@ export function blockSlotMarkdown(slot: BlockSlot): string {
   const entries = range(slot.minItems, slot.maxItems, 'entries');
   if (entries) facts.push(entries);
   if (slot.role) facts.push(`Role: ${slot.role}`);
-  const contract = facts.join(' · ');
-  return [slot.description, contract].filter(Boolean).join('\n\n');
+  return facts;
+}
+
+/** The hover text for a slot: its description, then its contract in one line. */
+export function blockSlotMarkdown(slot: BlockSlot): string {
+  return [slot.description, blockSlotFacts(slot).join(' · ')]
+    .filter(Boolean)
+    .join('\n\n');
 }
 
 /**
@@ -312,7 +323,7 @@ export function blockDependencies(
 function exampleValue(
   slot: BlockSlot,
   name: string,
-  format: BlockEditorFormat
+  format: OfficeFormat
 ): unknown {
   if (slot.default !== undefined) return clone(slot.default);
   if (slot.enum?.length) return slot.enum[0];
@@ -353,7 +364,7 @@ function exampleValue(
 /** Required slots and role-bearing chrome; everything else stays omitted. */
 function exampleSlots(
   slots: Record<string, BlockSlot>,
-  format: BlockEditorFormat
+  format: OfficeFormat
 ): Record<string, unknown> {
   return Object.fromEntries(
     Object.entries(slots)
@@ -372,7 +383,7 @@ function exampleSlots(
 export function blockInvocationExample(
   name: string,
   definition: JsonBlockDefinition,
-  options: { document?: unknown; format: BlockEditorFormat }
+  options: { document?: unknown; format: OfficeFormat }
 ): BlockInvocationExample {
   let found: BlockInvocationExample | undefined;
   if (isBlockRecord(options.document)) {
@@ -406,7 +417,7 @@ export function blockInvocationExample(
 /** An authoring reference extracted from a complete document. */
 export interface BlockReference {
   name: string;
-  format: BlockEditorFormat;
+  format: OfficeFormat;
   /** The document the definition comes from. */
   template: string;
   definitionPointer: string;
@@ -428,7 +439,7 @@ export interface BlockReference {
  */
 export function blockReferencesFromDocument(
   document: unknown,
-  source: { template: string; format: BlockEditorFormat }
+  source: { template: string; format: OfficeFormat }
 ): BlockReference[] {
   const definitions = readBlockDefinitions(document);
   if (
@@ -443,7 +454,7 @@ export function blockReferencesFromDocument(
     definitionPointer: `/props/blocks/${blockPointerKey(name)}`,
     description: definition.description ?? '',
     definition,
-    slotsSchema: blockSlotsEditorSchema(definition),
+    slotsSchema: blockSlotsJsonSchema(definition),
     example: blockInvocationExample(name, definition, {
       document,
       format: source.format,
