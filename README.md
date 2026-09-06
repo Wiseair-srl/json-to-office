@@ -293,7 +293,7 @@ Generated JSON Schemas are local artifacts rather than stable hosted URLs today.
 | table      | Auto-pagination with header repeat, colspan/rowspan                               |
 | chart      | 8 native PowerPoint types: bar, line, pie, area, doughnut, radar, bubble, scatter |
 | highcharts | Server-side chart rendering                                                       |
-| slide      | Grid-based positioning, backgrounds, templates                                    |
+| slide      | Grid-based positioning, backgrounds, document-local JSON blocks                   |
 
 ### Document diff (DOCX)
 
@@ -311,7 +311,7 @@ Every text edit becomes a real Word revision (accept/reject, author, timestamp) 
 - **Font system**: curated Office-safe font list plus code-side `fonts.extraEntries` option for embedding Google Fonts and custom TTF/OTF across DOCX and PPTX. Themes name fonts; code registers them. See [docs/fonts.md](docs/fonts.md).
 - **Schema validation**: full TypeBox schemas that serve as TypeScript types _and_ runtime validators. Catch errors before rendering.
 - **Plugin architecture**: create versioned custom components with `createComponent()`. Full TypeScript support, chainable API, schema generation.
-- **Template / placeholder system** (PPTX): slide templates with named placeholder regions, static + dynamic content, style inheritance.
+- **JSON blocks** (both formats): reusable compositions defined in the document with typed slots, theme bindings and bounded layout; PPTX groups add frames and row/column distribution.
 - **Grid layout** (PPTX): 12-column responsive grid with configurable margins and gutters.
 
 ## Full examples

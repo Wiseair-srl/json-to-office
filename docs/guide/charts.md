@@ -38,7 +38,7 @@ Both formats do the same thing: the missing slot is **dropped**. The injected pa
 Dropping compacts, it does not leave a gap. A theme that defines `accent5` but not `accent4` produces `primary`, `secondary`, `accent`, `accent5`, so `accent5` paints the fourth series. The token list is a preference-ordered pool of candidate colors, not fixed per-series slots, so a color you did define is kept rather than discarded.
 
 ::: warning Built-in themes differ across the two formats
-All three built-in **PPTX** themes (`default`, `dark`, `minimal`) define `accent4`–`accent6`, so a pptx chart gets six distinct colors out of the box.
+All four built-in **PPTX** themes (`consulting`, `default`, `dark`, `minimal`) define `accent4`–`accent6`, so a pptx chart gets six distinct colors out of the box; `consulting` additionally orders its series through `palette.chart`.
 
 None of the five built-in **DOCX** themes define them, so a docx chart palette is `primary`, `secondary`, `accent` today — three colors, wrapping from the fourth series on. To get six, add `accent4`, `accent5` and `accent6` to a [custom DOCX theme](/reference/theme-schema#colors); the schema accepts them.
 :::

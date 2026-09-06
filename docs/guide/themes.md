@@ -120,24 +120,26 @@ Every family the bundled themes name has a metric-compatible substitute in the h
 
 ### PPTX themes
 
-Three built-in themes: **`default`**, **`dark`**, **`minimal`**. An unknown theme name silently falls back to `default`.
+Four built-in themes: **`default`**, **`dark`**, **`minimal`** and **`consulting`**. An unknown theme name silently falls back to `default`. `consulting` is the twin of the DOCX house theme: the same ink, greys, accent, `positive`/`negative`, ordered chart series, chrome recipes and motif, Arial over Calibri with Consolas for code — safe fonts only — so a deck and its report match without restyling. It is opt-in for now; it becomes the default in a later major release.
 
-| Slot                   | `default`       | `dark`          | `minimal`             |
-| ---------------------- | --------------- | --------------- | --------------------- |
-| `primary`              | `#4472C4`       | `#5B9BD5`       | `#000000`             |
-| `secondary`            | `#ED7D31`       | `#FF6F61`       | `#666666`             |
-| `accent`               | `#70AD47`       | `#6BCB77`       | `#999999`             |
-| `background`           | `#FFFFFF`       | `#2D2D2D`       | `#FFFFFF`             |
-| `text`                 | `#333333`       | `#FFFFFF`       | `#000000`             |
-| `text2`                | `#44546A`       | `#CCCCCC`       | `#444444`             |
-| `background2`          | `#E7E6E6`       | `#3D3D3D`       | `#F5F5F5`             |
-| `accent4`              | `#FFC000`       | `#FFB347`       | `#BBBBBB`             |
-| `accent5`              | `#5B9BD5`       | `#77DD77`       | `#DDDDDD`             |
-| `accent6`              | `#70AD47`       | `#AEC6CF`       | `#888888`             |
-| Fonts (heading / body) | Arial / Arial   | Arial / Arial   | Helvetica / Helvetica |
-| Defaults               | 18pt, `#333333` | 18pt, `#FFFFFF` | 18pt, `#000000`       |
+| Slot                   | `default`       | `dark`          | `minimal`             | `consulting`    |
+| ---------------------- | --------------- | --------------- | --------------------- | --------------- |
+| `primary`              | `#4472C4`       | `#5B9BD5`       | `#000000`             | `#1A1F26`       |
+| `secondary`            | `#ED7D31`       | `#FF6F61`       | `#666666`             | `#4B5563`       |
+| `accent`               | `#70AD47`       | `#6BCB77`       | `#999999`             | `#1B4F8A`       |
+| `background`           | `#FFFFFF`       | `#2D2D2D`       | `#FFFFFF`             | `#FFFFFF`       |
+| `text`                 | `#333333`       | `#FFFFFF`       | `#000000`             | `#1A1F26`       |
+| `text2`                | `#44546A`       | `#CCCCCC`       | `#444444`             | `#4B5563`       |
+| `background2`          | `#E7E6E6`       | `#3D3D3D`       | `#F5F5F5`             | `#F2F4F7`       |
+| `accent4`              | `#FFC000`       | `#FFB347`       | `#BBBBBB`             | `#5B8DC9`       |
+| `accent5`              | `#5B9BD5`       | `#77DD77`       | `#DDDDDD`             | `#A9C4E4`       |
+| `accent6`              | `#70AD47`       | `#AEC6CF`       | `#888888`             | `#7B8794`       |
+| Fonts (heading / body) | Arial / Arial   | Arial / Arial   | Helvetica / Helvetica | Arial / Calibri |
+| Defaults               | 18pt, `#333333` | 18pt, `#FFFFFF` | 18pt, `#000000`       | 14pt, `#1A1F26` |
 
-All three share the same set of **style presets**:
+`consulting` also carries the [shared visual layers](#shared-visual-roles): every type role (`display` 28pt, `stat` 40pt, `quote` 18pt, `eyebrow` 10pt tracked caps, `chartLabel` 11pt, `source` and `footer` 9pt), the `palette` roles with the same blue-and-grey chart series as the report, a 12 × 8 grid with a half-inch safe area on both 16:9 and 4:3, hairline table borders and gridline-light chart defaults, and the chrome recipes the `action-chart` block binds. One projection differs from the report on purpose: the small roles — `footer`, `tracker`, `source` — take `text2` rather than `textMuted`, because a 9pt run in the light grey sits under the 4.5 : 1 the contrast rule asks of projected text. A deck on `consulting` inherits the look and nothing else; only the `consulting-deck` quality profile asks a slide for a takeaway or a source.
+
+The first three share the same set of **style presets**; `consulting` sets its own, left-aligned and smaller (`title` 32pt bold, `subtitle` 16pt, `heading1` 24pt bold, `body` 14pt, `caption` 10pt):
 
 | Preset     | Size | Weight/emphasis | Color token | Alignment |
 | ---------- | ---- | --------------- | ----------- | --------- |
@@ -148,6 +150,14 @@ All three share the same set of **style presets**:
 | `heading3` | 18   | bold            | `text`      | —         |
 | `body`     | 14   | —               | —           | —         |
 | `caption`  | 10   | italic          | `text2`     | —         |
+
+## Gallery: the house theme in both formats
+
+Rendered through LibreOffice from the two playground templates that carry the house theme — the DOCX `client-report-blocks` report page and the PPTX `consulting-deck-blocks` action-chart slide. The same ink, greys, accent and chart series; the report's running head and the deck's tracker, source line and page number are painted from the same chrome recipes.
+
+| DOCX report page, `consulting`                                | PPTX content slide, `consulting`                                      |
+| ------------------------------------------------------------- | --------------------------------------------------------------------- |
+| ![Consulting report page](/themes/consulting-report-page.png) | ![Consulting action-chart slide](/themes/consulting-action-chart.png) |
 
 ## Applying a theme
 
@@ -320,7 +330,7 @@ Available keys differ per format:
 
 ### PPTX: the `style` prop
 
-Text components reference one of the seven preset names (`title`, `subtitle`, `heading1`, `heading2`, `heading3`, `body`, `caption`) via `style`. The cascade is: component props → style preset → theme `defaults`. Anything you set inline wins over the preset:
+Text components reference one of the seven preset names (`title`, `subtitle`, `heading1`, `heading2`, `heading3`, `body`, `caption`) — or one of the [type roles](#shared-visual-roles) a theme declares — via `style`. The cascade is: component props → style preset → theme `defaults`. Anything you set inline wins over the preset:
 
 ```json
 {

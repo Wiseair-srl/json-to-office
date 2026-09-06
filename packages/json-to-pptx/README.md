@@ -80,7 +80,7 @@ writeFileSync('deck.pptx', buffer);
 
 - **Grid layout** — 12-column responsive grid with configurable margins and gutters. Position elements by grid coordinates or absolute inches/percentages.
 - **Theme system** — 10-slot semantic color scheme, text style presets, 3 built-in themes (minimal, corporate, vibrant) or define your own.
-- **Template/placeholder system** — Define reusable slide templates with named placeholder regions, static elements, and style inheritance.
+- **JSON blocks** — Define reusable slide compositions in the document itself, with typed slots, theme bindings, frames and row/column distribution.
 - **Schema validation** — TypeBox schemas as both TypeScript types and runtime validators.
 - **Native charts** — 8 PowerPoint chart types rendered natively (no image export needed).
 - **Peer dependency** — Uses [pptxgenjs](https://github.com/gitbrent/PptxGenJS) as the rendering backend. You control the version.

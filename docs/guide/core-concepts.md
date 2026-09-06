@@ -52,7 +52,7 @@ The internal TypeScript types for the DOCX root are named `ReportProps` / `Repor
 Components fall into two categories:
 
 - **Containers** hold other components via `children`. Each container declares exactly which child names it accepts, and the schemas narrow the union accordingly — so validation tells you precisely when a child is out of place.
-- **Content components** are leaves. They render actual output (text, images, charts, tables) and must not carry `children`. Any nesting they support happens through props — for example, DOCX table cells embed components via `content`, and PPTX slides can inject components through `placeholders`.
+- **Content components** are leaves. They render actual output (text, images, charts, tables) and must not carry `children`. Any nesting they support happens through props — for example, DOCX table cells embed components via `content`, and a block's component slot carries a whole component.
 
 Allowed children per container:
 
@@ -158,7 +158,7 @@ Repeating the same props on every node gets tedious, so defaults cascade from br
 
 1. **Theme `componentDefaults`** — per-component-type default props defined in the theme.
 2. **Document-level `componentDefaults`** — set on the root `docx` / `pptx` props, merged on top of the theme's.
-3. **(PPTX only) placeholder position and `defaults.props`** — when a slide fills a template placeholder, the placeholder's position and default props apply next.
+3. **(PPTX only) block definition `props`** — a component supplied through a block's component slot takes the definition's placement and styling defaults next; the slot content overrides styling, never placement.
 4. **The component's own `props`** — always win.
 
 ```json

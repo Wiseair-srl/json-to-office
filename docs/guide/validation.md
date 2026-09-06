@@ -24,7 +24,7 @@ returned error or warning — predictable.
 
 The JSON Schema used by an editor covers the schema stage. Runtime validators add
 the deep walk, semantic rules and renderer profile. Generation then adds anything
-that can only be known after themes, templates, fonts, grids or assets resolve.
+that can only be known after themes, blocks, fonts, grids or assets resolve.
 
 ::: tip Validate without generating
 Use a standalone validator in an editor or repair loop. Use generation when an
@@ -222,9 +222,9 @@ PPTX validation starts with the deep walk directly. It checks:
 - nested standard components use only `name`, `id`, `enabled`, `props` and
   `children`; registered plugin components may also use `version`;
 - each component's props match its registry schema;
-- `pptx` contains slides and slides contain the six supported content components;
+- `pptx` contains slides and slides contain the six supported content components, blocks and groups;
 - leaves do not carry `children`;
-- slide placeholder values are valid slide-content components;
+- block invocations name a definition in `props.blocks` and fill only its declared slots, within their budgets;
 - registered plugin props are left to the version-aware plugin validator, while
   their nested standard children are still checked.
 

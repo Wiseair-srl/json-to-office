@@ -76,18 +76,33 @@ describe.each(FORMATS)('%s rule mirror', (format) => {
       ).toEqual(Object.keys(parameters).sort());
 
       for (const [name, value] of Object.entries(parameters)) {
-        // The mirror can only describe numbers. A rule that grows a parameter
-        // of another type has to widen `QualityRuleParameter` first, and this
-        // is where it finds out rather than silently going undocumented.
+        // The mirror describes numbers and lists of names. A rule that grows
+        // a parameter of another type has to widen `QualityRuleParameter`
+        // first, and this is where it finds out rather than silently going
+        // undocumented.
+        const mirrorEntry = entry!.parameters.find(
+          (parameter) => parameter.name === name
+        );
         expect(
-          typeof value,
-          `${rule.id}.${name} is not a number; widen QualityRuleParameter`
-        ).toBe('number');
-        expect(
-          entry!.parameters.find((parameter) => parameter.name === name)
-            ?.default,
-          `${rule.id}.${name} default`
-        ).toBe(value);
+          mirrorEntry?.type,
+          `${rule.id}.${name}: widen QualityRuleParameter`
+        ).toBe(Array.isArray(value) ? 'string-list' : 'number');
+        if (Array.isArray(value)) {
+          expect(
+            value.every((entry) => typeof entry === 'string'),
+            `${rule.id}.${name} is not a list of strings`
+          ).toBe(true);
+          expect(mirrorEntry?.default, `${rule.id}.${name} default`).toEqual(
+            value
+          );
+        } else {
+          expect(typeof value, `${rule.id}.${name} is not a number`).toBe(
+            'number'
+          );
+          expect(mirrorEntry?.default, `${rule.id}.${name} default`).toBe(
+            value
+          );
+        }
       }
     }
   });

@@ -29,11 +29,19 @@ export function createQualityPolicySchemaConfig(): {
   for (const rule of rules) {
     const parameters: Record<string, unknown> = {};
     for (const parameter of rule.parameters) {
-      parameters[parameter.name] = {
-        type: 'number',
-        default: parameter.default,
-        description: `${parameter.description} (default ${parameter.default})`,
-      };
+      parameters[parameter.name] =
+        parameter.type === 'string-list'
+          ? {
+              type: 'array',
+              items: { type: 'string' },
+              default: [...parameter.default],
+              description: `${parameter.description} (default ${JSON.stringify(parameter.default)})`,
+            }
+          : {
+              type: 'number',
+              default: parameter.default,
+              description: `${parameter.description} (default ${parameter.default})`,
+            };
     }
     ruleProperties[rule.id] = {
       type: 'object',

@@ -2,8 +2,6 @@ import type { DocxFeature } from '../packages/core-docx/src/ir/features';
 import type { PptxFeature } from '../packages/core-pptx/src/ir/features';
 
 const pptx = {
-  masters: 'Authored slide masters.',
-  placeholders: 'Named master placeholder regions.',
   'rich-text': 'Multiple formatted runs in one text body.',
   'complex-bullet-glyphs': 'Astral or multi-code-point bullet glyphs.',
   text: 'Text bodies and uniform runs.',
