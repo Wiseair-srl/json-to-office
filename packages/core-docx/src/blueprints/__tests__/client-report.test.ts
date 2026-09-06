@@ -211,6 +211,15 @@ describe('the client-report blueprint', () => {
     });
   });
 
+  it('refuses a blueprint of another format', () => {
+    expect(() =>
+      instantiateDocxBlueprint(
+        { ...blueprint, format: 'pptx' },
+        { definitions }
+      )
+    ).toThrow(/is a pptx blueprint/);
+  });
+
   it('refuses a variant it does not have and a definition the template lacks', () => {
     expect(() =>
       instantiateDocxBlueprint(blueprint, { variant: 'memo', definitions })

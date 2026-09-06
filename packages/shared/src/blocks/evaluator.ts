@@ -633,6 +633,7 @@ export interface BlockEvaluatorOptions {
 export class JsonBlockEvaluator {
   readonly sourceMap: Record<string, string> = {};
   readonly blocks: string[] = [];
+  private readonly blockSources = new Set<string>();
   private nodes = 0;
   constructor(
     readonly definitions: Record<string, JsonBlockDefinition>,
@@ -1011,7 +1012,10 @@ export class JsonBlockEvaluator {
       // A definition's own nested invocation maps back to the authored
       // invocation that produced it; record each authored invocation once,
       // or its slots would be counted twice by everything that reads `blocks`.
-      if (!this.blocks.includes(source)) this.blocks.push(source);
+      if (!this.blockSources.has(source)) {
+        this.blockSources.add(source);
+        this.blocks.push(source);
+      }
       const children = this.evaluate(
         def.body,
         env,

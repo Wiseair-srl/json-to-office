@@ -125,10 +125,19 @@ export interface BlueprintIssue {
 
 /** Schema errors for a candidate blueprint, empty when it conforms. */
 export function validateBlueprint(value: unknown): BlueprintIssue[] {
-  return [...Value.Errors(BlueprintSchema, value)].map((error: ValueError) => ({
-    path: error.path,
-    message: error.message,
-  }));
+  const issues = [...Value.Errors(BlueprintSchema, value)].map(
+    (error: ValueError) => ({ path: error.path, message: error.message })
+  );
+  if (issues.length > 0) return issues;
+  // The schema bounds each end of a page range; only this can compare them.
+  for (const [id, variant] of Object.entries((value as Blueprint).variants)) {
+    if (variant.pages.min > variant.pages.max)
+      issues.push({
+        path: `/variants/${id}/pages`,
+        message: `min (${variant.pages.min}) exceeds max (${variant.pages.max})`,
+      });
+  }
+  return issues;
 }
 
 export function isBlueprint(value: unknown): value is Blueprint {

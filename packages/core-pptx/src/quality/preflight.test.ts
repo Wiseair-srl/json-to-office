@@ -660,6 +660,15 @@ describe('shipped profiles', () => {
         props: { ...small.props, qualityProfile: 'no-such-profile' },
       }).profileId
     ).toBe('technical-presentation');
+    for (const id of ['__proto__', 'constructor', 'toString']) {
+      expect(
+        analyzePptxQuality({
+          ...small,
+          props: { ...small.props, qualityProfile: id },
+        }).profileId,
+        id
+      ).toBe('technical-presentation');
+    }
   });
 
   it("merges the caller's rules over the registered ones", () => {

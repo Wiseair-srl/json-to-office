@@ -59,6 +59,18 @@ describe('required chrome under the client-report profile', () => {
     ).toEqual([]);
   });
 
+  it('counts a whitespace-only slot as missing', () => {
+    const doc = example();
+    const kpi = invocation('kpi-row');
+    kpi.props.slots.source = '   ';
+    doc.children = [section(runningHead(), kpi)];
+    expect(chromeFindings(doc, { profile: profile('client-report') })).toEqual([
+      expect.objectContaining({
+        path: '/children/0/children/1/props/slots/source',
+      }),
+    ]);
+  });
+
   it('asks for a running head with page numbers on every section after the cover', () => {
     expect(
       chromeFindings(report([]), { profile: profile('client-report') })
@@ -145,5 +157,10 @@ describe('the profile a document names', () => {
     ).toEqual([]);
     doc.props.qualityProfile = 'no-such-profile';
     expect(analyzeDocxQuality(doc).profileId).toBe('technical-report');
+    // An inherited member is nobody's profile either.
+    for (const id of ['__proto__', 'constructor', 'toString']) {
+      doc.props.qualityProfile = id;
+      expect(analyzeDocxQuality(doc).profileId, id).toBe('technical-report');
+    }
   });
 });

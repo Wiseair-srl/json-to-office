@@ -1210,7 +1210,10 @@ export function declaredPptxQualityProfile(
 ): QualityProfile | undefined {
   const props = (document as { props?: { qualityProfile?: unknown } })?.props;
   const id = props?.qualityProfile;
-  return typeof id === 'string' ? PPTX_PROFILES_BY_ID[id] : undefined;
+  return typeof id === 'string' &&
+    Object.prototype.hasOwnProperty.call(PPTX_PROFILES_BY_ID, id)
+    ? PPTX_PROFILES_BY_ID[id]
+    : undefined;
 }
 
 /**

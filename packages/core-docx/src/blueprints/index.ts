@@ -43,6 +43,10 @@ function register(...candidates: unknown[]): Record<string, Blueprint> {
     const blueprint = candidate as Blueprint;
     if (blueprint.format !== 'docx')
       throw new Error(`Blueprint ${blueprint.id} is not a DOCX blueprint.`);
+    if (registry[blueprint.id])
+      throw new Error(
+        `Two bundled blueprints share the id "${blueprint.id}"; the later one would silently replace the earlier.`
+      );
     registry[blueprint.id] = blueprint;
   }
   return registry;
@@ -115,6 +119,10 @@ export function instantiateDocxBlueprint(
   blueprint: Blueprint,
   options: InstantiateBlueprintOptions
 ): InstantiatedBlueprint {
+  if (blueprint.format !== 'docx')
+    throw new Error(
+      `Blueprint ${blueprint.id} is a ${blueprint.format} blueprint; this instantiates DOCX ones.`
+    );
   const variantId = options.variant ?? Object.keys(blueprint.variants)[0];
   const variant: BlueprintVariant | undefined = blueprint.variants[variantId];
   if (!variant)

@@ -1,6 +1,6 @@
 # Blueprints
 
-A blueprint is a document archetype as data: the recommended theme, the quality profile that judges the result, the playground template whose [JSON blocks](/reference/blocks) it invokes, and one or more structural variants — each an ordered list of sections holding block invocations and ordinary components, every slot carrying an explicit `{{…}}` scaffold marker whose text is the guidance for filling it. A blueprint composes nothing and styles nothing: the blocks compose, the theme paints, the profile asks.
+A blueprint is a document archetype as data: the recommended theme, the quality profile that judges the result, the playground template whose [JSON blocks](/reference/blocks) it invokes, and one or more structural variants — each an ordered list of sections holding block invocations and ordinary components, every slot carrying an explicit <code v-pre>{{…}}</code> scaffold marker whose text is the guidance for filling it. A blueprint composes nothing and styles nothing: the blocks compose, the theme paints, the profile asks.
 
 Themes and profiles stay independent by construction. Switching the theme of a scaffold changes its appearance and not one requirement; switching the profile changes what validation asks for and not one theme token.
 
