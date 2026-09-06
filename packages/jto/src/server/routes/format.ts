@@ -70,6 +70,12 @@ function throwIfClientError(error: unknown): void {
   ) {
     throw new HTTPException(400, { message: (error as Error).message });
   }
+  // A dependency the document needs — the Highcharts export server — did not
+  // answer. Not the caller's fault and not a defect here, and the message
+  // says how to start it, so it must reach the caller as written.
+  if (code === 'SERVICE_UNAVAILABLE') {
+    throw new HTTPException(503, { message: (error as Error).message });
+  }
   if (!(error instanceof Error)) return;
   const message = error.message.toLowerCase();
   if (

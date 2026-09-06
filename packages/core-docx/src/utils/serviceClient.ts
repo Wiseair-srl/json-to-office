@@ -52,6 +52,17 @@ export interface PostJsonOptions {
  * POST a JSON body to `${url}${path}` with a timeout. Returns the Response on a
  * 2xx; throws a normalized Error on timeout, connection failure, or non-2xx.
  */
+/**
+ * A dependency that did not answer. The code lets a server route tell a
+ * missing export server apart from a defect in the document or in itself,
+ * and hand the caller the message that says how to start it.
+ */
+export const SERVICE_UNAVAILABLE_CODE = 'SERVICE_UNAVAILABLE';
+
+function serviceUnavailable(message: string): Error {
+  return Object.assign(new Error(message), { code: SERVICE_UNAVAILABLE_CODE });
+}
+
 export async function postJsonToService(
   opts: PostJsonOptions
 ): Promise<Response> {
@@ -78,12 +89,12 @@ export async function postJsonToService(
     });
   } catch (error) {
     if ((error as Error)?.name === 'AbortError') {
-      throw new Error(
+      throw serviceUnavailable(
         `${opts.serviceLabel} timed out after ${timeoutMs}ms at ${opts.url}.`
       );
     }
     const cause = error instanceof Error ? error.message : String(error);
-    throw new Error(opts.onUnreachable(opts.url, cause));
+    throw serviceUnavailable(opts.onUnreachable(opts.url, cause));
   } finally {
     clearTimeout(timer);
   }
