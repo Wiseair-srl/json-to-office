@@ -20,35 +20,12 @@ import { join } from 'node:path';
 import { promisify } from 'node:util';
 import { generateBufferViaIr } from '../core/generateFromIr';
 import type { DocxRendererId } from '../renderers/types';
+import { findLibreOffice, requireIfInsisted } from './libreoffice';
 
 const run = promisify(execFile);
 
-async function findLibreOffice(): Promise<string | undefined> {
-  const candidates = [
-    'soffice',
-    '/Applications/LibreOffice.app/Contents/MacOS/soffice',
-    '/usr/bin/soffice',
-    '/usr/bin/libreoffice',
-  ];
-  for (const candidate of candidates) {
-    try {
-      await run(candidate, ['--version'], { timeout: 60_000 });
-      return candidate;
-    } catch {
-      // Try the next candidate.
-    }
-  }
-  return undefined;
-}
-
 const soffice = await findLibreOffice();
-const required = process.env.JTO_REQUIRE_LIBREOFFICE === '1';
-
-if (!soffice && required) {
-  throw new Error(
-    'JTO_REQUIRE_LIBREOFFICE=1 but no LibreOffice binary was found on PATH.'
-  );
-}
+requireIfInsisted(Boolean(soffice), 'a LibreOffice binary on PATH');
 
 /** A 4x2 PNG, so image measurement has real pixels to read. */
 const PNG_4X2 =

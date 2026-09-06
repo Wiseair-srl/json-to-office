@@ -126,11 +126,11 @@ The playground demonstrates `cover`, `key-takeaways`, `section-opener`, `running
 
 ### The report blocks
 
-Every definition in `client-report-blocks.docx.json` binds its sizes and colours to the theme's type roles and chrome recipes with a safe default, so the same JSON renders on every bundled theme; the previews below are the house theme, rendered through LibreOffice.
+Every definition in `client-report-blocks.docx.json` binds its sizes and colours to the theme's type roles and chrome recipes with a safe default, so the same JSON renders on every bundled theme; the previews below are the house theme, rendered through LibreOffice. A report built from a cover, three section openers and one running head is generated on all four bundled themes in the test suite, warning-clean, and rendered through LibreOffice where one is installed: every page after the cover carries its own section's tracker and a live `n / N`, and the cover carries neither.
 
 | Block            | Slots                                                                                                     | What the definition decides                                                                                                                                                                                                                                                               |
 | ---------------- | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `cover`          | title, subtitle, client, date, confidentiality, logo                                                      | The cover recipe's rule 30% down the page; the eyebrow, display and label roles                                                                                                                                                                                                           |
+| `cover`          | title, subtitle, client, date, confidentiality, logo                                                      | The cover recipe's rule about a third of the way down the page (22% of the body height, after the logo when there is one); the client in the eyebrow role, the title in display, subtitle, then date and confidentiality in the label role, each absent when its slot is                  |
 | `key-takeaways`  | label, items 3–5 of ≤ 25 words                                                                            | The key-takeaways recipe's rule, label role, hairline                                                                                                                                                                                                                                     |
 | `section-opener` | number, title, tracker                                                                                    | Eyebrow number, a real level-1 heading, the section tracker the running head reads                                                                                                                                                                                                        |
 | `running-head`   | title, tracker, confidentiality, date, pageNumbers                                                        | Header `title · tracker` and footer `confidentiality · n / N · date` in the tracker and footer roles, inherited by later sections                                                                                                                                                         |
@@ -140,6 +140,14 @@ Every definition in `client-report-blocks.docx.json` binds its sizes and colours
 | `chart-figure`   | chart (component: `highcharts`, or `chart` on office-open), caption, takeaway, source (required)          | The chart as given; `**Figure {SEQ:figure}.** caption` in the label role; the takeaway beneath in the quote role; the source through `source-line`. The block's `takeaway` and `source` slots are what `W_QUALITY_CHART_ANNOTATION` reads, so a chart placed here is annotated by them    |
 | `figure`         | image (component: `image` or `visual`), caption, source                                                   | The same numbered caption over the same `figure` sequence, so figures and charts number together; source through `source-line`                                                                                                                                                            |
 | `footnotes`      | title (default "Notes and sources")                                                                       | Nothing unless the document cites a source; otherwise a hairline, the title in the label role and a numbered list of every distinct `source`-role slot value in document order, from the engine's `/sources` context                                                                      |
+
+![cover on consulting](/blocks/cover-consulting.png)
+
+![key-takeaways on consulting](/blocks/key-takeaways-consulting.png)
+
+![section-opener on consulting](/blocks/section-opener-consulting.png)
+
+![running-head on consulting](/blocks/running-head-consulting.png)
 
 ![kpi-row on consulting](/blocks/kpi-row-consulting.png)
 
