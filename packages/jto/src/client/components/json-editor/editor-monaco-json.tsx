@@ -469,6 +469,11 @@ function EditorMonacoJson({
             scrollBeyondLastLine: true,
             wordWrap: 'on',
             automaticLayout: true,
+            // Suggest, hover and parameter-hint widgets are positioned
+            // against the viewport rather than clipped by the editor's box,
+            // so a suggestion's details panel opens over the preview pane
+            // (or flips to the left) instead of vanishing behind it.
+            fixedOverflowWidgets: true,
             formatOnPaste: true,
             formatOnType: true,
             tabSize: 2,
