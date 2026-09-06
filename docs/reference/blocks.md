@@ -1,6 +1,6 @@
 # JSON blocks
 
-Blocks compose reusable document structure from JSON. Code plugins provide calculations, external I/O and programmable behavior. DOCX supports the contract below; #340 implements the PPTX adapter. Format is inherited from the containing document. The shared slot/binding model will also serve PPTX blocks when that adapter lands.
+Blocks compose reusable document structure from JSON. Code plugins provide calculations, external I/O and programmable behavior. DOCX supports the contract below. Format is inherited from the containing document. PPTX definitions share the same slot and binding model but cannot yet be rendered.
 
 ## Complete custom example
 
@@ -111,9 +111,3 @@ Bodies can invoke other document-local blocks or explicitly registered code plug
 Definition errors point into `/props/blocks/<name>`. Content errors and generated-node quality findings map to authored invocations/slots, including nested and repeated expansion. `jto_validate` with `includeCompiled: true` returns the primitive tree and source map. The plugin generator’s `expandStandardDefinition()` exposes its source map too.
 
 `jto://blocks` provides definitions, derived slot schemas, budgets and source-template pointers for agentic authoring. Copy selected definitions and any transitive block dependencies into `props.blocks`. The catalog does not register runtime names. Use `jto_workspace_inspect` with `paths: ["/props/blocks"]` to read actual definitions at a workspace revision; `includeBlocks: true` adds definition-derived slot schemas and invocation fill pointers; no catalog entry is inserted into the document implicitly.
-
-## Breaking change
-
-The named DOCX component syntax (`name: "cover"`, `"key-takeaways"`, `"section-opener"`, `"running-head"`) and block-specific TypeScript schemas/compilers/exports are removed. Start from the complete playground example or copy its definitions, then use `name: "block"` with `props.ref` and `props.slots`. No aliases or migration layer remain.
-
-The JSON examples deliberately change typography/spacing and cover placement while retaining semantic headings, native page fields, section trackers and overrides. Text/cardinality budgets now reject invalid content before rendering. They do not promise historical byte or visual parity. PPTX’s existing authoring remains until #340 implements its consolidation.

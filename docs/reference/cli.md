@@ -309,7 +309,7 @@ Shape:
 }
 ```
 
-CLI flags win over config values — an absent flag no longer clobbers the corresponding key. The `theme` and `themePath` keys are applied by `generate` (see [Theme selection](#generate) above); `validation.allowUnknownFields` is forwarded to the generator; `validation.strict` is inert. Plugin load order: `--plugins` flag (bare = auto-discover, string = named list) → `autoDiscover` → `plugins` → `--plugin-dir` → `pluginDirs`.
+CLI flags win over config values; an absent flag leaves the corresponding key alone. The `theme` and `themePath` keys are applied by `generate` (see [Theme selection](#generate) above); `validation.allowUnknownFields` is forwarded to the generator; `validation.strict` is inert. Plugin load order: `--plugins` flag (bare = auto-discover, string = named list) → `autoDiscover` → `plugins` → `--plugin-dir` → `pluginDirs`.
 
 ### Dev-server config
 

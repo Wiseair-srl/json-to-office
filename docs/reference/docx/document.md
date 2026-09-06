@@ -103,10 +103,10 @@ A Word section: a run of pages sharing one header, footer, and page setup. Secti
 | `spacing`   | `{ before?, after? }` (points, ≥ 0) | —                                           | Vertical spacing around the section content.                                                                                                                                                                                                                                                                                                                            |
 | `page`      | `object`                            | theme's page setup                          | Per-section page geometry override (see below).                                                                                                                                                                                                                                                                                                                         |
 
-::: warning Behavior change
-Earlier versions skipped `componentDefaults` resolution for a node that carried no `props` key at all, so a propless section fell back to the schema default and broke to a new page. It no longer does. If a document relied on that quirk to get its page breaks, set `"pageBreak": true` explicitly.
+::: warning
+A section without a `props` key still resolves `componentDefaults`, so it does not break to a new page on its own. Set `"pageBreak": true` explicitly when you want one.
 
-Sections also used to accept `title`/`level` props that rendered a heading at the top of the section. Those props are gone: name a section with `meta.title` (not rendered) and add an explicit `heading` child for a visible title.
+A section takes no `title`/`level` props. Name a section with `meta.title` (not rendered) and add an explicit `heading` child for a visible title.
 :::
 
 ### `page` override
