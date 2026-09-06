@@ -243,6 +243,15 @@ export function createBlockAuthoringSchema(
                 value(),
                 'Fallback value or binding used only when the referenced value is missing. Null, false and empty values do not trigger it.'
               ),
+              ...(directive === '$slot' || directive === '$item'
+                ? {
+                    props: {
+                      type: 'object',
+                      description:
+                        'Component props merged beneath a component-slot value. Put placement (x, y, w, h, grid) and styling defaults here; the slot content may override styling but never placement.',
+                    },
+                  }
+                : {}),
             },
             [directive]
           );

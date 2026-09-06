@@ -4,6 +4,7 @@
 
 import type { PptxComponentDefaults } from '@json-to-office/shared-pptx';
 import type { PptxThemeConfig, TextStyle, StyleName } from '../types';
+import { CONSULTING_PPTX_THEME } from './consulting';
 
 /**
  * What a table looks like before anyone styles one.
@@ -65,6 +66,7 @@ export const DEFAULT_PPTX_THEME: PptxThemeConfig = {
 
 const PPTX_THEMES: Record<string, PptxThemeConfig> = {
   default: DEFAULT_PPTX_THEME,
+  consulting: CONSULTING_PPTX_THEME,
   dark: {
     name: 'dark',
     colors: {
