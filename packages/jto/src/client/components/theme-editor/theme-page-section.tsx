@@ -23,6 +23,7 @@ import {
   SELECT_TRIGGER_CLASS,
   useThemeEditor,
 } from './theme-editor-shared';
+import { matchesQuery } from '../../lib/theme-editor/schema-form';
 
 /**
  * docx only. The JSON stores twips because Word does; nobody thinks in
@@ -94,7 +95,28 @@ const LengthField = React.memo(function LengthField({
   );
 });
 
-export function ThemePageSection({ theme }: { theme: ThemeJson }) {
+export function ThemePageSection({
+  theme,
+  query = '',
+}: {
+  theme: ThemeJson;
+  query?: string;
+}) {
+  const searching = query.trim() !== '';
+  if (
+    searching &&
+    !matchesQuery(
+      query,
+      'page',
+      'size',
+      'margins',
+      'width',
+      'height',
+      ...MARGIN_KEYS,
+      ...PAGE_SIZES
+    )
+  )
+    return null;
   const { set } = useThemeEditor();
   const [unit, setUnit] = useState<LengthUnit>('in');
 
@@ -123,6 +145,7 @@ export function ThemePageSection({ theme }: { theme: ThemeJson }) {
     <EditorSection
       title="Page"
       hint="Paper and margins. Stored in twips (1/1440 in); shown in the unit you pick here."
+      forceOpen={searching ? true : undefined}
       actions={
         <Select value={unit} onValueChange={(v) => setUnit(v as LengthUnit)}>
           <SelectTrigger

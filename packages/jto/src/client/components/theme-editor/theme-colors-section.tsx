@@ -23,6 +23,7 @@ import {
   useThemeColorTokens,
   type ColorToken,
 } from './color-picker';
+import { matchesQuery } from '../../lib/theme-editor/schema-form';
 
 /**
  * One row per token the schema declares, in the schema's groups. A token may
@@ -131,10 +132,22 @@ const ColorRow = React.memo(function ColorRow({
   );
 });
 
-export function ThemeColorsSection({ theme }: { theme: ThemeJson }) {
+export function ThemeColorsSection({
+  theme,
+  query = '',
+}: {
+  theme: ThemeJson;
+  query?: string;
+}) {
+  const searching = query.trim() !== '';
   const rows = useMemo(
-    () => TOKENS.map((token) => ({ token, ...rowState(theme, token) })),
-    [theme]
+    () =>
+      TOKENS.filter(
+        (token) =>
+          matchesQuery(query, 'colours', 'colors') ||
+          matchesQuery(query, token.key, token.label, token.group, token.hint)
+      ).map((token) => ({ token, ...rowState(theme, token) })),
+    [query, theme]
   );
 
   const contrast = useMemo(() => {
@@ -153,11 +166,13 @@ export function ThemeColorsSection({ theme }: { theme: ThemeJson }) {
   // token can be reused without leaving the row it is being set on.
   const tokens = useThemeColorTokens(theme);
   const defined = rows.filter((r) => r.raw !== undefined).length;
+  if (searching && rows.length === 0) return null;
 
   return (
     <EditorSection
       title="Colours"
       hint="Hex values, or the name of another token to reuse it. Required tokens are what the compiler reads directly; the rest are optional slots."
+      forceOpen={searching ? true : undefined}
       actions={
         <span className="text-[11px] tabular-nums text-muted-foreground">
           {defined}/{TOKENS.length}
@@ -168,7 +183,9 @@ export function ThemeColorsSection({ theme }: { theme: ThemeJson }) {
         <ContrastBadge label="Text on background" ratio={contrast.text} />
         <ContrastBadge label="Primary on background" ratio={contrast.primary} />
       </div>
-      {GROUPS.map((group) => (
+      {GROUPS.filter((group) =>
+        rows.some((row) => row.token.group === group)
+      ).map((group) => (
         <div key={group} className="flex flex-col gap-1">
           <GroupLabel>{group}</GroupLabel>
           {rows

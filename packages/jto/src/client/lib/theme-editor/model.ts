@@ -593,15 +593,34 @@ const FORM_KEYS: Record<FormatName, readonly string[]> = {
     'page',
     'styles',
   ],
-  pptx: ['name', 'colors', 'fonts', 'defaults', 'styles'],
+  pptx: [
+    'name',
+    'displayName',
+    'description',
+    'version',
+    'colors',
+    'fonts',
+    'defaults',
+    'styles',
+  ],
 };
 
-/** Keys the form leaves alone, with a one-line description each. */
+/** The top-level keys the hand-built sections edit. */
+export function formKeys(format: FormatName): readonly string[] {
+  return FORM_KEYS[format];
+}
+
+/**
+ * Keys the form leaves alone, with a one-line description each: neither a
+ * hand-built section's nor, once the schema is known, one of the sections
+ * derived from it.
+ */
 export function advancedKeys(
   theme: ThemeJson,
-  format: FormatName
+  format: FormatName,
+  alsoHandled: readonly string[] = []
 ): Array<{ key: string; summary: string }> {
-  const handled = new Set(FORM_KEYS[format]);
+  const handled = new Set([...FORM_KEYS[format], ...alsoHandled]);
   return Object.keys(theme)
     .filter((key) => !handled.has(key))
     .map((key) => ({ key, summary: summarize(theme[key]) }));
