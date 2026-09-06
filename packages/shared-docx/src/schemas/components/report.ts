@@ -18,8 +18,9 @@ export const createReportPropsSchema = (_componentRef?: TSchema) =>
       blocks: Type.Optional(BlockDefinitionsSchema),
       theme: Type.Optional(
         Type.String({
-          description: 'Theme name to apply (default: "minimal")',
-          examples: ['minimal', 'devportal', 'vermilion'],
+          description:
+            'Theme name to apply (default: "minimal"). Built-ins: consulting (the house style), minimal, devportal, vermilion.',
+          examples: ['consulting', 'minimal', 'devportal', 'vermilion'],
           default: 'minimal',
         })
       ),
