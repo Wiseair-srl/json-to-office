@@ -199,10 +199,15 @@ async function renderChart(
     headers: { 'Content-Type': 'application/json', ...resolvedHeaders },
     body: JSON.stringify(requestBody),
   }).catch((error) => {
-    throw new Error(
-      `Highcharts Export Server is not running at ${serverUrl}. ` +
-        'Start it with: npx highcharts-export-server --enableServer true\n' +
-        `Cause: ${error instanceof Error ? error.message : String(error)}`
+    // The code lets a server route report a missing export server as a
+    // dependency outage with this message, not as an internal error.
+    throw Object.assign(
+      new Error(
+        `Highcharts Export Server is not running at ${serverUrl}. ` +
+          'Start it with: npx highcharts-export-server --enableServer true\n' +
+          `Cause: ${error instanceof Error ? error.message : String(error)}`
+      ),
+      { code: 'SERVICE_UNAVAILABLE' }
     );
   });
 
