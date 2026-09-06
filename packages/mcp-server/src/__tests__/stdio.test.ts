@@ -94,6 +94,8 @@ describe.skipIf(!built)('jto-mcp over stdio', () => {
       'jto://blocks',
       'jto://blueprints',
       'jto://catalog',
+      'jto://guide/design/docx',
+      'jto://guide/design/pptx',
       'jto://renderers',
       'jto://schema/docx/document',
       'jto://schema/docx/theme',

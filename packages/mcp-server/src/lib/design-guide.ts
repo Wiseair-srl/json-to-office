@@ -1,0 +1,296 @@
+/**
+ * `jto://guide/design/<format>`: the design guidance an agent reads before
+ * authoring, rendered from the registries the product runs on — the themes
+ * the core resolves, the profiles and rule pack `jto_validate` judges by, the
+ * block catalogue and the blueprints. Nothing here is written apart from the
+ * data: a rule that gains a sentence gains it in the pack, a theme that
+ * changes its voice changes it in its file, and the guide follows. The drift
+ * test holds the markdown to the arrays it was rendered from.
+ *
+ * The one thing the guide has to teach that no single registry states is the
+ * boundary between them: a theme paints, a profile requires.
+ */
+
+import type {
+  QualityCategory,
+  QualityProfile,
+  QualityRule,
+} from '@json-to-office/quality';
+import type { Blueprint } from '@json-to-office/shared';
+
+import type { FormatName } from './adapters.js';
+import { loadCore } from './core.js';
+import { themeDescriptions, type ThemeDescription } from './themes.js';
+import { blockReferenceCatalog } from '../templates/blocks.js';
+
+export interface GuideRule {
+  id: string;
+  code: string;
+  description: string;
+  category: QualityCategory;
+  defaultSeverity: string;
+  certainty: string;
+  enabledByDefault: boolean;
+  parameters?: Readonly<Record<string, unknown>>;
+}
+
+export interface GuideProfile {
+  id: string;
+  description: string;
+  default: boolean;
+  rules: Readonly<NonNullable<QualityProfile['rules']>>;
+}
+
+export interface GuideBlock {
+  name: string;
+  template: string;
+  description: string;
+  slots: string[];
+}
+
+export interface GuideBlueprint {
+  id: string;
+  title: string;
+  description: string;
+  whenToUse: string;
+  theme: string;
+  profile: string;
+}
+
+export interface DesignGuide {
+  format: FormatName;
+  generatedFrom: string[];
+  themes: ThemeDescription[];
+  profiles: GuideProfile[];
+  rules: GuideRule[];
+  blocks: GuideBlock[];
+  blueprints: GuideBlueprint[];
+  /** The same data, rendered to read. */
+  markdown: string;
+}
+
+const CATEGORY_ORDER: readonly QualityCategory[] = [
+  'integrity',
+  'legibility',
+  'hierarchy',
+  'composition',
+  'consistency',
+  'information-design',
+  'brand',
+  'accessibility',
+];
+
+function guideRule(rule: QualityRule): GuideRule {
+  return {
+    id: rule.id,
+    code: rule.code,
+    description: rule.description,
+    category: rule.category,
+    defaultSeverity: rule.defaultSeverity,
+    certainty: rule.defaultCertainty,
+    enabledByDefault: rule.defaultEnabled ?? true,
+    ...(rule.defaultParameters &&
+      Object.keys(rule.defaultParameters).length > 0 && {
+        parameters: rule.defaultParameters,
+      }),
+  };
+}
+
+function guideProfile(
+  profile: QualityProfile,
+  defaultId: string | undefined
+): GuideProfile {
+  return {
+    id: profile.id,
+    description: profile.description ?? '',
+    default: profile.id === defaultId,
+    rules: profile.rules ?? {},
+  };
+}
+
+function guideBlueprint(blueprint: Blueprint): GuideBlueprint {
+  return {
+    id: blueprint.id,
+    title: blueprint.title,
+    description: blueprint.description ?? '',
+    whenToUse: blueprint.whenToUse ?? '',
+    theme: blueprint.theme,
+    profile: blueprint.profile,
+  };
+}
+
+const FORMAT_LABEL: Record<FormatName, string> = {
+  docx: 'Word reports',
+  pptx: 'PowerPoint decks',
+};
+
+function describeParameters(
+  parameters: Readonly<Record<string, unknown>> | undefined
+): string {
+  if (!parameters) return '';
+  const parts = Object.entries(parameters).map(
+    ([name, value]) =>
+      `${name}: ${Array.isArray(value) ? value.join(', ') || 'none' : String(value)}`
+  );
+  return parts.length ? ` (${parts.join('; ')})` : '';
+}
+
+function renderTheme(theme: ThemeDescription): string {
+  const lines = [
+    `- \`${theme.name}\` — ${theme.displayName}. ${theme.description}.`,
+    `  Use it for: ${theme.whenToUse}`,
+    `  Type: ${theme.fonts.heading} headings, ${theme.fonts.body} body.`,
+  ];
+  if (theme.typography) {
+    const roles = Object.entries(theme.typography.roles)
+      .map(([role, size]) => `${role} ${size}pt`)
+      .join(', ');
+    lines.push(`  Extended: type roles ${roles}.`);
+    if (theme.chrome?.length)
+      lines.push(`  Chrome recipes: ${theme.chrome.join(', ')}.`);
+    if (theme.motif) lines.push(`  Motif: ${theme.motif}.`);
+  } else {
+    lines.push(
+      '  Plain theme: palette, fonts and styles only; no type roles, chrome recipes or motif.'
+    );
+  }
+  return lines.join('\n');
+}
+
+function renderProfile(profile: GuideProfile): string {
+  const configured = Object.entries(profile.rules).map(([id, config]) => {
+    const state = [
+      config.enabled === true ? 'on' : config.enabled === false ? 'off' : '',
+      config.severity ?? '',
+    ]
+      .filter(Boolean)
+      .join(', ');
+    return `${id}${state ? ` ${state}` : ''}${describeParameters(config.parameters)}`;
+  });
+  return [
+    `- \`${profile.id}\`${profile.default ? ' (default)' : ''} — ${profile.description}`,
+    configured.length
+      ? `  Configures: ${configured.join('; ')}.`
+      : '  Keeps every rule at its default.',
+  ].join('\n');
+}
+
+function renderRules(rules: GuideRule[]): string {
+  return CATEGORY_ORDER.filter((category) =>
+    rules.some((rule) => rule.category === category)
+  )
+    .map((category) => {
+      const entries = rules
+        .filter((rule) => rule.category === category)
+        .map(
+          (rule) =>
+            `- \`${rule.code}\` (${rule.id}; ${rule.defaultSeverity}, ${rule.certainty}${
+              rule.enabledByDefault ? '' : '; off until a profile enables it'
+            }${describeParameters(rule.parameters)}) — ${rule.description}`
+        );
+      return [`### ${category}`, ...entries].join('\n');
+    })
+    .join('\n\n');
+}
+
+export function renderDesignGuide(
+  guide: Omit<DesignGuide, 'markdown'>
+): string {
+  const sections = [
+    `# Design guide — ${FORMAT_LABEL[guide.format]}`,
+    '',
+    `Generated from ${guide.generatedFrom.join(', ')}. What is written here is what \`jto_validate\` enforces and what the cores resolve; nothing is stated apart from that data.`,
+    '',
+    '## Themes paint, profiles require',
+    '',
+    'A theme is a visual system: its palette, type roles, spacing, chrome recipes and motif decide how every component looks, and a block or a chrome slot takes its look from the theme without being asked. A profile is the bar a document is judged by: which chrome must be present, which slots must be filled, how strictly sizes must keep to the theme’s scale. Selecting a theme never adds a requirement; selecting a profile never changes a colour. Pick the theme for the look, and the profile — or a blueprint, which names one — for the archetype.',
+    '',
+    '## Themes',
+    '',
+    guide.themes.map(renderTheme).join('\n'),
+    '',
+    '## Profiles',
+    '',
+    guide.profiles.map(renderProfile).join('\n'),
+    '',
+    '## Rules',
+    '',
+    'Every finding is path-addressed and names what it expected; `evidence.values.source` says whether the theme or the profile asked for it. Apply the RFC 6902 fix when a finding carries one.',
+    '',
+    renderRules(guide.rules),
+  ];
+  if (guide.blocks.length) {
+    sections.push(
+      '',
+      '## Blocks',
+      '',
+      'Reusable compositions defined in JSON. Copy a definition and its dependencies from `jto://blocks` into `props.blocks`, then invoke it by name; the theme styles every slot.',
+      '',
+      guide.blocks
+        .map(
+          (block) =>
+            `- \`${block.name}\` (${block.template}) — ${block.description} Slots: ${block.slots.join(', ') || 'none'}.`
+        )
+        .join('\n')
+    );
+  }
+  if (guide.blueprints.length) {
+    sections.push(
+      '',
+      '## Blueprints',
+      '',
+      'Archetypes as data; `jto_scaffold` turns one into a draft workspace with a fill map.',
+      '',
+      guide.blueprints
+        .map(
+          (blueprint) =>
+            `- \`${blueprint.id}\` — ${blueprint.title}. ${blueprint.description} Use it for: ${blueprint.whenToUse} Theme \`${blueprint.theme}\`, profile \`${blueprint.profile}\`.`
+        )
+        .join('\n')
+    );
+  }
+  sections.push(
+    '',
+    '## Workflow',
+    '',
+    'THEME with `jto_discover`; STRUCTURE with `jto_scaffold` or an explicit plan; FILL by fill-map pointer with `jto_workspace_patch`; CHECK with `jto_validate` after every edit and `jto_preview` when the question is visual; SHIP with `jto_generate`.',
+    ''
+  );
+  return sections.join('\n');
+}
+
+export async function designGuide(format: FormatName): Promise<DesignGuide> {
+  const core = await loadCore(format);
+  const rules = (core?.rules ?? []).map(guideRule);
+  const profiles = Object.values(core?.profiles ?? {})
+    .map((profile) => guideProfile(profile, core?.defaultProfileId))
+    .sort((a, b) => a.id.localeCompare(b.id));
+  const blocks = blockReferenceCatalog(format).map((block) => ({
+    name: block.name,
+    template: block.template,
+    description: block.description,
+    slots: Object.keys(
+      (block.slotsSchema as { properties?: Record<string, unknown> })
+        .properties ?? {}
+    ),
+  }));
+  const blueprints = Object.values(core?.blueprints ?? {})
+    .map(guideBlueprint)
+    .sort((a, b) => a.id.localeCompare(b.id));
+  const body = {
+    format,
+    generatedFrom: [
+      'the theme registry',
+      'the quality profiles',
+      'the rule pack',
+      'the block catalogue',
+      ...(blueprints.length ? ['the blueprints'] : []),
+    ],
+    themes: await themeDescriptions(format),
+    profiles,
+    rules,
+    blocks,
+    blueprints,
+  };
+  return { ...body, markdown: renderDesignGuide(body) };
+}

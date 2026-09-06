@@ -16,6 +16,11 @@
 import { createRequire } from 'module';
 import { pathToFileURL } from 'url';
 
+import type {
+  QualityProfile,
+  QualityRule,
+  QualityRulePack,
+} from '@json-to-office/quality';
 import type { Blueprint, BlueprintFillEntry } from '@json-to-office/shared';
 
 import type { FormatName } from './adapters.js';
@@ -28,14 +33,29 @@ const CORE_SPECIFIERS: Record<FormatName, string> = {
 /** What each core is asked for, by the name it exports it under. */
 const CORE_EXPORTS: Record<
   FormatName,
-  { themes: string; blueprints?: string; instantiate?: string }
+  {
+    themes: string;
+    profiles: string;
+    defaultProfile: string;
+    rules: string;
+    blueprints?: string;
+    instantiate?: string;
+  }
 > = {
   docx: {
     themes: 'themes',
+    profiles: 'DOCX_QUALITY_PROFILES',
+    defaultProfile: 'DOCX_DEFAULT_QUALITY_PROFILE',
+    rules: 'DOCX_QUALITY_RULES',
     blueprints: 'DOCX_BLUEPRINTS',
     instantiate: 'instantiateDocxBlueprint',
   },
-  pptx: { themes: 'pptxThemes' },
+  pptx: {
+    themes: 'pptxThemes',
+    profiles: 'PPTX_QUALITY_PROFILES',
+    defaultProfile: 'PPTX_DEFAULT_QUALITY_PROFILE',
+    rules: 'PPTX_QUALITY_RULES',
+  },
 };
 
 export interface InstantiateOptions {
@@ -53,6 +73,14 @@ export interface Instantiated {
 export interface LoadedCore {
   /** Built-in theme names, sorted. */
   themeNames: string[];
+  /** Built-in themes by name, as the core resolves them. */
+  themes: Readonly<Record<string, Record<string, unknown>>>;
+  /** Shipped quality profiles by id. */
+  profiles: Readonly<Record<string, QualityProfile>>;
+  /** The profile `jto_validate` judges by when neither caller nor document names one. */
+  defaultProfileId?: string;
+  /** The format's rule pack, in evaluation order. */
+  rules: readonly QualityRule[];
   /** Bundled blueprints by id; empty for a core that ships none. */
   blueprints: Readonly<Record<string, Blueprint>>;
   /** Instantiate a blueprint; absent for a core that ships none. */
@@ -91,7 +119,19 @@ async function load(format: FormatName): Promise<LoadedCore | undefined> {
       pathToFileURL(resolver.resolve(CORE_SPECIFIERS[format])).href
     )) as Record<string, unknown>;
     const names = CORE_EXPORTS[format];
-    const themes = (core[names.themes] ?? {}) as Record<string, unknown>;
+    const themes = (core[names.themes] ?? {}) as Record<
+      string,
+      Record<string, unknown>
+    >;
+    const profiles = (core[names.profiles] ?? {}) as Record<
+      string,
+      QualityProfile
+    >;
+    const rules =
+      (core[names.rules] as QualityRulePack | undefined)?.rules ?? [];
+    const defaultProfileId = (
+      core[names.defaultProfile] as QualityProfile | undefined
+    )?.id;
     const blueprints = (
       names.blueprints ? core[names.blueprints] ?? {} : {}
     ) as Record<string, Blueprint>;
@@ -100,6 +140,10 @@ async function load(format: FormatName): Promise<LoadedCore | undefined> {
       : undefined;
     return {
       themeNames: Object.keys(themes).sort(),
+      themes,
+      profiles,
+      ...(defaultProfileId !== undefined && { defaultProfileId }),
+      rules,
       blueprints,
       ...(instantiate && { instantiate }),
     };

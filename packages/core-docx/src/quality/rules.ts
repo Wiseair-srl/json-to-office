@@ -55,6 +55,8 @@ export const docxTableWidthRule: QualityRule<
   DocxQualityFact
 > = {
   id: 'docx/table-width',
+  description:
+    'Explicit column widths that sum past the usable width of their section.',
   code: QUALITY_CODES.TABLE_WIDTH_OVERFLOW,
   category: 'integrity',
   defaultSeverity: 'warning',
@@ -120,6 +122,7 @@ export const docxHeadingHierarchyRule: QualityRule<
   DocxQualityFact
 > = {
   id: 'docx/heading-hierarchy',
+  description: 'A heading that skips a level and breaks the outline.',
   code: QUALITY_CODES.HEADING_SKIP,
   category: 'hierarchy',
   defaultSeverity: 'info',
@@ -180,6 +183,8 @@ function frameTextFacts(
 
 export const docxTextFitRule: QualityRule<DocxQualityModel, DocxQualityFact> = {
   id: 'docx/text-fit',
+  description:
+    'A word too wide for its floating frame, or a frame whose wrapped text runs off the sheet.',
   code: QUALITY_CODES.TEXT_OVERFLOW,
   category: 'integrity',
   defaultSeverity: 'warning',
@@ -302,6 +307,8 @@ export const docxFrameCollisionRule: QualityRule<
   DocxQualityFact
 > = {
   id: 'docx/frame-collision',
+  description:
+    'Two page-anchored frames whose estimated text lands on the same region of a page.',
   code: QUALITY_CODES.FRAME_COLLISION,
   category: 'integrity',
   defaultSeverity: 'warning',
@@ -431,6 +438,8 @@ export const docxSvgTextBoundsRule: QualityRule<
   DocxQualityFact
 > = {
   id: 'docx/svg-text-bounds',
+  description:
+    'A text baseline outside an inline SVG’s viewBox, so the words are never painted.',
   code: QUALITY_CODES.SVG_TEXT_CLIPPED,
   category: 'integrity',
   defaultSeverity: 'warning',
@@ -489,6 +498,8 @@ function tenths(value: number): number {
 
 export const docxLineBoxRule: QualityRule<DocxQualityModel, DocxQualityFact> = {
   id: 'docx/line-box',
+  description:
+    'An `exactly` line box shorter than the capitals it has to hold.',
   code: QUALITY_CODES.LINE_BOX_COLLAPSE,
   category: 'legibility',
   defaultSeverity: 'warning',
@@ -563,6 +574,7 @@ export const docxPlaceholderRule: QualityRule<
   DocxQualityFact
 > = {
   id: 'docx/placeholder-text',
+  description: 'An unfilled scaffold slot, or leftover filler copy.',
   code: QUALITY_CODES.PLACEHOLDER_TEXT,
   category: 'integrity',
   defaultSeverity: 'warning',
@@ -593,6 +605,8 @@ export const docxSlotBudgetRule: QualityRule<
   DocxQualityFact
 > = {
   id: 'docx/slot-budget',
+  description:
+    'A block slot holding more words than its budget allows — a takeaway past the word count the block sets.',
   code: QUALITY_CODES.SLOT_BUDGET,
   category: 'composition',
   defaultSeverity: 'warning',
@@ -627,6 +641,7 @@ const DEFAULT_MAX_FONT_FAMILIES = 3;
 export const docxFontCountRule: QualityRule<DocxQualityModel, DocxQualityFact> =
   {
     id: 'docx/font-count',
+    description: 'Distinct font families the document can paint.',
     code: QUALITY_CODES.FONT_COUNT,
     category: 'brand',
     defaultSeverity: 'warning',
@@ -665,6 +680,7 @@ export const docxFontCountRule: QualityRule<DocxQualityModel, DocxQualityFact> =
 /** A literal colour the resolved theme does not define. */
 export const docxPaletteRule: QualityRule<DocxQualityModel, DocxQualityFact> = {
   id: 'docx/palette-adherence',
+  description: 'A literal colour the resolved theme does not define.',
   code: QUALITY_CODES.OFF_PALETTE,
   category: 'brand',
   defaultSeverity: 'info',
@@ -702,6 +718,8 @@ const DEFAULT_MAX_TABLE_ROWS_PER_PAGE = 25;
 /** Information design for charts: the comparison, the palette and the caption. */
 export const docxChartRule: QualityRule<DocxQualityModel, DocxQualityFact> = {
   id: 'docx/chart-design',
+  description:
+    'What a chart claims about its numbers: the comparison, the palette, the unit and the caption.',
   code: QUALITY_CODES.CHART_OVERLOADED,
   category: 'information-design',
   defaultSeverity: 'warning',
@@ -760,6 +778,8 @@ export const docxTableDesignRule: QualityRule<
   DocxQualityFact
 > = {
   id: 'docx/table-design',
+  description:
+    'How a table lays its numbers out: alignment, rounding, rules and length.',
   code: QUALITY_CODES.TABLE_NUMERIC_ALIGN,
   category: 'information-design',
   defaultSeverity: 'warning',
@@ -849,6 +869,8 @@ export const docxRequiredChromeRule: QualityRule<
   DocxQualityFact
 > = {
   id: 'docx/required-chrome',
+  description:
+    'A block slot with a role the profile requires — a takeaway, a source — left empty. Off unless a profile names roles.',
   code: QUALITY_CODES.CHROME_MISSING,
   category: 'consistency',
   defaultSeverity: 'warning',
@@ -888,6 +910,8 @@ export const docxRunningHeadRule: QualityRule<
   DocxQualityFact
 > = {
   id: 'docx/running-head',
+  description:
+    'A body section without the running head the profile expects. Off unless a profile names parts.',
   code: QUALITY_CODES.CHROME_MISSING,
   category: 'consistency',
   defaultSeverity: 'warning',
@@ -975,6 +999,8 @@ function nearestSize(
 export const docxTypeScaleRule: QualityRule<DocxQualityModel, DocxQualityFact> =
   {
     id: 'docx/type-scale',
+    description:
+      'An authored size the theme never paints: not a style, not a font role, not a step of its scale. Off unless a profile enables it.',
     code: QUALITY_CODES.TYPE_OFF_SCALE,
     category: 'consistency',
     defaultSeverity: 'warning',
@@ -1024,6 +1050,8 @@ export const docxTypeScaleRule: QualityRule<DocxQualityModel, DocxQualityFact> =
 export const docxSizeCountRule: QualityRule<DocxQualityModel, DocxQualityFact> =
   {
     id: 'docx/size-count',
+    description:
+      'More distinct text sizes on the page than the profile allows, blocks included. Off unless a profile enables it.',
     code: QUALITY_CODES.TYPE_SIZE_COUNT,
     category: 'consistency',
     defaultSeverity: 'warning',
@@ -1074,6 +1102,8 @@ export const docxSizeCountRule: QualityRule<DocxQualityModel, DocxQualityFact> =
 export const docxRoleDriftRule: QualityRule<DocxQualityModel, DocxQualityFact> =
   {
     id: 'docx/role-drift',
+    description:
+      'One heading level or paragraph style painted at two sizes; the theme size is the fix. Off unless a profile enables it.',
     code: QUALITY_CODES.TYPE_ROLE_DRIFT,
     category: 'consistency',
     defaultSeverity: 'warning',

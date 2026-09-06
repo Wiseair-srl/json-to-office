@@ -49,18 +49,24 @@ describe.each(FORMATS)('%s rule mirror', (format) => {
     );
   });
 
-  it('agrees on category and default severity', () => {
+  it('agrees on category, default severity and the sentence that describes the rule', () => {
+    // The pack's description is what the design guide prints (#333); the
+    // mirror repeats it for the policy editor, so the two must read the same.
     const fromPack = packed(format).map((rule) => ({
       id: rule.id,
       category: rule.category,
       defaultSeverity: rule.defaultSeverity,
+      description: rule.description,
     }));
     expect(
-      mirrored(format).map(({ id, category, defaultSeverity }) => ({
-        id,
-        category,
-        defaultSeverity,
-      }))
+      mirrored(format).map(
+        ({ id, category, defaultSeverity, description }) => ({
+          id,
+          category,
+          defaultSeverity,
+          description,
+        })
+      )
     ).toEqual(fromPack);
   });
 

@@ -31,6 +31,7 @@ const prepared: PreparedDocument<{}, TestFact> = {
 
 const minimumRule: QualityRule<{}, TestFact> = {
   id: 'test/minimum',
+  description: 'A test rule.',
   code: 'W_TEST_MINIMUM',
   category: 'legibility',
   defaultSeverity: 'warning',
@@ -89,6 +90,7 @@ describe('QualityEngine', () => {
     const inlineRule: QualityRule<{}, TestFact> = {
       ...minimumRule,
       id: 'test/inline',
+      description: 'A test rule.',
       code: 'W_TEST_INLINE',
       defaultSeverity: 'info',
       evaluate: ({ facts }) =>
@@ -244,6 +246,7 @@ describe('QualityEngine', () => {
     const infoRule: QualityRule<{}, TestFact> = {
       ...minimumRule,
       id: 'test/info',
+      description: 'A test rule.',
       code: 'W_TEST_INFO',
       defaultSeverity: 'info',
     };
@@ -267,6 +270,7 @@ describe('QualityEngine', () => {
     const infoRule: QualityRule<{}, TestFact> = {
       ...minimumRule,
       id: 'test/info',
+      description: 'A test rule.',
       code: 'W_TEST_INFO',
       defaultSeverity: 'info',
     };
@@ -304,6 +308,7 @@ describe('QualityEngine', () => {
     const brokenRule: QualityRule<{}, TestFact> = {
       ...minimumRule,
       id: 'test/broken',
+      description: 'A test rule.',
       evaluate: () => {
         throw new Error('broken');
       },
@@ -331,6 +336,7 @@ describe('QualityEngine', () => {
     const asynchronous: QualityRule<{}, TestFact> = {
       ...minimumRule,
       id: 'test/asynchronous',
+      description: 'A test rule.',
       evaluate: async () => [],
     };
 

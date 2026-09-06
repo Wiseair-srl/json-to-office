@@ -242,6 +242,13 @@ The gallery templates are demonstration documents whose copy is lorem ipsum,
 so they carry this finding by design; the calibration suite records the count
 per template rather than suppressing the rule.
 
+Every rule carries a one-sentence `description`, and the MCP server renders
+the whole pack — with each rule's code, category, default severity, certainty,
+parameters and whether a profile has to switch it on — into
+`jto://guide/design/<format>` beside the themes, profiles, blocks and
+blueprints, so the guidance an agent reads is generated from the data the
+rules run on.
+
 ## Built-in DOCX rules
 
 | Rule                     | Code                                                                                                                                                                        | Default                                                    | Certainty     | What it checks                                                                                      |

@@ -48,14 +48,14 @@ export const SERVER_INSTRUCTIONS = `Author Microsoft Word (.docx) and PowerPoint
 The JSON is authoritative. A generated file is a build product of the document JSON plus a renderer, a theme, fonts, assets and options — edit the JSON and regenerate; never treat the binary as the source.
 
 Design workflow — theme, structure, fill, check, ship:
-1. THEME. Pick one with jto_discover and set it on the document root. A document that names no theme inherits defaults nobody chose, and that is what generic output looks like.
+1. THEME. Pick one with jto_discover — each entry says what it looks like and when to use it — and set it on the document root. A document that names no theme inherits defaults nobody chose, and that is what generic output looks like.
 2. STRUCTURE. Choose the archetype before the content. For a report, jto_scaffold is the first move: name a blueprint from jto_discover, the theme and the facts of the brief, and it opens a draft workspace with every section and block in place and a fill map of the slots still owed. Where no blueprint fits, decide the sections or slides explicitly rather than growing the document node by node.
 3. FILL. Write content into that structure — by fill-map pointer with jto_workspace_patch when you scaffolded. Prefer named styles and theme colour tokens over raw sizes and hex, so a theme swap restyles the whole document instead of half of it. Every component's design note in jto_discover says what good use of it looks like.
 4. CHECK. jto_validate after each edit, then jto_preview when the question is visual. jto_preview with contactSheet: true tiles every page into one image — the way to see whether the deck holds together.
 5. SHIP. jto_generate. It refuses a document that still carries an unfilled {{…}} scaffold slot; jto_validate says generationReady when none remains.
 
 Working rules:
-- Discover before authoring. Call jto_info first, then jto_discover and jto_describe_component (or read the jto:// resources) for the components, renderer ids and design notes a format actually supports.
+- Discover before authoring. Call jto_info first, then jto_discover and jto_describe_component (or read the jto:// resources) for the components, renderer ids and design notes a format actually supports. Read jto://guide/design/<format> once per document: the themes, profiles, rules and blocks in one page, generated from the same data jto_validate enforces — a theme paints, a profile requires.
 - Make small edits. With a workspace handle, patch precisely (RFC 6902 over RFC 6901 paths) instead of resending the whole document; without one, change one region at a time.
 - Validate often. Run jto_validate after each edit rather than once at the end; diagnostics are path-addressed, so they map straight back onto the JSON you just changed.
 - Treat design findings as defects. Schema-valid is not well-designed. jto_validate lints layout, legibility and brand as W_QUALITY_* findings: undeclared slide canvas, text overflowing its box, overcrowded slides, table widths past their section, leftover placeholder text, unfilled scaffold slots, opaque boxes covering each other, more than three font families, colours off the theme palette. They rarely block generation, but they almost always show in the rendered result — repair them like errors, and apply the RFC 6902 fix when a finding carries one.
