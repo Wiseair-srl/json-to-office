@@ -149,6 +149,7 @@ export function restructureNameDiscriminatedUnions(schema: unknown): void {
       obj.required = ['name'];
       obj.properties = {
         name: {
+          description: 'Component or registered plugin to render.',
           anyOf: [...groups.entries()].map(([name, group]) =>
             nameEntry(name, group)
           ),

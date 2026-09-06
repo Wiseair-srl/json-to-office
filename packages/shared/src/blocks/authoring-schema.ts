@@ -6,11 +6,23 @@ const object = (properties: Schema, required: string[]): Schema => ({
   required,
   additionalProperties: false,
 });
-const pointer = {
+const pointer = (description: string): Schema => ({
   type: 'string',
   pattern: '^(|/.*)$',
-  description: 'JSON Pointer, e.g. /title.',
-};
+  description,
+});
+const condition = pointer(
+  'Test a slot by JSON Pointer, e.g. /subtitle. Missing, null, false, empty text and empty arrays select else; zero selects then.'
+);
+const each = pointer(
+  'Repeat template for each entry in an array slot, e.g. /items. Read the current entry with $item.'
+);
+const thenDescription =
+  'Value or components to emit when the slot tested by $if is present.';
+const elseDescription =
+  'Value or components to emit otherwise. Omit to produce no output.';
+const templateDescription =
+  'One template evaluated per array entry. Use $item for the current entry and a group for multiple components.';
 
 /**
  * Derive an authoring view from the format/renderer/plugin component schemas.
@@ -29,24 +41,76 @@ export function createBlockAuthoringSchema(
   const valueBindingName = `${prefix}_Binding`;
   if (definitions[bodyName]) return ref(bodyName);
 
-  const basicBindings: Schema[] = ['$slot', '$item', '$theme', '$context'].map(
-    (key) => object({ [key]: pointer, default: {} }, [key])
-  );
-  const scalarBindings = [
-    object({ $count: pointer }, ['$count']),
+  const basicBindings: Schema[] = Object.entries({
+    $slot:
+      'Read a named input slot by JSON Pointer, e.g. /title or /client/name.',
+    $item:
+      'Read the current $each entry by JSON Pointer. Use an empty string for the whole entry or /title for a property.',
+    $theme:
+      'Read the active theme by JSON Pointer, e.g. /colors/primary. A missing value requires a default.',
+    $context:
+      'Read document or section context by JSON Pointer, e.g. /document/title or /section/tracker.',
+  }).map(([key, description]) =>
     object(
       {
-        $join: { type: 'array', items: {} },
-        separator: { type: 'string' },
-        keepEmpty: { type: 'boolean' },
+        [key]: pointer(description),
+        default: {
+          description:
+            'Fallback value or binding used only when the referenced value is missing. Null, false and empty values do not trigger it.',
+        },
+      },
+      [key]
+    )
+  );
+  const scalarBindings = [
+    object(
+      {
+        $count: pointer(
+          'Return the number of entries in an array slot, e.g. /items.'
+        ),
+      },
+      ['$count']
+    ),
+    object(
+      {
+        $join: {
+          type: 'array',
+          items: {},
+          description:
+            'Evaluate these values or bindings and join them as text. Empty values are skipped unless keepEmpty is true.',
+        },
+        separator: {
+          type: 'string',
+          description:
+            'Text inserted between joined values. Defaults to an empty string.',
+        },
+        keepEmpty: {
+          type: 'boolean',
+          description:
+            'Keep missing, null, false, empty text and empty arrays in the join. Defaults to false.',
+        },
       },
       ['$join']
     ),
     object(
       {
-        $measure: { enum: ['width', 'height'] },
-        fraction: { type: 'number', minimum: 0, maximum: 1 },
-        unit: { enum: ['pt', 'twip', 'in'] },
+        $measure: {
+          enum: ['width', 'height'],
+          description:
+            'Measure the usable page width or height after margins, using the containing section’s page settings.',
+        },
+        fraction: {
+          type: 'number',
+          minimum: 0,
+          maximum: 1,
+          description:
+            'Fraction of the measured dimension, from 0 to 1. Defaults to 1.',
+        },
+        unit: {
+          enum: ['pt', 'twip', 'in'],
+          description:
+            'Measurement unit: points, twentieths of a point, or inches. Defaults to pt.',
+        },
       },
       ['$measure']
     ),
@@ -55,8 +119,18 @@ export function createBlockAuthoringSchema(
     anyOf: [
       ...basicBindings,
       ...scalarBindings,
-      object({ $if: pointer, then: {}, else: {} }, ['$if', 'then']),
-      object({ $each: pointer, template: {} }, ['$each', 'template']),
+      object(
+        {
+          $if: condition,
+          then: { description: thenDescription },
+          else: { description: elseDescription },
+        },
+        ['$if', 'then']
+      ),
+      object({ $each: each, template: { description: templateDescription } }, [
+        '$each',
+        'template',
+      ]),
     ],
   };
   // Install placeholders before following recursive component references.
@@ -64,7 +138,13 @@ export function createBlockAuthoringSchema(
   const mapped = new Map<string, string>([[componentDefinition, bodyName]]);
   const withBindings = (literal: Schema): Schema =>
     Object.keys(literal).length
-      ? { anyOf: [literal, ref(valueBindingName)] }
+      ? {
+          ...(literal.description && { description: literal.description }),
+          ...(literal.markdownDescription && {
+            markdownDescription: literal.markdownDescription,
+          }),
+          anyOf: [literal, ref(valueBindingName)],
+        }
       : literal;
 
   const transform = (schema: Schema, bind = true): Schema => {
@@ -80,7 +160,7 @@ export function createBlockAuthoringSchema(
         definitions[name] = {};
         definitions[name] = transform(definitions[original], false);
       }
-      const result = ref(name);
+      const result = { ...schema, ...ref(name) };
       return bind ? withBindings(result) : result;
     }
     const result: Schema = { ...schema };
@@ -91,7 +171,14 @@ export function createBlockAuthoringSchema(
             key,
             // Literal component discriminators retain the canonical editor dispatch.
             ['name', 'version'].includes(key) && typeof value.const === 'string'
-              ? value
+              ? {
+                  ...value,
+                  description:
+                    value.description ??
+                    (key === 'name'
+                      ? 'Component or registered plugin to render in this block.'
+                      : 'Version of the registered plugin to use.'),
+                }
               : transform(value),
           ]
         )
@@ -138,14 +225,21 @@ export function createBlockAuthoringSchema(
     anyOf: [
       ref(componentName),
       ...basicBindings,
-      object({ $if: pointer, then: oneOrMany, else: oneOrMany }, [
-        '$if',
-        'then',
-      ]),
-      object({ $each: pointer, template: ref(bodyName) }, [
-        '$each',
-        'template',
-      ]),
+      object(
+        {
+          $if: condition,
+          then: { ...oneOrMany, description: thenDescription },
+          else: { ...oneOrMany, description: elseDescription },
+        },
+        ['$if', 'then']
+      ),
+      object(
+        {
+          $each: each,
+          template: { ...ref(bodyName), description: templateDescription },
+        },
+        ['$each', 'template']
+      ),
     ],
   };
   return ref(bodyName);
