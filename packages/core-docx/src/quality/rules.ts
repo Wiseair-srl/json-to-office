@@ -13,6 +13,7 @@ import {
   type JsonPatchOperation,
   type QualityProfile,
   type QualityRule,
+  type QualityRuleFinding,
   type QualityRulePack,
 } from '@json-to-office/quality';
 import type {
@@ -32,6 +33,7 @@ import type {
   DocxTableColumnFact,
   DocxTableFact,
   DocxTableWidthFact,
+  DocxTextSizeFact,
   DocxThemeFact,
 } from './facts';
 import { estimateTextWidthPt, estimateWrappedLines } from './text-metrics';
@@ -928,6 +930,201 @@ export const docxRunningHeadRule: QualityRule<
   },
 };
 
+/** Quarter of a point: the resolution the schema and Word both keep. */
+const SIZE_TOLERANCE_PT = 0.25;
+
+function themeFact(
+  facts: readonly DocxQualityFact[]
+): DocxThemeFact | undefined {
+  return facts.find(
+    (fact): fact is DocxThemeFact => fact.kind === 'docx/theme'
+  );
+}
+
+function textSizeFacts(
+  facts: readonly DocxQualityFact[]
+): readonly DocxTextSizeFact[] {
+  return facts.filter(
+    (fact): fact is DocxTextSizeFact => fact.kind === 'docx/text-size'
+  );
+}
+
+function nearestSize(
+  size: number,
+  scale: readonly number[]
+): number | undefined {
+  let best: number | undefined;
+  for (const candidate of scale) {
+    if (
+      best === undefined ||
+      Math.abs(candidate - size) < Math.abs(best - size)
+    )
+      best = candidate;
+  }
+  return best;
+}
+
+/**
+ * An authored size the theme never paints. The theme owns the list — its
+ * styles, its font roles, every step of its scale — so a custom theme is
+ * judged by its own values, and a size a block compiled from its definition
+ * is never reported: the author has no pointer to patch there. Off until a
+ * profile turns it on: an editorial layout on any theme sets display sizes by
+ * hand, and only an archetype decides that a document must keep to the scale.
+ */
+export const docxTypeScaleRule: QualityRule<DocxQualityModel, DocxQualityFact> =
+  {
+    id: 'docx/type-scale',
+    code: QUALITY_CODES.TYPE_OFF_SCALE,
+    category: 'consistency',
+    defaultSeverity: 'warning',
+    defaultCertainty: 'deterministic',
+    formats: ['docx'],
+    defaultEnabled: false,
+    evaluate: ({ facts }) => {
+      const theme = themeFact(facts);
+      const scale = theme?.typeScalePt ?? [];
+      if (scale.length === 0) return [];
+      return textSizeFacts(facts)
+        .filter((fact) => fact.authored && !fact.generated)
+        .filter(
+          (fact) =>
+            !scale.some(
+              (size) => Math.abs(size - fact.fontSizePt) <= SIZE_TOLERANCE_PT
+            )
+        )
+        .map((fact) => {
+          const nearest = nearestSize(fact.fontSizePt, scale)!;
+          const sizePath = `${fact.path}/props/font/size`;
+          return {
+            path: sizePath,
+            message:
+              `${fact.fontSizePt}pt is not a size the ${theme!.themeName} theme paints; ` +
+              `the nearest on its scale is ${nearest}pt.`,
+            suggestion: `Use ${nearest}pt, or drop the size and let the "${fact.role}" style set it.`,
+            context: { role: fact.role, scale },
+            evidence: {
+              actual: fact.fontSizePt,
+              expected: nearest,
+              unit: 'pt',
+              values: { source: 'theme' },
+            },
+            fixes: [{ op: 'replace' as const, path: sizePath, value: nearest }],
+          };
+        });
+    },
+  };
+
+/**
+ * How many distinct sizes a document paints, blocks included: the count of
+ * what reaches the page rather than of what the author typed. Off until a
+ * profile turns it on and sets `maximumSizes`: a theme sets no ceiling of
+ * its own, the ceiling is an archetype convention.
+ */
+export const docxSizeCountRule: QualityRule<DocxQualityModel, DocxQualityFact> =
+  {
+    id: 'docx/size-count',
+    code: QUALITY_CODES.TYPE_SIZE_COUNT,
+    category: 'consistency',
+    defaultSeverity: 'warning',
+    defaultCertainty: 'deterministic',
+    formats: ['docx'],
+    defaultEnabled: false,
+    defaultParameters: { maximumSizes: 8 },
+    evaluate: ({ facts, configuration, profile }) => {
+      const maximum = numberParameter(
+        configuration.parameters,
+        'maximumSizes',
+        8
+      );
+      const firstPathBySize = new Map<number, string>();
+      for (const fact of textSizeFacts(facts)) {
+        const size = Math.round(fact.fontSizePt * 4) / 4;
+        if (!firstPathBySize.has(size)) firstPathBySize.set(size, fact.path);
+      }
+      if (firstPathBySize.size <= maximum) return [];
+      const sizes = [...firstPathBySize.keys()].sort((a, b) => a - b);
+      return [
+        {
+          path: themeFact(facts)?.path ?? '/props',
+          relatedPaths: sizes.map((size) => firstPathBySize.get(size)!),
+          message:
+            `The document paints ${sizes.length} distinct text sizes ` +
+            `(${sizes.join(', ')}pt); the ${profile?.id ?? 'selected'} profile allows ${maximum}.`,
+          suggestion:
+            'Keep to the theme styles — title, headings, body, label, source — and drop the ad-hoc sizes.',
+          context: { sizes, maximum },
+          evidence: {
+            actual: sizes.length,
+            expected: maximum,
+            values: { source: 'profile' },
+          },
+        },
+      ];
+    },
+  };
+
+/**
+ * One role at two sizes: a heading level or a paragraph style that is painted
+ * at more than one size across the document. The theme's size for the role
+ * is the expected value, and every authored departure from it is reported and
+ * repaired to it. A role that is consistently overridden is not drift. Off
+ * until a profile turns it on, for the same reason as `docx/type-scale`.
+ */
+export const docxRoleDriftRule: QualityRule<DocxQualityModel, DocxQualityFact> =
+  {
+    id: 'docx/role-drift',
+    code: QUALITY_CODES.TYPE_ROLE_DRIFT,
+    category: 'consistency',
+    defaultSeverity: 'warning',
+    defaultCertainty: 'deterministic',
+    formats: ['docx'],
+    defaultEnabled: false,
+    evaluate: ({ facts }) => {
+      const theme = themeFact(facts);
+      const byRole = new Map<string, DocxTextSizeFact[]>();
+      for (const fact of textSizeFacts(facts)) {
+        byRole.set(fact.role, [...(byRole.get(fact.role) ?? []), fact]);
+      }
+      const findings: QualityRuleFinding[] = [];
+      for (const [role, members] of byRole) {
+        const sizes = new Set(members.map((fact) => fact.fontSizePt));
+        if (sizes.size < 2) continue;
+        const expected = theme?.roleSizesPt[role];
+        if (expected === undefined) continue;
+        const keeper = members.find((fact) => fact.fontSizePt === expected);
+        for (const fact of members) {
+          if (
+            !fact.authored ||
+            fact.generated ||
+            Math.abs(fact.fontSizePt - expected) <= SIZE_TOLERANCE_PT
+          )
+            continue;
+          const sizePath = `${fact.path}/props/font/size`;
+          findings.push({
+            path: sizePath,
+            ...(keeper && { relatedPaths: [keeper.path] }),
+            message:
+              `"${role}" is painted at ${fact.fontSizePt}pt here and at ` +
+              `${expected}pt elsewhere; one role, one size.`,
+            suggestion: `Drop the size so "${role}" paints at the theme's ${expected}pt.`,
+            context: { role, sizes: [...sizes].sort((a, b) => a - b) },
+            evidence: {
+              actual: fact.fontSizePt,
+              expected,
+              unit: 'pt',
+              values: { role, source: 'theme' },
+            },
+            fixes: [
+              { op: 'replace' as const, path: sizePath, value: expected },
+            ],
+          });
+        }
+      }
+      return findings;
+    },
+  };
+
 export const DOCX_QUALITY_RULES: QualityRulePack<
   DocxQualityModel,
   DocxQualityFact
@@ -948,6 +1145,9 @@ export const DOCX_QUALITY_RULES: QualityRulePack<
     docxPaletteRule,
     docxRequiredChromeRule,
     docxRunningHeadRule,
+    docxTypeScaleRule,
+    docxSizeCountRule,
+    docxRoleDriftRule,
   ],
 };
 
@@ -956,7 +1156,7 @@ export const DOCX_QUALITY_PROFILES = {
     id: 'client-report',
     formats: ['docx'],
     description:
-      'Client or public-administration report: a running head with page numbers on every section after the cover, a takeaway and a source wherever a block declares them, no heading skipped.',
+      'Client or public-administration report: a running head with page numbers on every section after the cover, a takeaway and a source wherever a block declares them, no heading skipped, and every size on the theme scale with at most eight in play.',
     rules: {
       'docx/required-chrome': {
         parameters: { required: ['takeaway', 'source'] },
@@ -968,6 +1168,9 @@ export const DOCX_QUALITY_PROFILES = {
         },
       },
       'docx/heading-hierarchy': { severity: 'warning' },
+      'docx/type-scale': { enabled: true },
+      'docx/size-count': { enabled: true, parameters: { maximumSizes: 8 } },
+      'docx/role-drift': { enabled: true },
     },
   },
   'executive-report': {

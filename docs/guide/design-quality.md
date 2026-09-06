@@ -258,6 +258,24 @@ per template rather than suppressing the rule.
 | `docx/table-design`      | `W_QUALITY_TABLE_NUMERIC_ALIGN`, `W_QUALITY_TABLE_MIXED_DECIMALS`, `W_QUALITY_TABLE_GRID`, `W_QUALITY_TABLE_ROW_COUNT`                                                      | warning, except the grid and the row count, which are info | deterministic | How a table lays its numbers out, and how long it runs                                              |
 | `docx/required-chrome`   | `W_QUALITY_CHROME_MISSING`                                                                                                                                                  | warning; off unless a profile names `required` roles       | deterministic | A block slot with a role the profile requires — a takeaway, a source — left empty                   |
 | `docx/running-head`      | `W_QUALITY_CHROME_MISSING`                                                                                                                                                  | warning; off unless a profile names `required` parts       | deterministic | A section from `fromSection` on without the header, footer or page-number field the profile expects |
+| `docx/type-scale`        | `W_QUALITY_TYPE_OFF_SCALE`                                                                                                                                                  | warning; off unless a profile enables it                   | deterministic | An authored size the theme never paints; the fix snaps it to the nearest size on the theme's scale  |
+| `docx/size-count`        | `W_QUALITY_TYPE_SIZE_COUNT`                                                                                                                                                 | warning; off unless a profile enables it                   | deterministic | More distinct text sizes than `maximumSizes` (8), blocks included                                   |
+| `docx/role-drift`        | `W_QUALITY_TYPE_ROLE_DRIFT`                                                                                                                                                 | warning; off unless a profile enables it                   | deterministic | A heading level or paragraph style painted at two sizes; the fix restores the theme's size          |
+
+The three consistency rules divide their evidence the way the whole system
+does: the theme supplies the values and the profile supplies the requirement.
+`docx/type-scale` reads every size the resolved theme paints — its named
+styles, its font roles, every step of its declared type scale — so a custom
+theme is judged by its own list and a block's compiled paragraphs, whose sizes
+bind to those styles, are never reported. `docx/size-count` counts what
+reaches the page, blocks included, against a ceiling only a profile sets.
+`docx/role-drift` groups paragraphs by the style they inherit — `heading2`,
+`normal`, a `themeStyle` — and reports an authored size that departs from the
+theme's size for that role while the role is painted at more than one size; a
+role overridden the same way everywhere is a choice, not drift. Each finding's
+`evidence.values.source` names `theme` or `profile`. All three are off on the
+default profile: an editorial layout sets display sizes by hand, and only an
+archetype decides that a document must keep to the scale.
 
 Frame text fit only inspects paragraphs pinned into a floating frame, where
 the author rather than the layout engine decides the available room; flowed
@@ -447,15 +465,15 @@ You can create a profile with any unique string `id`; it does not need to be
 registered with json-to-office. Save the object as JSON for the CLI, or pass the
 same object directly through the library, HTTP or MCP APIs.
 
-| Profile                  | Format | Difference from the format default                                                                                                                                                                                       |
-| ------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `technical-presentation` | PPTX   | Default PPTX profile                                                                                                                                                                                                     |
-| `executive-presentation` | PPTX   | 14pt minimum font; at most 70 body words per slide                                                                                                                                                                       |
-| `consulting-deck`        | PPTX   | Requires `takeaway` and `source` slots, bounds action titles at two lines, at most 90 body words                                                                                                                         |
-| `technical-report`       | DOCX   | Default DOCX profile                                                                                                                                                                                                     |
-| `client-report`          | DOCX   | Requires a running head with page numbers on every section after the first, `takeaway` and `source` slots wherever a block declares them, and promotes heading skips to warnings; the `client-report` blueprint names it |
-| `executive-report`       | DOCX   | Promotes heading skips from info to warning                                                                                                                                                                              |
-| `legal-appendix`         | DOCX   | Current integrity-focused DOCX defaults                                                                                                                                                                                  |
+| Profile                  | Format | Difference from the format default                                                                                                                                                                                                                                  |
+| ------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `technical-presentation` | PPTX   | Default PPTX profile                                                                                                                                                                                                                                                |
+| `executive-presentation` | PPTX   | 14pt minimum font; at most 70 body words per slide                                                                                                                                                                                                                  |
+| `consulting-deck`        | PPTX   | Requires `takeaway` and `source` slots, bounds action titles at two lines, at most 90 body words                                                                                                                                                                    |
+| `technical-report`       | DOCX   | Default DOCX profile                                                                                                                                                                                                                                                |
+| `client-report`          | DOCX   | Requires a running head with page numbers on every section after the first, `takeaway` and `source` slots wherever a block declares them, promotes heading skips to warnings, and enables the three theme-consistency rules; the `client-report` blueprint names it |
+| `executive-report`       | DOCX   | Promotes heading skips from info to warning                                                                                                                                                                                                                         |
+| `legal-appendix`         | DOCX   | Current integrity-focused DOCX defaults                                                                                                                                                                                                                             |
 
 ### Create a profile
 

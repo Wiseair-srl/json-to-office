@@ -32,6 +32,9 @@ export const QUALITY_CODES = {
   OFF_CANVAS: 'W_QUALITY_OFF_CANVAS',
   CHROME_MISSING: 'W_QUALITY_CHROME_MISSING',
   ACTION_TITLE_LENGTH: 'W_QUALITY_ACTION_TITLE_LENGTH',
+  TYPE_OFF_SCALE: 'W_QUALITY_TYPE_OFF_SCALE',
+  TYPE_SIZE_COUNT: 'W_QUALITY_TYPE_SIZE_COUNT',
+  TYPE_ROLE_DRIFT: 'W_QUALITY_TYPE_ROLE_DRIFT',
 } as const;
 
 export type BuiltInQualityCode =
@@ -208,6 +211,11 @@ export interface QualityRule<
   readonly defaultSeverity: DiagnosticSeverity;
   readonly defaultCertainty: QualityCertainty;
   readonly formats?: readonly string[];
+  /**
+   * Off until a profile or policy turns it on. For a rule whose expectation
+   * is an archetype convention rather than a defect on every document.
+   */
+  readonly defaultEnabled?: boolean;
   readonly defaultParameters?: Readonly<Record<string, unknown>>;
   evaluate(
     context: QualityRuleContext<TModel, TFact>

@@ -179,7 +179,11 @@ export function resolveRuleConfiguration(
   const policyRule = policy?.rules?.[rule.id];
 
   return {
-    enabled: policyRule?.enabled ?? profileRule?.enabled ?? true,
+    enabled:
+      policyRule?.enabled ??
+      profileRule?.enabled ??
+      rule.defaultEnabled ??
+      true,
     severity:
       policyRule?.severity ?? profileRule?.severity ?? rule.defaultSeverity,
     severityOverride: policyRule?.severity ?? profileRule?.severity,

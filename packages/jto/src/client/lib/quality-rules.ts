@@ -265,6 +265,41 @@ export const QUALITY_RULES: Record<FormatName, readonly QualityRuleInfo[]> = {
         },
       ],
     },
+    {
+      id: 'docx/type-scale',
+      label: 'Type scale',
+      category: 'consistency',
+      defaultSeverity: 'warning',
+      description:
+        'An authored size the theme never paints: not a style, not a font role, not a step of its scale. Off unless a profile enables it.',
+      parameters: [],
+    },
+    {
+      id: 'docx/size-count',
+      label: 'Size count',
+      category: 'consistency',
+      defaultSeverity: 'warning',
+      description:
+        'More distinct text sizes on the page than the profile allows, blocks included. Off unless a profile enables it.',
+      parameters: [
+        {
+          name: 'maximumSizes',
+          type: 'number',
+          default: 8,
+          description:
+            'Distinct sizes a document may paint; the client-report profile keeps the default.',
+        },
+      ],
+    },
+    {
+      id: 'docx/role-drift',
+      label: 'Role drift',
+      category: 'consistency',
+      defaultSeverity: 'warning',
+      description:
+        'One heading level or paragraph style painted at two sizes; the theme size is the fix. Off unless a profile enables it.',
+      parameters: [],
+    },
   ],
   pptx: [
     {
