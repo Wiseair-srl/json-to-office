@@ -1,12 +1,62 @@
 /**
+ * Compile a hyperlink, dropping unresolvable slide refs with a warning.
+ *
+ * An unresolved ref must never reach a renderer: it would emit a relationship
+ * to a slide part that is not in the archive, which PowerPoint reports as a
+ * damaged file.
+ */
+function compileHyperlink(
+  hyperlink: HyperlinkProps | undefined,
+  componentName: string,
+  ctx: CompileContext,
+  path: string
+): PptxIrHyperlink | undefined {
+  if (!hyperlink) return undefined;
+
+  if (hyperlink.url) {
+    ctx.features.require('external-links', path);
+    return {
+      kind: 'external',
+      url: hyperlink.url,
+      ...(hyperlink.tooltip ? { tooltip: hyperlink.tooltip } : {}),
+    };
+  }
+
+  if (hyperlink.unresolvedSlideRef != null) {
+    // HYPERLINK_SLIDE_UNRESOLVED lives outside the `W` registry (it is owned by
+    // utils/hyperlink.ts), so push it the same way `applyHyperlink` does.
+    ctx.warnings.push({
+      code: HYPERLINK_SLIDE_UNRESOLVED,
+      message:
+        `hyperlink.slide ${hyperlink.unresolvedSlideRef} matches no slide in the generated ` +
+        `presentation (slide disabled, or index out of range) — hyperlink dropped`,
+      component: componentName,
+    });
+    return undefined;
+  }
+
+  if (hyperlink.slide) {
+    ctx.features.require('internal-links', path);
+    return {
+      kind: 'slide',
+      slideIndex: hyperlink.slide,
+      ...(hyperlink.tooltip ? { tooltip: hyperlink.tooltip } : {}),
+    };
+  }
+
+  return undefined;
+}
+
+/**
  * Compile a processed presentation into PptxIR.
  *
  * The input is `ProcessedPresentation` — the authoring tree after schema
- * validation, custom-component expansion, theme resolution and component
- * defaults. What remains, and what this module does, is the last mile of
- * resolution: grid cells become EMU transforms, placeholder content is merged
- * with its declaration, theme colour tokens become hex, the font cascade is
- * flattened onto every run, and page-number placeholders are substituted.
+ * validation, block and custom-component expansion, theme resolution,
+ * component defaults, layout and fit. What remains, and what this module
+ * does, is the last mile of resolution: inches become EMU transforms, groups
+ * flatten into slide elements, theme colour tokens become hex, the font
+ * cascade is flattened onto every run, and page-number placeholders are
+ * substituted.
  *
  * No renderer is imported here, and none may be. The output is plain data.
  *
@@ -31,7 +81,6 @@ import type {
   ProcessedSlide,
   SlideContext,
   StyleName,
-  TemplateSlideDefinition,
 } from '../types';
 import { definedChartColorTokens, resolveColor } from '../utils/color';
 import { applyFontWeight } from '../utils/fontAliasContext';
@@ -40,9 +89,8 @@ import {
   HYPERLINK_SLIDE_UNRESOLVED,
   type HyperlinkProps,
 } from '../utils/hyperlink';
-import { mergeGridConfigs, resolveComponentGridPosition } from '../core/grid';
+import { resolveComponentGridPosition } from '../core/grid';
 import { W, warn } from '../utils/warn';
-import { resolvePlaceholderComponents } from '../core/placeholders';
 import type { PptxFeature } from './features';
 import {
   ResourceTable,
@@ -64,8 +112,6 @@ import {
   type PptxIrImageSizing,
   type PptxIrKnownGeometry,
   type PptxIrLine,
-  type PptxIrMaster,
-  type PptxIrPlaceholder,
   type PptxIrRunFormatting,
   type PptxIrChartGridLine,
   type PptxIrChartLabelFont,
@@ -154,13 +200,6 @@ export function compilePresentation(
     positionlessText: [],
   };
 
-  const masters = (processed.templates ?? []).map((template, index) =>
-    compileMaster(template, index, processed, ctx)
-  );
-  if (masters.length > 0) {
-    ctx.features.require('masters', 'masters');
-  }
-
   const slides = processed.slides.map((slide, index) =>
     compileSlide(slide, index, processed, ctx)
   );
@@ -180,7 +219,6 @@ export function compilePresentation(
     rtl: processed.rtlMode,
     ...(processed.language ? { language: processed.language } : {}),
     resources: ctx.resources.list(),
-    masters,
     slides,
   };
 
@@ -214,80 +252,6 @@ function resolvePalette(theme: PptxThemeConfig): Record<string, string> {
 }
 
 /* ------------------------------------------------------------------ *
- * Masters
- * ------------------------------------------------------------------ */
-
-function compileMaster(
-  template: TemplateSlideDefinition,
-  templateIndex: number,
-  processed: ProcessedPresentation,
-  ctx: CompileContext
-): PptxIrMaster {
-  const path = `masters[${templateIndex}]`;
-  const background = compileBackground(
-    template.background,
-    `${path}.background`,
-    ctx
-  );
-
-  // A template's fixed objects are drawn onto every slide that uses it, not
-  // into the master part — that is what the pipeline has always done, and it
-  // is what `compileSlide` records. Compiling them here as well would put the
-  // same content in the IR twice. The field stays on the master for a backend
-  // that supports genuine master-level decoration.
-  const elements: PptxIrElement[] = [];
-
-  const placeholders: PptxIrPlaceholder[] = (template.placeholders ?? []).map(
-    (placeholder) => {
-      const transform = optionalTransform(
-        placeholder.x,
-        placeholder.y,
-        placeholder.w,
-        placeholder.h,
-        ctx
-      );
-      return transform
-        ? { name: placeholder.name, transform }
-        : { name: placeholder.name };
-    }
-  );
-  if (placeholders.length > 0) {
-    ctx.features.require('placeholders', `${path}.placeholders`);
-  }
-
-  const master: PptxIrMaster = {
-    name: template.name,
-    ...(background ? { background } : {}),
-    ...(template.margin !== undefined ? { margin: template.margin } : {}),
-    elements,
-    placeholders,
-  };
-
-  if (template.slideNumber) {
-    const sn = template.slideNumber;
-    master.slideNumber = {
-      transform: {
-        xEmu: inchesToEmu(sn.x),
-        yEmu: inchesToEmu(sn.y),
-        widthEmu: inchesToEmu(sn.w ?? 1),
-        heightEmu: inchesToEmu(sn.h ?? 0.3),
-      },
-      ...(sn.color
-        ? { color: irColor(resolveColor(sn.color, ctx.theme, ctx.warnings)) }
-        : {}),
-      ...(sn.fontSize !== undefined ? { fontSize: sn.fontSize } : {}),
-    };
-  }
-
-  // A template gradient background is not a background: it compiles to a
-  // full-bleed shape at the back of every slide that uses the template. The
-  // slide compiler emits it, because that is where slide element order lives.
-  void processed;
-
-  return master;
-}
-
-/* ------------------------------------------------------------------ *
  * Slides
  * ------------------------------------------------------------------ */
 
@@ -298,18 +262,6 @@ function compileSlide(
   ctx: CompileContext
 ): PptxIrSlide {
   const path = `slides[${slideIndex}]`;
-  const templates = new Map(
-    (processed.templates ?? []).map((template) => [template.name, template])
-  );
-  const template = slide.template ? templates.get(slide.template) : undefined;
-  if (slide.template && !template) {
-    warn(
-      ctx.warnings,
-      W.MISSING_TEMPLATE,
-      `Unknown template "${slide.template}". Available: ${[...templates.keys()].join(', ')}`,
-      { slide: slideIndex }
-    );
-  }
 
   const elements: PptxIrElement[] = [];
   let nextIndex = 0;
@@ -322,11 +274,8 @@ function compileSlide(
   ctx.positionlessText = [];
 
   // A gradient background renders as a full-bleed rectangle added first, so it
-  // sits behind everything else. The slide's own background wins over the
-  // template's, matching the pre-IR pipeline.
-  const gradientSource =
-    slide.background?.gradient ??
-    (slide.background ? undefined : template?.background?.gradient);
+  // sits behind everything else.
+  const gradientSource = slide.background?.gradient;
   let background: PptxIrBackground | undefined;
   if (gradientSource) {
     const gradient = compileGradient(
@@ -356,62 +305,34 @@ function compileSlide(
     background = compileBackground(slide.background, `${path}.background`, ctx);
   }
 
-  const effectiveGrid = mergeGridConfigs(processed.grid, template?.grid);
-
-  // Template fixed objects draw beneath slide content.
-  // Template objects are drawn onto this slide, so they see this slide's
-  // context: a `{PAGE_NUMBER}` in a template header has to resolve, and its
-  // runs inherit the deck language like any other.
-  for (const object of template?.objects ?? []) {
-    push(
-      compileComponent(object, {
-        ctx,
-        path: `${path}.elements[${nextIndex}]`,
-        id: elementId(slideIndex, [nextIndex]),
-        slideCtx: slideContextFor(slideIndex, processed),
-      })
-    );
-  }
-
-  for (const component of slide.components) {
-    const resolved = resolveComponentGridPosition(
-      component,
-      effectiveGrid,
-      ctx.slideWidthInches,
-      ctx.slideHeightInches,
-      ctx.warnings
-    );
-    push(
-      compileComponent(resolved, {
-        ctx,
-        path: `${path}.elements[${nextIndex}]`,
-        id: elementId(slideIndex, [nextIndex]),
-        slideCtx: slideContextFor(slideIndex, processed),
-      })
-    );
-  }
-
-  for (const { component } of resolvePlaceholderComponents(
-    slide,
-    template,
-    effectiveGrid,
-    {
-      theme: ctx.theme,
-      slideWidth: ctx.slideWidthInches,
-      slideHeight: ctx.slideHeightInches,
-      slideIndex,
-      warnings: ctx.warnings,
+  // A `group` is transparent: layout already resolved its children to
+  // absolute boxes, so the compiler draws them in order as slide elements.
+  // Grid placement is resolved again here for callers that hand the compiler
+  // a processed tree of their own; on the normal path it is a no-op.
+  const visit = (components: readonly PptxComponentInput[]): void => {
+    for (const component of components) {
+      if (component.name === 'group') {
+        if (component.enabled !== false) visit(component.children ?? []);
+        continue;
+      }
+      const resolved = resolveComponentGridPosition(
+        component,
+        processed.grid,
+        ctx.slideWidthInches,
+        ctx.slideHeightInches,
+        ctx.warnings
+      );
+      push(
+        compileComponent(resolved, {
+          ctx,
+          path: `${path}.elements[${nextIndex}]`,
+          id: elementId(slideIndex, [nextIndex]),
+          slideCtx: slideContextFor(slideIndex, processed),
+        })
+      );
     }
-  )) {
-    push(
-      compileComponent(component, {
-        ctx,
-        path: `${path}.elements[${nextIndex}]`,
-        id: elementId(slideIndex, [nextIndex]),
-        slideCtx: slideContextFor(slideIndex, processed),
-      })
-    );
-  }
+  };
+  visit(slide.components);
 
   warnOverlappingText(slideIndex, ctx);
 
@@ -425,7 +346,6 @@ function compileSlide(
   return {
     id: `slide${slideIndex + 1}`,
     path,
-    ...(slide.template ? { masterName: slide.template } : {}),
     ...(background ? { background } : {}),
     elements,
     ...(slide.notes ? { notes: slide.notes } : {}),
@@ -2449,70 +2369,5 @@ function compileShadow(
     offsetPoints: shadow.offset ?? 3,
     angleDegrees: shadow.angle ?? 45,
     opacity: shadow.opacity ?? 0.5,
-  };
-}
-
-/**
- * Compile a hyperlink, dropping unresolvable slide refs with a warning.
- *
- * An unresolved ref must never reach a renderer: it would emit a relationship
- * to a slide part that is not in the archive, which PowerPoint reports as a
- * damaged file.
- */
-function compileHyperlink(
-  hyperlink: HyperlinkProps | undefined,
-  componentName: string,
-  ctx: CompileContext,
-  path: string
-): PptxIrHyperlink | undefined {
-  if (!hyperlink) return undefined;
-
-  if (hyperlink.url) {
-    ctx.features.require('external-links', path);
-    return {
-      kind: 'external',
-      url: hyperlink.url,
-      ...(hyperlink.tooltip ? { tooltip: hyperlink.tooltip } : {}),
-    };
-  }
-
-  if (hyperlink.unresolvedSlideRef != null) {
-    // HYPERLINK_SLIDE_UNRESOLVED lives outside the `W` registry (it is owned by
-    // utils/hyperlink.ts), so push it the same way `applyHyperlink` does.
-    ctx.warnings.push({
-      code: HYPERLINK_SLIDE_UNRESOLVED,
-      message:
-        `hyperlink.slide ${hyperlink.unresolvedSlideRef} matches no slide in the generated ` +
-        `presentation (slide disabled, or index out of range) — hyperlink dropped`,
-      component: componentName,
-    });
-    return undefined;
-  }
-
-  if (hyperlink.slide) {
-    ctx.features.require('internal-links', path);
-    return {
-      kind: 'slide',
-      slideIndex: hyperlink.slide,
-      ...(hyperlink.tooltip ? { tooltip: hyperlink.tooltip } : {}),
-    };
-  }
-
-  return undefined;
-}
-
-function optionalTransform(
-  x: number | undefined,
-  y: number | undefined,
-  w: number | undefined,
-  h: number | undefined,
-  ctx: CompileContext
-): PptxIrTransform | undefined {
-  if (x == null && y == null && w == null && h == null) return undefined;
-  return {
-    xEmu: inchesToEmu(x ?? 0),
-    yEmu: inchesToEmu(y ?? 0),
-    widthEmu: w != null ? inchesToEmu(w) : defaultWidthEmu(ctx.extent),
-    heightEmu: h != null ? inchesToEmu(h) : 0,
   };
 }

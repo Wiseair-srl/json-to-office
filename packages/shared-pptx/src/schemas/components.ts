@@ -13,6 +13,7 @@ export * from './components/image';
 export * from './components/shape';
 export * from './components/table';
 export * from './components/highcharts';
+export * from './components/group';
 
 // Component Definition Schemas (discriminated union)
 export {

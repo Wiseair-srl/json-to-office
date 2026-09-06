@@ -45,11 +45,19 @@ describe('shared-pptx slide content compatibility', () => {
   });
 
   it('uses the canonical descriptor tuple in the registry', () => {
-    const registered = getPptxContentComponents();
+    // `block` is a leaf too, but a PPTX-only one: the canonical tuple is
+    // what DOCX visuals share, and a block resolves against a deck.
+    const registered = getPptxContentComponents().filter(
+      ({ name }) => name !== 'block'
+    );
     const names = PPTX_SLIDE_CONTENT_COMPONENTS.map(({ name }) => name);
 
     expect(registered.map(({ name }) => name)).toEqual(names);
-    expect(getPptxStandardComponent('slide')?.allowedChildren).toEqual(names);
+    expect(getPptxStandardComponent('slide')?.allowedChildren).toEqual([
+      ...names,
+      'block',
+      'group',
+    ]);
     registered.forEach((descriptor, index) => {
       expect(descriptor).toBe(PPTX_SLIDE_CONTENT_COMPONENTS[index]);
     });

@@ -565,19 +565,20 @@ export const CORPUS: CorpusCase[] = [
     ),
   },
   {
-    name: 'template/background-and-objects',
+    name: 'block/background-and-body',
     document: deck(
       [
-        slide([{ name: 'text', props: { text: 'Content', y: 3 } }], {
-          template: 'base',
-        }),
+        slide([
+          { name: 'block', props: { ref: 'chrome' } },
+          { name: 'text', props: { text: 'Content', y: 3 } },
+        ]),
       ],
       {
-        templates: [
-          {
-            name: 'base',
-            background: { color: 'primary' },
-            objects: [
+        blocks: {
+          chrome: {
+            slots: {},
+            slide: { background: { color: 'primary' } },
+            body: [
               {
                 name: 'shape',
                 props: {
@@ -595,48 +596,140 @@ export const CORPUS: CorpusCase[] = [
               },
             ],
           },
-        ],
+        },
       }
     ),
   },
   {
-    name: 'template/placeholders',
+    name: 'block/slots-and-component-props',
     document: deck(
       [
-        slide([], {
-          template: 'base',
-          placeholders: {
-            title: { name: 'text', props: { text: 'Filled title' } },
+        slide([
+          {
+            name: 'block',
+            props: {
+              ref: 'titled',
+              slots: {
+                title: 'Filled title',
+                figure: {
+                  name: 'shape',
+                  props: { type: 'ellipse', fill: { color: 'accent' } },
+                },
+              },
+            },
           },
-        }),
+        ]),
       ],
       {
-        templates: [
-          {
-            name: 'base',
-            slideNumber: {
-              x: 9,
-              y: 7,
-              w: 0.7,
-              h: 0.3,
-              color: 'text',
-              fontSize: 10,
+        blocks: {
+          titled: {
+            slots: {
+              title: { type: 'string', required: true },
+              figure: { type: 'component' },
             },
-            placeholders: [
+            body: [
               {
-                name: 'title',
-                x: 0.5,
-                y: 0.5,
-                w: 8,
-                h: 1,
-                defaults: {
-                  name: 'text',
-                  props: { fontSize: 32, color: 'primary', align: 'center' },
+                name: 'text',
+                props: {
+                  text: { $slot: '/title' },
+                  x: 0.5,
+                  y: 0.5,
+                  w: 8,
+                  h: 1,
+                  fontSize: 32,
+                  color: 'primary',
+                  align: 'center',
                 },
+              },
+              {
+                $slot: '/figure',
+                props: { x: 1, y: 2, w: 3, h: 3, fill: { color: 'primary' } },
+              },
+              {
+                name: 'text',
+                props: { text: '{PAGE_NUMBER}', x: 9, y: 7, w: 0.7, h: 0.3 },
               },
             ],
           },
-        ],
+        },
+      }
+    ),
+  },
+  {
+    name: 'block/row-distribution',
+    document: deck(
+      [
+        slide([
+          {
+            name: 'block',
+            props: {
+              ref: 'metrics',
+              slots: {
+                items: [
+                  { value: '+18%', label: 'Growth' },
+                  { value: '94%', label: 'Retention' },
+                  { value: '12', label: 'Sites' },
+                ],
+              },
+            },
+          },
+        ]),
+      ],
+      {
+        blocks: {
+          metrics: {
+            slots: {
+              items: {
+                type: 'array',
+                minItems: 2,
+                maxItems: 4,
+                items: {
+                  type: 'object',
+                  properties: {
+                    value: { type: 'string', required: true },
+                    label: { type: 'string', required: true },
+                  },
+                },
+              },
+            },
+            body: [
+              {
+                name: 'group',
+                props: {
+                  x: 0.5,
+                  y: 1,
+                  w: 9,
+                  h: 2,
+                  direction: 'row',
+                  gap: 0.25,
+                },
+                children: [
+                  {
+                    $each: '/items',
+                    template: {
+                      name: 'group',
+                      props: { direction: 'column' },
+                      children: [
+                        {
+                          name: 'text',
+                          props: {
+                            text: { $item: '/value' },
+                            style: 'stat',
+                            fontSize: 28,
+                          },
+                        },
+                        {
+                          name: 'text',
+                          props: { text: { $item: '/label' }, fontSize: 12 },
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        },
       }
     ),
   },

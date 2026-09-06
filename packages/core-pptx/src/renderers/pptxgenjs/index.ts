@@ -11,7 +11,6 @@ import type { PptxFeature } from '../../ir/features';
 import type {
   PptxIR,
   PptxIrBackground,
-  PptxIrMaster,
   PptxIrResource,
   PptxIrSlide,
 } from '../../ir/types';
@@ -43,8 +42,6 @@ export const PPTXGENJS_RENDERER_ID: PptxRendererId = 'pptxgenjs';
  * every label font — so declaring them costs no existing deck a render.
  */
 const PPTXGENJS_CAPABILITIES: ReadonlySet<PptxFeature> = new Set([
-  'masters',
-  'placeholders',
   'rich-text',
   'text',
   'shapes',
@@ -147,51 +144,11 @@ export function buildPresentation(
   );
   const ctx: EmitContext = { pptx, resources, pendingFills, warnings };
 
-  for (const master of ir.masters) {
-    pptx.defineSlideMaster(masterProps(master, resources) as never);
-  }
-
   for (const slide of ir.slides) {
     emitSlide(pptx, slide, ctx);
   }
 
   return pptx;
-}
-
-/**
- * Master properties PptxGenJS understands.
- *
- * A master's fixed decoration is *not* passed as `objects`: the pipeline draws
- * template objects onto each slide instead, which is what the IR records, and
- * doing both would double them.
- */
-function masterProps(
-  master: PptxIrMaster,
-  resources: ReadonlyMap<string, PptxIrResource>
-): Record<string, unknown> {
-  const props: Record<string, unknown> = { title: master.name };
-
-  const background = backgroundProps(master.background, resources);
-  if (background) props.background = background;
-  if (master.margin !== undefined) props.margin = master.margin;
-
-  if (master.slideNumber) {
-    const slideNumber: Record<string, unknown> = {
-      x: emuToInches(master.slideNumber.transform.xEmu),
-      y: emuToInches(master.slideNumber.transform.yEmu),
-      w: emuToInches(master.slideNumber.transform.widthEmu),
-      h: emuToInches(master.slideNumber.transform.heightEmu),
-    };
-    if (master.slideNumber.color) {
-      slideNumber.color = master.slideNumber.color.hex;
-    }
-    if (master.slideNumber.fontSize !== undefined) {
-      slideNumber.fontSize = master.slideNumber.fontSize;
-    }
-    props.slideNumber = slideNumber;
-  }
-
-  return props;
 }
 
 function backgroundProps(
@@ -211,9 +168,7 @@ function emitSlide(
   slideIr: PptxIrSlide,
   ctx: EmitContext
 ): void {
-  const slide = slideIr.masterName
-    ? pptx.addSlide({ masterName: slideIr.masterName })
-    : pptx.addSlide();
+  const slide = pptx.addSlide();
 
   const background = backgroundProps(slideIr.background, ctx.resources);
   if (background) slide.background = background as never;

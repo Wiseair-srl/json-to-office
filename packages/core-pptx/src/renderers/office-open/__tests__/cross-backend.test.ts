@@ -494,16 +494,6 @@ describe('office-open capability failures', () => {
     );
   });
 
-  it('rejects a deck that uses templates', async () => {
-    await expectRejected(
-      deck(
-        [slide([{ name: 'text', props: { text: 'x' } }], { template: 'base' })],
-        { templates: [{ name: 'base', background: { color: 'primary' } }] }
-      ),
-      'masters'
-    );
-  });
-
   it('reports every unsupported feature in one error', async () => {
     // `charts` used to be the second feature here. It is supported now, so the
     // pair is an SVG image and a rotated one — still two distinct gaps

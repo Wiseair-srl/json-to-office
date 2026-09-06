@@ -32,6 +32,35 @@
       }
     },
     {
+      "name": "consulting-deck-blocks.pptx.json",
+      "format": "pptx",
+      "archetype": "consulting deck with document-local JSON blocks",
+      "whenToUse": "Learn, copy and customize the action-chart JSON definition on the consulting house theme. Definition and invocations are embedded in the complete playground deck; the cover and closing slides show direct coordinate authoring beside blocks.",
+      "theme": "consulting",
+      "pages": 4,
+      "components": {
+        "block": 2,
+        "chart": 2,
+        "pptx": 1,
+        "shape": 4,
+        "slide": 4,
+        "text": 13
+      },
+      "slots": {
+        "speaker-notes": 3,
+        "text": 9,
+        "title": 7
+      },
+      "externalAssets": [],
+      "externalFonts": [],
+      "hash": "7489ad16b323a7e3848f816d40f6cff4936e579be80b459ac163273f3d5ecc5f",
+      "bytes": {
+        "document": 13397,
+        "gzipped": 2584,
+        "thumbnail": 18843
+      }
+    },
+    {
       "name": "data-report-presentation.pptx.json",
       "format": "pptx",
       "archetype": "data-deck",
@@ -39,6 +68,7 @@
       "theme": "inline",
       "pages": 15,
       "components": {
+        "block": 14,
         "chart": 8,
         "image": 21,
         "pptx": 1,
@@ -53,11 +83,11 @@
       },
       "externalAssets": [],
       "externalFonts": [],
-      "hash": "cc26178b0e467c1ba1f23a2af6c769721fc949b629672c45b44d8b3fb38f57cd",
+      "hash": "4ee25e18e641c0f5cd8f552afd72b8b423826e27772a273016568082b6360311",
       "bytes": {
-        "document": 86204,
-        "gzipped": 7218,
-        "thumbnail": 119374
+        "document": 90199,
+        "gzipped": 7339,
+        "thumbnail": 119370
       }
     },
     {
@@ -68,6 +98,7 @@
       "theme": "inline",
       "pages": 20,
       "components": {
+        "block": 15,
         "image": 51,
         "pptx": 1,
         "shape": 193,
@@ -96,10 +127,10 @@
         "media/management-plan/crop_s9.jpg"
       ],
       "externalFonts": [],
-      "hash": "3bb5064a45197953af3061af110830b642858dc7c84169b1cc4b87ad4a0d34a4",
+      "hash": "c6aa3eb19339fe2a1e2fdbf4c699ebf474504e94c92b4ec9707dc147e297e41e",
       "bytes": {
-        "document": 144847,
-        "gzipped": 10036,
+        "document": 146145,
+        "gzipped": 10097,
         "thumbnail": 148298
       }
     },
@@ -111,6 +142,7 @@
       "theme": "inline",
       "pages": 20,
       "components": {
+        "block": 11,
         "image": 37,
         "pptx": 1,
         "shape": 47,
@@ -127,10 +159,10 @@
         "media/minimalist-pitch-deck/image3.png"
       ],
       "externalFonts": [],
-      "hash": "d7f031fa72605405ed952516adfea2ced9e0eb701aee1370bb09d15746fdda32",
+      "hash": "ac45da89d02f2a82a806af174229e8d10a0e543e4e05538a316e91227a3299b0",
       "bytes": {
-        "document": 104678,
-        "gzipped": 7655,
+        "document": 106463,
+        "gzipped": 7788,
         "thumbnail": 172474
       }
     },

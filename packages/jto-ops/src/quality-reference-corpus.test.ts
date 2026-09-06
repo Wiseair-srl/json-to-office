@@ -66,6 +66,7 @@ describe('maximum-quality reference corpus', () => {
     }
 
     expect([...byProfile.keys()].sort()).toEqual([
+      'consulting-deck',
       'executive-presentation',
       'executive-report',
       'legal-appendix',

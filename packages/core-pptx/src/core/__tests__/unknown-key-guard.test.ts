@@ -11,7 +11,7 @@
  * object added to any component is swept automatically.
  *
  * The second suite plants a defective component at every embedding position
- * (root children, slide children, slide placeholders) — in the props, as an
+ * (root children, slide children, group children) — in the props, as an
  * unknown sibling key, and as a wrong-typed known sibling key (`enabled:
  * "yes"`), the class the walk historically missed because it checked key
  * presence but not value type.
@@ -319,7 +319,12 @@ function componentDoc(name: string, props: unknown): Json {
   const component: Json = { name, props };
   return {
     name: 'pptx',
-    props: { title: 'Guard deck' },
+    // A block invocation resolves only against this document's definitions;
+    // the builder names `x`, so `x` is defined here.
+    props: {
+      title: 'Guard deck',
+      ...(name === 'block' && { blocks: { x: { slots: {}, body: [] } } }),
+    },
     children:
       name === 'slide'
         ? [component]
@@ -456,10 +461,8 @@ describe('a defective component is rejected at every embedding position', () => 
   /** Each embedding builds the same document around a text payload. */
   const EMBEDDINGS: Record<string, (t: Json) => Json> = {
     'slide children': (t) => deck([{ name: 'slide', children: [t] }]),
-    'slide placeholder value': (t) =>
-      deck([
-        { name: 'slide', props: { placeholders: { title: t } }, children: [] },
-      ]),
+    'group children': (t) =>
+      deck([{ name: 'slide', children: [{ name: 'group', children: [t] }] }]),
     'root children (slide)': (t) =>
       deck([{ name: 'slide', children: [], ...pickSiblings(t) }]),
   };
@@ -502,19 +505,15 @@ describe('a defective component is rejected at every embedding position', () => 
   }
 
   // The embeddings above are written out by hand, so their coverage is pinned
-  // to the registry: a component gaining `hasPlaceholders` (or a new
-  // container) widens the embedding surface, and this assertion is what makes
-  // that widening extend the sweep instead of silently escaping it.
-  it('EMBEDDINGS cover every container and placeholder carrier the registry declares', () => {
-    const placeholderCarriers = PPTX_STANDARD_COMPONENTS_REGISTRY.filter(
-      (c) => c.hasPlaceholders
-    ).map((c) => c.name);
+  // to the registry: a new container widens the embedding surface, and this
+  // assertion is what makes that widening extend the sweep instead of
+  // silently escaping it.
+  it('EMBEDDINGS cover every container the registry declares', () => {
     const containers = PPTX_STANDARD_COMPONENTS_REGISTRY.filter(
       (c) => c.hasChildren
     ).map((c) => c.name);
 
-    expect(placeholderCarriers).toEqual(['slide']);
-    expect(containers.sort()).toEqual(['pptx', 'slide']);
+    expect(containers.sort()).toEqual(['group', 'pptx', 'slide']);
   });
 
   it('rejects sibling defects on the document root itself', async () => {

@@ -6,11 +6,10 @@
  * neither) passes the structural check and would otherwise be silently resolved
  * by runtime precedence. This walk runs unconditionally during validation and
  * rejects such payloads. It traverses every nested value, so text components
- * inside slides, placeholders, and template objects are all covered.
- *
- * Placeholder `defaults` stubs are exempt from the "neither" rule: they carry
- * styling defaults only, and the actual content arrives with the component
- * placed in the placeholder.
+ * inside slides, groups and block bodies are all covered. Block definitions
+ * bind their text (`{ "$slot": ... }` is an object, not a string), so they
+ * are skipped here: their expanded output is validated after evaluation, when
+ * the binding has become a string.
  */
 
 import type { ValidationError } from '@json-to-office/shared';
@@ -21,14 +20,19 @@ import type { ValidationError } from '@json-to-office/shared';
 export function collectTextContentConflicts(data: unknown): ValidationError[] {
   const errors: ValidationError[] = [];
 
-  const visit = (node: any, path: string, parentKey: string): void => {
+  const visit = (node: any, path: string, inDefinition: boolean): void => {
     if (Array.isArray(node)) {
-      node.forEach((item, i) => visit(item, `${path}/${i}`, parentKey));
+      node.forEach((item, i) => visit(item, `${path}/${i}`, inDefinition));
       return;
     }
     if (!node || typeof node !== 'object') return;
 
-    if (node.name === 'text' && node.props && typeof node.props === 'object') {
+    if (
+      !inDefinition &&
+      node.name === 'text' &&
+      node.props &&
+      typeof node.props === 'object'
+    ) {
       const hasText = typeof node.props.text === 'string';
       const hasRuns = Array.isArray(node.props.runs);
       if (hasText && hasRuns) {
@@ -38,7 +42,7 @@ export function collectTextContentConflicts(data: unknown): ValidationError[] {
             'Text component accepts either "text" or "runs", not both. Use exactly one of the two.',
           code: 'mutually_exclusive',
         });
-      } else if (!hasText && !hasRuns && parentKey !== 'defaults') {
+      } else if (!hasText && !hasRuns) {
         errors.push({
           path: `${path}/props`,
           message:
@@ -49,10 +53,14 @@ export function collectTextContentConflicts(data: unknown): ValidationError[] {
     }
 
     for (const key of Object.keys(node)) {
-      visit(node[key], `${path}/${key}`, key);
+      visit(
+        node[key],
+        `${path}/${key}`,
+        inDefinition || (path === '/props' && key === 'blocks')
+      );
     }
   };
 
-  visit(data, '', '');
+  visit(data, '', false);
   return errors;
 }

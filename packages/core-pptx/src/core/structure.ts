@@ -1,6 +1,12 @@
 /**
  * Structure Processing
  * JSON -> internal model
+ *
+ * The document arrives with every block already expanded (see
+ * `blocks/document.ts`); what remains here is theme resolution, component
+ * defaults, hyperlink rebasing, and the two engine operations that turn
+ * authored composition into the absolute boxes the compiler draws: layout
+ * (frames, distribution, grids) and bounded text fit.
  */
 
 import type {
@@ -10,23 +16,20 @@ import type {
   ProcessedPresentation,
   ProcessedSlide,
   SlideComponentDefinition,
-  TemplateSlideDefinition,
 } from '../types';
 import { isSlideComponent } from '../types';
-import {
-  resolveGridPosition,
-  resolveComponentGridPosition,
-  mergeGridConfigs,
-} from './grid';
+import { mergeGridConfigs } from './grid';
 import { getPptxTheme } from '../themes';
 import { resolvePptxDesignSystem, designGrid } from '../themes/design-system';
 import type { GenerationOptions } from './generator';
 import { resolveComponentTree } from '../utils/resolveComponentTree';
+import { remapHyperlinkSlideRefs } from '../utils/hyperlink';
 import {
-  remapHyperlinkProps,
-  remapHyperlinkSlideRefs,
-} from '../utils/hyperlink';
-import { mergeWithDefaults } from '@json-to-office/shared';
+  mergeWithDefaults,
+  toAuthoredBlockPointer,
+} from '@json-to-office/shared';
+import { resolveSlideLayout } from './layout';
+import { applyTextFit } from './fit';
 
 /** A slide child is rendered unless it carries `enabled: false`. */
 function isSlideEnabled(child: object): boolean {
@@ -107,114 +110,53 @@ export function processPresentation(
   const slideHeight = props.slideHeight ?? 7.5;
 
   const slideIndexMap = buildSlideIndexMap(children);
-
-  // Process template slide definitions
-  let templates: TemplateSlideDefinition[] | undefined;
-  if (props.templates && props.templates.length > 0) {
-    templates = props.templates.map((m: TemplateSlideDefinition) => {
-      const effectiveGrid = mergeGridConfigs(props.grid, m.grid);
-
-      // Rebase slide refs in placeholder `defaults`, then resolve grid
-      // positions. `defaults.props` is merged into the rendered component by
-      // core/render.ts, so it reaches the writer just like a component's own
-      // props and needs the same remapping.
-      const resolvedPhs = m.placeholders?.map((ph) => {
-        const phDefaults = ph.defaults;
-        const defaultProps = phDefaults?.props
-          ? remapHyperlinkProps(phDefaults.props, slideIndexMap)
-          : undefined;
-        const base =
-          phDefaults && defaultProps && defaultProps !== phDefaults.props
-            ? { ...ph, defaults: { ...phDefaults, props: defaultProps } }
-            : ph;
-
-        if (!base.grid) return base;
-        const abs = resolveGridPosition(
-          base.grid,
-          effectiveGrid,
-          slideWidth,
-          slideHeight
-        );
-        return {
-          ...base,
-          x: base.x ?? abs.x,
-          y: base.y ?? abs.y,
-          w: base.w ?? abs.w,
-          h: base.h ?? abs.h,
-          grid: undefined,
-        };
-      });
-
-      // Resolve componentDefaults then grid positions on fixed objects
-      const defaultedObjects = m.objects
-        ? resolveComponentTree(m.objects, theme)
-        : undefined;
-      const resolvedObjects = defaultedObjects?.map((obj) =>
-        remapHyperlinkSlideRefs(
-          resolveComponentGridPosition(
-            obj,
-            effectiveGrid,
-            slideWidth,
-            slideHeight
-          ),
-          slideIndexMap
-        )
-      );
-
-      return { ...m, placeholders: resolvedPhs, objects: resolvedObjects };
-    });
-  }
+  const sourceMap = options?.sourceMap ?? {};
+  const toAuthored = (path: string) => toAuthoredBlockPointer(sourceMap, path);
 
   const slides: ProcessedSlide[] = [];
 
-  for (const child of children) {
-    if (isSlideComponent(child)) {
-      // `enabled: false` drops the slide entirely; absent means enabled
-      if (!isSlideEnabled(child)) continue;
+  children.forEach((child, authoredIndex) => {
+    if (!isSlideComponent(child)) return;
+    // `enabled: false` drops the slide entirely; absent means enabled
+    if (!isSlideEnabled(child)) return;
 
-      const slideComponents: PptxComponentInput[] = [];
-      if (child.children) {
-        for (const slideChild of child.children) {
-          slideComponents.push(slideChild);
-        }
-      }
+    // Resolve componentDefaults on all slide components, then rebase
+    // slide-targeted hyperlinks onto the generated slide numbering
+    const resolvedComponents = resolveComponentTree(
+      child.children ?? [],
+      theme
+    ).map((component) => remapHyperlinkSlideRefs(component, slideIndexMap));
 
-      // Resolve componentDefaults on all slide components, then rebase
-      // slide-targeted hyperlinks onto the generated slide numbering
-      const resolvedComponents = resolveComponentTree(
-        slideComponents,
-        theme
-      ).map((component) => remapHyperlinkSlideRefs(component, slideIndexMap));
+    // Layout, then fit: frames and rows become absolute boxes, and a text
+    // that declared bounds is sized within them or refused at its authored
+    // pointer.
+    const laidOut = resolveSlideLayout(resolvedComponents, {
+      grid: props.grid,
+      slideWidth,
+      slideHeight,
+      warnings: options?.warnings,
+    });
+    const fitted = applyTextFit(laidOut, `/children/${authoredIndex}`, {
+      theme,
+      slideWidth,
+      slideHeight,
+      toAuthored,
+    });
 
-      // Every slide prop is optional, so validation accepts a slide with no
-      // `props` at all (the deep validator checks an empty object in that
-      // case). Generation has to accept the same documents validation does.
-      const slideProps: NonNullable<SlideComponentDefinition['props']> =
-        child.props ?? {};
+    // Every slide prop is optional, so validation accepts a slide with no
+    // `props` at all (the deep validator checks an empty object in that
+    // case). Generation has to accept the same documents validation does.
+    const slideProps: NonNullable<SlideComponentDefinition['props']> =
+      child.props ?? {};
 
-      const placeholders = slideProps.placeholders as
-        | Record<string, PptxComponentInput>
-        | undefined;
-
-      slides.push({
-        components: resolvedComponents,
-        background: slideProps.background,
-        transition: slideProps.transition,
-        notes: slideProps.notes,
-        layout: slideProps.layout,
-        hidden: slideProps.hidden,
-        template: slideProps.template,
-        placeholders: placeholders
-          ? Object.fromEntries(
-              Object.entries(placeholders).map(([name, component]) => [
-                name,
-                remapHyperlinkSlideRefs(component, slideIndexMap),
-              ])
-            )
-          : undefined,
-      });
-    }
-  }
+    slides.push({
+      components: fitted,
+      background: slideProps.background,
+      transition: slideProps.transition,
+      notes: slideProps.notes,
+      hidden: slideProps.hidden,
+    });
+  });
 
   return {
     metadata: {
@@ -231,7 +173,6 @@ export function processPresentation(
     language: props.language,
     pageNumberFormat: props.pageNumberFormat ?? '9',
     slides,
-    templates,
     services: options?.services,
   };
 }

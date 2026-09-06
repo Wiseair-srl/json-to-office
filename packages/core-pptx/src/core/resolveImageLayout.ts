@@ -43,38 +43,14 @@ export async function resolveImageLayout(
   const resolve = (components: PptxComponentInput[]) =>
     resolveList(components, presentation, warnings);
 
-  const [slides, templates] = await Promise.all([
-    Promise.all(
-      presentation.slides.map(async (slide) => ({
-        ...slide,
-        components: await resolve(slide.components),
-        ...(slide.placeholders
-          ? {
-              placeholders: Object.fromEntries(
-                await Promise.all(
-                  Object.entries(slide.placeholders).map(
-                    async ([name, component]) =>
-                      [name, (await resolve([component]))[0]] as const
-                  )
-                )
-              ),
-            }
-          : {}),
-      }))
-    ),
-    presentation.templates
-      ? Promise.all(
-          presentation.templates.map(async (template) => ({
-            ...template,
-            ...(template.objects
-              ? { objects: await resolve(template.objects) }
-              : {}),
-          }))
-        )
-      : Promise.resolve(presentation.templates),
-  ]);
+  const slides = await Promise.all(
+    presentation.slides.map(async (slide) => ({
+      ...slide,
+      components: await resolve(slide.components),
+    }))
+  );
 
-  return { ...presentation, slides, templates };
+  return { ...presentation, slides };
 }
 
 async function resolveList(
@@ -84,11 +60,16 @@ async function resolveList(
 ): Promise<PptxComponentInput[]> {
   const out: PptxComponentInput[] = [];
   for (const component of components) {
-    out.push(
-      component.name === 'image'
-        ? await resolveOne(component, presentation, warnings)
-        : component
-    );
+    if (component.name === 'image') {
+      out.push(await resolveOne(component, presentation, warnings));
+    } else if (component.children && component.children.length > 0) {
+      out.push({
+        ...component,
+        children: await resolveList(component.children, presentation, warnings),
+      });
+    } else {
+      out.push(component);
+    }
   }
   return out;
 }

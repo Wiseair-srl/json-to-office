@@ -133,22 +133,25 @@ describe('buildOutline (pptx)', () => {
     expect(slides[0].label).toBe('Cover');
   });
 
-  it('labels template-driven slides from their title placeholder', () => {
+  it('labels block-driven slides from their title slot', () => {
     const doc = JSON.stringify({
       name: 'pptx',
+      props: { blocks: { cover: { slots: {}, body: [] } } },
       children: [
         {
           name: 'slide',
-          props: {
-            template: 'COVER_TEMPLATE',
-            placeholders: {
-              subtitle: { name: 'text', props: { text: 'The subtitle' } },
-              title: {
-                name: 'text',
-                props: { text: 'Slide system\nshowcase' },
+          children: [
+            {
+              name: 'block',
+              props: {
+                ref: 'cover',
+                slots: {
+                  subtitle: 'The subtitle',
+                  title: 'Slide system\nshowcase',
+                },
               },
             },
-          },
+          ],
         },
       ],
     });

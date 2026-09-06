@@ -33,10 +33,18 @@ import type {
   TextStyle,
 } from '../types';
 import { resolveColor } from '../utils/color';
-import { mergeGridConfigs, resolveGridPosition } from '../core/grid';
+import { resolveGridPosition } from '../core/grid';
 import { resolveThemeContext } from '../core/generationContext';
-import { resolvePlaceholderComponents } from '../core/placeholders';
 import { processPresentation } from '../core/structure';
+import {
+  blockSlotBudgets,
+  blockSlotRoles,
+  expandPptxBlocks,
+  toAuthoredPointer,
+  type BlockSourceMap,
+} from '../blocks';
+import { defaultLineHeightPt, estimateTextLines } from '../utils/textMetrics';
+import type { BlockSlotRole } from '@json-to-office/shared';
 
 type Rec = Record<string, unknown>;
 
@@ -157,8 +165,38 @@ export interface PptxPlaceholderFact extends QualityFact {
   excerpt: string;
 }
 
+/** One text slot of a block, counted against the budget the block declares. */
+export interface PptxBlockSlotFact extends QualityFact {
+  kind: 'pptx/block-slot';
+  block: string;
+  slot: string;
+  words: number;
+  maxWords: number;
+}
+
+/**
+ * A role-bearing slot of a block invocation, present or not. A profile reads
+ * these to require a source under every chart or to measure an action title;
+ * the theme that styles them never adds a requirement.
+ */
+export interface PptxChromeSlotFact extends QualityFact {
+  kind: 'pptx/chrome-slot';
+  block: string;
+  /** Authored pointer of the invocation. */
+  invocation: string;
+  slot: string;
+  role: BlockSlotRole;
+  present: boolean;
+  text?: string;
+  /** Lines the slot's text takes in the box the definition gave it. */
+  estimatedLines?: number;
+  fontSizePt?: number;
+}
+
 export type PptxQualityFact =
   | PptxCanvasFact
+  | PptxBlockSlotFact
+  | PptxChromeSlotFact
   | PptxTextFact
   | PptxSlideFact
   | PptxPlaceholderFact
@@ -171,9 +209,20 @@ export type PptxQualityFact =
 
 export interface PptxQualityModel {
   authored: PresentationComponentDefinition;
+  /** The document after the export-mode pre-pass and block expansion. */
   document: PresentationComponentDefinition;
   theme: PptxThemeConfig;
   processed: ProcessedPresentation;
+}
+
+/** What `PreparedDocument.metadata.blocks` carries once a block expanded. */
+export interface PptxBlocksMetadata {
+  /** Compiled pointer → authored pointer. */
+  sourceMap: BlockSourceMap;
+  /** Authored pointers of the expanded blocks. */
+  blocks: readonly string[];
+  /** The compiled form: the document with every block lowered in place. */
+  document: PresentationComponentDefinition;
 }
 
 export interface PreparePptxQualityOptions {
@@ -450,12 +499,6 @@ function paintedColorHexes(
     return [last.hex];
   }
   return fillColorHexes(fill, theme);
-}
-
-function defaultLineHeightPt(fontSize: number): number {
-  if (fontSize >= 60) return fontSize * 1.05;
-  if (fontSize >= 28) return fontSize * 1.15;
-  return fontSize * 1.25;
 }
 
 /** Effective type: explicit prop → named style → theme default. */
@@ -864,10 +907,6 @@ function tableFact(
   return { ...base, columns };
 }
 
-function pointerSegment(value: string): string {
-  return value.replace(/~/g, '~0').replace(/\//g, '~1');
-}
-
 /**
  * The `props` of the authored node at an RFC 6901 pointer.
  *
@@ -1138,7 +1177,22 @@ export function preparePptxQualityDocument(
 ): PreparedDocument<PptxQualityModel, PptxQualityFact> {
   const facts: PptxQualityFact[] = [];
   const provenance: Record<string, ProvenanceMap[string]> = {};
-  const addFact = (fact: PptxQualityFact): void => {
+  // Blocks lower here, once, for every consumer: the facts below, the
+  // compiler and the renderers all read the expanded tree. A fact raised on a
+  // compiled child is reported at the authored slot it came from, so a
+  // finding inside a block points at what the author wrote, never at a node
+  // they never saw.
+  let sourceMap: BlockSourceMap = {};
+  const authoredPath = (path: string): string =>
+    toAuthoredPointer(sourceMap, path);
+  const addFact = (raw: PptxQualityFact): void => {
+    const fact: PptxQualityFact = {
+      ...raw,
+      path: authoredPath(raw.path),
+      ...(raw.relatedPaths && {
+        relatedPaths: raw.relatedPaths.map(authoredPath),
+      }),
+    };
     facts.push(fact);
     provenance[fact.id] = {
       path: fact.path,
@@ -1198,10 +1252,14 @@ export function preparePptxQualityDocument(
     fonts: options.fonts,
     warnings,
   });
-  const processed = processPresentation(context.document, {
+  const expanded = expandPptxBlocks(context.document, context.theme);
+  sourceMap = expanded.sourceMap;
+  const processed = processPresentation(expanded.document, {
     theme: context.theme,
     customThemes: options.customThemes,
     services: options.services,
+    sourceMap,
+    warnings,
   });
   const ctx = themeContext(processed.theme);
 
@@ -1255,13 +1313,6 @@ export function preparePptxQualityDocument(
     const slide = asRecord(child);
     return slide?.name === 'slide' && slide.enabled !== false ? [index] : [];
   });
-  const templateIndexes = new Map<string, number>();
-  const templates = new Map(
-    (processed.templates ?? []).map((template, index) => {
-      templateIndexes.set(template.name, index);
-      return [template.name, template] as const;
-    })
-  );
   const analyzedTextPaths = new Set<string>();
   const analyzedContentPaths = new Set<string>();
   const paletteTokens =
@@ -1269,71 +1320,34 @@ export function preparePptxQualityDocument(
       (value) => `#${resolveColor(value, processed.theme)}`
     ) ??
     SERIES_COLOR_TOKENS.filter((token) => paletteHexes[token] !== undefined);
+  // A handful of questions are about what the document asked for rather than
+  // what it inherited; for block content the authored node is the slot.
   const authoredPropsAt = (pointer: string): Rec | undefined =>
-    authoredPropsAtPointer(document, pointer);
+    authoredPropsAtPointer(document, authoredPath(pointer));
 
   processed.slides.forEach((slide, renderedIndex) => {
     const authoredIndex = slideIndexes[renderedIndex];
     if (authoredIndex === undefined) return;
     const slidePath = `/children/${authoredIndex}`;
-    const authoredSlide = asRecord(authoredChildren[authoredIndex]);
-    const authoredComponents = Array.isArray(authoredSlide?.children)
-      ? authoredSlide.children
-      : [];
-    const template = slide.template ? templates.get(slide.template) : undefined;
-    const effectiveGrid = mergeGridConfigs(processed.grid, template?.grid);
-    const roots: ComponentAtPath[] = [];
-
-    const templateIndex = template
-      ? templateIndexes.get(template.name)
-      : undefined;
-    if (template && templateIndex !== undefined) {
-      template.objects?.forEach((component, index) => {
-        roots.push({
-          component,
-          path: `/props/templates/${templateIndex}/objects/${index}`,
-        });
-      });
-    }
-
-    slide.components.forEach((component, index) => {
-      if (authoredComponents[index] === undefined) return;
-      roots.push({
+    const roots: ComponentAtPath[] = slide.components.map(
+      (component, index) => ({
         component,
         path: `${slidePath}/children/${index}`,
-      });
-    });
-
-    for (const resolved of resolvePlaceholderComponents(
-      slide,
-      template,
-      effectiveGrid,
-      {
-        theme: processed.theme,
-        slideWidth: processed.slideWidth,
-        slideHeight: processed.slideHeight,
-        slideIndex: renderedIndex,
-        warnings,
-      }
-    )) {
-      roots.push({
-        component: resolved.component,
-        path: `${slidePath}/props/placeholders/${pointerSegment(resolved.name)}`,
-      });
-    }
+      })
+    );
 
     addSlideFacts(
       roots,
       slidePath,
       renderedIndex,
-      effectiveGrid,
+      processed.grid,
       processed.slideWidth,
       processed.slideHeight,
       ctx,
       processed.theme,
       (fx, fy) =>
         paintedColorHexes(
-          slide.background ?? template?.background ?? props.background,
+          slide.background ?? props.background,
           processed.theme,
           fx,
           fy,
@@ -1348,16 +1362,107 @@ export function preparePptxQualityDocument(
     );
   });
 
+  for (const budget of blockSlotBudgets(context.document, expanded.blocks)) {
+    addFact({
+      id: `pptx:block-slot:${budget.path}`,
+      kind: 'pptx/block-slot',
+      ...budget,
+    });
+  }
+  const slotTextNodes = textNodesBySlot(processed, slideIndexes, sourceMap);
+  for (const role of blockSlotRoles(context.document, expanded.blocks)) {
+    const present =
+      role.value !== undefined &&
+      role.value !== null &&
+      role.value !== '' &&
+      role.value !== false &&
+      (!Array.isArray(role.value) || role.value.length > 0);
+    const bound = slotTextNodes.get(role.path);
+    let measured: { estimatedLines: number; fontSizePt: number } | undefined;
+    if (bound && typeof bound.props.text === 'string') {
+      const typography = resolveTypography(bound.props, ctx);
+      const box = resolveBox(
+        bound.props,
+        processed.grid,
+        processed.slideWidth,
+        processed.slideHeight
+      );
+      if (box.widthPt !== undefined && box.widthPt > 0)
+        measured = {
+          estimatedLines: estimateTextLines(
+            bound.props.text,
+            box.widthPt,
+            typography.fontSize
+          ),
+          fontSizePt: typography.fontSize,
+        };
+    }
+    addFact({
+      id: `pptx:chrome-slot:${role.path}`,
+      kind: 'pptx/chrome-slot',
+      path: role.path,
+      relatedPaths: [role.invocation],
+      block: role.block,
+      invocation: role.invocation,
+      slot: role.slot,
+      role: role.role,
+      present,
+      ...(typeof role.value === 'string' && { text: role.value }),
+      ...measured,
+    });
+  }
+
   return {
     format: 'pptx',
     model: {
       authored: document,
-      document: context.document,
+      document: expanded.document,
       theme: context.theme,
       processed,
     },
     facts,
     provenance,
     renderer: options.renderer ?? DEFAULT_PPTX_RENDERER_ID,
+    ...(expanded.blocks.length > 0 && {
+      metadata: {
+        blocks: {
+          sourceMap,
+          blocks: expanded.blocks,
+          document: expanded.document,
+        } satisfies PptxBlocksMetadata,
+      },
+    }),
   };
+}
+
+/**
+ * The processed text node each authored slot became, keyed by slot pointer.
+ * Layout has already given every node its absolute box, so a slot's text can
+ * be measured in the frame the definition drew for it.
+ */
+function textNodesBySlot(
+  processed: ProcessedPresentation,
+  slideIndexes: readonly number[],
+  sourceMap: BlockSourceMap
+): Map<string, { props: Rec }> {
+  const found = new Map<string, { props: Rec }>();
+  const visit = (component: PptxComponentInput, path: string): void => {
+    if (component.enabled === false) return;
+    if (component.name === 'text') {
+      const origin = toAuthoredPointer(sourceMap, `${path}/props/text`);
+      if (origin !== `${path}/props/text` && !found.has(origin))
+        found.set(origin, { props: asRecord(component.props) ?? {} });
+    }
+    (component.children ?? []).forEach((child, index) =>
+      visit(child, `${path}/children/${index}`)
+    );
+  };
+  processed.slides.forEach((slide, renderedIndex) => {
+    const authoredIndex = slideIndexes[renderedIndex];
+    if (authoredIndex === undefined) return;
+    slide.components.forEach((component, index) =>
+      visit(component, `/children/${authoredIndex}/children/${index}`)
+    );
+  });
+  return found;
 }

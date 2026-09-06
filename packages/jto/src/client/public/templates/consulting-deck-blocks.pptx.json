@@ -1,0 +1,441 @@
+{
+  "name": "pptx",
+  "props": {
+    "title": "Client performance review",
+    "author": "Consulting team",
+    "company": "Example client",
+    "theme": "consulting",
+    "slideWidth": 13.333,
+    "slideHeight": 7.5,
+    "blocks": {
+      "action-chart": {
+        "description": "The consulting workhorse: an action title over one chart, an optional takeaway beside it and an optional source beneath. Copy and adapt this document-local example; the consulting-deck quality profile requires the takeaway and the source, the theme only styles them. Sizes bind to the theme's type roles with safe defaults, so the block renders on any bundled theme.",
+        "slots": {
+          "title": {
+            "type": "string",
+            "required": true,
+            "oneLine": true,
+            "maxWords": 24,
+            "role": "actionTitle",
+            "description": "The claim the chart proves: a sentence with a number or a verb, two lines at most. Longer titles step down to 24 then 22pt, then fail."
+          },
+          "tracker": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 4,
+            "role": "tracker",
+            "description": "Section label, top right. Omit it and nothing is drawn."
+          },
+          "chart": {
+            "type": "component",
+            "required": true,
+            "description": "A chart or highcharts component with its data and units. The definition supplies its frame and the theme's series palette; both may be overridden except the frame."
+          },
+          "takeaway": {
+            "type": "string",
+            "maxWords": 40,
+            "role": "takeaway",
+            "description": "What the reader should conclude, set beside the chart under an accent rule."
+          },
+          "source": {
+            "type": "string",
+            "maxWords": 24,
+            "role": "source",
+            "description": "Where the numbers come from, e.g. 'Source: company filings, 2026'. Omit it and its rule collapses too."
+          }
+        },
+        "body": [
+          {
+            "name": "text",
+            "props": {
+              "text": {
+                "$slot": "/title"
+              },
+              "style": "display",
+              "x": 0.5,
+              "y": 0.45,
+              "w": 12.333,
+              "h": 1.3,
+              "valign": "top",
+              "fit": {
+                "maxLines": 2,
+                "shrink": [24, 22]
+              },
+              "fontSize": {
+                "$theme": "/styles/display/fontSize",
+                "default": 28
+              }
+            }
+          },
+          {
+            "$if": "/tracker",
+            "then": {
+              "name": "text",
+              "props": {
+                "text": {
+                  "$slot": "/tracker"
+                },
+                "style": "tracker",
+                "x": 9.833,
+                "y": 0.15,
+                "w": 3,
+                "h": 0.3,
+                "align": "right",
+                "fontSize": {
+                  "$theme": "/styles/tracker/fontSize",
+                  "default": 10
+                }
+              }
+            }
+          },
+          {
+            "name": "shape",
+            "props": {
+              "type": "line",
+              "x": 0.5,
+              "y": 1.9,
+              "w": 12.333,
+              "h": 0,
+              "line": {
+                "color": {
+                  "$theme": "/palette/rule",
+                  "default": "background2"
+                },
+                "width": 0.5
+              }
+            }
+          },
+          {
+            "$slot": "/chart",
+            "props": {
+              "x": 0.5,
+              "y": 2.15,
+              "w": 8.4,
+              "h": 4.25,
+              "chartColors": [
+                "accent",
+                "secondary",
+                "accent4",
+                "accent6",
+                "accent5"
+              ],
+              "showLegend": true,
+              "legendPos": "b"
+            }
+          },
+          {
+            "$if": "/takeaway",
+            "then": [
+              {
+                "name": "shape",
+                "props": {
+                  "type": "line",
+                  "x": 9.3,
+                  "y": 2.15,
+                  "w": 3.533,
+                  "h": 0,
+                  "line": {
+                    "color": {
+                      "$theme": "/chrome/keyTakeaways/rule/color",
+                      "default": "accent"
+                    },
+                    "width": {
+                      "$theme": "/chrome/keyTakeaways/rule/weightPt",
+                      "default": 2
+                    }
+                  }
+                }
+              },
+              {
+                "name": "text",
+                "props": {
+                  "text": "Takeaway",
+                  "style": "eyebrow",
+                  "x": 9.3,
+                  "y": 2.3,
+                  "w": 3.533,
+                  "h": 0.3,
+                  "fontSize": {
+                    "$theme": "/styles/eyebrow/fontSize",
+                    "default": 10
+                  },
+                  "bold": true
+                }
+              },
+              {
+                "name": "text",
+                "props": {
+                  "text": {
+                    "$slot": "/takeaway"
+                  },
+                  "style": "quote",
+                  "x": 9.3,
+                  "y": 2.7,
+                  "w": 3.533,
+                  "h": 3.4,
+                  "valign": "top",
+                  "fontSize": {
+                    "$theme": "/styles/quote/fontSize",
+                    "default": 18
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "$if": "/source",
+            "then": [
+              {
+                "name": "shape",
+                "props": {
+                  "type": "line",
+                  "x": 0.5,
+                  "y": 6.55,
+                  "w": 12.333,
+                  "h": 0,
+                  "line": {
+                    "color": {
+                      "$theme": "/palette/rule",
+                      "default": "background2"
+                    },
+                    "width": 0.5
+                  }
+                }
+              },
+              {
+                "name": "text",
+                "props": {
+                  "text": {
+                    "$slot": "/source"
+                  },
+                  "style": "source",
+                  "x": 0.5,
+                  "y": 6.62,
+                  "w": 9,
+                  "h": 0.35,
+                  "fontSize": {
+                    "$theme": "/styles/source/fontSize",
+                    "default": 9
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "text",
+            "props": {
+              "text": "{PAGE_NUMBER} / {PAGE_COUNT}",
+              "style": "footer",
+              "x": 11.333,
+              "y": 6.9,
+              "w": 1.5,
+              "h": 0.3,
+              "align": "right",
+              "fontSize": {
+                "$theme": "/styles/footer/fontSize",
+                "default": 9
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "children": [
+    {
+      "name": "slide",
+      "props": {
+        "meta": {
+          "title": "Cover"
+        },
+        "notes": "A coordinate-authored cover. The cover block itself is a later definition; direct authoring stays available beside blocks."
+      },
+      "children": [
+        {
+          "name": "shape",
+          "props": {
+            "type": "line",
+            "x": 0.5,
+            "y": 2.35,
+            "w": 2,
+            "h": 0,
+            "line": {
+              "color": "accent",
+              "width": 3
+            }
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Example client · September 2026",
+            "style": "eyebrow",
+            "x": 0.5,
+            "y": 2.55,
+            "w": 12,
+            "h": 0.35
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Growth improved as delivery became more reliable",
+            "style": "title",
+            "x": 0.5,
+            "y": 3.0,
+            "w": 11,
+            "h": 1.7,
+            "valign": "top"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Quarterly client performance review",
+            "style": "subtitle",
+            "x": 0.5,
+            "y": 4.8,
+            "w": 11,
+            "h": 0.5
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Confidential",
+            "style": "footer",
+            "x": 0.5,
+            "y": 6.9,
+            "w": 4,
+            "h": 0.3
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "meta": {
+          "title": "Revenue"
+        },
+        "notes": "One action-chart block. The title is the claim; the chart proves it; the takeaway says what to do about it."
+      },
+      "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "action-chart",
+            "slots": {
+              "title": "Revenue grew 18% as on-time delivery reached 94% of contracted work",
+              "tracker": "Performance",
+              "chart": {
+                "name": "chart",
+                "props": {
+                  "type": "bar",
+                  "valAxisTitle": "Revenue (€m)",
+                  "data": [
+                    {
+                      "name": "Revenue",
+                      "labels": ["Q1", "Q2", "Q3", "Q4"],
+                      "values": [4.2, 4.6, 5.1, 5.6]
+                    },
+                    {
+                      "name": "Target",
+                      "labels": ["Q1", "Q2", "Q3", "Q4"],
+                      "values": [4.3, 4.5, 4.8, 5.0]
+                    }
+                  ]
+                }
+              },
+              "takeaway": "Reliability, not price, drove the gain: retained clients expanded scope in every quarter after delivery stabilised.",
+              "source": "Source: quarterly operating review, 2026."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "meta": {
+          "title": "Retention"
+        }
+      },
+      "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "action-chart",
+            "slots": {
+              "title": "Churn fell to 6% once weekly ownership was assigned, and stayed there",
+              "tracker": "Retention",
+              "chart": {
+                "name": "chart",
+                "props": {
+                  "type": "line",
+                  "valAxisTitle": "Churn (%)",
+                  "valAxisMinVal": 0,
+                  "data": [
+                    {
+                      "name": "Churn",
+                      "labels": ["Q1", "Q2", "Q3", "Q4"],
+                      "values": [11, 8, 6, 6]
+                    }
+                  ]
+                }
+              },
+              "takeaway": "Named owners closed the gap between promise and delivery; the remaining churn is contract expiry, not dissatisfaction.",
+              "source": "Source: CRM export, September 2026."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "meta": {
+          "title": "Next quarter"
+        },
+        "notes": "A closing statement, coordinate-authored. Blocks and direct coordinates mix freely in one deck."
+      },
+      "children": [
+        {
+          "name": "text",
+          "props": {
+            "text": "Next quarter: protect retention first, then scale delivery capacity",
+            "style": "display",
+            "x": 0.5,
+            "y": 2.6,
+            "w": 12.333,
+            "h": 1.4,
+            "valign": "top"
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "Expansion now depends on delivery capacity, not on demand.",
+            "style": "quote",
+            "x": 0.5,
+            "y": 4.1,
+            "w": 9,
+            "h": 0.8
+          }
+        },
+        {
+          "name": "text",
+          "props": {
+            "text": "{PAGE_NUMBER} / {PAGE_COUNT}",
+            "style": "footer",
+            "x": 11.333,
+            "y": 6.9,
+            "w": 1.5,
+            "h": 0.3,
+            "align": "right"
+          }
+        }
+      ]
+    }
+  ]
+}

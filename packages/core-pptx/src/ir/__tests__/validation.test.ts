@@ -20,7 +20,6 @@ function baseIr(): PptxIR {
     },
     rtl: false,
     resources: [],
-    masters: [],
     slides: [],
   };
 }
@@ -186,14 +185,6 @@ describe('validatePptxIr', () => {
       expect.objectContaining({
         path: 'slides[0].elements[0].runs[0].hyperlink.slideIndex',
       })
-    );
-  });
-
-  it('rejects a master reference that names no master', () => {
-    const ir = withSlide([]);
-    ir.slides[0].masterName = 'ghost';
-    expect(validatePptxIr(ir)).toContainEqual(
-      expect.objectContaining({ path: 'slides[0].masterName' })
     );
   });
 

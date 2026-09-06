@@ -78,10 +78,11 @@
         }
       }
     },
-    "templates": [
-      {
-        "name": "chrome-ink",
-        "objects": [
+    "blocks": {
+      "chrome-ink": {
+        "description": "Slide chrome shared by the chrome-ink slides of this deck.",
+        "slots": {},
+        "body": [
           {
             "name": "shape",
             "props": {
@@ -123,9 +124,10 @@
           }
         ]
       },
-      {
-        "name": "chrome-paper",
-        "objects": [
+      "chrome-paper": {
+        "description": "Slide chrome shared by the chrome-paper slides of this deck.",
+        "slots": {},
+        "body": [
           {
             "name": "shape",
             "props": {
@@ -170,7 +172,7 @@
           }
         ]
       }
-    ]
+    }
   },
   "children": [
     {
@@ -286,10 +288,15 @@
         "background": {
           "color": "secondary"
         },
-        "notes": "Trend analysis — staircase bars 25/60/85%.",
-        "template": "chrome-ink"
+        "notes": "Trend analysis — staircase bars 25/60/85%."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "chrome-ink"
+          }
+        },
         {
           "name": "text",
           "props": {
@@ -510,10 +517,15 @@
         "background": {
           "color": "accent"
         },
-        "notes": "Areas for growth — three numbered banner cards.",
-        "template": "chrome-ink"
+        "notes": "Areas for growth — three numbered banner cards."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "chrome-ink"
+          }
+        },
         {
           "name": "text",
           "props": {
@@ -750,10 +762,15 @@
         "background": {
           "color": "accent4"
         },
-        "notes": "Revenue model — stacked column chart.",
-        "template": "chrome-ink"
+        "notes": "Revenue model — stacked column chart."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "chrome-ink"
+          }
+        },
         {
           "name": "chart",
           "props": {
@@ -888,10 +905,15 @@
         "background": {
           "color": "primary"
         },
-        "notes": "Current data trend — overlapping area chart.",
-        "template": "chrome-ink"
+        "notes": "Current data trend — overlapping area chart."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "chrome-paper"
+          }
+        },
         {
           "name": "shape",
           "props": {
@@ -1097,10 +1119,15 @@
         "background": {
           "color": "text"
         },
-        "notes": "Graphic data — two-series line chart on black.",
-        "template": "chrome-paper"
+        "notes": "Graphic data — two-series line chart on black."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "chrome-paper"
+          }
+        },
         {
           "name": "text",
           "props": {
@@ -1219,10 +1246,15 @@
         "background": {
           "color": "accent5"
         },
-        "notes": "Reveal about progress — three overlapping circles.",
-        "template": "chrome-ink"
+        "notes": "Reveal about progress — three overlapping circles."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "chrome-ink"
+          }
+        },
         {
           "name": "shape",
           "props": {
@@ -1462,10 +1494,15 @@
         "background": {
           "color": "background"
         },
-        "notes": "Dive into data insights — horizontal bars (per-bar colors).",
-        "template": "chrome-ink"
+        "notes": "Dive into data insights — horizontal bars (per-bar colors)."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "chrome-ink"
+          }
+        },
         {
           "name": "text",
           "props": {
@@ -1794,10 +1831,15 @@
         "background": {
           "color": "accent"
         },
-        "notes": "Into data insights — nested circles 33B/85M/17M.",
-        "template": "chrome-ink"
+        "notes": "Into data insights — nested circles 33B/85M/17M."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "chrome-ink"
+          }
+        },
         {
           "name": "shape",
           "props": {
@@ -2022,10 +2064,15 @@
         "background": {
           "color": "text"
         },
-        "notes": "Three doughnut gauges — 17M / 35M / 85M.",
-        "template": "chrome-paper"
+        "notes": "Three doughnut gauges — 17M / 35M / 85M."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "chrome-paper"
+          }
+        },
         {
           "name": "chart",
           "props": {
@@ -2262,10 +2309,15 @@
         "background": {
           "color": "secondary"
         },
-        "notes": "Story told through — four stadium pills, options one to four.",
-        "template": "chrome-ink"
+        "notes": "Story told through — four stadium pills, options one to four."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "chrome-ink"
+          }
+        },
         {
           "name": "image",
           "props": {
@@ -2489,10 +2541,15 @@
         "background": {
           "color": "accent4"
         },
-        "notes": "Three angle data — inverted triangle with diagonal value bands.",
-        "template": "chrome-ink"
+        "notes": "Three angle data — inverted triangle with diagonal value bands."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "chrome-ink"
+          }
+        },
         {
           "name": "image",
           "props": {
@@ -2650,10 +2707,15 @@
         "background": {
           "color": "background"
         },
-        "notes": "Our data grow — pac-man circles with callout leaders 50/25/10%.",
-        "template": "chrome-ink"
+        "notes": "Our data grow — pac-man circles with callout leaders 50/25/10%."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "chrome-ink"
+          }
+        },
         {
           "name": "image",
           "props": {
@@ -2852,10 +2914,15 @@
         "background": {
           "color": "accent5"
         },
-        "notes": "Understanding model — growing circles 5/15/50%.",
-        "template": "chrome-ink"
+        "notes": "Understanding model — growing circles 5/15/50%."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "chrome-ink"
+          }
+        },
         {
           "name": "text",
           "props": {
@@ -3055,10 +3122,15 @@
         "background": {
           "color": "primary"
         },
-        "notes": "Review of our data — clustered columns with white line overlay.",
-        "template": "chrome-ink"
+        "notes": "Review of our data — clustered columns with white line overlay."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "chrome-paper"
+          }
+        },
         {
           "name": "chart",
           "props": {

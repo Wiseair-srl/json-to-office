@@ -56,9 +56,6 @@ const OFFICE_OPEN_PPTX = '@office-open/pptx';
  *   `{name, description, title, hidden}`: a shape or picture cannot carry a
  *   link. Only runs can, which is why `text-hyperlinks` *is* declared and is
  *   realised by putting the link on the runs inside the body.
- * - `masters`, `placeholders` — layout and master generation are supported by
- *   the backend but not yet mapped here, and an unmapped master would lose
- *   every template object.
  * - `table-merged-cells` — the backend marks merges as `restart`/`continue` on
  *   the covered cells while the IR carries span counts; the translation is
  *   real work and is not yet proven by a test.

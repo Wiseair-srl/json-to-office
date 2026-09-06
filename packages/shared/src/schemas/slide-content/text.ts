@@ -129,6 +129,31 @@ export const TextPropsSchema = Type.Object(
         }),
       ])
     ),
+    fit: Type.Optional(
+      Type.Object(
+        {
+          maxLines: Type.Optional(
+            Type.Integer({
+              minimum: 1,
+              description:
+                'Lines the text may occupy, estimated with the width model at the effective font size.',
+            })
+          ),
+          shrink: Type.Optional(
+            Type.Array(Type.Number({ minimum: 1 }), {
+              minItems: 1,
+              description:
+                'Readable font sizes to try in order when the text exceeds maxLines or the box height. The first that fits is used.',
+            })
+          ),
+        },
+        {
+          additionalProperties: false,
+          description:
+            'Bounded fit: estimate the lines at the effective size, step down only through the declared readable sizes, and fail generation with text_fit_overflow when nothing fits. Without maxLines the box height bounds the text; without shrink the text must fit as sized.',
+        }
+      )
+    ),
     fontSize: Type.Optional(
       Type.Number({ minimum: 1, description: 'Font size in points' })
     ),

@@ -104,58 +104,54 @@ describe('narrowed children validation', () => {
 });
 
 /**
- * A named placeholder is a position on the slide, so it holds exactly what the
- * slide's `children` hold. The record used to be typed with the whole recursive
- * component union, which let a `slide` — or the `pptx` root — sit in a title
- * slot: schema-valid, and at generation time a PLACEHOLDER_NO_POSITION warning
- * on a container that can never be placed. Both the exported schema and the
- * deep walk read `slide`'s `allowedChildren` for this now.
+ * A group is a transparent container: it holds exactly what the slide's
+ * `children` hold, itself and blocks included, and never a `slide` or the
+ * `pptx` root. Both the exported schema and the deep walk read its
+ * `allowedChildren` for this.
  */
-describe('placeholder values are slide content', () => {
+describe('group children are slide content', () => {
   // Both schema spellings: the internal union and the per-renderer document
   // schema an agent actually reads. They are built by the same narrowing pass,
   // so a fix that reached only one of them would be a fix for nobody.
   const published = generateUnifiedDocumentSchema({ customComponents: [] });
-  const inPlaceholder = (child: unknown) => ({
+  const inGroup = (child: unknown) => ({
     name: 'pptx',
     props: {},
-    children: [{ name: 'slide', props: { placeholders: { title: child } } }],
+    children: [
+      { name: 'slide', children: [{ name: 'group', children: [child] }] },
+    ],
   });
 
-  it.each(['slide', 'pptx'])('rejects a %s as a placeholder value', (name) => {
-    const document = inPlaceholder({ name, props: {} });
+  it.each(['slide', 'pptx'])('rejects a %s inside a group', (name) => {
+    const document = inGroup({ name, props: {} });
     expect(Value.Check(PptxComponentDefinitionSchema, document)).toBe(false);
     expect(Value.Check(published, document)).toBe(false);
     expect(validatePresentationDocument(document).valid).toBe(false);
   });
 
-  it('rejects a container in a placeholder even with no props to check', () => {
-    // The propless spelling: `slide` may omit `props`, so nothing inside the
-    // node is wrong — only where the node sits.
-    const document = inPlaceholder({ name: 'slide' });
-    expect(Value.Check(PptxComponentDefinitionSchema, document)).toBe(false);
-    expect(Value.Check(published, document)).toBe(false);
-    expect(validatePresentationDocument(document).valid).toBe(false);
-  });
-
-  it('still accepts the content components a slot exists for', () => {
+  it('accepts content, a nested group and a block inside a group', () => {
     for (const child of [
       { name: 'text', props: { text: 'Title' } },
       { name: 'image', props: { path: 'cover.png' } },
+      { name: 'group', children: [{ name: 'text', props: { text: 'x' } }] },
     ]) {
-      const document = inPlaceholder(child);
+      const document = inGroup(child);
       expect(Value.Check(PptxComponentDefinitionSchema, document)).toBe(true);
       expect(Value.Check(published, document)).toBe(true);
       expect(validatePresentationDocument(document).errors).toEqual([]);
     }
+    const withBlock = inGroup({ name: 'block', props: { ref: 'x' } });
+    (withBlock.props as any).blocks = { x: { slots: {}, body: [] } };
+    expect(Value.Check(published, withBlock)).toBe(true);
+    expect(validatePresentationDocument(withBlock).errors).toEqual([]);
   });
 
-  it('names the slot in the error, not just the slide', () => {
+  it('names the nested node in the error, not just the slide', () => {
     const errors = validatePresentationDocument(
-      inPlaceholder({ name: 'slide' })
+      inGroup({ name: 'slide' })
     ).errors;
     expect(errors.map((error) => error.path)).toContain(
-      '/children/0/props/placeholders/title/name'
+      '/children/0/children/0/children/0/name'
     );
   });
 });

@@ -18,8 +18,10 @@ import {
   type QualityRulePack,
 } from '@json-to-office/quality';
 import type {
+  PptxBlockSlotFact,
   PptxBoxFact,
   PptxCanvasFact,
+  PptxChromeSlotFact,
   PptxChartFact,
   PptxColorFact,
   PptxFontFact,
@@ -46,7 +48,12 @@ const RENDERER_DEFAULT_HEIGHT_IN = 7.5;
 // TIGHT is included, and 87% of any visible spill, with no OVERFLOW false
 // alarms. Remaining misses require rendered evidence (`rendered` certainty),
 // not a character-count model — see the harness header for the full method.
-const DEFAULT_CHAR_WIDTH_FACTOR = 0.46;
+// The estimator itself lives in `utils/textMetrics.ts`, shared with the
+// engine's bounded `fit` so both size a title the same way.
+import {
+  DEFAULT_CHAR_WIDTH_FACTOR,
+  estimateTextHeightPt as estimateHeight,
+} from '../utils/textMetrics';
 const DEFAULT_SAFETY_BUFFER_PT = 8;
 const DEFAULT_MIN_READABLE_FONT_PT = 7;
 const DEFAULT_MAX_BODY_WORDS_PER_SLIDE = 130;
@@ -87,26 +94,15 @@ function estimateTextHeightPt(
   if (fact.boxWidthPt === undefined || fact.boxHeightPt === undefined) {
     return undefined;
   }
-  const paragraphs = fact.text.split('\n');
-  const charsPerLine = Math.max(
-    1,
-    Math.floor(fact.boxWidthPt / (fact.fontSizePt * charWidthFactor))
+  return estimateHeight(
+    fact.text,
+    fact.boxWidthPt,
+    fact.fontSizePt,
+    fact.lineSpacingPt,
+    fact.paraSpaceBeforePt,
+    fact.paraSpaceAfterPt,
+    charWidthFactor
   );
-  let lines = 0;
-  for (const paragraph of paragraphs) {
-    const measured = paragraph.trimEnd();
-    lines +=
-      measured === ''
-        ? 1
-        : Math.max(1, Math.ceil(measured.length / charsPerLine));
-  }
-  let heightPt = fact.fontSizePt + Math.max(0, lines - 1) * fact.lineSpacingPt;
-  if (paragraphs.length > 1) {
-    heightPt +=
-      (paragraphs.length - 1) *
-      (fact.paraSpaceBeforePt + fact.paraSpaceAfterPt);
-  }
-  return { heightPt, lines };
 }
 
 export const pptxCanvasRule: QualityRule<PptxQualityModel, PptxQualityFact> = {
@@ -907,6 +903,136 @@ export const pptxPaletteRule: QualityRule<PptxQualityModel, PptxQualityFact> = {
   },
 };
 
+/** A block slot over the word budget its definition declares. */
+export const pptxSlotBudgetRule: QualityRule<
+  PptxQualityModel,
+  PptxQualityFact
+> = {
+  id: 'pptx/slot-budget',
+  code: QUALITY_CODES.SLOT_BUDGET,
+  category: 'composition',
+  defaultSeverity: 'warning',
+  defaultCertainty: 'deterministic',
+  formats: ['pptx'],
+  evaluate: ({ facts }) =>
+    facts
+      .filter(
+        (fact): fact is PptxBlockSlotFact => fact.kind === 'pptx/block-slot'
+      )
+      .filter((fact) => fact.words > fact.maxWords)
+      .map((fact) => ({
+        path: fact.path,
+        message:
+          `${fact.block} ${fact.slot} runs to ${fact.words} words; the slot holds ` +
+          `${fact.maxWords} — one claim, one sentence.`,
+        suggestion:
+          'Cut it to the conclusion. Move the evidence into the body it summarises.',
+        evidence: {
+          summary: 'words in the slot against its budget',
+          actual: fact.words,
+          expected: fact.maxWords,
+          unit: 'words',
+        },
+        context: { block: fact.block, slot: fact.slot },
+      })),
+};
+
+function stringListParameter(
+  parameters: Readonly<Record<string, unknown>>,
+  name: string
+): string[] {
+  const value = parameters[name];
+  return Array.isArray(value)
+    ? value.filter((entry): entry is string => typeof entry === 'string')
+    : [];
+}
+
+/**
+ * Chrome a profile requires, judged where the block declared the slot.
+ *
+ * The rule reads roles off the document's own definitions and required roles
+ * off the profile; with no profile asking for anything it says nothing. That
+ * is the theme/profile boundary in one place: selecting the consulting theme
+ * styles a source line, selecting the consulting profile requires one.
+ */
+export const pptxRequiredChromeRule: QualityRule<
+  PptxQualityModel,
+  PptxQualityFact
+> = {
+  id: 'pptx/required-chrome',
+  code: QUALITY_CODES.CHROME_MISSING,
+  category: 'consistency',
+  defaultSeverity: 'warning',
+  defaultCertainty: 'deterministic',
+  formats: ['pptx'],
+  defaultParameters: { required: [] },
+  evaluate: ({ facts, configuration, profile }) => {
+    const required = stringListParameter(configuration.parameters, 'required');
+    if (required.length === 0) return [];
+    return facts
+      .filter(
+        (fact): fact is PptxChromeSlotFact => fact.kind === 'pptx/chrome-slot'
+      )
+      .filter((fact) => required.includes(fact.role) && !fact.present)
+      .map((fact) => ({
+        path: fact.path,
+        relatedPaths: [fact.invocation],
+        message:
+          `${fact.block} states no ${fact.role} in its "${fact.slot}" slot; ` +
+          `the ${profile?.id ?? 'selected'} profile expects one on every ${fact.block}.`,
+        suggestion: `Fill the "${fact.slot}" slot. The theme already styles it.`,
+        context: { block: fact.block, slot: fact.slot, role: fact.role },
+      }));
+  },
+};
+
+/**
+ * An action title that wraps past the lines a profile allows, measured in
+ * the box its definition drew and with the width model the fit pass uses.
+ * Off by default (`maxLines: 0`): a label title is a content convention,
+ * and only a consulting profile asks every slide to lead with a claim.
+ */
+export const pptxActionTitleRule: QualityRule<
+  PptxQualityModel,
+  PptxQualityFact
+> = {
+  id: 'pptx/action-title',
+  code: QUALITY_CODES.ACTION_TITLE_LENGTH,
+  category: 'hierarchy',
+  defaultSeverity: 'warning',
+  defaultCertainty: 'estimated',
+  formats: ['pptx'],
+  defaultParameters: { maxLines: 0 },
+  evaluate: ({ facts, configuration }) => {
+    const maxLines = numberParameter(configuration.parameters, 'maxLines', 0);
+    if (maxLines <= 0) return [];
+    return facts
+      .filter(
+        (fact): fact is PptxChromeSlotFact =>
+          fact.kind === 'pptx/chrome-slot' &&
+          fact.role === 'actionTitle' &&
+          fact.estimatedLines !== undefined
+      )
+      .filter((fact) => (fact.estimatedLines ?? 0) > maxLines)
+      .map((fact) => ({
+        path: fact.path,
+        relatedPaths: [fact.invocation],
+        message:
+          `The action title runs to ${fact.estimatedLines} lines at ${fact.fontSizePt}pt; ` +
+          `an action title states its claim in at most ${maxLines}.`,
+        suggestion:
+          'Cut the title to one claim with a number or a verb. Move the rest into the takeaway.',
+        evidence: {
+          summary: 'estimated lines against the profile limit',
+          actual: fact.estimatedLines,
+          expected: maxLines,
+          unit: 'lines',
+        },
+        context: { block: fact.block, slot: fact.slot },
+      }));
+  },
+};
+
 export const PPTX_QUALITY_RULES: QualityRulePack<
   PptxQualityModel,
   PptxQualityFact
@@ -924,6 +1050,9 @@ export const PPTX_QUALITY_RULES: QualityRulePack<
     pptxTableRule,
     pptxFontCountRule,
     pptxPaletteRule,
+    pptxSlotBudgetRule,
+    pptxRequiredChromeRule,
+    pptxActionTitleRule,
   ],
 };
 
@@ -941,6 +1070,19 @@ export const PPTX_QUALITY_PROFILES = {
     id: 'technical-presentation',
     formats: ['pptx'],
     description: 'Portable professional presentation defaults.',
+  },
+  'consulting-deck': {
+    id: 'consulting-deck',
+    formats: ['pptx'],
+    description:
+      'Consulting readout: every content slide leads with a two-line action title, every chart carries a takeaway and a source.',
+    rules: {
+      'pptx/required-chrome': {
+        parameters: { required: ['takeaway', 'source'] },
+      },
+      'pptx/action-title': { parameters: { maxLines: 2 } },
+      'pptx/slide-density': { parameters: { maximumBodyWords: 90 } },
+    },
   },
 } as const satisfies Record<string, QualityProfile>;
 

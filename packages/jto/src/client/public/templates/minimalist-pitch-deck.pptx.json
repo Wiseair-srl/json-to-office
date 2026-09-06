@@ -58,104 +58,120 @@
         "color": "text"
       }
     },
-    "templates": [
-      {
-        "name": "veil-bottom-right",
-        "background": {
-          "gradient": {
-            "type": "radial",
-            "focus": "bottomRight",
-            "stops": [
-              {
-                "color": "primary",
-                "pos": 0
-              },
-              {
-                "color": "primary",
-                "pos": 79
-              },
-              {
-                "color": "secondary",
-                "pos": 100
-              }
-            ]
+    "blocks": {
+      "veil-bottom-right": {
+        "description": "Slide chrome shared by the veil-bottom-right slides of this deck.",
+        "slots": {},
+        "slide": {
+          "background": {
+            "gradient": {
+              "type": "radial",
+              "focus": "bottomRight",
+              "stops": [
+                {
+                  "color": "primary",
+                  "pos": 0
+                },
+                {
+                  "color": "primary",
+                  "pos": 79
+                },
+                {
+                  "color": "secondary",
+                  "pos": 100
+                }
+              ]
+            }
           }
-        }
+        },
+        "body": []
       },
-      {
-        "name": "veil-top-left",
-        "background": {
-          "gradient": {
-            "type": "radial",
-            "focus": "topLeft",
-            "stops": [
-              {
-                "color": "primary",
-                "pos": 0
-              },
-              {
-                "color": "primary",
-                "pos": 79
-              },
-              {
-                "color": "secondary",
-                "pos": 100
-              }
-            ]
+      "veil-top-left": {
+        "description": "Slide chrome shared by the veil-top-left slides of this deck.",
+        "slots": {},
+        "slide": {
+          "background": {
+            "gradient": {
+              "type": "radial",
+              "focus": "topLeft",
+              "stops": [
+                {
+                  "color": "primary",
+                  "pos": 0
+                },
+                {
+                  "color": "primary",
+                  "pos": 79
+                },
+                {
+                  "color": "secondary",
+                  "pos": 100
+                }
+              ]
+            }
           }
-        }
+        },
+        "body": []
       },
-      {
-        "name": "dawn-diagonal",
-        "background": {
-          "gradient": {
-            "type": "linear",
-            "angle": 110,
-            "stops": [
-              {
-                "color": "primary",
-                "pos": 0
-              },
-              {
-                "color": "secondary",
-                "pos": 23
-              },
-              {
-                "color": "background2",
-                "pos": 73
-              },
-              {
-                "color": "background2",
-                "pos": 100
-              }
-            ]
+      "dawn-diagonal": {
+        "description": "Slide chrome shared by the dawn-diagonal slides of this deck.",
+        "slots": {},
+        "slide": {
+          "background": {
+            "gradient": {
+              "type": "linear",
+              "angle": 110,
+              "stops": [
+                {
+                  "color": "primary",
+                  "pos": 0
+                },
+                {
+                  "color": "secondary",
+                  "pos": 23
+                },
+                {
+                  "color": "background2",
+                  "pos": 73
+                },
+                {
+                  "color": "background2",
+                  "pos": 100
+                }
+              ]
+            }
           }
-        }
+        },
+        "body": []
       },
-      {
-        "name": "haze-bottom-left",
-        "background": {
-          "gradient": {
-            "type": "radial",
-            "focus": "bottomLeft",
-            "stops": [
-              {
-                "color": "secondary",
-                "pos": 0
-              },
-              {
-                "color": "background2",
-                "pos": 38
-              },
-              {
-                "color": "background2",
-                "pos": 100
-              }
-            ]
+      "haze-bottom-left": {
+        "description": "Slide chrome shared by the haze-bottom-left slides of this deck.",
+        "slots": {},
+        "slide": {
+          "background": {
+            "gradient": {
+              "type": "radial",
+              "focus": "bottomLeft",
+              "stops": [
+                {
+                  "color": "secondary",
+                  "pos": 0
+                },
+                {
+                  "color": "background2",
+                  "pos": 38
+                },
+                {
+                  "color": "background2",
+                  "pos": 100
+                }
+              ]
+            }
           }
-        }
+        },
+        "body": []
       }
-    ]
+    }
   },
   "children": [
     {
@@ -405,10 +421,15 @@
     {
       "name": "slide",
       "props": {
-        "template": "veil-bottom-right",
         "notes": "Welcome slide with stat and image."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "veil-bottom-right"
+          }
+        },
         {
           "name": "text",
           "props": {
@@ -545,10 +566,15 @@
     {
       "name": "slide",
       "props": {
-        "template": "veil-top-left",
         "notes": "Vision statement with stat and two square images."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "veil-top-left"
+          }
+        },
         {
           "name": "text",
           "props": {
@@ -717,10 +743,15 @@
     {
       "name": "slide",
       "props": {
-        "template": "dawn-diagonal",
         "notes": "Problem and solution overview."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "dawn-diagonal"
+          }
+        },
         {
           "name": "text",
           "props": {
@@ -1746,10 +1777,15 @@
     {
       "name": "slide",
       "props": {
-        "template": "veil-bottom-right",
         "notes": "Product overview with right image band."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "veil-bottom-right"
+          }
+        },
         {
           "name": "image",
           "props": {
@@ -1879,10 +1915,15 @@
     {
       "name": "slide",
       "props": {
-        "template": "veil-top-left",
         "notes": "Three product feature images."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "veil-top-left"
+          }
+        },
         {
           "name": "image",
           "props": {
@@ -2031,10 +2072,15 @@
         "meta": {
           "title": "Case timeline"
         },
-        "template": "dawn-diagonal",
         "notes": "Arc timeline with four cases."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "dawn-diagonal"
+          }
+        },
         {
           "name": "text",
           "props": {
@@ -2383,10 +2429,15 @@
         "meta": {
           "title": "Market overview"
         },
-        "template": "haze-bottom-left",
         "notes": "Market overview pies."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "haze-bottom-left"
+          }
+        },
         {
           "name": "text",
           "props": {
@@ -2835,10 +2886,15 @@
         "meta": {
           "title": "Competitive landscape"
         },
-        "template": "veil-bottom-right",
         "notes": "Competitive landscape stats and images."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "veil-bottom-right"
+          }
+        },
         {
           "name": "image",
           "props": {
@@ -3021,10 +3077,15 @@
         "meta": {
           "title": "Laptop mockup"
         },
-        "template": "veil-top-left",
         "notes": "Laptop mockup slide."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "veil-top-left"
+          }
+        },
         {
           "name": "shape",
           "props": {
@@ -3263,10 +3324,15 @@
         "meta": {
           "title": "Values"
         },
-        "template": "dawn-diagonal",
         "notes": "Values list and percent column."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "dawn-diagonal"
+          }
+        },
         {
           "name": "image",
           "props": {
@@ -3427,10 +3493,15 @@
         "meta": {
           "title": "Revenue KPIs"
         },
-        "template": "haze-bottom-left",
         "notes": "Revenue KPIs."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "haze-bottom-left"
+          }
+        },
         {
           "name": "text",
           "props": {

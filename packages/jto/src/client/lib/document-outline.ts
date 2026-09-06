@@ -297,31 +297,30 @@ function slideLabel(slideEl: Node): string | undefined {
     if (text && (!best || rank < best.rank)) best = { rank, text };
   };
 
-  // Template-driven decks carry their text in props.placeholders.
-  const placeholders = propValue(props, 'placeholders');
-  if (placeholders?.type === 'object' && placeholders.children) {
-    for (const prop of placeholders.children) {
-      if (prop.type !== 'property' || !prop.children) continue;
-      const [key, valueNode] = prop.children;
-      const keyName = typeof key?.value === 'string' ? key.value : '';
-      const info = valueNode ? componentInfo(valueNode) : null;
-      const text = info
-        ? stringValue(propValue(info.props, 'text'))
-        : undefined;
-      offer(
-        keyName === 'title'
-          ? 0
-          : keyName === 'subtitle' || keyName.startsWith('heading')
-            ? 1
-            : 2,
-        text
-      );
-    }
-  }
-
   const consider = (el: Node, depth: number) => {
     const info = componentInfo(el);
     if (!info) return;
+    // Block-driven decks carry their words in the invocation's slots.
+    if (info.name === 'block') {
+      const slots = propValue(info.props, 'slots');
+      if (slots?.type === 'object' && slots.children) {
+        for (const prop of slots.children) {
+          if (prop.type !== 'property' || !prop.children) continue;
+          const [key, valueNode] = prop.children;
+          const keyName = typeof key?.value === 'string' ? key.value : '';
+          const text = valueNode ? stringValue(valueNode) : undefined;
+          offer(
+            keyName === 'title'
+              ? 0
+              : keyName === 'subtitle' || keyName.startsWith('heading')
+                ? 1
+                : 2,
+            text
+          );
+        }
+      }
+      return;
+    }
     if (info.name === 'text' || info.name === 'heading') {
       const text = stringValue(propValue(info.props, 'text'));
       if (text) {

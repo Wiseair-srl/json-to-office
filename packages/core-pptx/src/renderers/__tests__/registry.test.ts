@@ -70,7 +70,6 @@ describe('PPTX renderer registry', () => {
       'image-transform',
       'flip-vertical',
       'element-hyperlinks',
-      'masters',
       'table-merged-cells',
     ] as const) {
       expect({

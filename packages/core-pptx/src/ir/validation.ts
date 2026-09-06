@@ -79,38 +79,12 @@ export function validatePptxIr(ir: PptxIR): IrViolation[] {
     }
   });
 
-  const masterNames = new Set<string>();
-  ir.masters.forEach((master, index) => {
-    const path = `masters[${index}]`;
-    if (masterNames.has(master.name)) {
-      add(path, `duplicate master name "${master.name}"`);
-    }
-    masterNames.add(master.name);
-    if (master.background) {
-      checkBackground(
-        master.background,
-        `${path}.background`,
-        resourceIds,
-        add
-      );
-    }
-    master.elements.forEach((element, i) =>
-      checkElement(element, `${path}.elements[${i}]`, ir, resourceIds, add)
-    );
-  });
-
   const slideIds = new Set<string>();
   ir.slides.forEach((slide, index) => {
     const path = `slides[${index}]`;
     if (slideIds.has(slide.id)) add(path, `duplicate slide id "${slide.id}"`);
     slideIds.add(slide.id);
 
-    if (slide.masterName && !masterNames.has(slide.masterName)) {
-      add(
-        `${path}.masterName`,
-        `references unknown master "${slide.masterName}"`
-      );
-    }
     if (slide.background) {
       checkBackground(slide.background, `${path}.background`, resourceIds, add);
     }

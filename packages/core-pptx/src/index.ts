@@ -69,7 +69,10 @@ export type {
 } from './quality/preflight';
 export {
   preparePptxQualityDocument,
+  type PptxBlocksMetadata,
+  type PptxBlockSlotFact,
   type PptxCanvasFact,
+  type PptxChromeSlotFact,
   type PptxQualityFact,
   type PptxQualityModel,
   type PptxSlideFact,
@@ -83,6 +86,15 @@ export {
   pptxQualityEngine,
   resolvePptxQualityProfile,
 } from './quality/rules';
+
+// Document-local JSON block composition.
+export {
+  expandPptxBlocks,
+  toAuthoredPointer,
+  blockSlotBudgets,
+  blockSlotRoles,
+} from './blocks';
+export type { BlockSourceMap, ExpandedBlocks } from './blocks';
 
 // Plugin system
 export {

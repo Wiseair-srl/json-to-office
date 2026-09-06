@@ -1,4 +1,5 @@
 import { prepareDocxQualityDocument } from '@json-to-office/core-docx';
+import { pptxThemes } from '@json-to-office/core-pptx';
 import { describe, it, expect } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -53,7 +54,17 @@ describe('bundled playground templates', () => {
         file.endsWith('.docx.json') && json.props?.blocks
           ? prepareDocxQualityDocument(json).model.context.document
           : json;
-      const names = [...new Set([...collect(json), ...collect(expanded)])];
+      // A deck on a built-in theme by name draws in that theme's families,
+      // which the document itself never spells out.
+      const themeFonts =
+        file.endsWith('.pptx.json') && typeof json.props?.theme === 'string'
+          ? Object.values(pptxThemes[json.props.theme]?.fonts ?? {}).filter(
+              (family): family is string => typeof family === 'string'
+            )
+          : [];
+      const names = [
+        ...new Set([...collect(json), ...collect(expanded), ...themeFonts]),
+      ];
       expect(names.length).toBeGreaterThan(0);
       // Families the document itself registers (fontRegistry with real
       // sources) are resolvable by definition — the registry is how a

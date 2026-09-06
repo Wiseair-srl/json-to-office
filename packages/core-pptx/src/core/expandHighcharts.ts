@@ -38,11 +38,9 @@ const DEFAULT_EXPORT_SERVER_URL = 'http://localhost:7801';
 export interface HighchartsExpansionResult {
   presentation: ProcessedPresentation;
   /**
-   * Highcharts components this pass did not reach.
-   *
-   * Placeholder content is merged with its declaration during compilation, so
-   * expanding it here would use pre-merge dimensions. Rather than render a
-   * chart at the wrong size, those are reported and the caller refuses.
+   * Highcharts components this pass did not reach. Empty since layout resolves
+   * every box before this pass runs; kept so a caller can still tell "not
+   * expanded" from "expanded to nothing".
    */
   unexpanded: Array<{ name: string; path: string }>;
 }
@@ -50,7 +48,7 @@ export interface HighchartsExpansionResult {
 /**
  * Replace every `highcharts` component with the `image` it renders to.
  *
- * Slide components and template objects are expanded in place. The presentation
+ * Slide components are expanded in place, groups included. The presentation
  * is copied rather than mutated so a caller's tree is never altered.
  */
 export async function expandHighchartsComponents(
@@ -68,46 +66,19 @@ export async function expandHighchartsComponents(
     chartFonts,
   };
 
-  const templates = presentation.templates
-    ? await Promise.all(
-        presentation.templates.map(async (template, index) => ({
-          ...template,
-          objects: template.objects
-            ? await expandList(
-                template.objects,
-                `masters[${index}].elements`,
-                scope
-              )
-            : template.objects,
-        }))
-      )
-    : presentation.templates;
-
   const slides = await Promise.all(
-    presentation.slides.map(async (slide, index) => {
-      for (const [name, component] of Object.entries(
-        slide.placeholders ?? {}
-      )) {
-        if (component.name === 'highcharts') {
-          unexpanded.push({
-            name: 'highcharts',
-            path: `slides[${index}].placeholders.${name}`,
-          });
-        }
-      }
-      return {
-        ...slide,
-        components: await expandList(
-          slide.components,
-          `slides[${index}].elements`,
-          scope
-        ),
-      };
-    })
+    presentation.slides.map(async (slide, index) => ({
+      ...slide,
+      components: await expandList(
+        slide.components,
+        `slides[${index}].elements`,
+        scope
+      ),
+    }))
   );
 
   return {
-    presentation: { ...presentation, slides, templates },
+    presentation: { ...presentation, slides },
     unexpanded,
   };
 }
@@ -128,11 +99,20 @@ async function expandList(
 ): Promise<PptxComponentInput[]> {
   const out: PptxComponentInput[] = [];
   for (const [index, component] of components.entries()) {
-    out.push(
-      component.name === 'highcharts'
-        ? await expandOne(component, `${path}[${index}]`, scope)
-        : component
-    );
+    if (component.name === 'highcharts') {
+      out.push(await expandOne(component, `${path}[${index}]`, scope));
+    } else if (component.children && component.children.length > 0) {
+      out.push({
+        ...component,
+        children: await expandList(
+          component.children,
+          `${path}[${index}].children`,
+          scope
+        ),
+      });
+    } else {
+      out.push(component);
+    }
   }
   return out;
 }

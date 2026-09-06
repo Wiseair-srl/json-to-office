@@ -198,10 +198,8 @@ export function deepValidatePresentation(
  *  - the `children` array — `pptx` holds slides, `slide` holds content
  *    components. The registry's `allowedChildren` narrows what each container
  *    accepts, and leaf components must not carry children at all; and
- *  - a slide's `props.placeholders` record — added dynamically by the
- *    component registry on top of the static SlidePropsSchema, so its values
- *    are not covered by the slide's own props validation and this walk is
- *    their only checker.
+ *  - a `group`'s `children` — a transparent container, and what a block
+ *    invocation expands into, so it holds exactly what a slide holds.
  *
  * The node's own props are NOT validated here — the caller validates the root
  * props, and every entry is validated as it is visited.
@@ -345,45 +343,6 @@ function walkComponentTree(
     }
   };
 
-  // A `placeholders` record maps placeholder names to full components
-  // ({ "title": { "name": "text", ... } }). The registry's `hasPlaceholders`
-  // flag is what injects the field into the published schema at generation
-  // time (createPptxComponentSchemaObject) — the static props schema does not
-  // include it, so validateComponentProps strips it before checking the
-  // component's own props and each value is validated here instead. Reading
-  // the same flag keeps this walk covering exactly the components whose
-  // published schema accepts placeholders; only `slide` carries it today.
-  //
-  // A placeholder holds what the container itself holds: filling one with a
-  // `slide` or the `pptx` root is not a component with no position, it is a
-  // container nested where no container can go. The published schema narrows
-  // the record to the same union it narrows `children` to, so both refuse it.
-  if (
-    parentDef?.hasPlaceholders &&
-    node.props &&
-    typeof node.props === 'object'
-  ) {
-    const placeholders = node.props.placeholders;
-    if (
-      placeholders &&
-      typeof placeholders === 'object' &&
-      !Array.isArray(placeholders)
-    ) {
-      for (const [key, child] of Object.entries(placeholders)) {
-        const childPath = `${path}/props/placeholders/${key}`;
-        checkAllowedChild(child, childPath);
-        validateEntry(child, childPath);
-      }
-    } else if (placeholders != null) {
-      errors.push({
-        path: `${path}/props/placeholders`,
-        message:
-          'Field "placeholders" must be an object mapping placeholder names to components',
-        code: 'invalid_type',
-      });
-    }
-  }
-
   if (Array.isArray(node.children)) {
     node.children.forEach((child: any, i: number) => {
       const childPath = `${path}/children/${i}`;
@@ -416,9 +375,8 @@ function validateComponentProps(
   const schema = COMPONENT_SCHEMAS[componentName];
   if (!schema) {
     // Unknown component type. `basePath` always ends in `/props`; anchor the
-    // swap to the end so a nested path like `…/props/placeholders/title/props`
-    // becomes `…/props/placeholders/title/name` rather than mangling an
-    // earlier `/props`.
+    // swap to the end so a nested path like `…/children/2/props` becomes
+    // `…/children/2/name` rather than mangling an earlier `/props`.
     errors.push({
       path: basePath.replace(/\/props$/, '/name'),
       message: `Unknown component "${componentName}"`,
@@ -427,22 +385,7 @@ function validateComponentProps(
     return errors;
   }
 
-  // A `placeholders` field on a `hasPlaceholders` component is injected at
-  // schema-generation time and absent from the static props schema; its
-  // values are walked separately, so strip it here to avoid a false
-  // additionalProperties rejection. Keyed on the registry flag, like the
-  // schema injection and the walk.
   let toCheck = props;
-  if (
-    getPptxStandardComponent(componentName)?.hasPlaceholders &&
-    props &&
-    typeof props === 'object' &&
-    'placeholders' in props
-  ) {
-    const rest = { ...props };
-    delete rest.placeholders;
-    toCheck = rest;
-  }
 
   // When unknown fields are explicitly allowed, strip them before checking so
   // additionalProperties:false no longer rejects — required/typed fields are

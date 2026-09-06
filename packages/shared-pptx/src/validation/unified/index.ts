@@ -8,7 +8,11 @@
 
 import { Value } from '@sinclair/typebox/value';
 import type { ValidationError } from '@json-to-office/shared';
-import { transformValueErrors } from '@json-to-office/shared';
+import {
+  readBlockDefinitions,
+  transformValueErrors,
+  validateBlockInvocations,
+} from '@json-to-office/shared';
 import { ThemeConfigSchema } from '../../schemas/theme';
 import { collectImageSourceConflicts } from '../image-source-conflicts';
 import { collectTextContentConflicts } from '../text-content-conflicts';
@@ -68,6 +72,14 @@ export function validatePresentationDocument(
   errors.push(...collectImageSourceConflicts(data));
   errors.push(...collectTextContentConflicts(data));
   errors.push(...collectPptxRendererErrors(data));
+  // Document-local JSON blocks: definitions, invocations and slot budgets.
+  // Names resolve only against this document; a reference catalog entry is
+  // never a runtime block.
+  errors.push(
+    ...validateBlockInvocations(data, readBlockDefinitions(data), 'pptx', [
+      ...(opts.knownCustomNames ?? []),
+    ])
+  );
   const valid = errors.length === 0;
   return {
     valid,

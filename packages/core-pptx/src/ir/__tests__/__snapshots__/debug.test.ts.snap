@@ -2,7 +2,6 @@
 
 exports[`PptxIR debug snapshots > matches a recorded snapshot 1`] = `
 "{
-  "masters": [],
   "metadata": {
     "title": "Snapshot deck"
   },

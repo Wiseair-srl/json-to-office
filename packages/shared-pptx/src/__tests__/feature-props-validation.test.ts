@@ -73,42 +73,6 @@ describe('text runs validation', () => {
     );
   });
 
-  it('does not require content on placeholder defaults stubs', () => {
-    const result = validatePresentationDocument(
-      deck(
-        [
-          slide([], {
-            template: 'base',
-            placeholders: {
-              title: { name: 'text', props: { text: 'Actual content' } },
-            },
-          }),
-        ],
-        {
-          templates: [
-            {
-              name: 'base',
-              placeholders: [
-                {
-                  name: 'title',
-                  x: 1,
-                  y: 1,
-                  defaults: {
-                    name: 'text',
-                    props: { fontSize: 20, color: 'primary' },
-                  },
-                },
-              ],
-            },
-          ],
-        }
-      )
-    );
-
-    expect(result.errors).toEqual([]);
-    expect(result.valid).toBe(true);
-  });
-
   it('rejects an invalid run shape with a pointer path', () => {
     const result = validatePresentationDocument(
       deck([
