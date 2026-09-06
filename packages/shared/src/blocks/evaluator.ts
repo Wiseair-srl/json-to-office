@@ -330,6 +330,17 @@ function checkTemplate(
           code: 'block_invalid_binding',
           message: '$item is only available inside $each.',
         });
+      if (
+        (key === '$slot' || key === '$item') &&
+        own(value, 'props') &&
+        !isBlockRecord(value.props)
+      )
+        issues.push({
+          path: `${path}/props`,
+          code: 'block_invalid_binding',
+          message:
+            'props must be an object of component props merged beneath a component-slot value.',
+        });
     }
     if (
       key === '$join' &&
@@ -434,6 +445,12 @@ export function validateBlockDefinitions(
         code: 'block_format',
         message: 'Section effects are DOCX-only.',
       });
+    if (format !== 'pptx' && def.slide)
+      issues.push({
+        path: `${path}/slide`,
+        code: 'block_format',
+        message: 'Slide effects are PPTX-only.',
+      });
     const checkSlot = (slot: BlockSlot, pointer: string): void => {
       if (slot.default !== undefined)
         resolveBlockSlot(slot, slot.default, `${pointer}/default`, issues);
@@ -462,6 +479,7 @@ export function validateBlockDefinitions(
     checkTemplate(def.body, `${path}/body`, def.slots, issues);
     if (def.section)
       checkTemplate(def.section, `${path}/section`, def.slots, issues);
+    if (def.slide) checkTemplate(def.slide, `${path}/slide`, def.slots, issues);
   }
   return issues;
 }
@@ -509,6 +527,13 @@ export function validateBlockInvocations(
             message:
               'A block with section effects must be a direct child of a top-level section.',
           });
+        if (def.slide && !/^\/children\/\d+\/children\/\d+$/.test(path))
+          issues.push({
+            path,
+            code: 'invalid_placement',
+            message:
+              'A block with slide effects must be a direct child of a slide.',
+          });
       }
     }
     for (const [key, item] of Object.entries(v)) {
@@ -535,6 +560,11 @@ export interface BlockSectionEffect {
   environment: BlockEnvironment;
   path: string;
 }
+export interface BlockSlideEffect {
+  settings: NonNullable<JsonBlockDefinition['slide']>;
+  environment: BlockEnvironment;
+  path: string;
+}
 export interface BlockEvaluatorOptions {
   format: 'docx' | 'pptx';
   theme?: unknown;
@@ -548,6 +578,7 @@ export interface BlockEvaluatorOptions {
     context: Rec
   ) => number;
   onSection?: (effect: BlockSectionEffect) => void;
+  onSlide?: (effect: BlockSlideEffect) => void;
 }
 
 /** Pure bounded JSON composition. Plugins are expanded by the host, never evaluated here. */
@@ -649,22 +680,59 @@ export class JsonBlockEvaluator {
           toAuthoredBlockPointer(env.contextSources ?? {}, pointer) === pointer
             ? env.source
             : toAuthoredBlockPointer(env.contextSources ?? {}, pointer);
-      if (found !== undefined) return structuredClone(found);
-      if (own(value, 'default'))
-        return this.evaluate(
+      let result: unknown =
+        found !== undefined ? structuredClone(found) : undefined;
+      if (result === undefined && own(value, 'default'))
+        result = this.evaluate(
           value.default,
           env,
           out,
           `${definitionPath}/default`,
           depth + 1
         );
-      if (key === '$theme')
+      if (result === undefined && key === '$theme')
         return fail(
           definitionPath,
           'block_unknown_theme_binding',
           `Theme value '${pointer}' is missing; declare a fallback or use an existing token.`
         );
-      return undefined;
+      // A component slot takes its placement and styling defaults from the
+      // definition: `props` are merged beneath the slot value's own props.
+      // The slot content cannot carry placement (rejected at validation), so
+      // geometry always comes from the definition; other props stay the
+      // author's to override.
+      if (
+        (key === '$slot' || key === '$item') &&
+        own(value, 'props') &&
+        isBlockRecord(result) &&
+        typeof result.name === 'string'
+      ) {
+        const origin = this.sourceMap[out];
+        const defaults = this.evaluate(
+          value.props,
+          env,
+          `${out}/props`,
+          `${definitionPath}/props`,
+          depth + 1
+        );
+        const authored = isBlockRecord(result.props) ? result.props : {};
+        for (const propKey of Object.keys(authored)) {
+          const pointerKey = `${out}/props/${blockPointerKey(propKey)}`;
+          for (const mapped of Object.keys(this.sourceMap))
+            if (mapped === pointerKey || mapped.startsWith(`${pointerKey}/`))
+              delete this.sourceMap[mapped];
+          this.sourceMap[pointerKey] =
+            `${origin}/props/${blockPointerKey(propKey)}`;
+        }
+        result = {
+          ...result,
+          props: {
+            ...(isBlockRecord(defaults) ? defaults : {}),
+            ...authored,
+          },
+        };
+      }
+      return result;
     }
     if ('$if' in value)
       return this.evaluate(
@@ -837,6 +905,8 @@ export class JsonBlockEvaluator {
           environment: env,
           path,
         });
+      if (def.slide)
+        this.options.onSlide?.({ settings: def.slide, environment: env, path });
       this.blocks.push(source);
       const children = this.evaluate(
         def.body,

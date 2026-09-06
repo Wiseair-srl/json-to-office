@@ -1,5 +1,20 @@
 import { Type, type TSchema } from '@sinclair/typebox';
 
+/**
+ * Content roles a definition may assign to a slot. A quality profile reads
+ * them to require or measure content (an action title at most two lines, a
+ * source under every chart); the theme only styles them. No role adds a
+ * requirement on its own.
+ */
+export const BLOCK_SLOT_ROLES = [
+  'actionTitle',
+  'takeaway',
+  'source',
+  'tracker',
+  'footer',
+] as const;
+export type BlockSlotRole = (typeof BLOCK_SLOT_ROLES)[number];
+
 export interface BlockSlot {
   type:
     | 'string'
@@ -23,6 +38,7 @@ export interface BlockSlot {
   oneLine?: boolean;
   items?: BlockSlot;
   properties?: Record<string, BlockSlot>;
+  role?: BlockSlotRole;
 }
 
 /** Definitions are authored data. No concrete block is registered by the core. */
@@ -37,6 +53,12 @@ export interface JsonBlockDefinition {
     footer?: unknown[];
     pageBreak?: boolean;
     scope?: 'section' | 'following';
+  };
+  /** PPTX slide settings the invocation's slide inherits unless it states its own. */
+  slide?: {
+    background?: unknown;
+    grid?: unknown;
+    notes?: unknown;
   };
 }
 
@@ -134,6 +156,15 @@ export const BlockSlotSchema: TSchema = Type.Recursive((Self) =>
             'Named child slots accepted by an object slot. Undeclared properties are rejected.',
         })
       ),
+      role: Type.Optional(
+        Type.Union(
+          BLOCK_SLOT_ROLES.map((role) => Type.Literal(role)),
+          {
+            description:
+              'Content role for quality profiles: actionTitle, takeaway, source, tracker or footer. A profile may require or measure it; the theme only styles it.',
+          }
+        )
+      ),
     },
     { additionalProperties: false }
   )
@@ -197,6 +228,35 @@ export const JsonBlockDefinitionSchema = Type.Unsafe<JsonBlockDefinition>(
           }
         )
       ),
+      slide: Type.Optional(
+        Type.Object(
+          {
+            background: Type.Optional(
+              Type.Unknown({
+                description:
+                  'Slide background (color, gradient or image) or a binding. A background the slide states itself takes precedence.',
+              })
+            ),
+            grid: Type.Optional(
+              Type.Unknown({
+                description:
+                  'Grid configuration merged over the presentation grid when resolving grid placements in this block’s body.',
+              })
+            ),
+            notes: Type.Optional(
+              Type.Unknown({
+                description:
+                  'Speaker notes or a binding. Notes the slide states itself take precedence.',
+              })
+            ),
+          },
+          {
+            additionalProperties: false,
+            description:
+              'PPTX slide background, grid and notes supplied by this block. Invoke the block as a direct child of a slide.',
+          }
+        )
+      ),
     },
     { additionalProperties: false }
   )
@@ -229,7 +289,8 @@ export const BlockInvocationPropsSchema = Type.Object(
 
 /** Portable JSON Schema for a single slot, also used by catalog/inspect clients. */
 export function blockSlotJsonSchema(slot: BlockSlot): Record<string, unknown> {
-  const { oneLine, properties, items, ...rest } = slot;
+  const { oneLine, properties, items, role, ...rest } = slot;
+  void role;
   delete rest.required;
   delete rest.maxWords;
   if (slot.type === 'component') {

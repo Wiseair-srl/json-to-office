@@ -1,16 +1,16 @@
 import {
   JsonBlockEvaluator,
   BlockEvaluationError,
+  composeBlocksWithPlugins,
   readBlockDefinitions,
   blockValueAt,
-  blockPointerKey,
   isBlockRecord,
-  blockWordCount,
   toAuthoredBlockPointer,
   type BlockSectionEffect,
-  type BlockSlot,
   type BlockEvaluatorOptions,
 } from '@json-to-office/shared';
+export { blockSlotBudgets } from '@json-to-office/shared';
+export type { BlockSlotBudget } from '@json-to-office/shared';
 import { validateDocument } from '@json-to-office/shared-docx';
 import type { ThemeConfig } from '../styles';
 import { getDocumentMargins, getPageDimensions } from '../styles';
@@ -25,13 +25,6 @@ export interface ExpandedBlocks<T> {
   document: T;
   sourceMap: BlockSourceMap;
   blocks: readonly string[];
-}
-export interface BlockSlotBudget {
-  block: string;
-  slot: string;
-  path: string;
-  words: number;
-  maxWords: number;
 }
 export const toAuthoredPointer = toAuthoredBlockPointer;
 
@@ -261,67 +254,13 @@ export async function expandBlocksWithPlugins<T>(
     reservedNames: [...plugins],
     onSection: (effect) => effects.push(effect),
   });
-  let visited = 0;
-  const walk = async (
-    value: unknown,
-    path: string,
-    depth: number
-  ): Promise<{ standard: unknown; preserved: unknown }> => {
-    if (depth > 64 || ++visited > 100000)
-      throw new BlockEvaluationError([
-        {
-          path: toAuthoredPointer(evaluator.sourceMap, path),
-          code: 'block_expansion_limit',
-          message:
-            'Combined plugin/block expansion exceeds depth/node limits (64/100000).',
-        },
-      ]);
-    if (Array.isArray(value)) {
-      const children = [];
-      for (let i = 0; i < value.length; i++)
-        children.push(await walk(value[i], `${path}/${i}`, depth + 1));
-      return {
-        standard: children.map((c) => c.standard),
-        preserved: children.map((c) => c.preserved),
-      };
-    }
-    if (!isBlockRecord(value) || value.enabled === false)
-      return { standard: value, preserved: value };
-    if (value.name === 'block')
-      return walk(evaluator.expand(value, path, depth), path, depth + 1);
-    const standard: Rec = { ...value };
-    const kept: Rec = { ...value };
-    for (const [key, item] of Object.entries(value)) {
-      if (path === '/props' && key === 'blocks') continue;
-      const processed = await walk(item, `${path}/${key}`, depth + 1);
-      Object.defineProperty(standard, key, {
-        value: processed.standard,
-        enumerable: true,
-        configurable: true,
-        writable: true,
-      });
-      Object.defineProperty(kept, key, {
-        value: processed.preserved,
-        enumerable: true,
-        configurable: true,
-        writable: true,
-      });
-    }
-    if (typeof value.name === 'string' && plugins.has(value.name)) {
-      const source = toAuthoredPointer(evaluator.sourceMap, path);
-      const emitted = await render(standard, source);
-      evaluator.sourceMap[`${path}/children`] = source;
-      const processed = await walk(emitted, `${path}/children`, depth + 1);
-      return {
-        standard: { name: 'group', children: processed.standard },
-        preserved: preserve.has(value.name)
-          ? value
-          : { name: 'group', children: processed.preserved },
-      };
-    }
-    return { standard, preserved: kept };
-  };
-  const first = await walk(document, '', 0);
+  const walk = (value: unknown) =>
+    composeBlocksWithPlugins(evaluator, value, {
+      plugins,
+      render,
+      preserve,
+    });
+  const first = await walk(document);
   const finished = finishDocxBlocks(
     first.standard as T,
     document,
@@ -332,7 +271,7 @@ export async function expandBlocksWithPlugins<T>(
   );
   // Inherited header/footer definitions can themselves contain registered
   // plugin components. Expand them before the same final validation gate.
-  const second = await walk(finished.document, '', 0);
+  const second = await walk(finished.document);
   validateEffects(second.standard, effects);
   const result = validateDocument(second.standard);
   if (!result.valid)
@@ -349,61 +288,4 @@ export async function expandBlocksWithPlugins<T>(
     sourceMap: evaluator.sourceMap,
     blocks: evaluator.blocks,
   };
-}
-
-/** Metadata is always read from authored definitions, never from a named catalog. */
-export function blockSlotBudgets(
-  document: unknown,
-  blocks: readonly string[]
-): BlockSlotBudget[] {
-  const definitions = readBlockDefinitions(document);
-  const result: BlockSlotBudget[] = [];
-  for (const path of blocks) {
-    const node = blockValueAt(document, path);
-    if (
-      !isBlockRecord(node) ||
-      !isBlockRecord(node.props) ||
-      typeof node.props.ref !== 'string'
-    )
-      continue;
-    const definition = definitions[node.props.ref];
-    if (!definition) continue;
-    const visit = (
-      slot: BlockSlot,
-      value: unknown,
-      pointer: string,
-      name: string
-    ): void => {
-      if (typeof value === 'string' && slot.maxWords !== undefined)
-        result.push({
-          block: String(node.props && (node.props as Rec).ref),
-          slot: name,
-          path: pointer,
-          words: blockWordCount(value),
-          maxWords: slot.maxWords,
-        });
-      if (isBlockRecord(value) && slot.properties) {
-        for (const [key, property] of Object.entries(slot.properties)) {
-          visit(
-            property,
-            blockValueAt(value, `/${blockPointerKey(key)}`),
-            `${pointer}/${blockPointerKey(key)}`,
-            `${name}.${key}`
-          );
-        }
-      }
-      if (Array.isArray(value) && slot.items)
-        value.forEach((item, i) =>
-          visit(slot.items!, item, `${pointer}/${i}`, name)
-        );
-    };
-    for (const [name, slot] of Object.entries(definition.slots))
-      visit(
-        slot,
-        blockValueAt(node.props.slots, `/${blockPointerKey(name)}`),
-        `${path}/props/slots/${blockPointerKey(name)}`,
-        name
-      );
-  }
-  return result;
 }

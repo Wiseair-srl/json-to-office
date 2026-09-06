@@ -18,7 +18,9 @@
  * themes grow type ladders, spacing scales and chrome recipes (#328).
  */
 
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { isSafeFont } from '@json-to-office/shared';
 import { validatePptxTheme } from '@json-to-office/shared-pptx';
 import {
   DEFAULT_PPTX_THEME,
@@ -38,7 +40,7 @@ const names = Object.keys(pptxThemes).sort();
 
 describe('built-in pptx themes', () => {
   it('registers the themes the docs and the schema enum promise', () => {
-    expect(names).toEqual(['dark', 'default', 'minimal']);
+    expect(names).toEqual(['consulting', 'dark', 'default', 'minimal']);
   });
 
   it.each(names)('%s validates against the theme schema', (name) => {
@@ -80,5 +82,57 @@ describe('the theme lookup', () => {
     expect(getPptxTheme('no-such-theme')).toBe(DEFAULT_PPTX_THEME);
     expect(hasPptxTheme('no-such-theme')).toBe(false);
     expect(hasPptxTheme('minimal')).toBe(true);
+  });
+});
+
+describe('the consulting twin', () => {
+  // The DOCX theme is the source of the house tokens; the deck must not drift
+  // from the report it accompanies. Read the JSON rather than importing
+  // core-docx, so this package keeps no dependency on the other core.
+  const docx = JSON.parse(
+    readFileSync(
+      new URL(
+        '../../../../core-docx/src/templates/themes/consulting.docx.theme.json',
+        import.meta.url
+      ),
+      'utf8'
+    )
+  );
+  const pptx = pptxThemes.consulting;
+
+  it('shares palette roles, chart series, chrome recipes and motif with the report theme', () => {
+    expect(pptx.palette).toEqual(docx.palette);
+    expect(pptx.chrome).toEqual(docx.chrome);
+    expect(pptx.motif).toEqual(docx.motif);
+  });
+
+  it('shares ink, greys, accent and chart slots', () => {
+    expect(pptx.colors.primary).toBe(docx.colors.primary);
+    expect(pptx.colors.secondary).toBe(docx.colors.secondary);
+    expect(pptx.colors.accent).toBe(docx.colors.accent);
+    expect(pptx.colors.text).toBe(docx.colors.textPrimary);
+    expect(pptx.colors.text2).toBe(docx.colors.textSecondary);
+    expect(pptx.colors.background2).toBe(docx.colors.backgroundSecondary);
+    for (const slot of ['accent4', 'accent5', 'accent6'] as const) {
+      expect(pptx.colors[slot]).toBe(docx.colors[slot]);
+    }
+  });
+
+  it('names only safe fonts, the same families as the report', () => {
+    expect(pptx.fonts).toEqual({
+      heading: docx.fonts.heading.family,
+      body: docx.fonts.body.family,
+      mono: docx.fonts.mono.family,
+    });
+    for (const family of Object.values(pptx.fonts)) {
+      expect(isSafeFont(family as string)).toBe(true);
+    }
+    expect(pptx.fontRegistry).toBeUndefined();
+  });
+
+  it('declares every type role the report declares', () => {
+    expect(Object.keys(pptx.typography?.roles ?? {}).sort()).toEqual(
+      Object.keys(docx.typography.roles).sort()
+    );
   });
 });

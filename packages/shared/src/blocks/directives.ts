@@ -1,7 +1,7 @@
 /** Evaluator syntax and result families, shared with authoring-schema generation. */
 export const BLOCK_DIRECTIVES = {
-  $slot: { keys: ['$slot', 'default'], result: 'dynamic' },
-  $item: { keys: ['$item', 'default'], result: 'dynamic' },
+  $slot: { keys: ['$slot', 'default', 'props'], result: 'dynamic' },
+  $item: { keys: ['$item', 'default', 'props'], result: 'dynamic' },
   $theme: { keys: ['$theme', 'default'], result: 'dynamic' },
   $context: { keys: ['$context', 'default'], result: 'dynamic' },
   $count: { keys: ['$count'], result: 'number' },

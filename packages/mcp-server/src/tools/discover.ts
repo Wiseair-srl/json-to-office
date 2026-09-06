@@ -439,7 +439,7 @@ export const STARTERS: readonly Starter[] = [
       'The smallest valid .docx: root, one section, a heading and a paragraph.',
     document: {
       name: 'docx',
-      props: { metadata: { title: 'Untitled document' } },
+      props: { metadata: { title: 'Untitled document' }, theme: 'consulting' },
       children: [
         {
           name: 'section',
@@ -509,7 +509,12 @@ export const STARTERS: readonly Starter[] = [
       'The smallest well-formed .pptx: root with a declared 16:9 canvas, one slide, one title text. The canvas stays: without it the renderer silently falls back to 4:3.',
     document: {
       name: 'pptx',
-      props: { title: 'Untitled deck', slideWidth: 13.333, slideHeight: 7.5 },
+      props: {
+        title: 'Untitled deck',
+        theme: 'consulting',
+        slideWidth: 13.333,
+        slideHeight: 7.5,
+      },
       children: [
         {
           name: 'slide',
@@ -530,7 +535,7 @@ export const STARTERS: readonly Starter[] = [
       name: 'pptx',
       props: {
         title: 'Quarterly deck',
-        theme: 'default',
+        theme: 'consulting',
         slideWidth: 13.333,
         slideHeight: 7.5,
       },

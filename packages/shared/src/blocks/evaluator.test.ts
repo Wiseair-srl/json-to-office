@@ -337,3 +337,113 @@ it('inherits format from the host and rejects a redundant authored format field'
     )[0].code
   ).toBe('block_invalid_definition');
 });
+
+describe('PPTX composition on the shared contract', () => {
+  const slideDefinition: JsonBlockDefinition = {
+    slots: {
+      title: { type: 'string', required: true, role: 'actionTitle' },
+      chart: { type: 'component', required: true },
+      source: { type: 'string', role: 'source' },
+    },
+    slide: { background: { color: 'background' }, grid: { rows: 8 } },
+    body: [
+      {
+        name: 'text',
+        props: { text: { $slot: '/title' }, x: 0.5, y: 0.5, w: 12, h: 1 },
+      },
+      {
+        $slot: '/chart',
+        props: { x: 0.5, y: 1.7, w: 12, h: 4.5, showLegend: true },
+      },
+    ],
+  };
+  const deck = (slots: Record<string, unknown>) => ({
+    name: 'pptx',
+    props: { blocks: { 'action-chart': slideDefinition } },
+    children: [
+      {
+        name: 'slide',
+        children: [{ name: 'block', props: { ref: 'action-chart', slots } }],
+      },
+    ],
+  });
+  it('merges definition props beneath a component slot and keeps slot provenance', () => {
+    const input = deck({
+      title: 'Growth improved',
+      chart: {
+        name: 'chart',
+        props: { type: 'bar', data: [], showLegend: false },
+      },
+    });
+    const evaluator = new JsonBlockEvaluator(input.props.blocks, {
+      format: 'pptx',
+    });
+    const expanded = evaluator.expand(input) as any;
+    const chart = expanded.children[0].children[0].children[1];
+    expect(chart.props).toEqual({
+      x: 0.5,
+      y: 1.7,
+      w: 12,
+      h: 4.5,
+      showLegend: false,
+      type: 'bar',
+      data: [],
+    });
+    const base = '/children/0/children/0';
+    expect(
+      toAuthoredBlockPointer(
+        evaluator.sourceMap,
+        `${base}/children/1/props/showLegend`
+      )
+    ).toBe(`${base}/props/slots/chart/props/showLegend`);
+    expect(
+      toAuthoredBlockPointer(evaluator.sourceMap, `${base}/children/1/props/x`)
+    ).toBe(base);
+  });
+  it('reports slide effects to the host and rejects them off a slide or in DOCX', () => {
+    const input = deck({
+      title: 'T',
+      chart: { name: 'chart', props: { type: 'bar', data: [] } },
+    });
+    const effects: unknown[] = [];
+    new JsonBlockEvaluator(input.props.blocks, {
+      format: 'pptx',
+      onSlide: (effect) => effects.push(effect.settings),
+    }).expand(input);
+    expect(effects).toEqual([slideDefinition.slide]);
+    expect(
+      validateBlockDefinitions(input.props.blocks, 'docx').map((i) => i.code)
+    ).toEqual(['block_format']);
+    const nested = deck({
+      title: 'T',
+      chart: { name: 'chart', props: { type: 'bar', data: [] } },
+    }) as any;
+    nested.children[0].children = [
+      { name: 'group', children: nested.children[0].children },
+    ];
+    expect(
+      validateBlockInvocations(nested, nested.props.blocks, 'pptx').map(
+        (i) => i.code
+      )
+    ).toEqual(['invalid_placement']);
+  });
+  it('rejects placement smuggled through a component slot and malformed props', () => {
+    const input = deck({
+      title: 'T',
+      chart: { name: 'chart', props: { type: 'bar', data: [], x: 3 } },
+    });
+    expect(validateBlockInvocations(input, input.props.blocks, 'pptx')).toEqual(
+      [
+        expect.objectContaining({
+          code: 'block_slot_placement',
+          path: '/children/0/children/0/props/slots/chart/props/x',
+        }),
+      ]
+    );
+    const bad = structuredClone(slideDefinition) as any;
+    bad.body[1].props = 'x';
+    expect(
+      validateBlockDefinitions({ bad }, 'pptx').map((i) => [i.code, i.path])
+    ).toEqual([['block_invalid_binding', '/props/blocks/bad/body/1/props']]);
+  });
+});
