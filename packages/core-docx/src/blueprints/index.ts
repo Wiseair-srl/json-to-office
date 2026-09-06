@@ -19,6 +19,7 @@ import {
   blockDependencies,
   validateBlueprint,
   type Blueprint,
+  type BlueprintFillEntry,
   type BlueprintVariant,
   type BlockSlot,
   type JsonBlockDefinition,
@@ -85,29 +86,7 @@ export function docxBlueprint(id: string): Blueprint | undefined {
   return DOCX_BLUEPRINTS[id];
 }
 
-/** One `{{…}}` marker the scaffold left for the author. */
-export interface BlueprintFillEntry {
-  /** JSON pointer into the instantiated document; the value is the marker. */
-  path: string;
-  /** The marker as written, `{{…}}` included. */
-  marker: string;
-  /** The marker's text: what to write there. */
-  guidance: string;
-  /** Where the marker sits. */
-  kind: 'slot' | 'text' | 'metadata';
-  /** For a `slot`: the block and the slot, dotted for nested fields. */
-  block?: string;
-  slot?: string;
-  /**
-   * For a `slot`: the declared slot type and its bounds. A marker inside a
-   * component slot's content reports that component slot.
-   */
-  type?: string;
-  maxWords?: number;
-  maxLength?: number;
-  oneLine?: boolean;
-  required?: boolean;
-}
+export type { BlueprintFillEntry };
 
 export interface InstantiateBlueprintOptions {
   /** A variant id from `blueprint.variants`; the first when omitted. */

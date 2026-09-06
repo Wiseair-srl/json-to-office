@@ -14,7 +14,6 @@
 
 import type { McpServer, ServerContext } from '@modelcontextprotocol/server';
 import type { GenerationWarning } from '@json-to-office/shared';
-import { collectPlaceholders } from '@json-to-office/quality';
 
 import {
   checkRenderer,
@@ -29,6 +28,7 @@ import {
   truncatedProperty,
 } from '../lib/diagnostic-budget.js';
 import { resolveDocumentSource, sourceSummary } from '../lib/doc-source.js';
+import { scaffoldMarkerOccurrences } from '../lib/scaffold-markers.js';
 import {
   ERROR_CODES,
   diagnostic,
@@ -96,20 +96,18 @@ async function reportProgress(
  * put it there on purpose, so nobody can be sure it is not the real copy.
  */
 function scaffoldMarkerDiagnostics(document: unknown): Diagnostic[] {
-  return collectPlaceholders(document)
-    .filter((occurrence) => occurrence.match.kind === 'scaffold-marker')
-    .map((occurrence) =>
-      diagnostic(
-        ERROR_CODES.SCAFFOLD_MARKER,
-        `Unfilled scaffold slot "${occurrence.match.excerpt}" — fill it or remove the component before generating.`,
-        {
-          path: occurrence.path,
-          suggestion:
-            'Patch the slot with real content; jto_validate lists every remaining marker.',
-          context: { pattern: occurrence.match.pattern },
-        }
-      )
-    );
+  return scaffoldMarkerOccurrences(document).map((occurrence) =>
+    diagnostic(
+      ERROR_CODES.SCAFFOLD_MARKER,
+      `Unfilled scaffold slot "${occurrence.match.excerpt}" — fill it or remove the component before generating.`,
+      {
+        path: occurrence.path,
+        suggestion:
+          'Patch the slot with real content; jto_validate lists every remaining marker.',
+        context: { pattern: occurrence.match.pattern },
+      }
+    )
+  );
 }
 
 function cancelled(format: FormatName): Diagnostic[] {

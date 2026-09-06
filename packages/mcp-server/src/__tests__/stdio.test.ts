@@ -92,6 +92,7 @@ describe.skipIf(!built)('jto-mcp over stdio', () => {
         .sort()
     ).toEqual([
       'jto://blocks',
+      'jto://blueprints',
       'jto://catalog',
       'jto://renderers',
       'jto://schema/docx/document',

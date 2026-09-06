@@ -19,6 +19,7 @@
 import type { McpServer } from '@modelcontextprotocol/server';
 
 import type { FormatName } from '../lib/adapters.js';
+import { loadCore } from '../lib/core.js';
 import type { ToolDeps } from '../lib/deps.js';
 import { FORMAT_NAMES } from '../lib/schema.js';
 import { buildCatalog, formatSchemas } from '../tools/discover.js';
@@ -39,6 +40,7 @@ export const RESOURCE_URIS = {
   themeValues: 'jto://themes/values',
   templates: 'jto://templates',
   blocks: 'jto://blocks',
+  blueprints: 'jto://blueprints',
   template: (name: string) => `jto://templates/${name}`,
   templateThumbnail: (name: string) => `jto://templates/${name}/thumbnail`,
   documentSchema: (format: FormatName) => `jto://schema/${format}/document`,
@@ -82,6 +84,29 @@ export function register(server: McpServer, deps: ToolDeps): void {
         purpose: 'authoring-reference',
         guidance: BLOCK_REFERENCE_GUIDANCE,
         blocks: blockReferenceCatalog(),
+      })
+  );
+  server.registerResource(
+    'blueprints',
+    RESOURCE_URIS.blueprints,
+    {
+      title: 'Blueprints',
+      description:
+        'Document archetypes as data, in full: recommended theme, quality profile, the bundled template whose blocks each invokes, and every structural variant with its sections, block invocations and {{…}} slot markers. jto_discover carries the summaries; jto_scaffold instantiates one into a draft workspace.',
+      mimeType: JSON_MIME,
+    },
+    async (uri) =>
+      jsonContents(uri, {
+        formats: await Promise.all(
+          FORMAT_NAMES.map(async (format) => ({
+            format,
+            blueprints: Object.values(
+              (await loadCore(format))?.blueprints ?? {}
+            )
+              .slice()
+              .sort((a, b) => a.id.localeCompare(b.id)),
+          }))
+        ),
       })
   );
   server.registerResource(

@@ -17,6 +17,7 @@ import { SERVER_NAME } from './lib/version.js';
 import { register as registerInfo } from './tools/info.js';
 import { register as registerDiscover } from './tools/discover.js';
 import { register as registerDescribeComponent } from './tools/describe-component.js';
+import { register as registerScaffold } from './tools/scaffold.js';
 import { register as registerValidate } from './tools/validate.js';
 import { register as registerGenerate } from './tools/generate.js';
 import { register as registerPreview } from './tools/preview.js';
@@ -35,10 +36,10 @@ import { register as registerResources } from './resources/index.js';
  * not a wrong call: it was an agent left to decide look, structure and layout
  * alone at every node, and picking the safe generic option each time (#324).
  *
- * The workflow deliberately names steps that do not exist yet, marked as such.
- * An agent that knows the shape of the path takes the parts that are built
- * rather than inventing a different route; and when a step lands, the sentence
- * describing it is already the one it was designed against.
+ * The workflow names the path end to end. When a step was still unbuilt it
+ * said so, so an agent that knew the shape of the path took the parts that
+ * existed rather than inventing a different route — and the sentence written
+ * for jto_scaffold before it landed (#339) is the one it was designed against.
  *
  * One screen. Every line an agent skips is a line that may as well not exist.
  */
@@ -48,10 +49,10 @@ The JSON is authoritative. A generated file is a build product of the document J
 
 Design workflow — theme, structure, fill, check, ship:
 1. THEME. Pick one with jto_discover and set it on the document root. A document that names no theme inherits defaults nobody chose, and that is what generic output looks like.
-2. STRUCTURE. Choose the archetype before the content: which sections, which slides, in what order. Blueprints and jto_scaffold will do this from data — not built yet, so decide it explicitly rather than growing the document node by node.
-3. FILL. Write content into that structure. Prefer named styles and theme colour tokens over raw sizes and hex, so a theme swap restyles the whole document instead of half of it. Every component's design note in jto_discover says what good use of it looks like.
+2. STRUCTURE. Choose the archetype before the content. For a report, jto_scaffold is the first move: name a blueprint from jto_discover, the theme and the facts of the brief, and it opens a draft workspace with every section and block in place and a fill map of the slots still owed. Where no blueprint fits, decide the sections or slides explicitly rather than growing the document node by node.
+3. FILL. Write content into that structure — by fill-map pointer with jto_workspace_patch when you scaffolded. Prefer named styles and theme colour tokens over raw sizes and hex, so a theme swap restyles the whole document instead of half of it. Every component's design note in jto_discover says what good use of it looks like.
 4. CHECK. jto_validate after each edit, then jto_preview when the question is visual. jto_preview with contactSheet: true tiles every page into one image — the way to see whether the deck holds together.
-5. SHIP. jto_generate. It refuses a document that still carries an unfilled {{…}} scaffold slot.
+5. SHIP. jto_generate. It refuses a document that still carries an unfilled {{…}} scaffold slot; jto_validate says generationReady when none remains.
 
 Working rules:
 - Discover before authoring. Call jto_info first, then jto_discover and jto_describe_component (or read the jto:// resources) for the components, renderer ids and design notes a format actually supports.
@@ -76,6 +77,7 @@ export function createServer(deps: ToolDeps): McpServer {
   registerInfo(server, deps);
   registerDiscover(server, deps);
   registerDescribeComponent(server, deps);
+  registerScaffold(server, deps);
   registerValidate(server, deps);
   registerGenerate(server, deps);
   registerPreview(server, deps);

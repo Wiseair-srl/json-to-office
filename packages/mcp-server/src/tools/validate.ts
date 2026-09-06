@@ -30,6 +30,7 @@ import {
 } from '../lib/adapters.js';
 import type { ToolDeps } from '../lib/deps.js';
 import { resolveDocumentSource, sourceSummary } from '../lib/doc-source.js';
+import { scaffoldMarkerOccurrences } from '../lib/scaffold-markers.js';
 import {
   ERROR_CODES,
   countDiagnostics,
@@ -183,6 +184,16 @@ export function register(server: McpServer, deps: ToolDeps): void {
             description:
               'True when nothing blocks generation. Equal to `ok` whenever validation actually ran.',
           },
+          generationReady: {
+            type: 'boolean',
+            description:
+              'True when `valid` and no `{{…}}` scaffold marker remains — the state jto_generate accepts. A draft from jto_scaffold is `valid` and not yet ready.',
+          },
+          scaffoldMarkers: {
+            type: 'integer',
+            description:
+              'Scaffold markers still in the document; each is also reported as a W_QUALITY_SCAFFOLD_MARKER finding.',
+          },
           source: sourceSummarySchema,
           counts: {
             type: 'object',
@@ -321,6 +332,12 @@ export function register(server: McpServer, deps: ToolDeps): void {
           const blocked =
             countDiagnostics(structural).error > 0 ||
             analysis?.blocked === true;
+          // The other half of the generation gate: a draft is a legitimate
+          // thing to hold and passes here, but jto_generate refuses a marker,
+          // so the verdict says which of the two states the document is in.
+          const scaffoldMarkers = scaffoldMarkerOccurrences(
+            resolved.document
+          ).length;
           const { kept, truncated } = capDiagnostics(
             all,
             args.maxDiagnostics ?? DEFAULT_MAX_DIAGNOSTICS
@@ -330,6 +347,8 @@ export function register(server: McpServer, deps: ToolDeps): void {
             ok: !blocked,
             diagnostics: kept,
             valid: !blocked,
+            generationReady: !blocked && scaffoldMarkers === 0,
+            scaffoldMarkers,
             format: args.format,
             ...(args.renderer !== undefined && { renderer: args.renderer }),
             source: sourceSummary(resolved),

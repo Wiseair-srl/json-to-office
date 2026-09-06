@@ -9,11 +9,10 @@
  * `lib/errors.ts`, which owns the vocabulary and not the option semantics.
  */
 
-import { createRequire } from 'module';
 import path from 'path';
-import { pathToFileURL } from 'url';
 
 import type { FormatAdapter, FormatName } from './adapters.js';
+import { loadCore } from './core.js';
 import {
   OPTION_ERROR_CODES,
   diagnostic,
@@ -117,52 +116,20 @@ export function resolveThemePathOption(
   return { ok: true, path: path.resolve(root, themePath) };
 }
 
-const CORE_THEMES: Record<FormatName, { specifier: string; exported: string }> =
-  {
-    docx: { specifier: '@json-to-office/core-docx', exported: 'themes' },
-    pptx: { specifier: '@json-to-office/core-pptx', exported: 'pptxThemes' },
-  };
-
-/**
- * A resolver rooted at `jto-ops`, which owns the cores: they are its dependency
- * and not ours, so a bare specifier resolves to nothing under pnpm's strict
- * layout. `jto_discover` and `jto_info` reach for their cores the same way.
- */
-let coreResolver: NodeJS.Require | undefined;
-try {
-  const here = createRequire(import.meta.url);
-  coreResolver = createRequire(
-    here.resolve('@json-to-office/jto-ops/package.json')
-  );
-} catch {
-  /* jto-ops unresolvable: a theme diagnostic simply names no alternatives */
-}
-
 /**
  * Built-in theme names, so a diagnostic can list what would have worked.
  *
  * The adapter is the authority and is asked first. It answers `{}` from a
  * bundled ESM build, where its synchronous `require` of the core meets tsup's
- * throwing shim, so the core is imported directly as a fallback. `jto_discover`
- * carries the same fallback for the same reason; both collapse into one the day
- * jto-ops loads its themes asynchronously.
+ * throwing shim, so the core loaded through `loadCore` answers instead. Both
+ * branches collapse into one the day jto-ops loads its themes asynchronously.
  */
 export async function builtinThemeNames(
   adapter: FormatAdapter
 ): Promise<string[]> {
   const fromAdapter = Object.keys(adapter.getBuiltinThemes());
   if (fromAdapter.length > 0) return fromAdapter.sort();
-  if (!coreResolver) return [];
-
-  const { specifier, exported } = CORE_THEMES[adapter.name];
-  try {
-    const core = (await import(
-      pathToFileURL(coreResolver.resolve(specifier)).href
-    )) as Record<string, Record<string, unknown> | undefined>;
-    return Object.keys(core[exported] ?? {}).sort();
-  } catch {
-    return [];
-  }
+  return (await loadCore(adapter.name))?.themeNames ?? [];
 }
 
 /**

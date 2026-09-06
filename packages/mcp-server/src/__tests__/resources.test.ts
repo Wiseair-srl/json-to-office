@@ -52,6 +52,7 @@ describe('discovery resources', () => {
 
     for (const uri of [
       RESOURCE_URIS.blocks,
+      RESOURCE_URIS.blueprints,
       RESOURCE_URIS.catalog,
       RESOURCE_URIS.renderers,
       RESOURCE_URIS.themes,

@@ -28,22 +28,43 @@ const SEVERITY_RANK: Record<Diagnostic['severity'], number> = {
  * Collapse repeats of one defect into the first occurrence.
  *
  * Code and message together identify the defect; the path is what varies, so
- * the first one is kept as the place to look and the rest become a count. A
- * defect that occurred once is returned untouched — an `occurrences: 1` on
- * every diagnostic would be noise on the common case.
+ * the first one is kept as the place to look, the rest become a count, and
+ * every path they sat at is kept under `context.paths` — a repeat that has to
+ * be fixed in each place, an unfilled scaffold marker say, stays addressable
+ * without costing a diagnostic per place. A defect that occurred once is
+ * returned untouched — an `occurrences: 1` on every diagnostic would be noise
+ * on the common case.
  */
 function deduplicate(diagnostics: readonly Diagnostic[]): Diagnostic[] {
-  const byDefect = new Map<string, { entry: Diagnostic; count: number }>();
+  const byDefect = new Map<
+    string,
+    { entry: Diagnostic; count: number; paths: string[] }
+  >();
   for (const entry of diagnostics) {
     const key = `${entry.severity} ${entry.code} ${entry.message}`;
     const seen = byDefect.get(key);
-    if (seen) seen.count += 1;
-    else byDefect.set(key, { entry, count: 1 });
+    if (seen) {
+      seen.count += 1;
+      if (entry.path !== undefined) seen.paths.push(entry.path);
+    } else {
+      byDefect.set(key, {
+        entry,
+        count: 1,
+        paths: entry.path !== undefined ? [entry.path] : [],
+      });
+    }
   }
-  return [...byDefect.values()].map(({ entry, count }) =>
+  return [...byDefect.values()].map(({ entry, count, paths }) =>
     count === 1
       ? entry
-      : { ...entry, context: { ...entry.context, occurrences: count } }
+      : {
+          ...entry,
+          context: {
+            ...entry.context,
+            occurrences: count,
+            ...(paths.length > 1 && { paths }),
+          },
+        }
   );
 }
 

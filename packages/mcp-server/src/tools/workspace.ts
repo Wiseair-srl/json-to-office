@@ -58,7 +58,7 @@ import {
 } from '../workspace/store.js';
 import type { PersistenceLimits } from '../workspace/persistence.js';
 
-const workspaceSchema = {
+export const workspaceSchema = {
   type: 'object' as const,
   description: 'The state of one open document.',
   properties: {

@@ -68,6 +68,7 @@ describe('tool surface', () => {
       'jto_info',
       'jto_discover',
       'jto_describe_component',
+      'jto_scaffold',
       'jto_validate',
       'jto_generate',
       'jto_preview',
@@ -228,15 +229,17 @@ describe('instructions', () => {
     expect(SERVER_INSTRUCTIONS).toMatch(/Snapshot before risky changes/);
   });
 
-  it('names the design workflow, and which of its steps exist today', () => {
+  it('names the design workflow, with the scaffold as the first move', () => {
     // The failure this replaces was not a wrong tool call: it was an agent
     // deciding look, structure and layout alone at every node. The workflow
-    // is the shape of the path; the "not built yet" marker is what keeps an
-    // agent from inventing a different route around the missing step.
+    // is the shape of the path, and since #339 every step on it exists — so
+    // no step may still read as unbuilt, or an agent routes around it.
     for (const step of ['THEME', 'STRUCTURE', 'FILL', 'CHECK', 'SHIP']) {
       expect(SERVER_INSTRUCTIONS).toContain(step);
     }
-    expect(SERVER_INSTRUCTIONS).toMatch(/jto_scaffold[^.]*not built yet/);
+    expect(SERVER_INSTRUCTIONS).toMatch(/jto_scaffold[^.]*first move/);
+    expect(SERVER_INSTRUCTIONS).not.toMatch(/not built yet/);
+    expect(SERVER_INSTRUCTIONS).toMatch(/generationReady/);
     expect(SERVER_INSTRUCTIONS).toMatch(/contactSheet/);
   });
 
