@@ -9,21 +9,24 @@ const schema = convertToJsonSchema(
       {
         name: 'weather',
         propsSchema: Type.Object(
-          { city: Type.String() },
+          { city: Type.String({ description: 'City to look up.' }) },
           { additionalProperties: false }
         ),
         versionedProps: [
           {
             version: '1.0.0',
             propsSchema: Type.Object(
-              { city: Type.String() },
+              { city: Type.String({ description: 'City to look up.' }) },
               { additionalProperties: false }
             ),
           },
           {
             version: '2.0.0',
             propsSchema: Type.Object(
-              { city: Type.String(), units: Type.Optional(Type.String()) },
+              {
+                city: Type.String({ description: 'City to look up.' }),
+                units: Type.Optional(Type.String()),
+              },
               { additionalProperties: false }
             ),
           },
@@ -47,13 +50,20 @@ async function inspect(text: string) {
     text.replace('|', '')
   );
   const parsed = ls.parseJSONDocument(doc);
+  const completions =
+    offset < 0
+      ? []
+      : (await ls.doComplete(doc, doc.positionAt(offset), parsed))?.items ?? [];
   return {
-    labels:
-      offset < 0
-        ? []
-        : (await ls.doComplete(doc, doc.positionAt(offset), parsed))?.items.map(
-            (item) => item.label.replace(/"/g, '')
-          ) ?? [],
+    labels: completions.map((item) => item.label.replace(/"/g, '')),
+    descriptions: Object.fromEntries(
+      completions.map((item) => [
+        item.label.replace(/"/g, ''),
+        typeof item.documentation === 'string'
+          ? item.documentation
+          : item.documentation?.value ?? '',
+      ])
+    ),
     diagnostics: await ls.doValidation(doc, parsed),
   };
 }
@@ -65,6 +75,52 @@ describe('block authoring through the real JSON language service', () => {
     );
     expect(labels).toEqual(expect.arrayContaining(['name', '$slot', '$if']));
   });
+  it('describes every suggestion in an empty block body', async () => {
+    const { labels, descriptions } = await inspect(documentWithBody('{"|"}'));
+    for (const label of labels) expect(descriptions[label], label).not.toBe('');
+    expect(descriptions.$slot).toContain('input slot');
+    expect(descriptions.$item).toContain('current $each entry');
+    expect(descriptions.$context).toContain('/section/tracker');
+    expect(descriptions.$if).toContain('zero selects then');
+  });
+  it.each([
+    [
+      '{"name":"paragraph","props":{"text":{|}}}',
+      ['$count', '$join', '$measure'],
+    ],
+    [
+      '{"name":"paragraph","props":{"text":{"$join":[],|}}}',
+      ['separator', 'keepEmpty'],
+    ],
+    [
+      '{"name":"paragraph","props":{"text":{"$measure":"width",|}}}',
+      ['fraction', 'unit'],
+    ],
+  ])('describes scalar bindings and options: %s', async (body, fields) => {
+    const { descriptions } = await inspect(documentWithBody(body as string));
+    for (const field of fields) expect(descriptions[field], field).toBeTruthy();
+  });
+  it('preserves plugin property descriptions through binding wrappers', async () => {
+    const { descriptions } = await inspect(
+      documentWithBody('{"name":"weather","props":{|}}')
+    );
+    expect(descriptions.city).toBe('City to look up.');
+  });
+  it.each([
+    '{"|"}',
+    '{"slots":{"title":{|}},"body":[]}',
+    '{"slots":{},"body":[],"section":{|}}',
+  ])(
+    'describes block definitions, slots and section settings: %s',
+    async (definition) => {
+      const { labels, descriptions } = await inspect(
+        `{"name":"docx","props":{"blocks":{"example":${definition}}},"children":[]}`
+      );
+      expect(labels.length).toBeGreaterThan(0);
+      for (const label of labels)
+        expect(descriptions[label], label).toBeTruthy();
+    }
+  );
   it('completes body components and registered plugins', async () => {
     const { labels } = await inspect(documentWithBody('{"name":"|"}'));
     expect(labels).toEqual(

@@ -52,26 +52,88 @@ export const BlockSlotSchema: TSchema = Type.Recursive((Self) =>
           'object',
           'array',
           'component',
-        ].map((v) => Type.Literal(v))
+        ].map((v) => Type.Literal(v)),
+        {
+          description:
+            'Content type accepted by this slot. Use component for a document component or registered plugin.',
+        }
       ),
-      description: Type.Optional(Type.String()),
-      required: Type.Optional(Type.Boolean()),
-      default: Type.Optional(Type.Unknown()),
+      description: Type.Optional(
+        Type.String({
+          description: 'Explain this slot’s content and purpose to authors.',
+        })
+      ),
+      required: Type.Optional(
+        Type.Boolean({
+          description:
+            'Require a value when no default is provided. Defaults to false.',
+        })
+      ),
+      default: Type.Optional(
+        Type.Unknown({
+          description:
+            'Value used when the caller omits this slot. Must satisfy the slot’s type and constraints.',
+        })
+      ),
       enum: Type.Optional(
         Type.Array(Type.Union([Type.String(), Type.Number(), Type.Boolean()]), {
           minItems: 1,
+          description: 'Allowed scalar values for this slot.',
         })
       ),
-      minItems: Type.Optional(Type.Integer({ minimum: 0 })),
-      maxItems: Type.Optional(Type.Integer({ minimum: 0 })),
-      minLength: Type.Optional(Type.Integer({ minimum: 0 })),
-      maxLength: Type.Optional(Type.Integer({ minimum: 0 })),
-      minimum: Type.Optional(Type.Number()),
-      maximum: Type.Optional(Type.Number()),
-      maxWords: Type.Optional(Type.Integer({ minimum: 1 })),
-      oneLine: Type.Optional(Type.Boolean()),
-      items: Type.Optional(Self),
-      properties: Type.Optional(Type.Record(Type.String(), Self)),
+      minItems: Type.Optional(
+        Type.Integer({
+          minimum: 0,
+          description: 'Minimum number of array entries, inclusive.',
+        })
+      ),
+      maxItems: Type.Optional(
+        Type.Integer({
+          minimum: 0,
+          description: 'Maximum number of array entries, inclusive.',
+        })
+      ),
+      minLength: Type.Optional(
+        Type.Integer({
+          minimum: 0,
+          description: 'Minimum string length in characters, inclusive.',
+        })
+      ),
+      maxLength: Type.Optional(
+        Type.Integer({
+          minimum: 0,
+          description: 'Maximum string length in characters, inclusive.',
+        })
+      ),
+      minimum: Type.Optional(
+        Type.Number({ description: 'Minimum numeric value, inclusive.' })
+      ),
+      maximum: Type.Optional(
+        Type.Number({ description: 'Maximum numeric value, inclusive.' })
+      ),
+      maxWords: Type.Optional(
+        Type.Integer({
+          minimum: 1,
+          description:
+            'Maximum whitespace-separated word count. Exceeding it fails validation.',
+        })
+      ),
+      oneLine: Type.Optional(
+        Type.Boolean({
+          description:
+            'Reject newline characters in string values. Does not prevent visual line wrapping.',
+        })
+      ),
+      items: Type.Optional({
+        ...Self,
+        description: 'Slot type and constraints for each array entry.',
+      }),
+      properties: Type.Optional(
+        Type.Record(Type.String(), Self, {
+          description:
+            'Named child slots accepted by an object slot. Undeclared properties are rejected.',
+        })
+      ),
     },
     { additionalProperties: false }
   )
@@ -80,21 +142,59 @@ export const BlockSlotSchema: TSchema = Type.Recursive((Self) =>
 export const JsonBlockDefinitionSchema = Type.Unsafe<JsonBlockDefinition>(
   Type.Object(
     {
-      description: Type.Optional(Type.String()),
-      slots: Type.Record(Type.String(), BlockSlotSchema),
-      body: Type.Array(Type.Unknown()),
+      description: Type.Optional(
+        Type.String({
+          description:
+            'Describe what this reusable block renders and when to use it.',
+        })
+      ),
+      slots: Type.Record(Type.String(), BlockSlotSchema, {
+        description:
+          'Named inputs and their types, defaults and constraints. Use an empty object for a block with no inputs.',
+      }),
+      body: Type.Array(Type.Unknown(), {
+        description:
+          'Components and binding directives expanded in order when this block is invoked.',
+      }),
       section: Type.Optional(
         Type.Object(
           {
-            tracker: Type.Optional(Type.Unknown()),
-            header: Type.Optional(Type.Array(Type.Unknown())),
-            footer: Type.Optional(Type.Array(Type.Unknown())),
-            pageBreak: Type.Optional(Type.Boolean()),
+            tracker: Type.Optional(
+              Type.Unknown({
+                description:
+                  'Section tracker value or binding, available to headers and footers through $context at /section/tracker.',
+              })
+            ),
+            header: Type.Optional(
+              Type.Array(Type.Unknown(), {
+                description:
+                  'Header component templates. Explicit header settings on the section take precedence.',
+              })
+            ),
+            footer: Type.Optional(
+              Type.Array(Type.Unknown(), {
+                description:
+                  'Footer component templates. Explicit footer settings on the section take precedence.',
+              })
+            ),
+            pageBreak: Type.Optional(
+              Type.Boolean({
+                description:
+                  'Start the containing section on a new page. An explicit section pageBreak setting takes precedence.',
+              })
+            ),
             scope: Type.Optional(
-              Type.Union([Type.Literal('section'), Type.Literal('following')])
+              Type.Union([Type.Literal('section'), Type.Literal('following')], {
+                description:
+                  'Apply header/footer templates to this section only, or inherit them in following sections. Defaults to section.',
+              })
             ),
           },
-          { additionalProperties: false }
+          {
+            additionalProperties: false,
+            description:
+              'DOCX section tracker, header/footer templates and page-break behavior. Place this block at the section boundary.',
+          }
         )
       ),
     },
@@ -117,7 +217,12 @@ export const BlockInvocationPropsSchema = Type.Object(
       minLength: 1,
       description: 'Name in this document’s props.blocks.',
     }),
-    slots: Type.Optional(Type.Record(Type.String(), Type.Unknown())),
+    slots: Type.Optional(
+      Type.Record(Type.String(), Type.Unknown(), {
+        description:
+          'Input values keyed by the slot names declared in the referenced block definition.',
+      })
+    ),
   },
   { additionalProperties: false }
 );
