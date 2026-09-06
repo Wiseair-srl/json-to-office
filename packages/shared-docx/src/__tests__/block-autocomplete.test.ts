@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Type } from '@sinclair/typebox';
 import { getLanguageService, TextDocument } from 'vscode-json-languageservice';
-import { convertToJsonSchema } from '../schemas/export';
-import { generateUnifiedDocumentSchema } from '../schemas/generator';
+import { convertToJsonSchema, generateUnifiedDocumentSchema } from '../index';
 
 const schema = convertToJsonSchema(
   generateUnifiedDocumentSchema({
@@ -60,6 +59,12 @@ async function inspect(text: string) {
 }
 
 describe('block authoring through the real JSON language service', () => {
+  it('completes an unfinished body property even before slots are declared', async () => {
+    const { labels } = await inspect(
+      '{"name":"docx","props":{"blocks":{"prova":{"description":"Blocco di prova","body":[{"|"}]}}},"children":[]}'
+    );
+    expect(labels).toEqual(expect.arrayContaining(['name', '$slot', '$if']));
+  });
   it('completes body components and registered plugins', async () => {
     const { labels } = await inspect(documentWithBody('{"name":"|"}'));
     expect(labels).toEqual(

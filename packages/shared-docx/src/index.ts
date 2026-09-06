@@ -29,7 +29,6 @@ export type {
 // Schema utilities
 export {
   fixSchemaReferences,
-  convertToJsonSchema,
   createComponentSchema,
   createComponentSchemaObject as sharedCreateComponentSchemaObject,
   exportSchemaToFile,
@@ -368,6 +367,7 @@ export type { ThemeName } from './types/common';
 
 export {
   fixSchemaReferences as fixDocxSchemaReferences,
+  convertToJsonSchema,
   convertToJsonSchema as convertDocxToJsonSchema,
   createComponentSchema as createDocxComponentSchema,
   exportSchemaToFile as exportDocxSchemaToFile,
