@@ -8,6 +8,7 @@ const schema = convertToJsonSchema(
     customComponents: [
       {
         name: 'weather',
+        description: 'Weather forecast for a city.',
         propsSchema: Type.Object(
           { city: Type.String({ description: 'City to look up.' }) },
           { additionalProperties: false }
@@ -121,6 +122,26 @@ describe('block authoring through the real JSON language service', () => {
         expect(descriptions[label], label).toBeTruthy();
     }
   );
+  it.each([
+    documentWithBody('{"name":"|"}'),
+    documentWithBody('{"name":"group","children":[{"name":"|"}]}'),
+    '{"name":"docx","props":{"blocks":{"prova":{"body":[{"name":"|"}]}}},"children":[{"name":""}]}',
+    '{"name":"docx","children":[{"name":"section","children":[{"name":"|"}]}]}',
+  ])('describes each component choice specifically: %s', async (text) => {
+    const { descriptions } = await inspect(text);
+    expect(descriptions.heading).toContain('Heading text');
+    expect(descriptions.list).toContain('bulleted or numbered');
+    expect(descriptions.table).toContain('COLUMN-MAJOR');
+    expect(descriptions.weather).toContain('Weather forecast for a city.');
+    expect(
+      new Set([
+        descriptions.heading,
+        descriptions.list,
+        descriptions.table,
+        descriptions.weather,
+      ]).size
+    ).toBe(4);
+  });
   it('completes body components and registered plugins', async () => {
     const { labels } = await inspect(documentWithBody('{"name":"|"}'));
     expect(labels).toEqual(

@@ -169,16 +169,11 @@ export function createBlockAuthoringSchema(
         Object.entries(schema.properties as Record<string, Schema>).map(
           ([key, value]) => [
             key,
-            // Literal component discriminators retain the canonical editor dispatch.
+            // Preserve literal discriminators and authored metadata. Generic
+            // help on a const would override the component-specific choice
+            // description, so generic key help belongs on the union property.
             ['name', 'version'].includes(key) && typeof value.const === 'string'
-              ? {
-                  ...value,
-                  description:
-                    value.description ??
-                    (key === 'name'
-                      ? 'Component or registered plugin to render in this block.'
-                      : 'Version of the registered plugin to use.'),
-                }
+              ? value
               : transform(value),
           ]
         )
