@@ -534,7 +534,11 @@ _consumers_ split to #361). The Phase 1 schema decisions are settled in
 branch after it delivers #335 (`cover`, `section-opener`, `running-head`) and
 the DOCX portion of #361: the chrome path carries a type role, tab stops and
 tracking, the running head fills every later section with the tracker each
-opener sets, and `n / N` is a real page field in the recipe's role.
+opener sets, and `n / N` is a real page field in the recipe's role. After the
+shared contract (#370), #336 lands `kpi-row`, `callout` and `data-table` as
+JSON definitions in the same playground report; the only engine change is
+that `$if`, `$each` and `$count` accept a reference to the current repeated
+item, which is what lets a table repeat its columns and each column its cells.
 
 **Next milestone: a complete client-report workflow (#362).** Given a real
 brief and data, Claude Desktop scaffolds, fills, validates, previews, repairs

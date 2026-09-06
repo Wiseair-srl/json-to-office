@@ -590,8 +590,65 @@
           ]
         }
       },
-      "metric-row": {
-        "description": "Two to four equal-width metrics. Optional source collapses together with its divider. Text budgets reject overflow; columns reflow at unchanged type size.",
+      "source-line": {
+        "description": "A hairline and a source line in the source role, under a figure or a table. The data blocks invoke it; copy it to add a source to anything else.",
+        "slots": {
+          "text": {
+            "type": "string",
+            "required": true,
+            "maxWords": 20,
+            "role": "source"
+          }
+        },
+        "body": [
+          {
+            "name": "divider",
+            "props": {
+              "thickness": 0.5,
+              "color": {
+                "$theme": "/palette/rule",
+                "default": "borderPrimary"
+              },
+              "spacing": {
+                "before": 4,
+                "after": 4
+              }
+            }
+          },
+          {
+            "name": "paragraph",
+            "props": {
+              "text": {
+                "$slot": "/text"
+              },
+              "font": {
+                "family": {
+                  "$theme": "/fonts/body/family",
+                  "default": "Calibri"
+                },
+                "size": {
+                  "$theme": "/styles/source/size",
+                  "default": 8
+                },
+                "bold": {
+                  "$theme": "/styles/source/bold",
+                  "default": false
+                },
+                "color": {
+                  "$theme": "/styles/source/color",
+                  "default": "textMuted"
+                }
+              },
+              "spacing": {
+                "before": 0,
+                "after": 8
+              }
+            }
+          }
+        ]
+      },
+      "kpi-row": {
+        "description": "Two to four headline metrics in equal columns: value with its unit, label, and a signed delta with a direction glyph. An optional source collapses with its hairline. Text budgets reject overflow; columns reflow at unchanged type size.",
         "slots": {
           "items": {
             "type": "array",
@@ -604,19 +661,38 @@
                 "value": {
                   "type": "string",
                   "required": true,
-                  "maxLength": 12
+                  "maxLength": 12,
+                  "description": "The headline figure, already formatted: 8.8, 94, +18."
+                },
+                "unit": {
+                  "type": "string",
+                  "maxLength": 6,
+                  "description": "Suffix drawn after the figure at half its size: %, €m, pts. Write the space yourself when one belongs."
                 },
                 "label": {
                   "type": "string",
                   "required": true,
-                  "maxWords": 6
+                  "oneLine": true,
+                  "maxWords": 6,
+                  "description": "What the figure measures."
+                },
+                "delta": {
+                  "type": "string",
+                  "maxLength": 12,
+                  "description": "Signed change shown beside the figure: +3.2 pts, −0.4."
+                },
+                "trend": {
+                  "type": "string",
+                  "enum": ["up", "down", "neutral"],
+                  "description": "Direction glyph drawn before the delta."
                 }
               }
             }
           },
           "source": {
             "type": "string",
-            "maxWords": 20
+            "maxWords": 20,
+            "role": "source"
           }
         },
         "body": [
@@ -634,11 +710,20 @@
                 "template": {
                   "name": "statistic",
                   "props": {
+                    "number": {
+                      "$item": "/value"
+                    },
+                    "unit": {
+                      "$item": "/unit"
+                    },
                     "description": {
                       "$item": "/label"
                     },
-                    "number": {
-                      "$item": "/value"
+                    "trend": {
+                      "$item": "/trend"
+                    },
+                    "trendValue": {
+                      "$item": "/delta"
                     }
                   }
                 }
@@ -647,25 +732,318 @@
           },
           {
             "$if": "/source",
-            "then": [
+            "then": {
+              "name": "block",
+              "props": {
+                "ref": "source-line",
+                "slots": {
+                  "text": {
+                    "$slot": "/source"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "callout": {
+        "description": "An aside set off by a hairline rule down its left edge: a short label over up to sixty words of text. No fill, so it reads as a note beside the argument rather than a box in it.",
+        "slots": {
+          "label": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 6,
+            "default": "Note"
+          },
+          "text": {
+            "type": "string",
+            "required": true,
+            "maxWords": 60
+          }
+        },
+        "body": [
+          {
+            "name": "text-box",
+            "props": {
+              "width": "100%",
+              "style": {
+                "padding": {
+                  "top": 2,
+                  "bottom": 2,
+                  "left": 10,
+                  "right": 0
+                },
+                "border": {
+                  "left": {
+                    "style": "solid",
+                    "width": 0.75,
+                    "color": {
+                      "$theme": "/palette/rule",
+                      "default": "borderPrimary"
+                    }
+                  }
+                }
+              }
+            },
+            "children": [
               {
-                "name": "divider",
+                "name": "paragraph",
                 "props": {
-                  "thickness": 0.5
+                  "text": {
+                    "$slot": "/label"
+                  },
+                  "font": {
+                    "family": {
+                      "$theme": "/fonts/body/family",
+                      "default": "Calibri"
+                    },
+                    "size": {
+                      "$theme": "/styles/label/size",
+                      "default": 9
+                    },
+                    "bold": {
+                      "$theme": "/styles/label/bold",
+                      "default": true
+                    },
+                    "color": {
+                      "$theme": "/styles/label/color",
+                      "default": "textPrimary"
+                    }
+                  },
+                  "spacing": {
+                    "before": 0,
+                    "after": 2
+                  },
+                  "keepNext": true
                 }
               },
               {
                 "name": "paragraph",
                 "props": {
                   "text": {
-                    "$slot": "/source"
+                    "$slot": "/text"
                   },
-                  "font": {
-                    "size": 9
+                  "spacing": {
+                    "before": 0,
+                    "after": 0
                   }
                 }
               }
             ]
+          }
+        ]
+      },
+      "data-table": {
+        "description": "A sourced numeric table: a title, a text column of row labels, one to six data columns right-aligned by construction, then optional notes and a source line. With its header, 24 rows keep the table on one page; the table-design rule checks the compiled table for mixed decimals.",
+        "slots": {
+          "title": {
+            "type": "string",
+            "required": true,
+            "oneLine": true,
+            "maxWords": 16
+          },
+          "labelHeader": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 4,
+            "default": "",
+            "description": "Header of the row-label column."
+          },
+          "labels": {
+            "type": "array",
+            "required": true,
+            "minItems": 1,
+            "maxItems": 24,
+            "items": {
+              "type": "string",
+              "oneLine": true,
+              "maxWords": 8
+            },
+            "description": "Row labels, top to bottom. Every data column lists its cells in this order and at this count."
+          },
+          "columns": {
+            "type": "array",
+            "required": true,
+            "minItems": 1,
+            "maxItems": 6,
+            "items": {
+              "type": "object",
+              "properties": {
+                "header": {
+                  "type": "string",
+                  "required": true,
+                  "oneLine": true,
+                  "maxWords": 4,
+                  "description": "Column header; put the unit here: Revenue (€m)."
+                },
+                "cells": {
+                  "type": "array",
+                  "required": true,
+                  "minItems": 1,
+                  "maxItems": 24,
+                  "items": {
+                    "type": "string",
+                    "maxLength": 16
+                  },
+                  "description": "One formatted value per row label, rounded the same way down the column."
+                },
+                "numeric": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Right-align header and cells so digits line up by place value. Set false for a text column."
+                }
+              }
+            }
+          },
+          "notes": {
+            "type": "string",
+            "maxWords": 40,
+            "description": "What the reader needs to interpret the figures: definitions, periods, exclusions."
+          },
+          "source": {
+            "type": "string",
+            "maxWords": 20,
+            "role": "source"
+          }
+        },
+        "body": [
+          {
+            "name": "paragraph",
+            "props": {
+              "text": {
+                "$slot": "/title"
+              },
+              "font": {
+                "family": {
+                  "$theme": "/fonts/body/family",
+                  "default": "Calibri"
+                },
+                "size": {
+                  "$theme": "/styles/label/size",
+                  "default": 9
+                },
+                "bold": {
+                  "$theme": "/styles/label/bold",
+                  "default": true
+                },
+                "color": {
+                  "$theme": "/styles/label/color",
+                  "default": "textPrimary"
+                }
+              },
+              "spacing": {
+                "before": 8,
+                "after": 4
+              },
+              "keepNext": true
+            }
+          },
+          {
+            "name": "table",
+            "props": {
+              "width": 100,
+              "repeatHeaderOnPageBreak": true,
+              "columns": [
+                {
+                  "header": {
+                    "content": {
+                      "$slot": "/labelHeader"
+                    }
+                  },
+                  "cells": {
+                    "$each": "/labels",
+                    "template": {
+                      "content": {
+                        "$item": ""
+                      }
+                    }
+                  }
+                },
+                {
+                  "$each": "/columns",
+                  "template": {
+                    "header": {
+                      "content": {
+                        "$item": "/header"
+                      },
+                      "horizontalAlignment": {
+                        "$if": {
+                          "$item": "/numeric"
+                        },
+                        "then": "right",
+                        "else": "left"
+                      }
+                    },
+                    "cellDefaults": {
+                      "horizontalAlignment": {
+                        "$if": {
+                          "$item": "/numeric"
+                        },
+                        "then": "right",
+                        "else": "left"
+                      }
+                    },
+                    "cells": {
+                      "$each": {
+                        "$item": "/cells"
+                      },
+                      "template": {
+                        "content": {
+                          "$item": ""
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "$if": "/notes",
+            "then": {
+              "name": "paragraph",
+              "props": {
+                "text": {
+                  "$slot": "/notes"
+                },
+                "font": {
+                  "family": {
+                    "$theme": "/fonts/body/family",
+                    "default": "Calibri"
+                  },
+                  "size": {
+                    "$theme": "/styles/source/size",
+                    "default": 8
+                  },
+                  "bold": {
+                    "$theme": "/styles/source/bold",
+                    "default": false
+                  },
+                  "color": {
+                    "$theme": "/styles/source/color",
+                    "default": "textMuted"
+                  }
+                },
+                "spacing": {
+                  "before": 4,
+                  "after": 0
+                }
+              }
+            }
+          },
+          {
+            "$if": "/source",
+            "then": {
+              "name": "block",
+              "props": {
+                "ref": "source-line",
+                "slots": {
+                  "text": {
+                    "$slot": "/source"
+                  }
+                }
+              }
+            }
           }
         ]
       }
@@ -738,19 +1116,42 @@
         {
           "name": "block",
           "props": {
-            "ref": "metric-row",
+            "ref": "kpi-row",
             "slots": {
               "items": [
                 {
-                  "value": "+18%",
-                  "label": "Revenue growth"
+                  "value": "8.8",
+                  "unit": " €m",
+                  "label": "Revenue year to date",
+                  "delta": "+16.9%",
+                  "trend": "up"
                 },
                 {
-                  "value": "94%",
-                  "label": "Client retention"
+                  "value": "94",
+                  "unit": "%",
+                  "label": "Client retention",
+                  "delta": "+2 pts",
+                  "trend": "up"
+                },
+                {
+                  "value": "11",
+                  "unit": " days",
+                  "label": "Median time to deliver",
+                  "delta": "−3 days",
+                  "trend": "down"
                 }
               ],
-              "source": "Source: quarterly operating review."
+              "source": "Source: quarterly operating review, 2026."
+            }
+          }
+        },
+        {
+          "name": "block",
+          "props": {
+            "ref": "callout",
+            "slots": {
+              "label": "How to read the deltas",
+              "text": "Deltas compare the first three quarters of 2026 with the same period of 2025. Retention counts contracts renewed within thirty days of their term; late renewals are excluded from both years."
             }
           }
         }
@@ -780,9 +1181,41 @@
           }
         },
         {
+          "name": "block",
+          "props": {
+            "ref": "data-table",
+            "slots": {
+              "title": "Revenue and retention by segment, 2026 to date",
+              "labelHeader": "Segment",
+              "labels": [
+                "Enterprise",
+                "Mid-market",
+                "Public sector",
+                "All segments"
+              ],
+              "columns": [
+                {
+                  "header": "Revenue (€m)",
+                  "cells": ["4.2", "2.7", "1.9", "8.8"]
+                },
+                {
+                  "header": "Growth (%)",
+                  "cells": ["21.0", "14.5", "9.8", "16.9"]
+                },
+                {
+                  "header": "Retention (%)",
+                  "cells": ["96", "93", "91", "94"]
+                }
+              ],
+              "notes": "Growth is year on year on the same nine months. Retention counts contracts renewed within thirty days of their term.",
+              "source": "Source: quarterly operating review, 2026."
+            }
+          }
+        },
+        {
           "name": "paragraph",
           "props": {
-            "text": "The inherited running header uses this section\u2019s tracker and page width. Page numbers are native Word fields."
+            "text": "The inherited running header uses this section’s tracker and page width. Page numbers are native Word fields."
           }
         }
       ]

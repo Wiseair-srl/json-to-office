@@ -12,21 +12,27 @@ import {
   vermilionTheme,
   devportalTheme,
 } from '../../styles';
-import { generateBufferFromJson } from '../../core/generator';
+import {
+  generateBufferFromJson,
+  generateBufferWithWarnings,
+} from '../../core/generator';
+import { analyzeDocxQuality } from '../../quality/preflight';
+import { QUALITY_CODES } from '@json-to-office/quality';
 import { createDocumentGenerator } from '../../plugin/createDocumentGenerator';
 import { createComponent } from '../../plugin/createComponent';
 import { prepareDocxQualityDocument } from '../../quality/facts';
 
-const example = () =>
-  JSON.parse(
-    readFileSync(
-      new URL(
-        '../../../../jto/src/client/public/templates/client-report-blocks.docx.json',
-        import.meta.url
-      ),
-      'utf8'
-    )
-  );
+// Parsed once; every helper hands out a copy.
+const EXAMPLE = JSON.parse(
+  readFileSync(
+    new URL(
+      '../../../../jto/src/client/public/templates/client-report-blocks.docx.json',
+      import.meta.url
+    ),
+    'utf8'
+  )
+);
+const example = () => structuredClone(EXAMPLE);
 const simple = () => {
   const doc = example();
   doc.children = [
@@ -46,6 +52,21 @@ const simple = () => {
   return doc;
 };
 const para = (text: string) => ({ name: 'paragraph', props: { text } });
+/** The example's first invocation of a block, with its real content. */
+const invocation = (ref: string) => {
+  for (const section of EXAMPLE.children)
+    for (const child of section.children)
+      if (child.name === 'block' && child.props.ref === ref)
+        return structuredClone(child);
+  throw new Error(`no ${ref} invocation in the example`);
+};
+/** A one-section document on `theme` holding the given invocations. */
+const on = (theme: string, ...blocks: unknown[]) => {
+  const doc = example();
+  doc.props.theme = theme;
+  doc.children = [{ name: 'section', children: blocks }];
+  return doc;
+};
 
 describe('JSON report blocks from playground templates', () => {
   it('validates the complete example and rejects absent definitions', () => {
@@ -243,7 +264,7 @@ describe('JSON report blocks from playground templates', () => {
         {
           name: 'block',
           props: {
-            ref: 'metric-row',
+            ref: 'kpi-row',
             slots: {
               items: Array.from({ length: count }, (_, i) => ({
                 value: String(i),
@@ -265,10 +286,10 @@ describe('JSON report blocks from playground templates', () => {
         )
       ).toBe(`/children/0/children/0/props/slots/items/${count - 1}/value`);
       input.children[0].children[0].props.slots.source = 'Evidence';
-      expect(
-        expandBlocks(input, consultingTheme).document.children[0].children[0]
-          .children
-      ).toHaveLength(3);
+      const sourced = expandBlocks(input, consultingTheme).document.children[0]
+        .children[0].children;
+      expect(sourced.map((c: any) => c.name)).toEqual(['columns', 'group']);
+      expect(sourced[1].children).toHaveLength(2);
       input.children[0].children[0].props.slots.items = Array.from(
         { length: 5 },
         () => ({ value: '1', label: 'Too many' })
@@ -388,5 +409,263 @@ describe('JSON report blocks from playground templates', () => {
     expect(
       JSON.stringify(result.standardDefinition.children[0].props.header)
     ).toContain('Plugin report');
+  });
+
+  it('draws a kpi-row metric with its unit, delta and direction, and nothing it was not given', () => {
+    const doc = on('consulting', invocation('kpi-row'));
+    const expanded = expandBlocks(doc, consultingTheme);
+    const stats =
+      expanded.document.children[0].children[0].children[0].children;
+    expect(stats.map((s: any) => s.name)).toEqual([
+      'statistic',
+      'statistic',
+      'statistic',
+    ]);
+    expect(stats[0].props).toEqual({
+      number: '8.8',
+      unit: ' €m',
+      description: 'Revenue year to date',
+      trend: 'up',
+      trendValue: '+16.9%',
+    });
+    doc.children[0].children[0].props.slots.items = [
+      { value: '1', label: 'Bare' },
+      { value: '2', label: 'Bare' },
+    ];
+    const bare = expandBlocks(doc, consultingTheme).document.children[0]
+      .children[0].children[0].children[0].props;
+    expect(Object.keys(bare)).toEqual(['number', 'description']);
+    doc.children[0].children[0].props.slots.items[0].trend = 'sideways';
+    expect(validateDocument(doc).errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '/children/0/children/0/props/slots/items/0/trend',
+        }),
+      ])
+    );
+  });
+
+  describe('callout', () => {
+    it('sets its text off with one hairline on the left, no fill, in the theme rule colour', () => {
+      const box = expandBlocks(
+        on('consulting', invocation('callout')),
+        consultingTheme
+      ).document.children[0].children[0].children[0];
+      expect(box.name).toBe('text-box');
+      expect(box.props.style.border).toEqual({
+        left: { style: 'solid', width: 0.75, color: '#C9CED6' },
+      });
+      expect(box.props.style.shading).toBeUndefined();
+      expect(box.children.map((c: any) => c.props.text)).toEqual([
+        'How to read the deltas',
+        expect.stringContaining('Deltas compare'),
+      ]);
+      expect(box.children[0].props.font.size).toBe(9);
+    });
+    it('labels itself "Note" by default and budgets the body at sixty words', () => {
+      const doc = on('minimal', {
+        name: 'block',
+        props: { ref: 'callout', slots: { text: 'Short.' } },
+      });
+      expect(
+        expandBlocks(doc, minimalTheme).document.children[0].children[0]
+          .children[0].children[0].props.text
+      ).toBe('Note');
+      doc.children[0].children[0].props.slots.text = 'word '.repeat(61);
+      expect(validateDocument(doc).errors).toEqual([
+        expect.objectContaining({
+          code: 'block_slot_budget',
+          path: '/children/0/children/0/props/slots/text',
+        }),
+      ]);
+    });
+  });
+
+  describe('data-table', () => {
+    const table = (doc: any, theme = consultingTheme) =>
+      expandBlocks(doc, theme).document.children[0].children[0].children[1];
+
+    it('right-aligns every numeric column, header included, and leaves the label column alone', () => {
+      const compiled = table(on('consulting', invocation('data-table')));
+      expect(compiled.name).toBe('table');
+      expect(compiled.props.width).toBe(100);
+      const [labels, ...data] = compiled.props.columns;
+      expect(labels.header).toEqual({ content: 'Segment' });
+      expect(labels.cellDefaults).toBeUndefined();
+      expect(labels.cells.map((c: any) => c.content)).toEqual([
+        'Enterprise',
+        'Mid-market',
+        'Public sector',
+        'All segments',
+      ]);
+      expect(data).toHaveLength(3);
+      for (const column of data) {
+        expect(column.header.horizontalAlignment).toBe('right');
+        expect(column.cellDefaults).toEqual({ horizontalAlignment: 'right' });
+        expect(column.cells).toHaveLength(4);
+      }
+      expect(data[0].cells.map((c: any) => c.content)).toEqual([
+        '4.2',
+        '2.7',
+        '1.9',
+        '8.8',
+      ]);
+    });
+
+    it('lets a column opt out of numeric alignment', () => {
+      const doc = on('consulting', invocation('data-table'));
+      doc.children[0].children[0].props.slots.columns[1] = {
+        header: 'Owner',
+        numeric: false,
+        cells: ['A', 'B', 'C', 'D'],
+      };
+      const column = table(doc).props.columns[2];
+      expect(column.header.horizontalAlignment).toBe('left');
+      expect(column.cellDefaults).toEqual({ horizontalAlignment: 'left' });
+    });
+
+    it('passes the table-design rules on the compiled table, and reports a rounding slip at the authored column', () => {
+      const tableCodes = [
+        QUALITY_CODES.TABLE_NUMERIC_ALIGN,
+        QUALITY_CODES.TABLE_MIXED_DECIMALS,
+        QUALITY_CODES.TABLE_WIDTH_OVERFLOW,
+        QUALITY_CODES.TABLE_GRID,
+      ];
+      const findings = (doc: unknown) =>
+        analyzeDocxQuality(doc).diagnostics.filter((d) =>
+          tableCodes.includes(d.code as never)
+        );
+      expect(findings(example())).toEqual([]);
+      const doc = on('consulting', invocation('data-table'));
+      doc.children[0].children[0].props.slots.columns[1].cells = [
+        '21.0',
+        '14',
+        '9.8',
+        '16.9',
+      ];
+      expect(findings(doc)).toEqual([
+        expect.objectContaining({
+          code: QUALITY_CODES.TABLE_MIXED_DECIMALS,
+          path: '/children/0/children/0/props/slots/columns/1',
+        }),
+      ]);
+    });
+
+    it('still offers the alignment patch when a whole authored table passes through a slot', () => {
+      const doc = on('consulting');
+      doc.props.blocks.framed = {
+        slots: { table: { type: 'component', required: true } },
+        body: [{ $slot: '/table' }],
+      };
+      doc.children[0].children = [
+        {
+          name: 'block',
+          props: {
+            ref: 'framed',
+            slots: {
+              table: {
+                name: 'table',
+                props: {
+                  columns: [
+                    {
+                      header: { content: 'Region' },
+                      cells: [{ content: 'North' }, { content: 'South' }],
+                    },
+                    {
+                      header: { content: 'Revenue' },
+                      cells: [{ content: '4.2' }, { content: '3.1' }],
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        },
+      ];
+      const [finding] = analyzeDocxQuality(doc).diagnostics.filter(
+        (d) => d.code === QUALITY_CODES.TABLE_NUMERIC_ALIGN
+      );
+      expect(finding.path).toBe(
+        '/children/0/children/0/props/slots/table/props/columns/1'
+      );
+      expect(finding.fixes?.[0]).toEqual({
+        op: 'add',
+        path: '/children/0/children/0/props/slots/table/props/columns/1/cellDefaults',
+        value: { horizontalAlignment: 'right' },
+      });
+    });
+
+    it('keeps the row count page-safe by schema, header row included', () => {
+      const doc = on('consulting', invocation('data-table'));
+      const slots = doc.children[0].children[0].props.slots;
+      slots.labels = Array.from({ length: 24 }, (_, i) => `Row ${i + 1}`);
+      for (const column of slots.columns) column.cells = slots.labels;
+      expect(
+        analyzeDocxQuality(doc).diagnostics.filter(
+          (d) => d.code === QUALITY_CODES.TABLE_ROW_COUNT
+        )
+      ).toEqual([]);
+      slots.labels = Array.from({ length: 25 }, (_, i) => `Row ${i + 1}`);
+      expect(validateDocument(doc).errors).toEqual([
+        expect.objectContaining({
+          code: 'block_slot_budget',
+          path: '/children/0/children/0/props/slots/labels',
+        }),
+      ]);
+    });
+
+    it('collapses notes and source with their rule', () => {
+      const doc = on('consulting', invocation('data-table'));
+      const full = expandBlocks(doc, consultingTheme).document.children[0]
+        .children[0].children;
+      expect(full.map((c: any) => c.name)).toEqual([
+        'paragraph',
+        'table',
+        'paragraph',
+        'group',
+      ]);
+      expect(full[3].children.map((c: any) => c.name)).toEqual([
+        'divider',
+        'paragraph',
+      ]);
+      expect(
+        toAuthoredPointer(
+          expandBlocks(doc, consultingTheme).sourceMap,
+          '/children/0/children/0/children/3/children/1/props/text'
+        )
+      ).toBe('/children/0/children/0/props/slots/source');
+      delete doc.children[0].children[0].props.slots.notes;
+      delete doc.children[0].children[0].props.slots.source;
+      expect(
+        expandBlocks(
+          doc,
+          consultingTheme
+        ).document.children[0].children[0].children.map((c: any) => c.name)
+      ).toEqual(['paragraph', 'table']);
+    });
+  });
+
+  describe.each([
+    ['consulting', consultingTheme],
+    ['minimal', minimalTheme],
+    ['vermilion', vermilionTheme],
+    ['devportal', devportalTheme],
+  ])('on the %s theme', (theme) => {
+    it('renders kpi-row, callout and data-table warning-clean under the default profile', async () => {
+      const doc = on(
+        theme,
+        invocation('kpi-row'),
+        invocation('callout'),
+        invocation('data-table')
+      );
+      expect(validateDocument(doc).errors).toEqual([]);
+      const { warnings } = await generateBufferWithWarnings(doc);
+      expect(warnings).toEqual([]);
+      expect(
+        analyzeDocxQuality(doc).diagnostics.filter(
+          (finding) => finding.severity !== 'info'
+        )
+      ).toEqual([]);
+    });
   });
 });

@@ -84,6 +84,12 @@ export interface DocxTableColumnFact extends TableColumnInfoDesign {
    * reaches those, so a repair has to name them one by one.
    */
   cellsWithOwnAlignment: readonly number[];
+  /**
+   * Compiled from a block rather than written by the author. `path` then
+   * names the slot that produced the column, which has no `cellDefaults` or
+   * `header` to patch: the definition decides how it aligns.
+   */
+  generated: boolean;
 }
 
 /** A table, resolved through the same cascade the renderer draws it with. */
@@ -565,6 +571,7 @@ function tableDesignFact(
               : 'mixed',
         hasCellDefaults: asRecord(authoredColumn.cellDefaults) !== undefined,
         hasHeader: asRecord(authoredColumn.header) !== undefined,
+        generated: false,
         cellsWithOwnAlignment: cells.flatMap((cell, cellIndex) => {
           const alignment = asRecord(cell)?.horizontalAlignment;
           return typeof alignment === 'string' &&
@@ -1077,7 +1084,26 @@ export function prepareDocxQualityDocument(
         context.themeName,
         authoredPropsAt(path)
       );
-      if (design) addFact(design);
+      // `addFact` maps the table's own path; the columns carry paths of their
+      // own, and a finding on one must land on what the author wrote too. A
+      // column whose authored pointer is not a column of an authored table —
+      // a block built it from a slot — has nothing a patch could set.
+      if (design)
+        addFact({
+          ...design,
+          columns: design.columns.map((column) => {
+            const authored = authoredPath(column.path);
+            const table = /^(.*)\/props\/columns\/\d+$/.exec(authored)?.[1];
+            return {
+              ...column,
+              path: authored,
+              generated:
+                table === undefined ||
+                asRecord(nodeAtPointer(themed.document, table))?.name !==
+                  'table',
+            };
+          }),
+        });
     }
 
     if (node.name === 'chart' || node.name === 'highcharts') {

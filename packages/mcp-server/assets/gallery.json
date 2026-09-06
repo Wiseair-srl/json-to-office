@@ -4,31 +4,33 @@
       "name": "client-report-blocks.docx.json",
       "format": "docx",
       "archetype": "client report with document-local JSON blocks",
-      "whenToUse": "Learn, copy and customize JSON definitions for cover, section-opener, key-takeaways and running-head. Definitions and invocations are embedded in the complete playground document.",
+      "whenToUse": "Learn, copy and customize JSON definitions for cover, section-opener, key-takeaways, kpi-row, callout, data-table and running-head. Definitions and invocations are embedded in the complete playground document.",
       "theme": "consulting",
       "pages": 3,
       "components": {
-        "block": 6,
+        "block": 10,
         "columns": 1,
         "divider": 6,
         "docx": 1,
         "heading": 1,
         "list": 1,
-        "paragraph": 13,
+        "paragraph": 17,
         "section": 3,
-        "statistic": 1
+        "statistic": 1,
+        "table": 1,
+        "text-box": 1
       },
       "slots": {
-        "text": 2,
-        "title": 5
+        "text": 3,
+        "title": 6
       },
       "externalAssets": [],
       "externalFonts": [],
-      "hash": "fbf060ce82762d79840aeecc52be50591a4ad82680232ec8eff739c405332a3e",
+      "hash": "9f045f4c25af8e749a6fba5ada54a3ca0c994be4702a3841a8a79a5a31f49503",
       "bytes": {
-        "document": 21831,
-        "gzipped": 2660,
-        "thumbnail": 15482
+        "document": 35669,
+        "gzipped": 4556,
+        "thumbnail": 22020
       }
     },
     {

@@ -338,6 +338,268 @@ it('inherits format from the host and rejects a redundant authored format field'
   ).toBe('block_invalid_definition');
 });
 
+describe('binding operands on $each, $if and $count', () => {
+  // A data table repeats columns, and each column repeats its own cells: the
+  // inner repeat reads the current column, not a slot of the block.
+  const table: JsonBlockDefinition = {
+    slots: {
+      columns: {
+        type: 'array',
+        required: true,
+        minItems: 1,
+        items: {
+          type: 'object',
+          properties: {
+            header: { type: 'string', required: true },
+            numeric: { type: 'boolean', default: true },
+            cells: {
+              type: 'array',
+              required: true,
+              items: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+    body: [
+      {
+        name: 'table',
+        props: {
+          columns: {
+            $each: '/columns',
+            template: {
+              header: { content: { $item: '/header' } },
+              cellDefaults: {
+                horizontalAlignment: {
+                  $if: { $item: '/numeric' },
+                  then: 'right',
+                  else: 'left',
+                },
+              },
+              cells: {
+                $each: { $item: '/cells' },
+                template: { content: { $item: '' } },
+              },
+              span: { $count: { $item: '/cells' } },
+            },
+          },
+        },
+      },
+    ],
+  };
+  const expand = (slots: Record<string, unknown>) => {
+    const evaluator = new JsonBlockEvaluator({ table }, { format: 'docx' });
+    const result = evaluator.expand({
+      name: 'block',
+      props: { ref: 'table', slots },
+    }) as any;
+    return { evaluator, columns: result.children[0].props.columns };
+  };
+
+  it('repeats the current item’s own array and tests its fields', () => {
+    const { columns } = expand({
+      columns: [
+        { header: 'Region', numeric: false, cells: ['North', 'South'] },
+        { header: 'Revenue', cells: ['4.2', '3.1'] },
+      ],
+    });
+    expect(columns).toEqual([
+      {
+        header: { content: 'Region' },
+        cellDefaults: { horizontalAlignment: 'left' },
+        cells: [{ content: 'North' }, { content: 'South' }],
+        span: 2,
+      },
+      {
+        header: { content: 'Revenue' },
+        cellDefaults: { horizontalAlignment: 'right' },
+        cells: [{ content: '4.2' }, { content: '3.1' }],
+        span: 2,
+      },
+    ]);
+  });
+
+  it('maps nested repeated content to the authored cell', () => {
+    const { evaluator } = expand({
+      columns: [
+        { header: 'Region', cells: ['North'] },
+        { header: 'Revenue', cells: ['4.2', '3.1'] },
+      ],
+    });
+    expect(
+      toAuthoredBlockPointer(
+        evaluator.sourceMap,
+        '/children/0/props/columns/1/cells/1/content'
+      )
+    ).toBe('/props/slots/columns/1/cells/1');
+    expect(
+      toAuthoredBlockPointer(
+        evaluator.sourceMap,
+        '/children/0/props/columns/1/cellDefaults/horizontalAlignment'
+      )
+    ).toBe('/props/slots/columns/1/numeric');
+    // The repeated column itself belongs to the item that produced it.
+    expect(
+      toAuthoredBlockPointer(evaluator.sourceMap, '/children/0/props/columns/1')
+    ).toBe('/props/slots/columns/1');
+  });
+
+  it('accepts a slot reference as an operand, like the pointer form', () => {
+    const definition: JsonBlockDefinition = {
+      slots: { items: { type: 'array', items: { type: 'string' } } },
+      body: [
+        { $count: { $slot: '/items' } },
+        { $if: { $slot: '/items' }, then: 'some', else: 'none' },
+      ],
+    };
+    const evaluator = new JsonBlockEvaluator(
+      { list: definition },
+      {
+        format: 'docx',
+      }
+    );
+    const result = evaluator.expand({
+      name: 'block',
+      props: { ref: 'list', slots: { items: ['a', 'b'] } },
+    }) as any;
+    expect(result.children).toEqual([2, 'some']);
+  });
+
+  it('rejects an item operand outside a repeat and a malformed operand', () => {
+    const outside: JsonBlockDefinition = {
+      slots: { items: { type: 'array', items: { type: 'string' } } },
+      body: [{ $each: { $item: '/cells' }, template: 'x' }],
+    };
+    expect(
+      validateBlockDefinitions({ outside }, 'docx').map((issue) => issue.code)
+    ).toEqual(['block_invalid_binding']);
+    const malformed: JsonBlockDefinition = {
+      slots: { items: { type: 'array', items: { type: 'string' } } },
+      body: [
+        { $if: { $theme: '/x' }, then: 'x' },
+        { $count: { $slot: '/items', default: 0 } },
+        { $each: { $slot: '/missing' }, template: 'x' },
+      ],
+    };
+    expect(
+      validateBlockDefinitions({ malformed }, 'docx').map((issue) => [
+        issue.path,
+        issue.code,
+      ])
+    ).toEqual([
+      ['/props/blocks/malformed/body/0', 'block_invalid_binding'],
+      ['/props/blocks/malformed/body/1', 'block_invalid_binding'],
+      ['/props/blocks/malformed/body/2', 'block_unknown_binding'],
+    ]);
+  });
+
+  it('keeps element provenance through a slot the enclosing block repeated', () => {
+    // A parent hands its child an array it built with $each; the child
+    // repeats it. Every element must still point at the parent's item.
+    const definitions: Record<string, JsonBlockDefinition> = {
+      child: {
+        slots: { items: { type: 'array', items: { type: 'string' } } },
+        body: [
+          {
+            $each: '/items',
+            template: { name: 'paragraph', props: { text: { $item: '' } } },
+          },
+        ],
+      },
+      parent: {
+        slots: {
+          rows: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: { label: { type: 'string' } },
+            },
+          },
+        },
+        body: [
+          {
+            name: 'block',
+            props: {
+              ref: 'child',
+              slots: {
+                items: { $each: '/rows', template: { $item: '/label' } },
+              },
+            },
+          },
+        ],
+      },
+    };
+    const evaluator = new JsonBlockEvaluator(definitions, { format: 'docx' });
+    const result = evaluator.expand({
+      name: 'block',
+      props: {
+        ref: 'parent',
+        slots: { rows: [{ label: 'A' }, { label: 'B' }] },
+      },
+    }) as any;
+    const paragraphs = result.children[0].children;
+    expect(paragraphs.map((p: any) => p.props.text)).toEqual(['A', 'B']);
+    expect(
+      toAuthoredBlockPointer(
+        evaluator.sourceMap,
+        '/children/0/children/1/props/text'
+      )
+    ).toBe('/props/slots/rows/1/label');
+    expect(
+      toAuthoredBlockPointer(evaluator.sourceMap, '/children/0/children/1')
+    ).toBe('/props/slots/rows/1/label');
+  });
+
+  it('attributes a context operand like a context binding, and leaves a bound branch its origin', () => {
+    const definition: JsonBlockDefinition = {
+      slots: { flag: { type: 'boolean' } },
+      body: [
+        { $count: { $context: '/rows' } },
+        { $if: '/flag', then: { $context: '/document/title' } },
+        { $if: { $context: '/document/title' }, then: 'shown' },
+      ],
+    };
+    const evaluator = new JsonBlockEvaluator(
+      { probe: definition },
+      {
+        format: 'docx',
+        context: { rows: ['x'], document: { title: 'Doc' } },
+        contextSources: { '/document': '/props/metadata' },
+      }
+    );
+    const result = evaluator.expand({
+      name: 'block',
+      props: { ref: 'probe', slots: { flag: true } },
+    }) as any;
+    expect(result.children).toEqual([1, 'Doc', 'shown']);
+    expect(evaluator.sourceMap['/children/1']).toBe('/props/metadata/title');
+    expect(evaluator.sourceMap['/children/2']).toBe('/props/metadata/title');
+    expect(() =>
+      new JsonBlockEvaluator(
+        { probe: definition },
+        {
+          format: 'docx',
+          context: { rows: 'no', document: {} },
+          contextSources: { '/rows': '/props/rows' },
+        }
+      ).expand({ name: 'block', props: { ref: 'probe' } })
+    ).toThrow(/\/props\/rows: \$count requires an array/);
+  });
+
+  it('fails a repeat whose operand is not an array, at the authored item', () => {
+    const evaluator = new JsonBlockEvaluator({ table }, { format: 'docx' });
+    expect(() =>
+      evaluator.expand({
+        name: 'block',
+        props: {
+          ref: 'table',
+          slots: { columns: [{ header: 'Region', cells: 'North' as never }] },
+        },
+      })
+    ).toThrow(/columns\/0\/cells/);
+  });
+});
+
 describe('PPTX composition on the shared contract', () => {
   const slideDefinition: JsonBlockDefinition = {
     slots: {

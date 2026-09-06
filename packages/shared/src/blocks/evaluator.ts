@@ -1,4 +1,8 @@
-import { BLOCK_DIRECTIVES } from './directives';
+import {
+  BLOCK_DIRECTIVES,
+  BLOCK_OPERAND_ROOTS,
+  type BlockOperandRoot,
+} from './directives';
 import { Value } from '@sinclair/typebox/value';
 import {
   BlockDefinitionsSchema,
@@ -257,6 +261,36 @@ function slotDescriptorAt(
   return descriptor;
 }
 
+/** Directives whose value is an operand rather than a plain pointer. */
+const OPERAND_DIRECTIVES = ['$if', '$each', '$count'];
+interface BlockOperand {
+  root: BlockOperandRoot | '$theme';
+  pointer: string;
+}
+const isPointer = (value: unknown): value is string =>
+  typeof value === 'string' && (value === '' || value.startsWith('/'));
+/**
+ * Read a directive's operand. A plain pointer reads a slot (for `$slot`,
+ * `$item`, `$theme` and `$context` it is the directive's own root); for
+ * `$if`, `$each` and `$count` a one-key reference object names the root
+ * instead. Anything else is malformed.
+ */
+function blockOperand(value: unknown, key: string): BlockOperand | undefined {
+  if (isPointer(value))
+    return {
+      root: OPERAND_DIRECTIVES.includes(key)
+        ? '$slot'
+        : (key as BlockOperand['root']),
+      pointer: value,
+    };
+  if (!OPERAND_DIRECTIVES.includes(key) || !isBlockRecord(value))
+    return undefined;
+  const keys = Object.keys(value);
+  const root = BLOCK_OPERAND_ROOTS.find((candidate) => candidate === keys[0]);
+  if (keys.length !== 1 || !root || !isPointer(value[root])) return undefined;
+  return { root, pointer: value[root] as string };
+}
+
 function checkTemplate(
   value: unknown,
   path: string,
@@ -307,23 +341,26 @@ function checkTemplate(
         '$count',
       ].includes(key)
     ) {
-      const pointer = value[key];
-      if (
-        typeof pointer !== 'string' ||
-        (pointer !== '' && !pointer.startsWith('/'))
-      )
+      // `$if`, `$each` and `$count` take an operand: a slot pointer, or a
+      // reference object that reads the current `$each` item, a slot or the
+      // context — so a repeat can walk the current item's own array and a
+      // condition can test one of its fields.
+      const operand = blockOperand(value[key], key);
+      if (!operand)
         issues.push({
           path,
           code: 'block_invalid_binding',
-          message: 'Bindings use JSON Pointers, e.g. /title.',
+          message: OPERAND_DIRECTIVES.includes(key)
+            ? `${key} takes a slot pointer such as /items, or one reference: ${BLOCK_OPERAND_ROOTS.map((root) => `{ "${root}": ... }`).join(', ')}.`
+            : 'Bindings use JSON Pointers, e.g. /title.',
         });
-      else if (['$slot', '$if', '$each', '$count'].includes(key)) {
-        const descriptor = slotDescriptorAt(slots, pointer);
+      else if (operand.root === '$slot') {
+        const descriptor = slotDescriptorAt(slots, operand.pointer);
         if (!descriptor)
           issues.push({
             path,
             code: 'block_unknown_binding',
-            message: `No slot field '${pointer}' is declared.`,
+            message: `No slot field '${operand.pointer}' is declared.`,
           });
         else if (
           ['$each', '$count'].includes(key) &&
@@ -335,7 +372,7 @@ function checkTemplate(
             message: `${key} requires an array slot.`,
           });
       }
-      if (key === '$item' && !repeated)
+      if (operand?.root === '$item' && !repeated)
         issues.push({
           path,
           code: 'block_invalid_binding',
@@ -616,6 +653,66 @@ export class JsonBlockEvaluator {
         'Block expansion exceeds the depth/node limit (64/50000).'
       );
   }
+  /**
+   * A directive operand and the authored pointer it came from: the slot the
+   * pointer form names, or the current item, slot or context a reference
+   * object names. Definitions are validated before this runs, so a malformed
+   * operand cannot reach it.
+   */
+  private operand(
+    raw: unknown,
+    key: string,
+    env: BlockEnvironment
+  ): { value: unknown; source: string; element: (index: number) => string } {
+    const { root, pointer } = blockOperand(raw, key)!;
+    const { value, source } = this.reference(root, pointer, env);
+    return {
+      value,
+      source,
+      // Element i of the array is authored at pointer/i, looked up the same
+      // way: a slot the enclosing invocation built from its own repeat maps
+      // element by element, and pointer + "/i" is not the same as that.
+      element: (index) =>
+        this.reference(root, `${pointer}/${index}`, env).source,
+    };
+  }
+  /**
+   * What a reference reads and where the author wrote it. One resolution for
+   * the binding form and the operand form, so `{ "$context": ... }` is
+   * attributed the same way whichever directive carries it.
+   */
+  private reference(
+    root: BlockOperandRoot | '$theme',
+    pointer: string,
+    env: BlockEnvironment
+  ): { value: unknown; source: string } {
+    if (root === '$item')
+      return {
+        value: blockValueAt(env.item, pointer),
+        source: `${env.itemSource ?? env.source}${pointer}`,
+      };
+    if (root === '$context') {
+      const authored = toAuthoredBlockPointer(
+        env.contextSources ?? {},
+        pointer
+      );
+      return {
+        value: blockValueAt(env.context, pointer),
+        source: authored === pointer ? env.source : authored,
+      };
+    }
+    if (root === '$theme')
+      return {
+        value: blockValueAt(this.options.theme, pointer),
+        source: env.source,
+      };
+    return {
+      value: blockValueAt(env.slots, pointer),
+      source: env.slotSources
+        ? toAuthoredBlockPointer(env.slotSources, pointer)
+        : `${env.source}/props/slots${pointer}`,
+    };
+  }
   evaluate(
     value: unknown,
     env: BlockEnvironment,
@@ -671,26 +768,12 @@ export class JsonBlockEvaluator {
         (k) => k in value
       )!;
       const pointer = value[key] as string;
-      const root =
-        key === '$slot'
-          ? env.slots
-          : key === '$item'
-            ? env.item
-            : key === '$theme'
-              ? this.options.theme
-              : env.context;
-      const found = blockValueAt(root, pointer);
-      if (key === '$slot')
-        this.sourceMap[out] = env.slotSources
-          ? toAuthoredBlockPointer(env.slotSources, pointer)
-          : `${env.source}/props/slots${pointer}`;
-      if (key === '$item')
-        this.sourceMap[out] = `${env.itemSource ?? env.source}${pointer}`;
-      if (key === '$context')
-        this.sourceMap[out] =
-          toAuthoredBlockPointer(env.contextSources ?? {}, pointer) === pointer
-            ? env.source
-            : toAuthoredBlockPointer(env.contextSources ?? {}, pointer);
+      const { value: found, source } = this.reference(
+        key as BlockOperandRoot | '$theme',
+        pointer,
+        env
+      );
+      this.sourceMap[out] = source;
       let result: unknown =
         found !== undefined ? structuredClone(found) : undefined;
       if (result === undefined && own(value, 'default'))
@@ -745,33 +828,37 @@ export class JsonBlockEvaluator {
       }
       return result;
     }
-    if ('$if' in value)
-      return this.evaluate(
-        present(blockValueAt(env.slots, value.$if as string))
-          ? value.then
-          : value.else,
-        env,
-        out,
-        definitionPath,
-        depth + 1
-      );
+    if ('$if' in value) {
+      const operand = this.operand(value.$if, '$if', env);
+      const branch = present(operand.value) ? value.then : value.else;
+      const result = this.evaluate(branch, env, out, definitionPath, depth + 1);
+      // A literal branch is the tested value's consequence: a finding on it
+      // lands on the field that selected it. A binding keeps its own origin.
+      const literal =
+        !isBlockRecord(branch) ||
+        !Object.keys(branch).some((k) => k.startsWith('$'));
+      if (literal && this.sourceMap[out] === env.source)
+        this.sourceMap[out] = operand.source;
+      return result;
+    }
     if ('$count' in value) {
-      const list = blockValueAt(env.slots, value.$count as string);
-      if (!Array.isArray(list))
+      const operand = this.operand(value.$count, '$count', env);
+      if (!Array.isArray(operand.value))
         return fail(
-          `${env.source}/props/slots${value.$count}`,
+          operand.source,
           'block_slot_type',
-          '$count requires an array slot.'
+          '$count requires an array.'
         );
-      return list.length;
+      return operand.value.length;
     }
     if ('$each' in value) {
-      const list = blockValueAt(env.slots, value.$each as string);
+      const operand = this.operand(value.$each, '$each', env);
+      const list = operand.value;
       if (!Array.isArray(list))
         return fail(
-          `${env.source}/props/slots${value.$each}`,
+          operand.source,
           'block_slot_type',
-          '$each requires an array slot.'
+          '$each requires an array.'
         );
       const result: unknown[] = [];
       list.forEach((item, i) => {
@@ -781,16 +868,19 @@ export class JsonBlockEvaluator {
           {
             ...env,
             item,
-            itemSource: env.slotSources
-              ? toAuthoredBlockPointer(env.slotSources, `${value.$each}/${i}`)
-              : `${env.source}/props/slots${value.$each}/${i}`,
+            itemSource: operand.element(i),
           },
           pointer,
           `${definitionPath}/template`,
           depth + 1
         );
-        if (evaluated !== undefined) result.push(evaluated);
-        else
+        if (evaluated !== undefined) {
+          // The repeated element belongs to the item that produced it: a
+          // finding on a whole column lands on that column, not on the block.
+          if (this.sourceMap[pointer] === env.source)
+            this.sourceMap[pointer] = operand.element(i);
+          result.push(evaluated);
+        } else
           for (const key of Object.keys(this.sourceMap)) {
             if (key === pointer || key.startsWith(`${pointer}/`))
               delete this.sourceMap[key];

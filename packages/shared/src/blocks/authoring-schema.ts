@@ -1,5 +1,9 @@
 import type { OfficeFormat } from '../rendering/types';
-import { BLOCK_DIRECTIVES, type BlockDirective } from './directives';
+import {
+  BLOCK_DIRECTIVES,
+  BLOCK_OPERAND_ROOTS,
+  type BlockDirective,
+} from './directives';
 import {
   arrayItemSchema,
   possibleValueTypes,
@@ -77,6 +81,17 @@ export function createBlockAuthoringSchema(
   const prefix = `BlockTemplate_${componentDefinition}`;
   const references = referenceDescriptions(format);
   const measure = measureDescriptions(format);
+  // `$if`, `$each` and `$count` take an operand: a slot pointer, or one
+  // reference that reads the current `$each` entry, a slot or the context.
+  const operand = (description: string): Schema => ({
+    description,
+    anyOf: [
+      pointer(description),
+      ...BLOCK_OPERAND_ROOTS.map((root) =>
+        object({ [root]: pointer(references[root]) }, [root])
+      ),
+    ],
+  });
   const bodyName = `${prefix}_Body`;
   const ref = (name: string): Schema => ({ $ref: `#/definitions/${name}` });
   if (definitions[bodyName]) return ref(bodyName);
@@ -275,8 +290,8 @@ export function createBlockAuthoringSchema(
         case '$if':
           specs[directive] = object(
             {
-              $if: pointer(
-                'Test a slot by JSON Pointer, e.g. /subtitle. Missing, null, false, empty text and empty arrays select else; zero selects then.'
+              $if: operand(
+                'Test a slot by JSON Pointer, e.g. /subtitle, or a reference such as { "$item": "/numeric" }. Missing, null, false, empty text and empty arrays select else; zero selects then.'
               ),
               then: describe(
                 branch(),
@@ -293,8 +308,8 @@ export function createBlockAuthoringSchema(
         case '$each':
           specs[directive] = object(
             {
-              $each: pointer(
-                'Repeat template for each entry in an array slot, e.g. /items. Read the current entry with $item.'
+              $each: operand(
+                'Repeat template for each entry in an array slot, e.g. /items, or in an array of the current entry, { "$item": "/cells" }. Read the current entry with $item.'
               ),
               template: describe(
                 item(),
@@ -307,8 +322,8 @@ export function createBlockAuthoringSchema(
         case '$count':
           specs[directive] = object(
             {
-              $count: pointer(
-                'Return the number of entries in an array slot, e.g. /items.'
+              $count: operand(
+                'Return the number of entries in an array slot, e.g. /items, or in an array of the current entry, { "$item": "/cells" }.'
               ),
             },
             ['$count']

@@ -11,3 +11,6 @@ export const BLOCK_DIRECTIVES = {
   $measure: { keys: ['$measure', 'fraction', 'unit'], result: 'number' },
 } as const;
 export type BlockDirective = keyof typeof BLOCK_DIRECTIVES;
+/** Roots a `$if`/`$each`/`$count` operand may name instead of a slot pointer. */
+export const BLOCK_OPERAND_ROOTS = ['$item', '$slot', '$context'] as const;
+export type BlockOperandRoot = (typeof BLOCK_OPERAND_ROOTS)[number];

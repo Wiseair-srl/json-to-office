@@ -4,9 +4,10 @@
  * Covers the three components that sit in the document flow as blocks rather
  * than as text: `image` (inline and floating, with captions and alt text),
  * `statistic`, and `text-box` (both `table` and `shape` renderings) — and the
- * bounded-slot blocks: `key-takeaways`, and the report architecture of
- * `cover`, `section-opener` and `running-head`, each on the house theme that
- * declares its recipes and on one that does not.
+ * bounded-slot blocks: `key-takeaways`, the report architecture of `cover`,
+ * `section-opener` and `running-head`, and the report's data blocks
+ * `kpi-row`, `callout` and `data-table`, each on the house theme that declares
+ * its recipes and on one that does not.
  *
  * Every image here is an inline base64 data URI: a corpus case is identified by
  * the SHA-256 of the package it produces, so nothing may reach outside the
@@ -274,6 +275,138 @@ export const CASES: CorpusCase[] = [
           },
         },
         { name: 'paragraph', props: { text: 'Body three.' } },
+      ]),
+    ]),
+  },
+  // --------------------------------------------------------------------------
+  // kpi-row, callout, data-table: the report's data blocks
+  // --------------------------------------------------------------------------
+  {
+    // Three metrics with units, deltas and glyphs over a sourced hairline; a
+    // note set off by a left hairline in `rule`; a label column and three
+    // numeric columns right-aligned by the definition, under the label role,
+    // over notes and a source in the source role. Consulting draws the table
+    // with its component defaults: open sides, hairline rows, header rule.
+    name: 'blocks/report-data-consulting',
+    document: doc(
+      [
+        section([
+          {
+            name: 'block',
+            props: {
+              ref: 'kpi-row',
+              slots: {
+                items: [
+                  {
+                    value: '8.8',
+                    unit: ' €m',
+                    label: 'Revenue year to date',
+                    delta: '+16.9%',
+                    trend: 'up',
+                  },
+                  {
+                    value: '94',
+                    unit: '%',
+                    label: 'Client retention',
+                    delta: '+2 pts',
+                    trend: 'up',
+                  },
+                  {
+                    value: '11',
+                    unit: ' days',
+                    label: 'Median time to deliver',
+                    delta: '−3 days',
+                    trend: 'down',
+                  },
+                ],
+                source: 'Source: quarterly operating review, 2026.',
+              },
+            },
+          },
+          {
+            name: 'block',
+            props: {
+              ref: 'callout',
+              slots: {
+                label: 'How to read the deltas',
+                text: 'Deltas compare the first three quarters of 2026 with the same period of 2025.',
+              },
+            },
+          },
+          {
+            name: 'block',
+            props: {
+              ref: 'data-table',
+              slots: {
+                title: 'Revenue and retention by segment, 2026 to date',
+                labelHeader: 'Segment',
+                labels: ['Enterprise', 'Mid-market', 'Public sector', 'Total'],
+                columns: [
+                  {
+                    header: 'Revenue (€m)',
+                    cells: ['4.2', '2.7', '1.9', '8.8'],
+                  },
+                  {
+                    header: 'Growth (%)',
+                    cells: ['21.0', '14.5', '9.8', '16.9'],
+                  },
+                  { header: 'Retention (%)', cells: ['96', '93', '91', '94'] },
+                ],
+                notes: 'Growth is year on year on the same nine months.',
+                source: 'Source: quarterly operating review, 2026.',
+              },
+            },
+          },
+        ]),
+      ],
+      { theme: 'consulting' }
+    ),
+  },
+  {
+    // No roles and no palette: every binding takes its default — 9pt bold
+    // labels, 8pt muted source lines, `borderPrimary` hairlines — two bare
+    // metrics with no source, the default "Note" label, a text column that
+    // opted out of numeric alignment, and no notes or source under the table.
+    name: 'blocks/report-data-fallback',
+    document: doc([
+      section([
+        {
+          name: 'block',
+          props: {
+            ref: 'kpi-row',
+            slots: {
+              items: [
+                { value: '12', label: 'Sites' },
+                { value: '3', unit: 'x', label: 'Coverage', trend: 'neutral' },
+              ],
+            },
+          },
+        },
+        {
+          name: 'block',
+          props: {
+            ref: 'callout',
+            slots: { text: 'Counts are as of the last full month.' },
+          },
+        },
+        {
+          name: 'block',
+          props: {
+            ref: 'data-table',
+            slots: {
+              title: 'Sites by owner',
+              labels: ['North', 'South'],
+              columns: [
+                {
+                  header: 'Owner',
+                  numeric: false,
+                  cells: ['A. Rossi', 'B. Bianchi'],
+                },
+                { header: 'Sites', cells: ['7', '5'] },
+              ],
+            },
+          },
+        },
       ]),
     ]),
   },

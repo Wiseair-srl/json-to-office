@@ -792,6 +792,9 @@ export const docxTableDesignRule: QualityRule<
 function alignColumnRight(
   column: DocxTableColumnFact
 ): readonly JsonPatchOperation[] {
+  // A column a block compiled has nothing of its own to patch; the finding
+  // points at the slot, and the definition is where alignment is decided.
+  if (column.generated) return [];
   const operations: JsonPatchOperation[] = [
     column.hasCellDefaults
       ? {
