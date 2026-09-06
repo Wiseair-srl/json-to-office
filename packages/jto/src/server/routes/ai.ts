@@ -8,6 +8,10 @@ import {
   getFormatFromContainer,
 } from '../services/ai-schema.js';
 import { loadPrompt } from '../services/prompt-loader.js';
+import {
+  blockReferencesPrompt,
+  discoverBlockReferences,
+} from '../services/block-references.js';
 import { logger } from '../utils/logger.js';
 import { rateLimiter } from '../middleware/hono/rate-limit.js';
 import { config } from '../config/index.js';
@@ -204,9 +208,17 @@ export function createAiRouter() {
         const hasActiveDoc = !hasSelection && activeDocument?.text;
         const isGenerate = !hasSelection && !hasActiveDoc;
 
-        // Layer 3: Format+design (generate and edit-document only, not selection-edit)
+        // Layer 3: Format+design (generate and edit-document only, not selection-edit).
+        // The design prompt tells the model to prefer the reference blocks;
+        // the catalog itself rides along so there is something to copy.
         if (!isTheme && format === 'pptx' && !hasSelection) {
-          systemPrompt += '\n\n' + loadPrompt('pptx-design.md');
+          systemPrompt +=
+            '\n\n' +
+            loadPrompt('pptx-design.md', {
+              referenceBlocks: blockReferencesPrompt(
+                await discoverBlockReferences('pptx')
+              ),
+            });
         }
 
         // Layer 4: Mode-specific instructions
@@ -228,7 +240,7 @@ export function createAiRouter() {
           const pptxScope =
             format === 'pptx' &&
             !isTheme &&
-            (scope === 'slides' || scope === 'templates');
+            (scope === 'slides' || scope === 'blocks');
 
           let parsedDoc: any = null;
           if (pptxScope) {
@@ -241,19 +253,33 @@ export function createAiRouter() {
 
           if (pptxScope && parsedDoc) {
             const doc = parsedDoc;
+            const blocks: Record<string, any> = doc.props?.blocks || {};
+            const invoked = (slide: any): string[] =>
+              (slide.children || [])
+                .filter((child: any) => child?.name === 'block')
+                .map((child: any) => String(child.props?.ref ?? '?'));
 
             if (scope === 'slides') {
-              const templatesSummary = (doc.props?.templates || [])
-                .map((m: any) => {
-                  const phs = (m.placeholders || [])
-                    .map((p: any) => {
-                      const d = p.defaults
-                        ? ` → defaults: ${JSON.stringify(p.defaults)}`
+              const blocksSummary = Object.entries(blocks)
+                .map(([name, definition]: [string, any]) => {
+                  const slots = Object.entries(definition.slots || {})
+                    .map(([slot, spec]: [string, any]) => {
+                      const facts = [
+                        spec.type,
+                        spec.required ? 'required' : '',
+                        spec.role ? `role ${spec.role}` : '',
+                        spec.maxWords ? `≤ ${spec.maxWords} words` : '',
+                      ].filter(Boolean);
+                      const description = spec.description
+                        ? `: ${spec.description}`
                         : '';
-                      return `  - \`${p.name}\`${d}`;
+                      return `  - \`${slot}\` — ${facts.join(', ')}${description}`;
                     })
                     .join('\n');
-                  return `**${m.name}**\n${phs}`;
+                  const description = definition.description
+                    ? ` — ${definition.description}`
+                    : '';
+                  return `**${name}**${description}\n${slots || '  _No slots._'}`;
                 })
                 .join('\n\n');
               const slidesText = JSON.stringify(doc.children || [], null, 2);
@@ -261,30 +287,26 @@ export function createAiRouter() {
                 '\n\n' +
                 loadPrompt('instructions-edit-document-pptx-slides.md', {
                   documentName: activeDocument.name || 'untitled',
-                  templatesSummary,
+                  blocksSummary: blocksSummary || '_No blocks defined yet._',
                   slidesText,
                 });
             } else {
-              const templatesText = JSON.stringify(
-                doc.props?.templates || [],
-                null,
-                2
-              );
+              const blocksText = JSON.stringify(blocks, null, 2);
               const slidesSummary = (doc.children || [])
-                .map((s: any, i: number) => {
-                  const template = s.props?.template || '(none)';
-                  const phs = Object.keys(s.props?.placeholders || {}).join(
-                    ', '
-                  );
-                  return `  ${i}: template=${template}, placeholders=[${phs}]`;
+                .map((slide: any, index: number) => {
+                  const title = slide.props?.meta?.title
+                    ? ` "${slide.props.meta.title}"`
+                    : '';
+                  const refs = invoked(slide);
+                  return `  ${index}:${title} blocks=[${refs.join(', ')}]`;
                 })
                 .join('\n');
               systemPrompt +=
                 '\n\n' +
-                loadPrompt('instructions-edit-document-pptx-templates.md', {
+                loadPrompt('instructions-edit-document-pptx-blocks.md', {
                   documentName: activeDocument.name || 'untitled',
-                  templatesText,
-                  slidesSummary,
+                  blocksText,
+                  slidesSummary: slidesSummary || '  _No slides yet._',
                 });
             }
           } else {

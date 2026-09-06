@@ -20,6 +20,8 @@ import {
 import { ValidationPanel, ValidationStatusBar } from './validation-panel';
 import { monacoThemeFor, registerMonacoThemes } from '../../lib/monaco-theme';
 import { FORMAT } from '../../lib/env';
+import { updateMonacoDocumentBlocks } from '../../lib/monaco-config';
+import { readDocumentBlockDefinitions } from '../../lib/document-blocks';
 
 /**
  * Ensure defaultPath matches the document schema's fileMatch (*.FORMAT.json).
@@ -106,6 +108,22 @@ function EditorMonacoJson({
     }, 600)
   );
 
+  // The document's block definitions are part of the schema Monaco validates
+  // against (`ref` completes them, their slots complete and validate), so
+  // they are read from the model text and handed over whenever they may have
+  // changed: on mount, on focus (a tab switch), and after typing settles.
+  // The read is tolerant of a document mid-edit; the handover is a no-op
+  // when the definitions did not change, which is every keystroke outside
+  // `props.blocks`.
+  const debouncedSyncBlocksRef = useRef(
+    debounce((monaco: Monaco, modelText: string) => {
+      updateMonacoDocumentBlocks(
+        monaco,
+        readDocumentBlockDefinitions(modelText)
+      );
+    }, 400)
+  );
+
   // Setup Monaco editor for JSON with schema validation
   // Note: schema configuration is handled by configureMonaco() at startup
   // and updateMonacoWithPlugins() via useMonacoPlugins hook.
@@ -150,6 +168,15 @@ function EditorMonacoJson({
     // Collapse very long string values (base64, big blobs, …) into clickable chips
     collapseRef.current = installLongStringCollapser(editor, monaco);
     collapseRef.current.recollapse();
+
+    // This document's blocks, now and whenever this editor becomes the one
+    // being edited.
+    debouncedSyncBlocksRef.current(monaco, editor.getValue());
+    debouncedSyncBlocksRef.current.flush();
+    editor.onDidFocusEditorText(() => {
+      debouncedSyncBlocksRef.current(monaco, editor.getValue());
+      debouncedSyncBlocksRef.current.flush();
+    });
 
     // Register editor in the refs store. Pass the sentinel reconstructor so any
     // consumer reading live text (preview/build) expands collapsed strings, and
@@ -294,9 +321,11 @@ function EditorMonacoJson({
   useEffect(() => {
     const debouncedSaveDocument = debouncedSaveDocumentRef?.current;
     const debouncedCollapseNew = debouncedCollapseNewRef?.current;
+    const debouncedSyncBlocks = debouncedSyncBlocksRef?.current;
     return () => {
       debouncedSaveDocument?.flush();
       debouncedCollapseNew?.cancel();
+      debouncedSyncBlocks?.cancel();
       collapseRef.current?.dispose();
       collapseRef.current = null;
       // Decorations cleanup handled by Monaco
@@ -324,6 +353,10 @@ function EditorMonacoJson({
     const model = editorRef.current?.getModel();
     if (model && model.getValue() !== value) model.setValue(value);
     setEditorValue(value);
+    if (monacoRef.current) {
+      debouncedSyncBlocksRef.current(monacoRef.current, value);
+      debouncedSyncBlocksRef.current.flush();
+    }
   }, [value]);
 
   // When an external change actually lands, Monaco replaces the model — re-run
@@ -422,6 +455,8 @@ function EditorMonacoJson({
               lastSavedRef.current = storage;
               debouncedSaveDocumentRef.current(name, storage);
               debouncedCollapseNewRef.current();
+              if (monacoRef.current)
+                debouncedSyncBlocksRef.current(monacoRef.current, value);
             }
           }}
           options={{

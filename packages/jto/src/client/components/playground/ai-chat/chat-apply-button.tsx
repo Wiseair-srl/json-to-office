@@ -6,7 +6,7 @@ import { useDocumentsStore } from '../../../store/documents-store-provider';
 import {
   mergeAiOutput,
   applyId as stableId,
-  mergeTemplatesDelta,
+  mergeBlocksDelta,
 } from '../../../lib/apply-merge';
 import type { SelectionContext } from '../../../lib/monaco-selection-utils';
 import type { AiScope } from '../../../store/chat-store';
@@ -70,16 +70,20 @@ export function ChatApplyButton({
         const doc = documents.find((d) => d.name === activeTab);
         const original = doc?.text || '';
 
-        // Scope-aware merge for templates delta
-        if (scope === 'templates') {
+        // Scope-aware merge for a block-definition delta
+        if (scope === 'blocks') {
           try {
             const currentDoc = JSON.parse(original);
             const fragment = JSON.parse(json);
-            if (Array.isArray(fragment.templates)) {
+            if (
+              fragment.blocks &&
+              typeof fragment.blocks === 'object' &&
+              !Array.isArray(fragment.blocks)
+            ) {
               if (!currentDoc.props) currentDoc.props = {};
-              currentDoc.props.templates = mergeTemplatesDelta(
-                currentDoc.props.templates || [],
-                fragment.templates
+              currentDoc.props.blocks = mergeBlocksDelta(
+                currentDoc.props.blocks || {},
+                fragment.blocks
               );
               const modified = JSON.stringify(currentDoc, null, 2);
               setPendingDiff(activeTab, original, modified, applyId);

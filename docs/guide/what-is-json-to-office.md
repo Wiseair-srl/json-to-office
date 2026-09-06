@@ -139,7 +139,7 @@ Everything above the processor is yours and can be written in any language, by a
 | table      | Auto-pagination with header repeat, colspan/rowspan                                      |
 | chart      | 9 native PowerPoint types: area, bar, bar3D, bubble, doughnut, line, pie, radar, scatter |
 | highcharts | Server-side chart rendering                                                              |
-| slide      | Grid-based positioning, backgrounds, templates                                           |
+| slide      | Grid-based positioning, backgrounds, block invocations                                   |
 
 ### Both formats
 
@@ -147,7 +147,7 @@ Everything above the processor is yours and can be written in any language, by a
 - **Font system** — a curated Office-safe font list plus `fonts.extraEntries` for Google Fonts and custom TTF/OTF. See [Fonts](/guide/fonts).
 - **Schema validation** — TypeBox schemas that are TypeScript types _and_ runtime validators, exportable as JSON Schema. See [Validation](/guide/validation).
 - **Plugin architecture** — semver-versioned custom components via `createComponent()`. See [Architecture](/guide/architecture).
-- **Template / placeholder system** (PPTX) — slide templates with named regions, static and dynamic content, style inheritance.
+- **JSON blocks** — document-local layouts defined once in `props.blocks` and invoked with named slots, in both formats; the editor completes references, slots and whole invocations. See [JSON blocks](/reference/blocks).
 - **Grid layout** (PPTX) — 12-column responsive grid with configurable margins and gutters. See [Slides & grid](/reference/pptx/slides-and-grid).
 
 ## Where it fits

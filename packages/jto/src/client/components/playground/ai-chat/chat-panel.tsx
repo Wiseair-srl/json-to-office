@@ -557,8 +557,8 @@ export function ChatPanel() {
                 ? 'Describe how to edit the selection...'
                 : scope === 'slides'
                   ? 'Add, edit, or remove slides...'
-                  : scope === 'templates'
-                    ? 'Edit template layouts and placeholders...'
+                  : scope === 'blocks'
+                    ? 'Edit block definitions: layouts and slots...'
                     : 'Ask AI to generate or edit JSON...'
             }
             className="flex-1 min-h-[36px] max-h-32 resize-none overflow-y-auto rounded-lg border border-border/60 bg-background px-3 py-1.5 text-sm placeholder:text-muted-foreground placeholder:whitespace-nowrap placeholder:overflow-hidden placeholder:text-ellipsis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-shadow"
@@ -862,8 +862,8 @@ function ModelSelector({
 
 const SCOPE_HINTS: Record<AiScope, string> = {
   global: 'AI sees and edits the entire document',
-  slides: 'AI sees and edits only slides — templates stay unchanged',
-  templates: 'AI sees and edits only template layouts — slides stay unchanged',
+  slides: 'AI sees and edits only slides — block definitions stay unchanged',
+  blocks: 'AI sees and edits only block definitions — slides stay unchanged',
 };
 const LARGE_DOC_THRESHOLD = 100_000;
 
@@ -918,10 +918,10 @@ function ScopeSelector({
             or{' '}
             <button
               type="button"
-              onClick={() => setScope('templates')}
+              onClick={() => setScope('blocks')}
               className="underline cursor-pointer hover:text-warning/80"
             >
-              templates
+              blocks
             </button>
           </span>
         </div>

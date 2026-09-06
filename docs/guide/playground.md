@@ -15,7 +15,7 @@ Both are deployments of the exact same dev server you get with `jto docx dev` / 
 
 ## What it offers
 
-- **Monaco JSON editor with schema autocomplete.** The editor is Monaco (the VS Code editor) wired to the generated JSON Schemas, so you get autocomplete for component names and props, inline validation errors, and hover documentation as you type. See [Validation](/guide/validation) for how the same schemas are used outside the playground.
+- **Monaco JSON editor with schema autocomplete.** The editor is Monaco (the VS Code editor) wired to the generated JSON Schemas, so you get autocomplete for component names and props, inline validation errors, and hover documentation as you type. [JSON blocks](/reference/blocks#editor-assistance) complete too: the names your document defines at `ref`, their slots with descriptions and constraints, and whole invocations of any block — yours or a reference block from the shipped templates, whose definition is inserted along with it. See [Validation](/guide/validation) for how the same schemas are used outside the playground.
 - **Document outline.** The sidebar shows a semantic table of contents for the active document — numbered slides labeled by their titles (PPTX), the heading hierarchy (DOCX), or top-level keys (themes). Clicking a node jumps the editor to its JSON; moving the cursor highlights the node you're in. Nodes with validation errors get a red dot, and slides or whole heading sections can be reordered by dragging them in the outline.
 - **Live preview.** The preview re-renders as the JSON changes, so you iterate on layout and content without a download-open-check loop.
 - **Design quality analysis.** A schema-valid document can still overflow its boxes or break its outline. The playground analyses the document as you type and reports findings — with evidence, the authored path, and often a one-click fix — beside the preview. See [Design quality in the playground](#design-quality) below.
@@ -171,7 +171,7 @@ Two details worth knowing:
 
 ## AI assistant
 
-The playground includes a built-in AI chat assistant powered by Claude. It can generate documents from a brief, edit the current document, or rework a selection, with format-specific system prompts for DOCX and PPTX.
+The playground includes a built-in AI chat assistant powered by Claude. It can generate documents from a brief, edit the current document, or rework a selection, with format-specific system prompts for DOCX and PPTX. The PPTX prompts are written around [JSON blocks](/reference/blocks#pptx): standard slides invoke a block, the reference blocks the server discovers ride along with their definitions, and code plugins are reserved for programmable behavior. For a deck, the **Scope** switch narrows an edit to the slides (block definitions untouched) or to the block definitions in `props.blocks` (slides untouched); the assistant then returns only that part, merged back for review.
 
 - **Models:** `opus` (default), `sonnet`, or `haiku`, selectable from the chat panel.
 - **Authentication:** the server uses `ai-sdk-provider-claude-code`, which reuses your local [Claude Code](https://www.anthropic.com/claude-code) authentication. There is no API key to configure — if Claude Code works on your machine, the assistant works too.

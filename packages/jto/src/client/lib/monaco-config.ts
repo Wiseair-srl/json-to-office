@@ -12,9 +12,26 @@ import {
 import { schemaService } from './schema-service';
 import { registerFontCodeLens } from './monaco-fonts-codelens';
 import { registerMonacoThemes } from './monaco-theme';
-import { unionBranches } from '@json-to-office/shared';
+import {
+  applyDocumentBlocksToSchema,
+  unionBranches,
+  type DocumentBlockTarget,
+} from '@json-to-office/shared';
+import { pptxDocumentBlockTargets } from '@json-to-office/shared-pptx';
+import {
+  DOCX_RENDERER_IDS,
+  docxComponentDefinitionName,
+} from '@json-to-office/shared-docx';
 import { createQualityPolicySchemaConfig } from './quality-policy-schema';
 import type { BrowserComponentSchemaInfo } from '../store/browser-plugins-store';
+import { FORMAT } from './env';
+import { blockReferences } from './block-references';
+import { blockSnippets } from './block-snippets';
+import {
+  blockDefinitionsSignature,
+  readDocumentBlockDefinitions,
+  type DocumentBlockDefinitions,
+} from './document-blocks';
 
 let isConfigured = false;
 let completionDisposable: { dispose(): void } | null = null;
@@ -32,6 +49,17 @@ let lastBrowserComponents: BrowserComponentSchemaInfo[] = [];
 // left validating against a schema built before the newest plugin existed: its
 // component reads as an unknown `name` until something else forces a refresh.
 let schemaGeneration = 0;
+// The document schema as fetched (or the static fallback), never mutated:
+// what Monaco actually validates against is a copy of it with the custom
+// theme names and the active document's block definitions applied.
+let baseDocumentSchema: any = null;
+// The block definitions of the document being edited. They are part of the
+// schema — `ref` completes them, their slots complete and validate — so the
+// schema is reinstalled whenever they change (see updateMonacoDocumentBlocks).
+let lastDocumentBlocks: DocumentBlockDefinitions = {};
+let lastDocumentBlocksSignature = blockDefinitionsSignature({});
+
+const DOCUMENT_SCHEMA_URI = 'https://json-to-office.dev/schema/report/v1.0.0';
 
 export interface MonacoSchemaConfig {
   uri: string;
@@ -128,36 +156,83 @@ export function configureMonacoInstance(monaco: Monaco): void {
   // font-name string in the active JSON doc.
   registerFontCodeLens(monaco);
 
-  // Generate schemas for both report and theme files
+  // The static schema until the plugin-aware one arrives from the server.
   const reportSchema = createReportSchemaConfig();
-  const themeSchema = createThemeSchemaConfig();
-
-  // Strip non-standard discriminator keyword from static schemas too
   stripDiscriminator(reportSchema.schema);
+  baseDocumentSchema = reportSchema.schema;
+  installDocumentSchema(monaco);
 
-  // Set up JSON validation with schemas - enhanced for better autocomplete
+  console.log('Monaco instance configured with schemas:', {
+    reportSchema: {
+      uri: DOCUMENT_SCHEMA_URI,
+      fileMatch: reportSchema.fileMatch,
+      schemaKeys: Object.keys(reportSchema.schema),
+    },
+  });
+}
+
+/** Where a document's own block definitions apply in the running format. */
+function documentBlockTargets(schema: any): DocumentBlockTarget[] {
+  if (FORMAT === 'pptx') return pptxDocumentBlockTargets(schema);
+  return DOCX_RENDERER_IDS.map((renderer) => {
+    const name = docxComponentDefinitionName(renderer);
+    return { name, componentRef: { $ref: `#/definitions/${name}` } };
+  });
+}
+
+/**
+ * Install the document schema Monaco validates against: the base schema with
+ * the custom theme names and the active document's block definitions
+ * applied. Called whenever any of the three changes.
+ */
+function installDocumentSchema(monaco: Monaco): void {
+  if (!baseDocumentSchema) return;
+  const schema = JSON.parse(JSON.stringify(baseDocumentSchema));
+  if (lastCustomThemeNames.length) {
+    injectCustomThemeNames(schema, lastCustomThemeNames);
+  }
+  applyDocumentBlocksToSchema(
+    schema,
+    lastDocumentBlocks,
+    documentBlockTargets(schema)
+  );
+  const reportSchema: MonacoSchemaConfig = {
+    uri: DOCUMENT_SCHEMA_URI,
+    fileMatch: ['*.docx.json', '*.pptx.json'],
+    schema,
+  };
   monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
     validate: true,
     enableSchemaRequest: false,
     allowComments: false,
     trailingCommas: 'error',
     schemaValidation: 'error', // Strict schema validation
-    schemas: [reportSchema, themeSchema, createQualityPolicySchemaConfig()],
+    schemas: [
+      reportSchema,
+      createThemeSchemaConfig(),
+      createQualityPolicySchemaConfig(),
+    ],
     schemaRequest: 'ignore', // Ignore unresolvable $schema URIs (domain doesn't exist)
   });
+}
 
-  console.log('Monaco instance configured with schemas:', {
-    reportSchema: {
-      uri: reportSchema.uri,
-      fileMatch: reportSchema.fileMatch,
-      schemaKeys: Object.keys(reportSchema.schema),
-    },
-    themeSchema: {
-      uri: themeSchema.uri,
-      fileMatch: themeSchema.fileMatch,
-      schemaKeys: Object.keys(themeSchema.schema),
-    },
-  });
+/**
+ * Tell Monaco which blocks the document being edited defines. Cheap when
+ * nothing changed — the common case on a keystroke inside a slide — and a
+ * schema reinstall when a definition was added, removed or edited, so the
+ * editor completes and validates invocations against what the document says
+ * now. Returns whether the schema was reinstalled.
+ */
+export function updateMonacoDocumentBlocks(
+  monaco: Monaco,
+  definitions: DocumentBlockDefinitions
+): boolean {
+  const signature = blockDefinitionsSignature(definitions);
+  if (signature === lastDocumentBlocksSignature) return false;
+  lastDocumentBlocks = definitions;
+  lastDocumentBlocksSignature = signature;
+  installDocumentSchema(monaco);
+  return true;
 }
 
 /**
@@ -202,9 +277,19 @@ function injectCustomThemeNames(schema: any, themeNames: string[]): void {
   // Direct path (docx schema)
   inject(schema?.properties?.props?.properties?.theme);
 
-  // Union branches (pptx schema) — flat anyOf or restructured if/then dispatch
+  // Union branches — flat anyOf or restructured if/then dispatch. The PPTX
+  // root dispatches on `renderer` to one referenced definition per profile,
+  // each of which is itself a union carrying the root component.
+  const deref = (node: any): any =>
+    typeof node?.$ref === 'string'
+      ? schema?.definitions?.[node.$ref.replace('#/definitions/', '')]
+      : node;
   for (const branch of unionBranches(schema)) {
-    inject((branch as any)?.properties?.props?.properties?.theme);
+    const resolved = deref(branch);
+    inject(resolved?.properties?.props?.properties?.theme);
+    for (const inner of unionBranches(resolved)) {
+      inject((inner as any)?.properties?.props?.properties?.theme);
+    }
   }
 }
 
@@ -274,11 +359,7 @@ function registerJsonCompletionProvider(monaco: Monaco): void {
           character: position.column - 1,
         });
 
-        if (!completionList?.items) {
-          return { suggestions: [] };
-        }
-
-        const suggestions = completionList.items.map((item: any) => {
+        const suggestions = (completionList?.items ?? []).map((item: any) => {
           // Extract documentation text for inline detail display
           let detail = '';
           if (item.documentation) {
@@ -354,6 +435,52 @@ function registerJsonCompletionProvider(monaco: Monaco): void {
           return suggestion;
         });
 
+        // Block snippets: reference blocks the document does not define yet,
+        // inserted with their definitions, and whole invocations wherever a
+        // slide or section takes content. Offsets from the pure module map
+        // onto model positions here.
+        const text = model.getValue();
+        const toRange = (span: { offset: number; length: number }) => {
+          const start = model.getPositionAt(span.offset);
+          const end = model.getPositionAt(span.offset + span.length);
+          return {
+            startLineNumber: start.lineNumber,
+            startColumn: start.column,
+            endLineNumber: end.lineNumber,
+            endColumn: end.column,
+          };
+        };
+        for (const snippet of blockSnippets(text, model.getOffsetAt(position), {
+          references: blockReferences(),
+          definitions: readDocumentBlockDefinitions(text),
+          format: FORMAT,
+        })) {
+          suggestions.push({
+            label: snippet.label,
+            kind:
+              snippet.kind === 'ref'
+                ? monaco.languages.CompletionItemKind.Value
+                : monaco.languages.CompletionItemKind.Snippet,
+            detail: snippet.detail,
+            documentation: snippet.documentation
+              ? { value: snippet.documentation }
+              : undefined,
+            insertText: snippet.insertText,
+            insertTextRules:
+              snippet.kind === 'component'
+                ? monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet
+                : undefined,
+            range: toRange(snippet.replace),
+            additionalTextEdits: snippet.additionalEdits.map((edit) => ({
+              range: toRange(edit),
+              text: edit.content,
+            })),
+            // Ahead of the worker's items: a block is the answer to "what
+            // goes on this slide" more often than a bare text box.
+            sortText: `0 ${snippet.label}`,
+          });
+        }
+
         return { suggestions };
       },
     }
@@ -419,21 +546,6 @@ export async function updateMonacoWithPlugins(
       lastCustomThemeNames = customThemeNames;
     }
 
-    // Inject custom theme names into the theme property for autocomplete
-    if (lastCustomThemeNames.length) {
-      injectCustomThemeNames(documentSchema, lastCustomThemeNames);
-    }
-
-    // Create the Monaco schema configuration with the SAME URI as the base schema
-    const reportSchema: MonacoSchemaConfig = {
-      uri: 'https://json-to-office.dev/schema/report/v1.0.0', // Use consistent URI
-      fileMatch: ['*.docx.json', '*.pptx.json'],
-      schema: documentSchema,
-    };
-
-    // Keep the theme schema as is
-    const themeSchema = createThemeSchemaConfig();
-
     // Re-register custom document formatting provider to ensure it's available
     monaco.languages.registerDocumentFormattingEditProvider('json', {
       provideDocumentFormattingEdits(model) {
@@ -465,24 +577,16 @@ export async function updateMonacoWithPlugins(
       },
     });
 
-    // Update Monaco's JSON defaults with the new schemas
-    monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
-      validate: true,
-      enableSchemaRequest: false,
-      allowComments: false,
-      trailingCommas: 'error',
-      schemaValidation: 'error',
-      schemas: [reportSchema, themeSchema, createQualityPolicySchemaConfig()],
-      schemaRequest: 'ignore',
-    });
+    // Install it, with the custom theme names and the active document's
+    // block definitions applied on top.
+    baseDocumentSchema = documentSchema;
+    installDocumentSchema(monaco);
 
     console.log('Monaco updated with plugin-aware schemas:', {
       plugins: pluginNames || [],
       browserPlugins: lastBrowserComponents.map((c) => c.name),
-      reportSchema: {
-        uri: reportSchema.uri,
-        fileMatch: reportSchema.fileMatch,
-      },
+      blocks: Object.keys(lastDocumentBlocks),
+      reportSchema: { uri: DOCUMENT_SCHEMA_URI },
     });
 
     // Force Monaco to re-validate all open models with the new schema
@@ -510,7 +614,7 @@ export async function updateMonacoWithPlugins(
     const diagnosticsOptions =
       monaco.languages.json.jsonDefaults.diagnosticsOptions;
     const hasSchema = diagnosticsOptions.schemas?.some(
-      (s: any) => s.uri === reportSchema.uri
+      (s: any) => s.uri === DOCUMENT_SCHEMA_URI
     );
 
     if (!hasSchema) {

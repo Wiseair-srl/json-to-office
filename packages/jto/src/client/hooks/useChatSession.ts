@@ -4,11 +4,7 @@ import { DefaultChatTransport, type UIMessage, type FileUIPart } from 'ai';
 import { useChatStore } from '../store/chat-store-provider';
 import { useDocumentsStore } from '../store/documents-store-provider';
 import { FORMAT } from '../lib/env';
-import {
-  mergeAiOutput,
-  applyId,
-  mergeTemplatesDelta,
-} from '../lib/apply-merge';
+import { mergeAiOutput, applyId, mergeBlocksDelta } from '../lib/apply-merge';
 import type { SelectionContext } from '../lib/monaco-selection-utils';
 import type { AiScope } from '../store/chat-store';
 
@@ -48,11 +44,16 @@ function scopedMerge(
     const fragment = JSON.parse(aiOutput);
     if (scope === 'slides' && Array.isArray(fragment.children)) {
       doc.children = fragment.children;
-    } else if (scope === 'templates' && Array.isArray(fragment.templates)) {
+    } else if (
+      scope === 'blocks' &&
+      fragment.blocks &&
+      typeof fragment.blocks === 'object' &&
+      !Array.isArray(fragment.blocks)
+    ) {
       if (!doc.props) doc.props = {};
-      doc.props.templates = mergeTemplatesDelta(
-        doc.props.templates || [],
-        fragment.templates
+      doc.props.blocks = mergeBlocksDelta(
+        doc.props.blocks || {},
+        fragment.blocks
       );
     } else {
       return null; // unexpected shape, fall back
