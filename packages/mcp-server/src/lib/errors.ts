@@ -131,6 +131,14 @@ export const ERROR_CODES = {
   CANCELLED: 'E_CANCELLED',
   /** A scaffold slot was never filled; generation refuses to render one. */
   SCAFFOLD_MARKER: 'E_SCAFFOLD_MARKER',
+  /** No blueprint, or no variant of one, by that name for the format. */
+  BLUEPRINT_NOT_FOUND: 'E_BLUEPRINT_NOT_FOUND',
+  /** A scaffold opened; the message says how many markers are still owed. */
+  SCAFFOLD_DRAFT: 'W_SCAFFOLD_DRAFT',
+  /** A brief key matched no metadata field or chrome slot of the variant. */
+  BRIEF_UNUSED: 'W_BRIEF_UNUSED',
+  /** An outline heading or paragraph found no opener or body slot to fill. */
+  OUTLINE_UNMAPPED: 'W_OUTLINE_UNMAPPED',
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];

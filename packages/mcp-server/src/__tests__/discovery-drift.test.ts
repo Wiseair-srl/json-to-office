@@ -426,6 +426,28 @@ describe('tools and resources describe the same surface', () => {
     );
   });
 
+  it('the blueprint resource carries the plans the catalogue summarises', async () => {
+    const formats = await discover();
+    const published = await readJson(RESOURCE_URIS.blueprints);
+    for (const format of formats) {
+      const entry = published.formats.find(
+        (candidate: any) => candidate.format === format.name
+      );
+      expectSameNames(
+        `${format.name} blueprints`,
+        'jto_discover',
+        ((format as any).blueprints ?? []).map((b: any) => b.id),
+        'jto://blueprints',
+        (entry?.blueprints ?? []).map((b: any) => b.id)
+      );
+      for (const plan of entry?.blueprints ?? []) {
+        // The resource is the plan; the summary never carries children.
+        for (const variant of Object.values(plan.variants) as any[])
+          expect(Array.isArray(variant.children)).toBe(true);
+      }
+    }
+  });
+
   it('jto_describe_component answers for every component the catalogue lists', async () => {
     const formats = await discover();
     const missing: string[] = [];

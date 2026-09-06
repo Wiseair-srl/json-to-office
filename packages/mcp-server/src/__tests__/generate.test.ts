@@ -430,6 +430,10 @@ describe('jto_generate', () => {
     for (const entry of result.diagnostics) {
       expect(entry.context.occurrences).toBe(paragraphs.length);
       expect(entry.path).toMatch(/^\/children\/0\/props\//);
+      // Collapsed, not lost: every place the defect sat is still addressable.
+      expect(entry.context.paths).toHaveLength(paragraphs.length);
+      expect(entry.context.paths[0]).toBe(entry.path);
+      expect(entry.context.paths[39]).toMatch(/^\/children\/39\/props\//);
     }
 
     const capped = await generate({

@@ -57,4 +57,19 @@ The document is schema- and semantic-valid, carries `qualityProfile: "client-rep
 | `block`, `slot`                                        | For a slot: the block and the slot, dotted for a nested field (`items.label`)                                               |
 | `type`, `maxWords`, `maxLength`, `oneLine`, `required` | For a slot: the declared type and bounds, from the definition; a marker inside a component slot's content reports that slot |
 
-Patch every pointer with content and the document is generation-ready; leave one and `jto_generate` names it. A `jto_scaffold` tool that wraps this in a workspace with a revision and returns the same fill map is the next step of the design-quality program; until it lands, instantiate through the library.
+Patch every pointer with content and the document is generation-ready; leave one and `jto_generate` names it.
+
+## Scaffolding through MCP
+
+`jto_scaffold` wraps the same call in a workspace: it takes a blueprint id, an optional variant and theme, the facts of the brief and a markdown outline, and answers with a handle at revision 1, the fill map above with every pointer resolving at that revision, and how many markers the brief and outline already wrote. The agent fills the rest by pointer with `jto_workspace_patch` and never holds the document.
+
+The brief and the outline are mapped by one rule each:
+
+| Input                   | Fills                                                                                                                                                                 |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `brief.<key>`           | `props.metadata.<key>` (`client` also fills `company`) and the `<key>` slot of the cover and the running head — never a body block, where `title` means the section's |
+| `# Heading`             | The title, unless the brief gave one                                                                                                                                  |
+| `## Heading`, in order  | The next section opener's `title`                                                                                                                                     |
+| Paragraphs under a `##` | That section's body text markers, in order; a blank line separates paragraphs                                                                                         |
+
+A brief key that matches nothing comes back as `W_BRIEF_UNUSED`; a section or paragraph the variant has no room for, text before the first `##`, a second `#` and any deeper heading come back as `W_OUTLINE_UNMAPPED`. Nothing is dropped silently. `jto_validate` on the handle reports the markers as advisory findings with `generationReady: false` and, once they are gone, `generationReady: true`; `jto_generate` refuses in between, naming every remaining marker by pointer. `jto://blueprints` serves the plans in full and `jto_discover` their summaries.

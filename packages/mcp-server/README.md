@@ -117,23 +117,24 @@ Pin a version by asking for one — `npx -y @json-to-office/mcp-server@1.0.0` �
 
 ## Tools
 
-Thirteen tools, in the order `tools/list` reports them.
+Fourteen tools, in the order `tools/list` reports them.
 
-| Tool                     | Purpose                                                                                              |
-| ------------------------ | ---------------------------------------------------------------------------------------------------- |
-| `jto_info`               | Versions, formats and renderer ids, output root and limits, preview dependency status.               |
-| `jto_discover`           | Components, categories and allowed children per format, plus renderer profiles, themes and starters. |
-| `jto_describe_component` | One component's exact schema, children, parents and renderer support.                                |
-| `jto_validate`           | Path-addressed diagnostics for a document, mirroring the gate generation applies.                    |
-| `jto_generate`           | Renders to a real `.docx`/`.pptx`, with render warnings alongside the artifact.                      |
-| `jto_preview`            | Renders selected pages to PNG, inline as images or written under the output root.                    |
-| `jto_docx_diff`          | A redline `.docx` with native Word tracked changes, plus a summary of what could not be tracked.     |
-| `jto_workspace_create`   | Hold a document server-side; returns a handle and revision 1.                                        |
-| `jto_workspace_inspect`  | Read a whole document, or only the JSON Pointers you name.                                           |
-| `jto_workspace_patch`    | Apply an RFC 6902 patch atomically; bumps the revision.                                              |
-| `jto_workspace_snapshot` | Export the JSON and pin the revision it was taken at.                                                |
-| `jto_workspace_list`     | Every document open on this connection, with revisions, sizes and the budget.                        |
-| `jto_workspace_close`    | Release a handle and its pinned snapshots.                                                           |
+| Tool                     | Purpose                                                                                                |
+| ------------------------ | ------------------------------------------------------------------------------------------------------ |
+| `jto_info`               | Versions, formats and renderer ids, output root and limits, preview dependency status.                 |
+| `jto_discover`           | Components, categories and allowed children per format, plus renderer profiles, themes and starters.   |
+| `jto_describe_component` | One component's exact schema, children, parents and renderer support.                                  |
+| `jto_scaffold`           | A blueprint, a theme and the brief's facts become a draft workspace with a fill map of the slots owed. |
+| `jto_validate`           | Path-addressed diagnostics for a document, mirroring the gate generation applies.                      |
+| `jto_generate`           | Renders to a real `.docx`/`.pptx`, with render warnings alongside the artifact.                        |
+| `jto_preview`            | Renders selected pages to PNG, inline as images or written under the output root.                      |
+| `jto_docx_diff`          | A redline `.docx` with native Word tracked changes, plus a summary of what could not be tracked.       |
+| `jto_workspace_create`   | Hold a document server-side; returns a handle and revision 1.                                          |
+| `jto_workspace_inspect`  | Read a whole document, or only the JSON Pointers you name.                                             |
+| `jto_workspace_patch`    | Apply an RFC 6902 patch atomically; bumps the revision.                                                |
+| `jto_workspace_snapshot` | Export the JSON and pin the revision it was taken at.                                                  |
+| `jto_workspace_list`     | Every document open on this connection, with revisions, sizes and the budget.                          |
+| `jto_workspace_close`    | Release a handle and its pinned snapshots.                                                             |
 
 Every output below also carries the envelope: `ok` (boolean) and `diagnostics` (array, always present, possibly empty). Where a tool takes a document, `document` / `handle` / `revision` are the [document source](#contracts); where it renders, `renderer` / `theme` / `themePath` / `deterministic` / `generatedAt` / `baseDir` are the shared render options. `themePath` accepts data-only `.json` themes and resolves relative paths against `baseDir`; executable theme modules are rejected.
 
@@ -165,11 +166,23 @@ Today: `docx` roots at `docx` and renders with `docxjs` (default) or `office-ope
 
 Nested components collapse to their names on purpose — describe those separately instead of pulling one megabyte-scale schema through a model.
 
+### `jto_scaffold`
+
+The first move for a report. A [blueprint](https://wiseair-srl.github.io/json-to-office/reference/blueprints) is an archetype as data — recommended theme, quality profile, the bundled template whose JSON blocks it invokes, and structural variants whose every slot holds a `{{…}}` marker carrying the guidance for filling it. Scaffolding one opens a workspace rather than returning JSON: the agent fills slots by pointer and never holds the document.
+
+**In** — `blueprint` (required, an id from `jto_discover` or `jto://blueprints`); `format` (default `docx`, the only format with blueprints today); `variant` (the first when omitted); `theme` (a built-in name; the blueprint's recommended one when omitted — changes the look, never what validation asks); `brief` (facts by name: `title`, `subtitle`, `client`, `date`, `author`, `confidentiality`…); `outline` (markdown); `title` (the workspace label, the brief's title when omitted).
+
+**Out** — `workspace` (a handle at revision 1); `blueprint` `{id, variant, theme, profile, definitions, blocks[]}`; `fillMap[]` `{path, marker, guidance, kind, block?, slot?, type?, maxWords?, maxLength?, oneLine?, required?}`, every marker still owed in document order, each `path` resolving at that revision; `filled` (markers the brief and outline wrote).
+
+The mapping is small enough to state. A brief fact fills `props.metadata.<key>` (`client` also fills `company`) and the `<key>` slot of the document's chrome — the cover and the running head — never a body block, where `title` means something else; a key that matches nothing is reported as `W_BRIEF_UNUSED`. An outline's `# Heading` is the title (the brief's wins), each `## Heading` in order fills the next section opener, and the paragraphs beneath it fill that section's body text markers in order; sections or paragraphs the variant has no room for, text before the first `##`, a second `#` and any deeper heading are reported as `W_OUTLINE_UNMAPPED` and nothing is dropped silently. Every scaffold answers with `W_SCAFFOLD_DRAFT` saying how many markers remain.
+
+The scaffold is schema- and semantic-valid, carries the block definitions it invokes and their dependencies under `props.blocks` (nothing is looked up at render time), and names its profile in `props.qualityProfile`, so `jto_validate` judges it against the archetype from the first call: the markers come back as advisory `W_QUALITY_SCAFFOLD_MARKER` findings with `ok: true` and `generationReady: false`. `jto_generate` refuses while any marker remains, naming every one by pointer. Patch each `fillMap[].path` with `jto_workspace_patch` (pass `baseRevision` to make the write conditional), and `jto_validate` reports `generationReady: true`.
+
 ### `jto_validate`
 
 **In** — `format` (required); document source; `renderer` (validate against this profile instead of the document's own, for this check only); `quality` `{profile?, policy?}`; `maxDiagnostics` (1–1000, default 100 — errors are kept ahead of warnings when the cap bites).
 
-**Out** — `valid`, `format`, `renderer` (when one was requested), `source` `{origin, handle?, revision?}`, `counts` `{error, warning, info}` (before any cap), `truncated`.
+**Out** — `valid`, `generationReady` (`valid` and no `{{…}}` scaffold marker left — the state `jto_generate` accepts), `scaffoldMarkers` (how many remain), `format`, `renderer` (when one was requested), `source` `{origin, handle?, revision?}`, `counts` `{error, warning, info}` (before any cap), `truncated`, `profileId` (the quality profile the analysis ran under).
 
 `ok` mirrors the gate generation applies: schema and semantic errors block it, renderer-profile findings (`W_UNSUPPORTED_RENDERER_FEATURE`) come back as warnings, because the renderer has the last word on those.
 
@@ -239,18 +252,19 @@ A `workspace` record is `{handle, format, revision, bytes, createdAt, updatedAt,
 
 The same catalogues, for clients that read resources. URIs are stable.
 
-| URI                          | Contents                                                                                                          |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `jto://catalog`              | The resource form of `jto_discover`: every format, in full.                                                       |
-| `jto://renderers`            | Renderer ids per format, which is default, what each profile can draw.                                            |
-| `jto://themes`               | Built-in theme names per format.                                                                                  |
-| `jto://themes/values`        | What each built-in theme actually is: palette, fonts, style tables.                                               |
-| `jto://blocks`               | JSON block authoring references derived from playground templates; copy definitions into the document before use. |
-| `jto://templates`            | Every starter document.                                                                                           |
-| `jto://schema/docx/document` | Generated JSON Schema for a complete `.docx` document, by renderer.                                               |
-| `jto://schema/pptx/document` | The same for `.pptx`.                                                                                             |
-| `jto://schema/docx/theme`    | Generated JSON Schema for a `.docx` theme file, as passed to `themePath`.                                         |
-| `jto://schema/pptx/theme`    | The same for `.pptx`.                                                                                             |
+| URI                          | Contents                                                                                                             |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `jto://catalog`              | The resource form of `jto_discover`: every format, in full.                                                          |
+| `jto://renderers`            | Renderer ids per format, which is default, what each profile can draw.                                               |
+| `jto://themes`               | Built-in theme names per format.                                                                                     |
+| `jto://themes/values`        | What each built-in theme actually is: palette, fonts, style tables.                                                  |
+| `jto://blocks`               | JSON block authoring references derived from playground templates; copy definitions into the document before use.    |
+| `jto://blueprints`           | Every blueprint in full — theme, profile, definitions and each variant's plan; `jto_discover` carries the summaries. |
+| `jto://templates`            | Every starter document.                                                                                              |
+| `jto://schema/docx/document` | Generated JSON Schema for a complete `.docx` document, by renderer.                                                  |
+| `jto://schema/pptx/document` | The same for `.pptx`.                                                                                                |
+| `jto://schema/docx/theme`    | Generated JSON Schema for a `.docx` theme file, as passed to `themePath`.                                            |
+| `jto://schema/pptx/theme`    | The same for `.pptx`.                                                                                                |
 
 All `application/json`. The document schemas are megabytes — prefer `jto_describe_component` unless you genuinely need the whole thing. Tools and resources are generated from the same registries, and a drift test fails the build if they disagree.
 
@@ -318,11 +332,16 @@ The cores name their generation warnings in a dialect of their own too — bare 
 | `E_PREVIEW_PAGE_COUNT_UNAVAILABLE` | The PDF produced no readable page count.                                                                    |
 | `E_DEPENDENCY_MISSING`             | A host binary preview needs, or an optional renderer backend, is absent.                                    |
 | `E_CANCELLED`                      | The client cancelled the request.                                                                           |
+| `E_SCAFFOLD_MARKER`                | `jto_generate` met an unfilled `{{…}}` scaffold marker; every one is named by pointer.                      |
+| `E_BLUEPRINT_NOT_FOUND`            | No blueprint, or no variant of one, by that name for the format.                                            |
 | `E_INTERNAL`                       | A bug here. Everything else is about your document or your host.                                            |
 | `W_UNSUPPORTED_RENDERER_FEATURE`   | The renderer cannot draw one feature of an otherwise valid document.                                        |
 | `W_HOST_NOTE`                      | A note the render emitted mid-run — unknown theme, unreadable theme file, staged font.                      |
 | `W_UNKNOWN_THEME`                  | A requested theme name matched nothing; generation continued with a fallback.                               |
 | `W_BLANK_DOCUMENT`                 | A workspace was opened on an empty skeleton, with no content yet.                                           |
+| `W_SCAFFOLD_DRAFT`                 | A scaffold opened; the message says how many markers are still owed.                                        |
+| `W_BRIEF_UNUSED`                   | A brief key matched no metadata field or chrome slot of the variant.                                        |
+| `W_OUTLINE_UNMAPPED`               | An outline section or paragraph found no opener or body slot to fill.                                       |
 | `W_PATH_NOT_FOUND`                 | A pointer a read asked for does not resolve in that revision.                                               |
 | `W_SNAPSHOT_NOT_PINNED`            | A snapshot was exported but not pinned: the workspace budget is full.                                       |
 | `W_WORKSPACE_NOT_PERSISTED`        | The edit applied, but the revision did not reach the workspace directory.                                   |

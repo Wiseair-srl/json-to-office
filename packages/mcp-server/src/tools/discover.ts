@@ -15,9 +15,6 @@
  * fails the build when they stop.
  */
 
-import { createRequire } from 'module';
-import { pathToFileURL } from 'url';
-
 import type { McpServer } from '@modelcontextprotocol/server';
 
 import { convertToJsonSchema, unionBranches } from '@json-to-office/shared';
@@ -35,6 +32,8 @@ import {
 } from '@json-to-office/shared-pptx';
 
 import type { FormatName } from '../lib/adapters.js';
+import { loadCore } from '../lib/core.js';
+import { builtinThemeNames } from '../lib/render-options.js';
 import type { ToolDeps } from '../lib/deps.js';
 import { designNote } from '../lib/design-notes.js';
 import {
@@ -353,121 +352,35 @@ export function registryEntries(format: FormatName): RegistryEntry[] {
 }
 
 // ---------------------------------------------------------------------------
-// Built-in themes
+// Built-in themes and blueprints
 // ---------------------------------------------------------------------------
 
-const CORE_THEMES: Record<FormatName, { specifier: string; exported: string }> =
-  {
-    docx: { specifier: '@json-to-office/core-docx', exported: 'themes' },
-    pptx: { specifier: '@json-to-office/core-pptx', exported: 'pptxThemes' },
-  };
-
-/** The core export that holds a format's blueprints; PPTX ships none yet. */
-const CORE_BLUEPRINTS: Record<FormatName, { exported: string } | undefined> = {
-  docx: { exported: 'DOCX_BLUEPRINTS' },
-  pptx: undefined,
-};
-
 /**
- * A resolver rooted at `jto-ops`, which owns the cores — they are its
- * dependency, not ours, so under pnpm's strict layout a bare specifier here
- * resolves to nothing. Same approach `jto_info` takes to read their versions.
- */
-let coreResolver: NodeJS.Require | undefined;
-try {
-  const here = createRequire(import.meta.url);
-  coreResolver = createRequire(
-    here.resolve('@json-to-office/jto-ops/package.json')
-  );
-} catch {
-  /* jto-ops unresolvable: themes fall back to whatever the adapter reports */
-}
-
-/**
- * Built-in theme names for a format.
- *
- * `FormatAdapter.getBuiltinThemes()` is the intended source and is asked
- * first. It reaches for its core with a synchronous `require`, though, which
- * tsup's ESM shim leaves as a stub that throws — so in this (ESM) process it
- * answers `{}` and the fallback below does the work. Delete the fallback once
- * jto-ops loads its themes asynchronously; the adapter branch will then win on
- * its own.
- */
-async function builtinThemeNames(
-  format: FormatName,
-  deps: ToolDeps
-): Promise<string[]> {
-  const fromAdapter = Object.keys(deps.getAdapter(format).getBuiltinThemes());
-  if (fromAdapter.length > 0) return fromAdapter.sort();
-  if (!coreResolver) return [];
-  const { specifier, exported } = CORE_THEMES[format];
-  try {
-    const core = (await import(
-      pathToFileURL(coreResolver.resolve(specifier)).href
-    )) as Record<string, Record<string, unknown> | undefined>;
-    return Object.keys(core[exported] ?? {}).sort();
-  } catch {
-    return [];
-  }
-}
-
-/**
- * The bundled blueprints of a format, summarised. Read through the same
- * resolver as the themes; a core that exports none — PPTX today — lists none.
+ * The bundled blueprints of a format, summarised: never the plan, whose
+ * children are the scaffold's to hand out (`jto_scaffold`, `jto://blueprints`).
+ * A core that exports none — PPTX today — lists none.
  */
 async function builtinBlueprints(
   format: FormatName
 ): Promise<CatalogBlueprint[]> {
-  const source = CORE_BLUEPRINTS[format];
-  if (!coreResolver || !source) return [];
-  const { specifier } = CORE_THEMES[format];
-  const { exported } = source;
-  try {
-    const core = (await import(
-      pathToFileURL(coreResolver.resolve(specifier)).href
-    )) as Record<string, unknown>;
-    const registry = (core[exported] ?? {}) as Record<
-      string,
-      {
-        id: string;
-        title: string;
-        description: string;
-        whenToUse: string;
-        theme: string;
-        profile: string;
-        definitions: string;
-        numbering: string;
-        toc: boolean;
-        variants: Record<
-          string,
-          {
-            description: string;
-            whenToUse: string;
-            pages: { min: number; max: number };
-          }
-        >;
-      }
-    >;
-    return Object.values(registry)
-      .map((blueprint) => ({
-        id: blueprint.id,
-        title: blueprint.title,
-        description: blueprint.description,
-        whenToUse: blueprint.whenToUse,
-        theme: blueprint.theme,
-        profile: blueprint.profile,
-        definitions: blueprint.definitions,
-        numbering: blueprint.numbering,
-        toc: blueprint.toc,
-        variants: Object.entries(blueprint.variants).map(([id, variant]) => ({
-          id,
-          pages: variant.pages,
-        })),
-      }))
-      .sort((a, b) => a.id.localeCompare(b.id));
-  } catch {
-    return [];
-  }
+  const registry = (await loadCore(format))?.blueprints ?? {};
+  return Object.values(registry)
+    .map((blueprint) => ({
+      id: blueprint.id,
+      title: blueprint.title,
+      description: blueprint.description,
+      whenToUse: blueprint.whenToUse,
+      theme: blueprint.theme,
+      profile: blueprint.profile,
+      definitions: blueprint.definitions,
+      numbering: blueprint.numbering,
+      toc: blueprint.toc,
+      variants: Object.entries(blueprint.variants).map(([id, variant]) => ({
+        id,
+        pages: variant.pages,
+      })),
+    }))
+    .sort((a, b) => a.id.localeCompare(b.id));
 }
 
 // ---------------------------------------------------------------------------
@@ -884,7 +797,7 @@ async function catalogFormat(
 
   const gallery = galleryManifests(format);
   const [themes, blueprints] = await Promise.all([
-    builtinThemeNames(format, deps),
+    builtinThemeNames(deps.getAdapter(format)),
     builtinBlueprints(format),
   ]);
   if (themes.length === 0) {
@@ -1108,7 +1021,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
                   blueprints: {
                     type: 'array',
                     description:
-                      'Document archetypes as data: recommended theme, the quality profile that judges the result, the playground template whose blocks they invoke, and structural variants with expected length. Instantiated through the core library today; a scaffold tool follows.',
+                      'Document archetypes as data: recommended theme, the quality profile that judges the result, the playground template whose blocks they invoke, and structural variants with expected length. jto_scaffold instantiates one into a draft workspace; jto://blueprints carries the full plans.',
                     items: {
                       type: 'object',
                       properties: {

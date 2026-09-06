@@ -46,6 +46,7 @@ describe('discovery resources over stdio', () => {
         .sort();
       expect(discovery).toEqual([
         'jto://blocks',
+        'jto://blueprints',
         'jto://catalog',
         'jto://renderers',
         'jto://schema/docx/document',
