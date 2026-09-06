@@ -16,6 +16,17 @@
  * not guaranteed to match across platforms.
  */
 
+import { readFileSync } from 'node:fs';
+const exampleBlocks = JSON.parse(
+  readFileSync(
+    new URL(
+      '../../../../jto/src/client/public/templates/client-report-blocks.docx.json',
+      import.meta.url
+    ),
+    'utf8'
+  )
+).props.blocks;
+
 import type { CorpusCase } from './corpus-types';
 
 /** A 1x1 transparent PNG. */
@@ -46,6 +57,9 @@ const doc = (
   props: {
     theme: 'minimal',
     metadata: { title: 'Corpus', author: 'JTO' },
+    ...(JSON.stringify(children).includes('"name":"block"')
+      ? { blocks: exampleBlocks }
+      : {}),
     ...props,
   },
   children,
@@ -101,7 +115,10 @@ export const CASES: CorpusCase[] = [
       [
         section([
           { name: 'heading', props: { text: 'Summary', level: 1 } },
-          { name: 'key-takeaways', props: { items: TAKEAWAYS } },
+          {
+            name: 'block',
+            props: { ref: 'key-takeaways', slots: { items: TAKEAWAYS } },
+          },
           { name: 'paragraph', props: { text: 'After the box.' } },
         ]),
       ],
@@ -114,10 +131,13 @@ export const CASES: CorpusCase[] = [
     document: doc([
       section([
         {
-          name: 'key-takeaways',
+          name: 'block',
           props: {
-            items: [...TAKEAWAYS, 'A fourth.', 'A fifth.'],
-            label: 'What matters',
+            ref: 'key-takeaways',
+            slots: {
+              items: [...TAKEAWAYS, 'A fourth.', 'A fifth.'],
+              label: 'What matters',
+            },
           },
         },
       ]),
@@ -137,33 +157,57 @@ export const CASES: CorpusCase[] = [
       [
         section([
           {
-            name: 'cover',
+            name: 'block',
             props: {
-              title: 'Annual performance review',
-              subtitle: 'What changed in 2026 and what to do about it',
-              client: 'Acme Holdings',
-              date: 'September 2026',
-              confidentiality: 'Confidential',
-              logo: { base64: PNG_4X2, alt: 'Acme' },
+              ref: 'cover',
+              slots: {
+                title: 'Annual performance review',
+                subtitle: 'What changed in 2026 and what to do about it',
+                client: 'Acme Holdings',
+                date: 'September 2026',
+                confidentiality: 'Confidential',
+                logo: {
+                  name: 'image',
+                  props: { base64: PNG_4X2, alt: 'Acme', width: '25%' },
+                },
+              },
             },
           },
         ]),
         section([
           {
-            name: 'running-head',
-            props: { confidentiality: 'Confidential', date: 'September 2026' },
+            name: 'block',
+            props: {
+              ref: 'running-head',
+              slots: {
+                confidentiality: 'Confidential',
+                date: 'September 2026',
+              },
+            },
           },
-          { name: 'section-opener', props: { number: '01', title: 'Summary' } },
-          { name: 'key-takeaways', props: { items: TAKEAWAYS } },
+          {
+            name: 'block',
+            props: {
+              ref: 'section-opener',
+              slots: { number: '01', title: 'Summary' },
+            },
+          },
+          {
+            name: 'block',
+            props: { ref: 'key-takeaways', slots: { items: TAKEAWAYS } },
+          },
           { name: 'paragraph', props: { text: 'The year in one page.' } },
         ]),
         section([
           {
-            name: 'section-opener',
+            name: 'block',
             props: {
-              number: '02',
-              title: 'Results by region',
-              tracker: 'Results',
+              ref: 'section-opener',
+              slots: {
+                number: '02',
+                title: 'Results by region',
+                tracker: 'Results',
+              },
             },
           },
           { name: 'paragraph', props: { text: 'Body.' } },
@@ -182,12 +226,23 @@ export const CASES: CorpusCase[] = [
     // replaces the first from its section on, with page numbers off.
     name: 'blocks/report-chrome-fallback',
     document: doc([
-      section([{ name: 'cover', props: { title: 'Field notes' } }]),
       section([
-        { name: 'running-head', props: { title: 'Field notes, 2026' } },
         {
-          name: 'section-opener',
-          props: { number: 1, title: 'One', pageBreak: true },
+          name: 'block',
+          props: { ref: 'cover', slots: { title: 'Field notes' } },
+        },
+      ]),
+      section([
+        {
+          name: 'block',
+          props: { ref: 'running-head', slots: { title: 'Field notes, 2026' } },
+        },
+        {
+          name: 'block',
+          props: {
+            ref: 'section-opener',
+            slots: { number: '1', title: 'One' },
+          },
         },
         { name: 'paragraph', props: { text: 'Body one.' } },
       ]),
@@ -199,17 +254,23 @@ export const CASES: CorpusCase[] = [
           ],
         },
         children: [
-          { name: 'section-opener', props: { title: 'Two' } },
+          {
+            name: 'block',
+            props: { ref: 'section-opener', slots: { title: 'Two' } },
+          },
           { name: 'paragraph', props: { text: 'Body two.' } },
         ],
       },
       section([
         {
-          name: 'running-head',
+          name: 'block',
           props: {
-            tracker: 'Appendix',
-            pageNumbers: false,
-            confidentiality: 'Internal',
+            ref: 'running-head',
+            slots: {
+              tracker: 'Appendix',
+              pageNumbers: false,
+              confidentiality: 'Internal',
+            },
           },
         },
         { name: 'paragraph', props: { text: 'Body three.' } },

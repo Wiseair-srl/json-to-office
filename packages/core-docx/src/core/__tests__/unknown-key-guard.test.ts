@@ -272,7 +272,18 @@ function componentDoc(name: string, props: unknown): Json {
   return {
     name: 'docx',
     ...renderer,
-    props: { theme: 'minimal' },
+    props: {
+      theme: 'minimal',
+      ...(name === 'block' && {
+        blocks: {
+          [String((props as Json).ref)]: {
+            format: 'docx',
+            slots: {},
+            body: [],
+          },
+        },
+      }),
+    },
     children:
       name === 'section'
         ? [component]

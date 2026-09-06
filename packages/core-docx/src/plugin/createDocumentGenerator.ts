@@ -30,6 +30,8 @@ import { resolveComponentVersion } from './version-resolver';
 import { generatePluginDocumentSchema, exportPluginSchema } from './schema';
 import { generateBufferViaIr } from '../core/generateFromIr';
 import { normalizeDocument } from '../json/normalizer';
+import { expandBlocksWithPlugins } from '../blocks/document';
+import { validateComponentProps } from './validation';
 
 /**
  * Options for creating a document generator
@@ -438,6 +440,8 @@ function createBuilderImpl<
       preserved: ComponentDefinition[];
     };
     modedDoc: ReportComponentDefinition;
+    blockPaths?: readonly string[];
+    sourceMap?: Readonly<Record<string, string>>;
     warnings: GenerationWarning[];
     preserveSet: ReadonlySet<string> | undefined;
   }> {
@@ -535,6 +539,63 @@ function createBuilderImpl<
       resolveNamedTheme: resolveDocumentTheme,
     });
 
+    // Document-local JSON and registered code share one bounded expansion.
+    if (modedRoot.props.blocks !== undefined) {
+      const expanded = await expandBlocksWithPlugins(
+        modedRoot,
+        modedTheme,
+        new Set(componentMap.keys()),
+        async (component, path) => {
+          const custom = componentMap.get(String(component.name))!;
+          const version = resolveComponentVersion(
+            custom.name,
+            custom.versions,
+            component.version as string | undefined
+          );
+          const checked = validateComponentProps(
+            version,
+            component.props ?? {},
+            custom.name,
+            { clean: vOpts.allowUnknownFields === true }
+          );
+          if (!checked.valid)
+            throw new ComponentValidationError(
+              (checked.errors ?? []).map((e) => ({ path, message: e.message })),
+              component
+            );
+          const output = await version.render({
+            props: cleanComponentProps(version, component.props ?? {}),
+            theme: modedTheme,
+            children: component.children as unknown[] | undefined,
+            addWarning: (message, context) =>
+              warnings.push({
+                component: custom.name,
+                message,
+                severity: 'warning',
+                context,
+              }),
+          });
+          return Array.isArray(output) ? output : [output];
+        },
+        preserveSet
+      );
+      const [modedDoc] = normalizeDocument(expanded.document);
+      return {
+        modedRoot,
+        modedTheme,
+        themeName,
+        modedDoc,
+        sourceMap: expanded.sourceMap,
+        blockPaths: expanded.blocks,
+        warnings,
+        preserveSet,
+        processed: {
+          standard: modedDoc.children ?? [],
+          preserved: expanded.preserved.children ?? [],
+        },
+      };
+    }
+
     // Process custom components to convert them to standard components.
     // Builds standard (fully expanded) and preserved (partial) trees in one pass.
     const processed = await processDocumentComponents(
@@ -579,9 +640,13 @@ function createBuilderImpl<
     options?: GenerateOptions
   ): Promise<StandardDefinitionResult> {
     try {
-      const { modedDoc, warnings } = await expandDocument(document, options);
+      const { modedDoc, warnings, sourceMap } = await expandDocument(
+        document,
+        options
+      );
       return {
         standardDefinition: modedDoc,
+        ...(sourceMap && { sourceMap }),
         warnings: warnings.length > 0 ? warnings : null,
       };
     } catch (error) {
@@ -611,6 +676,8 @@ function createBuilderImpl<
         themeName,
         processed,
         modedDoc,
+        sourceMap,
+        blockPaths,
         warnings,
         preserveSet,
       } = await expandDocument(document, options);
@@ -624,7 +691,13 @@ function createBuilderImpl<
       const { buffer } = await generateBufferViaIr(modedDoc, {
         // The prologue already ran: the theme had to be resolved before custom
         // components expanded, because each one's `render` is handed it.
-        context: { document: modedDoc, theme: modedTheme, themeName },
+        context: {
+          document: modedDoc,
+          theme: modedTheme,
+          themeName,
+          sourceMap,
+          blockPaths,
+        },
         ...(state.services ? { services: state.services } : {}),
         ...(state.fonts ? { fonts: state.fonts } : {}),
         ...(baseDir !== undefined ? { baseDir } : {}),

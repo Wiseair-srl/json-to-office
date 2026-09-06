@@ -112,6 +112,7 @@ export default defineConfig({
             { text: 'Theme schema', link: '/reference/theme-schema' },
             { text: 'CLI', link: '/reference/cli' },
             { text: 'Library API', link: '/reference/api' },
+            { text: 'JSON Blocks', link: '/reference/blocks' },
             { text: 'JSON Schemas', link: '/reference/json-schemas' },
           ],
         },

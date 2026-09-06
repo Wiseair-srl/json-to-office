@@ -1,4 +1,4 @@
-import type { TSchema } from '@sinclair/typebox';
+import { Kind, type TSchema } from '@sinclair/typebox';
 import type { ValidationError } from '@json-to-office/shared';
 import { NATIVE_RENDER_MODE } from './components/visual';
 
@@ -236,7 +236,8 @@ function nameComponentPlaceholders(
     schema.type === 'array' &&
     schema.items &&
     typeof schema.items === 'object' &&
-    Object.keys(schema.items).length === 0
+    Object.keys(schema.items).length === 0 &&
+    schema.items[Kind] === 'Any'
   ) {
     // A bare name, the same shape `Type.Recursive` emits for its own self
     // reference. `fixSchemaReferences` resolves both to `#/definitions/...`.

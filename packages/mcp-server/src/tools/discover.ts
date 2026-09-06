@@ -36,6 +36,10 @@ import type { FormatName } from '../lib/adapters.js';
 import type { ToolDeps } from '../lib/deps.js';
 import { designNote } from '../lib/design-notes.js';
 import {
+  blockReferenceCatalog,
+  type BlockReference,
+} from '../templates/blocks.js';
+import {
   galleryManifests,
   type TemplateManifest,
 } from '../templates/gallery.js';
@@ -277,14 +281,32 @@ export function childNamesOf(
   if (!children) return undefined;
   const items = deref(children.items, definitions);
   if (!items) return undefined;
-  const branches = unionBranches(items);
-  if (branches.length > 0) {
-    return branches
-      .map((entry) => componentNameOf(entry))
-      .filter((name): name is string => name !== undefined);
-  }
-  const single = componentNameOf(items);
-  return single !== undefined ? [single] : [];
+  const names = (schema: SchemaNode): string[] => {
+    const resolved = deref(schema, definitions) ?? schema;
+    const branches = unionBranches(resolved);
+    if (branches.length) return branches.flatMap(names);
+    if (Array.isArray(resolved.allOf)) {
+      const sets = resolved.allOf.map((entry) => names(entry as SchemaNode));
+      return sets.length
+        ? sets[0].filter((name) => sets.every((set) => set.includes(name)))
+        : [];
+    }
+    const single = componentNameOf(resolved);
+    if (single !== undefined) return [single];
+    const nameSchema = (resolved.properties as SchemaNode | undefined)?.name as
+      | SchemaNode
+      | undefined;
+    if (Array.isArray(nameSchema?.enum))
+      return nameSchema.enum.filter(
+        (value): value is string => typeof value === 'string'
+      );
+    return nameSchema
+      ? unionBranches(nameSchema).flatMap((entry) =>
+          typeof entry.const === 'string' ? [entry.const] : []
+        )
+      : [];
+  };
+  return [...new Set(names(items))];
 }
 
 // ---------------------------------------------------------------------------
@@ -602,6 +624,11 @@ export interface CatalogFormat {
    * `jto://templates/<name>/thumbnail` before copying hundreds of kilobytes.
    */
   gallery: TemplateManifest[];
+  /** Reference definitions copied from playground templates, never runtime globals. */
+  blocks?: Pick<
+    BlockReference,
+    'name' | 'format' | 'template' | 'definitionPointer' | 'description'
+  >[];
 }
 
 export interface Catalog {
@@ -804,6 +831,21 @@ async function catalogFormat(
     themes,
     starters: STARTERS.filter((starter) => starter.format === format),
     gallery,
+    blocks: blockReferenceCatalog(format).map(
+      ({
+        name,
+        format: blockFormat,
+        template,
+        definitionPointer,
+        description,
+      }) => ({
+        name,
+        format: blockFormat,
+        template,
+        definitionPointer,
+        description,
+      })
+    ),
   };
 }
 
@@ -959,6 +1001,12 @@ export function register(server: McpServer, deps: ToolDeps): void {
                       'Built-in theme names, usable as the document’s props.theme or the tools’ theme option.',
                   },
                   starters: { type: 'array', items: starterSchema },
+                  blocks: {
+                    type: 'array',
+                    description:
+                      'Authoring references from playground templates. Read jto://blocks and copy definitions into the document; names are not runtime globals.',
+                    items: { type: 'object', additionalProperties: true },
+                  },
                   gallery: {
                     type: 'array',
                     description:

@@ -50,14 +50,15 @@ function variantRequired(name: string): string[] {
 const PROPLESS_OK = [
   'section',
   'toc',
+  'group',
   'image',
   'text-box',
   'divider',
-  'running-head',
 ] as const;
 // Props schemas that demand a field: omitting `props` omits that field too.
 const PROPS_REQUIRED = [
   'heading',
+  'block',
   'paragraph',
   'statistic',
   'table',
@@ -65,9 +66,6 @@ const PROPS_REQUIRED = [
   'columns',
   'highcharts',
   'visual',
-  'key-takeaways',
-  'cover',
-  'section-opener',
 ] as const;
 
 describe('props optionality', () => {

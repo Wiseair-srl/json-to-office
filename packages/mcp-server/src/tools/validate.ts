@@ -120,7 +120,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
     {
       title: 'Validate a document',
       description:
-        'Check a document against its format schema and report every defect as a path-addressed diagnostic. Paths are RFC 6901 JSON Pointers into the document you passed, so they can be used directly as patch targets; codes are the stable `E_`/`W_` vocabulary. `ok` mirrors generation: schema and semantic errors block; design-quality `W_QUALITY_*` findings advise by default and block only when `quality.policy.gate` requests it. A broken document is a normal result with `ok: false`, never a protocol error. `includeCompiled` returns the compiled form — every block (`key-takeaways`, …) lowered in place to the primitives the renderer draws — with a source map from compiled pointers back to the authored slots.',
+        'Check a document against its format schema and report every defect as a path-addressed diagnostic. Paths are RFC 6901 JSON Pointers into the document you passed, so they can be used directly as patch targets; codes are the stable `E_`/`W_` vocabulary. `ok` mirrors generation: schema and semantic errors block; design-quality `W_QUALITY_*` findings advise by default and block only when `quality.policy.gate` requests it. A broken document is a normal result with `ok: false`, never a protocol error. `includeCompiled` returns the compiled form — every block (`document-local JSON blocks`, …) lowered in place to the primitives the renderer draws — with a source map from compiled pointers back to the authored slots.',
       annotations: { readOnlyHint: true, openWorldHint: false },
       inputSchema: S<ValidateArgs>({
         type: 'object',

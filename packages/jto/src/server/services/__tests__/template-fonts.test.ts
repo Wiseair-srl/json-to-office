@@ -1,3 +1,4 @@
+import { prepareDocxQualityDocument } from '@json-to-office/core-docx';
 import { describe, it, expect } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -46,7 +47,13 @@ describe('bundled playground templates', () => {
       const collect = file.endsWith('.docx.json')
         ? collectFontNamesFromDocx
         : collectFontNamesFromPptx;
-      const names = [...collect(json)];
+      // JSON bindings resolve theme fonts during block expansion. Check the
+      // actual font references emitted by the same preparation as rendering.
+      const expanded =
+        file.endsWith('.docx.json') && json.props?.blocks
+          ? prepareDocxQualityDocument(json).model.context.document
+          : json;
+      const names = [...collect(expanded)];
       expect(names.length).toBeGreaterThan(0);
       // Families the document itself registers (fontRegistry with real
       // sources) are resolvable by definition — the registry is how a

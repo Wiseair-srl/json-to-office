@@ -114,30 +114,9 @@ export {
   consultingTheme,
 } from './styles/index';
 
-// Blocks: bounded-slot components lowered to primitives, styled by the theme
-export {
-  BLOCK_NAMES,
-  isChromeBlockName,
-  expandBlocks,
-  toAuthoredPointer,
-  blockSlotBudgets,
-  compileKeyTakeaways,
-  compileCover,
-  compileSectionOpener,
-  compileRunningHead,
-  sectionMeasureTwips,
-  sectionTracker,
-} from './blocks';
-export type {
-  BlockName,
-  BlockSourceMap,
-  BlockCompilation,
-  ExpandedBlocks,
-  BlockSlotBudget,
-  RunningHeadCompilation,
-  RunningHeadScope,
-  SectionPage,
-} from './blocks';
+// Document-local JSON block composition.
+export { expandBlocks, toAuthoredPointer, blockSlotBudgets } from './blocks';
+export type { BlockSourceMap, ExpandedBlocks, BlockSlotBudget } from './blocks';
 export type { ThemeName } from './styles/index';
 
 // JSON Theme System

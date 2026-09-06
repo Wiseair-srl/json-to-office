@@ -29,10 +29,6 @@ export * from './components/highcharts';
 export * from './components/chart';
 export * from './components/visual';
 export * from './components/statistic';
-export * from './components/key-takeaways';
-export * from './components/cover';
-export * from './components/section-opener';
-export * from './components/running-head';
 export * from './components/table';
 export * from './components/list';
 export * from './components/toc';
@@ -73,3 +69,5 @@ export const ComponentDefinitionSchema = Type.Recursive((This) =>
 // ============================================================================
 
 export type ComponentDefinition = Static<typeof ComponentDefinitionSchema>;
+
+export * from './components/block';

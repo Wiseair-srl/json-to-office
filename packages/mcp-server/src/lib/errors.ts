@@ -222,6 +222,7 @@ export function normalizeCode(code: string | undefined): string {
   if (code === undefined) return ERROR_CODES.INVALID_DOCUMENT;
   if (/^[EW]_/.test(code)) return code;
 
+  if (/^block_[a-z_]+$/.test(code)) return `E_${code.toUpperCase()}`;
   const core = CORE_CODES.get(code);
   if (core !== undefined) return core;
 
@@ -680,7 +681,17 @@ export function diagnosticsFromThrown(
   error: unknown
 ): Diagnostic[] | undefined {
   if (typeof error !== 'object' || error === null) return undefined;
-  const candidate = error as { validationErrors?: unknown; errors?: unknown };
+  const candidate = error as {
+    validationErrors?: unknown;
+    errors?: unknown;
+    issues?: unknown;
+    name?: unknown;
+  };
+  if (
+    candidate.name === 'BlockEvaluationError' &&
+    looksLikeValidationErrors(candidate.issues)
+  )
+    return validationDiagnostics(candidate.issues);
   if (looksLikeValidationErrors(candidate.validationErrors)) {
     return validationDiagnostics(candidate.validationErrors);
   }

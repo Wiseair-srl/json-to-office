@@ -91,6 +91,7 @@ describe.skipIf(!built)('jto-mcp over stdio', () => {
         .filter((uri) => !uri.startsWith('jto://templates/'))
         .sort()
     ).toEqual([
+      'jto://blocks',
       'jto://catalog',
       'jto://renderers',
       'jto://schema/docx/document',

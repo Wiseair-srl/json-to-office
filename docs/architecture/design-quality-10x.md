@@ -287,13 +287,13 @@ Rules read visual values from the resolved theme and required-presence or
 content expectations from the selected design profile. A custom theme keeps
 the same visual guarantees without accidentally inheriting an archetype.
 
-### C. Blocks and layouts: composition, not coordinates
+### C. JSON blocks and code plugins
 
 DOCX first, then pptx, both inside Phase 2.
 
-**DOCX blocks**: new content components compiled to existing primitives,
-styled entirely from the theme, and the only way blueprints express
-structure. v1 set, sized to the two archetypes:
+**Target contract (#370):** custom plugins are registered JavaScript/TypeScript; blocks are document-local JSON compositions. Definitions and invocations live together in complete playground templates. Concrete definitions never ship as separate block files or a production TypeScript library. The MCP `jto://blocks` catalog derives authoring references from those templates; runtime names resolve only against the current document. See [the contract](/reference/blocks).
+
+**DOCX blocks** compile through one shared evaluator into validated flow primitives. General engine operations retain section state, page fields, headers/footers and page geometry. The initial report compositions are examples using this evaluator; remaining report features follow in #336/#337. The planned archetype set:
 
 | Block          | Slots (bounded)                                      | Notes                                                    |
 | -------------- | ---------------------------------------------------- | -------------------------------------------------------- |
@@ -312,11 +312,9 @@ Numbered headings, TOC above a heading threshold, figure and table numbering
 and cross-references come from the blueprint and its profile, not from the
 agent or theme.
 
-**PPTX layouts**: the slide variant `{ "layout": "<name>", …slots }` beside
-the existing template and coordinate variants, implementing #221–#223 with
-the consulting conventions. v1 is five layouts:
+**PPTX blocks (#340):** migrate existing templates to the common JSON definition/slot contract; no separate layout tier. PPTX retains its geometry, objects, backgrounds and grids. #340 implements the adapter after the DOCX client-report checkpoint; #341 supplies the remaining examples inside playground templates. Planned blocks:
 
-| Layout       | Slots (bounded)                                                         | Notes                       |
+| Block        | Slots (bounded)                                                         | Notes                       |
 | ------------ | ----------------------------------------------------------------------- | --------------------------- |
 | cover        | title, subtitle, client, date, confidentiality, logo                    |                             |
 | action-chart | action title ≤ 2 lines, chart, takeaway, source                         | the consulting workhorse    |
@@ -324,22 +322,20 @@ the consulting conventions. v1 is five layouts:
 | two-column   | action title, left (text or bullets ≤ 5), right (chart, table or image) | 1.1 : 1 split               |
 | statement    | assertion ≤ 14 words, support ≤ 30 words                                | section or conclusion slide |
 
-Every content layout can render the theme's chrome recipes. The blueprint and
+Every content block can render the theme's chrome recipes. The blueprint and
 profile decide whether tracker, source line and confidential footer with
-`n / N` are required. The remaining layouts (agenda, comparison, process,
+`n / N` are required. The remaining blocks (agenda, comparison, process,
 quote, image, cards, closing, section) follow in Phase 4 once the five are
 measured.
 
-Compiler: pure; theme tokens + slot content + canvas → geometry (pptx) or
-flow structure (docx). Overflow policy per slot is data: shrink within scale
-steps, then reflow, then reject with a coded issue, never shrink to
-unreadable. A source map links every emitted node to its slot pointer; the
+Evaluator: pure, bounded JSON operations; theme tokens + slot content + canvas → geometry (pptx) or
+flow structure (docx). DOCX currently supports bounded repetition/count, optional-group collapse, fixed readable typography and ordinary flow/column reflow. Slot cardinality and text budgets reject overflow with coded issues; automatic shrink-to-fit is not implemented. #340 owns bounded PPTX geometry/fit behavior. A source map links every emitted node to its slot pointer; the
 compiled form is inspectable through `jto_workspace_inspect` and a
 `jto_validate` option. Text-dependent sizing uses the existing width model
 now and #211 metrics when they land. Layout geometry starts from the
 reference decks (#223) and is re-parameterised on theme tokens.
 
-Every block or layout × theme × canvas × (design fonts | substituted fonts,
+Every block × theme × canvas × (design fonts | substituted fonts,
 alternates only) renders clean through the harness at count, text-length,
 numeric-width, asset-ratio and chart-label boundaries: this matrix replaces
 the current calibration corpus.
@@ -347,12 +343,12 @@ the current calibration corpus.
 ### D. Blueprints, scaffolding, templates through MCP
 
 - **Blueprints**: document archetypes as data: recommended theme, ordered
-  blocks or layouts, per-slot content guidance and word budgets, numbering
+  blocks, per-slot content guidance and word budgets, numbering
   and TOC policy, expected length, quality profile. v1: `client-report`
   (client or public-administration report: cover, key takeaways, KPI row,
   chart-first sections, data tables, appendix) and `technical-report`
   (numbered structure, TOC, figures, references, memo variant) for docx;
-  `consulting-deck` for pptx over the five layouts. Each blueprint has at
+  `consulting-deck` for pptx over the five blocks. Each blueprint has at
   least two variants (data-heavy and narrative) so two documents from the
   same brief do not look alike.
 - **`jto_scaffold`** (new tool): blueprint + theme + brief facts (title,
@@ -436,7 +432,7 @@ right bar.
   → fill → validate → critique → generate) on one screen, generated in part
   from data (the available themes and blueprints).
 - Resources: `jto://themes` (with the extended values), `jto://blocks`,
-  `jto://layouts`, `jto://blueprints`, `jto://templates/<name>` with
+  `jto://blueprints`, `jto://templates/<name>` with
   thumbnails, `jto://guide/design/<format>`: the concise rules rendered from
   the same data the lint reads (scales, spacing, chart and table rules,
   content rules).
@@ -477,7 +473,7 @@ The agent writes the words; the product sets the bar:
 | `jto_validate` | reads theme plus profile; returns compiled blocks/layouts optionally; draft markers advise, generation-ready checks require none |
 | `jto_preview`  | options for the contact sheet and for rendered findings                                                                          |
 | `jto_critique` | new: inspect evidence, then record the host model's verdict against a workspace revision                                         |
-| Resources      | `jto://themes`, `jto://blocks`, `jto://layouts`, `jto://blueprints`, `jto://templates/*`, `jto://guide/design/*`                 |
+| Resources      | `jto://themes`, `jto://blocks`, `jto://blueprints`, `jto://templates/*`, `jto://guide/design/*`                                  |
 | Prompts        | `design-brief`, `report-from-notes`, `deck-from-outline`                                                                         |
 | Instructions   | v2 workflow                                                                                                                      |
 
@@ -488,7 +484,7 @@ Everything is additive except the default-theme change in §5B.
 - The §1 targets are met across the 60 sealed-corpus cold observations. The
   headless proxy agrees with ten paired Claude Desktop runs at ≥ 0.8 on the
   ship/no-ship verdict; otherwise Desktop results decide acceptance.
-- Every block or layout × theme × canvas × font condition renders with zero
+- Every block × theme × canvas × font condition renders with zero
   warnings and zero rendered findings; the matrix is the calibration corpus
   and runs in the converter-dependent CI job.
 - Blueprint scaffolds are schema- and semantic-clean, render clean with

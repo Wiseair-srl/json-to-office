@@ -1,0 +1,796 @@
+{
+  "name": "docx",
+  "props": {
+    "theme": "consulting",
+    "metadata": {
+      "title": "Client performance report"
+    },
+    "blocks": {
+      "key-takeaways": {
+        "format": "docx",
+        "description": "Executive conclusions with bounded one-line takeaways. Copy and adapt this document-local example.",
+        "slots": {
+          "label": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 8,
+            "required": false,
+            "default": "Key takeaways"
+          },
+          "items": {
+            "type": "array",
+            "required": true,
+            "minItems": 3,
+            "maxItems": 5,
+            "items": {
+              "type": "string",
+              "oneLine": true,
+              "maxWords": 25,
+              "required": true
+            }
+          }
+        },
+        "body": [
+          {
+            "name": "divider",
+            "props": {
+              "thickness": {
+                "$theme": "/chrome/keyTakeaways/rule/weightPt",
+                "default": 1.5
+              },
+              "color": {
+                "$theme": "/chrome/keyTakeaways/rule/color",
+                "default": "borderPrimary"
+              },
+              "spacing": {
+                "before": 4,
+                "after": 6
+              }
+            }
+          },
+          {
+            "name": "paragraph",
+            "props": {
+              "text": {
+                "$slot": "/label"
+              },
+              "font": {
+                "family": {
+                  "$theme": "/fonts/body/family",
+                  "default": "Calibri"
+                },
+                "size": {
+                  "$theme": "/styles/label/size",
+                  "default": 9
+                },
+                "bold": {
+                  "$theme": "/styles/label/bold",
+                  "default": true
+                },
+                "color": {
+                  "$theme": "/styles/label/color",
+                  "default": "textPrimary"
+                }
+              },
+              "keepNext": true
+            }
+          },
+          {
+            "name": "list",
+            "props": {
+              "items": {
+                "$slot": "/items"
+              }
+            }
+          },
+          {
+            "name": "divider",
+            "props": {
+              "thickness": {
+                "$theme": "/chrome/keyTakeaways/rule/weightPt",
+                "default": 0.5
+              },
+              "color": {
+                "$theme": "/chrome/keyTakeaways/rule/color",
+                "default": "borderPrimary"
+              },
+              "spacing": {
+                "before": 4,
+                "after": 6
+              }
+            }
+          }
+        ]
+      },
+      "cover": {
+        "format": "docx",
+        "description": "A themed title page; optional subtitle, logo and metadata collapse when omitted.",
+        "slots": {
+          "title": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 16,
+            "required": true
+          },
+          "subtitle": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 30,
+            "required": false
+          },
+          "client": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 8,
+            "required": false
+          },
+          "date": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 6,
+            "required": false
+          },
+          "confidentiality": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 8,
+            "required": false
+          },
+          "logo": {
+            "type": "component"
+          }
+        },
+        "body": [
+          {
+            "$if": "/logo",
+            "then": {
+              "$slot": "/logo"
+            }
+          },
+          {
+            "name": "paragraph",
+            "props": {
+              "text": "",
+              "spacing": {
+                "before": {
+                  "$measure": "height",
+                  "fraction": 0.22,
+                  "unit": "pt"
+                },
+                "after": 0
+              }
+            }
+          },
+          {
+            "name": "divider",
+            "props": {
+              "thickness": {
+                "$theme": "/chrome/cover/rule/weightPt",
+                "default": 3
+              },
+              "color": {
+                "$theme": "/chrome/cover/rule/color",
+                "default": "borderPrimary"
+              },
+              "spacing": {
+                "before": 4,
+                "after": 6
+              }
+            }
+          },
+          {
+            "$if": "/client",
+            "then": {
+              "name": "paragraph",
+              "props": {
+                "text": {
+                  "$slot": "/client"
+                },
+                "font": {
+                  "family": {
+                    "$theme": "/fonts/body/family",
+                    "default": "Calibri"
+                  },
+                  "size": {
+                    "$theme": "/styles/eyebrow/size",
+                    "default": 9
+                  },
+                  "bold": {
+                    "$theme": "/styles/eyebrow/bold",
+                    "default": true
+                  },
+                  "color": {
+                    "$theme": "/styles/eyebrow/color",
+                    "default": "accent"
+                  }
+                },
+                "keepNext": true
+              }
+            }
+          },
+          {
+            "name": "paragraph",
+            "props": {
+              "text": {
+                "$slot": "/title"
+              },
+              "font": {
+                "family": {
+                  "$theme": "/fonts/body/family",
+                  "default": "Calibri"
+                },
+                "size": {
+                  "$theme": "/styles/display/size",
+                  "default": 26
+                },
+                "bold": {
+                  "$theme": "/styles/display/bold",
+                  "default": true
+                },
+                "color": {
+                  "$theme": "/styles/display/color",
+                  "default": "textPrimary"
+                }
+              },
+              "keepNext": true
+            }
+          },
+          {
+            "$if": "/subtitle",
+            "then": {
+              "name": "paragraph",
+              "props": {
+                "text": {
+                  "$slot": "/subtitle"
+                },
+                "font": {
+                  "family": {
+                    "$theme": "/fonts/body/family",
+                    "default": "Calibri"
+                  },
+                  "size": {
+                    "$theme": "/styles/subtitle/size",
+                    "default": 13
+                  },
+                  "bold": {
+                    "$theme": "/styles/subtitle/bold",
+                    "default": false
+                  },
+                  "color": {
+                    "$theme": "/styles/subtitle/color",
+                    "default": "textPrimary"
+                  }
+                },
+                "keepNext": true
+              }
+            }
+          },
+          {
+            "$if": "/date",
+            "then": {
+              "name": "paragraph",
+              "props": {
+                "text": {
+                  "$slot": "/date"
+                },
+                "font": {
+                  "family": {
+                    "$theme": "/fonts/body/family",
+                    "default": "Calibri"
+                  },
+                  "size": {
+                    "$theme": "/styles/label/size",
+                    "default": 9
+                  },
+                  "bold": {
+                    "$theme": "/styles/label/bold",
+                    "default": false
+                  },
+                  "color": {
+                    "$theme": "/styles/label/color",
+                    "default": "textPrimary"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "$if": "/confidentiality",
+            "then": {
+              "name": "paragraph",
+              "props": {
+                "text": {
+                  "$slot": "/confidentiality"
+                },
+                "font": {
+                  "family": {
+                    "$theme": "/fonts/body/family",
+                    "default": "Calibri"
+                  },
+                  "size": {
+                    "$theme": "/styles/label/size",
+                    "default": 9
+                  },
+                  "bold": {
+                    "$theme": "/styles/label/bold",
+                    "default": false
+                  },
+                  "color": {
+                    "$theme": "/styles/label/color",
+                    "default": "textPrimary"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "section-opener": {
+        "format": "docx",
+        "description": "A numbered section heading which sets the general section tracker.",
+        "slots": {
+          "number": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 3,
+            "required": false
+          },
+          "title": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 12,
+            "required": true
+          },
+          "tracker": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 6,
+            "required": false
+          }
+        },
+        "section": {
+          "tracker": {
+            "$slot": "/tracker",
+            "default": {
+              "$slot": "/title"
+            }
+          }
+        },
+        "body": [
+          {
+            "$if": "/number",
+            "then": {
+              "name": "paragraph",
+              "props": {
+                "text": {
+                  "$slot": "/number"
+                },
+                "font": {
+                  "family": {
+                    "$theme": "/fonts/body/family",
+                    "default": "Calibri"
+                  },
+                  "size": {
+                    "$theme": "/styles/eyebrow/size",
+                    "default": 9
+                  },
+                  "bold": {
+                    "$theme": "/styles/eyebrow/bold",
+                    "default": true
+                  },
+                  "color": {
+                    "$theme": "/styles/eyebrow/color",
+                    "default": "accent"
+                  }
+                },
+                "keepNext": true
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "props": {
+              "text": {
+                "$slot": "/title"
+              },
+              "level": 1
+            }
+          }
+        ]
+      },
+      "running-head": {
+        "format": "docx",
+        "description": "Document title/section tracker and page fields, inherited by subsequent sections.",
+        "slots": {
+          "title": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 12,
+            "required": false
+          },
+          "tracker": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 6,
+            "required": false
+          },
+          "confidentiality": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 8,
+            "required": false
+          },
+          "date": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 6,
+            "required": false
+          },
+          "pageNumbers": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "body": [],
+        "section": {
+          "scope": "following",
+          "pageBreak": true,
+          "header": [
+            {
+              "name": "paragraph",
+              "props": {
+                "text": {
+                  "$join": [
+                    {
+                      "$slot": "/title",
+                      "default": {
+                        "$context": "/document/title",
+                        "default": ""
+                      }
+                    },
+                    {
+                      "$context": "/section/tracker",
+                      "default": {
+                        "$slot": "/tracker",
+                        "default": ""
+                      }
+                    }
+                  ],
+                  "separator": "\t",
+                  "keepEmpty": true
+                },
+                "font": {
+                  "family": {
+                    "$theme": "/fonts/body/family",
+                    "default": "Calibri"
+                  },
+                  "size": {
+                    "$theme": "/styles/tracker/size",
+                    "default": 8
+                  },
+                  "bold": {
+                    "$theme": "/styles/tracker/bold",
+                    "default": false
+                  },
+                  "color": {
+                    "$theme": "/styles/tracker/color",
+                    "default": "textMuted"
+                  }
+                },
+                "tabStops": [
+                  {
+                    "type": "right",
+                    "position": {
+                      "$measure": "width",
+                      "unit": "twip"
+                    }
+                  }
+                ],
+                "spacing": {
+                  "before": 0,
+                  "after": 0
+                }
+              }
+            },
+            {
+              "name": "divider",
+              "props": {
+                "thickness": {
+                  "$theme": "/chrome/runningHead/rule/weightPt",
+                  "default": 0.5
+                },
+                "color": {
+                  "$theme": "/chrome/runningHead/rule/color",
+                  "default": "borderPrimary"
+                },
+                "spacing": {
+                  "before": 4,
+                  "after": 6
+                }
+              }
+            }
+          ],
+          "footer": [
+            {
+              "name": "divider",
+              "props": {
+                "thickness": {
+                  "$theme": "/chrome/confidentialFooter/rule/weightPt",
+                  "default": 0.5
+                },
+                "color": {
+                  "$theme": "/chrome/confidentialFooter/rule/color",
+                  "default": "borderPrimary"
+                },
+                "spacing": {
+                  "before": 4,
+                  "after": 6
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": {
+                  "$join": [
+                    {
+                      "$slot": "/confidentiality",
+                      "default": ""
+                    },
+                    {
+                      "$if": "/pageNumbers",
+                      "then": "{PAGE} / {TOTAL_PAGES}",
+                      "else": ""
+                    },
+                    {
+                      "$slot": "/date",
+                      "default": ""
+                    }
+                  ],
+                  "separator": "\t",
+                  "keepEmpty": true
+                },
+                "font": {
+                  "family": {
+                    "$theme": "/fonts/body/family",
+                    "default": "Calibri"
+                  },
+                  "size": {
+                    "$theme": "/styles/footer/size",
+                    "default": 8
+                  },
+                  "bold": {
+                    "$theme": "/styles/footer/bold",
+                    "default": false
+                  },
+                  "color": {
+                    "$theme": "/styles/footer/color",
+                    "default": "textMuted"
+                  }
+                },
+                "tabStops": [
+                  {
+                    "type": "center",
+                    "position": {
+                      "$measure": "width",
+                      "fraction": 0.5,
+                      "unit": "twip"
+                    }
+                  },
+                  {
+                    "type": "right",
+                    "position": {
+                      "$measure": "width",
+                      "unit": "twip"
+                    }
+                  }
+                ],
+                "spacing": {
+                  "before": 0,
+                  "after": 0
+                }
+              }
+            }
+          ]
+        }
+      },
+      "metric-row": {
+        "format": "docx",
+        "description": "Two to four equal-width metrics. Optional source collapses together with its divider. Text budgets reject overflow; columns reflow at unchanged type size.",
+        "slots": {
+          "items": {
+            "type": "array",
+            "required": true,
+            "minItems": 2,
+            "maxItems": 4,
+            "items": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string",
+                  "required": true,
+                  "maxLength": 12
+                },
+                "label": {
+                  "type": "string",
+                  "required": true,
+                  "maxWords": 6
+                }
+              }
+            }
+          },
+          "source": {
+            "type": "string",
+            "maxWords": 20
+          }
+        },
+        "body": [
+          {
+            "name": "columns",
+            "props": {
+              "columns": {
+                "$count": "/items"
+              },
+              "gap": 12
+            },
+            "children": [
+              {
+                "$each": "/items",
+                "template": {
+                  "name": "statistic",
+                  "props": {
+                    "description": {
+                      "$item": "/label"
+                    },
+                    "number": {
+                      "$item": "/value"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "$if": "/source",
+            "then": [
+              {
+                "name": "divider",
+                "props": {
+                  "thickness": 0.5
+                }
+              },
+              {
+                "name": "paragraph",
+                "props": {
+                  "text": {
+                    "$slot": "/source"
+                  },
+                  "font": {
+                    "size": 9
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "children": [
+    {
+      "name": "section",
+      "props": {},
+      "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "cover",
+            "slots": {
+              "title": "Growth improved as delivery became more reliable",
+              "subtitle": "Quarterly client performance review",
+              "client": "Example client",
+              "date": "September 2026",
+              "confidentiality": "Confidential"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {},
+      "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "running-head",
+            "slots": {
+              "confidentiality": "Confidential",
+              "date": "September 2026"
+            }
+          }
+        },
+        {
+          "name": "block",
+          "props": {
+            "ref": "section-opener",
+            "slots": {
+              "number": "01",
+              "title": "Delivery improvements supported growth",
+              "tracker": "Performance"
+            }
+          }
+        },
+        {
+          "name": "block",
+          "props": {
+            "ref": "key-takeaways",
+            "slots": {
+              "items": [
+                "Revenue grew as more contracted work reached completion.",
+                "On-time delivery improved following clearer weekly ownership.",
+                "Next quarter should prioritize retention and recurring revenue."
+              ]
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "The report designs above are ordinary JSON definitions in this document. Edit their slots or composition in the playground; the engine has no built-in cover or takeaways implementation."
+          }
+        },
+        {
+          "name": "block",
+          "props": {
+            "ref": "metric-row",
+            "slots": {
+              "items": [
+                {
+                  "value": "+18%",
+                  "label": "Revenue growth"
+                },
+                {
+                  "value": "94%",
+                  "label": "Client retention"
+                }
+              ],
+              "source": "Source: quarterly operating review."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "props": {
+        "page": {
+          "size": "LETTER",
+          "margins": {
+            "left": 720,
+            "right": 720
+          }
+        }
+      },
+      "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "section-opener",
+            "slots": {
+              "number": "02",
+              "title": "Focus the next quarter on retention",
+              "tracker": "Recommendations"
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "The inherited running header uses this section\u2019s tracker and page width. Page numbers are native Word fields."
+          }
+        }
+      ]
+    }
+  ]
+}

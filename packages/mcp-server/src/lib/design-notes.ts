@@ -38,17 +38,13 @@ const DOCX_DESIGN_NOTES: DesignNotes = {
   table:
     'Right-align numeric columns, keep the same decimal places down a column, and let the theme draw the rules — borders on every cell read as a spreadsheet.',
   list: 'Parallel phrasing, one line per item; past about seven items a list is a table or a section in disguise.',
-  'key-takeaways':
-    'Open a report or a major section with it: three to five conclusions, each one claim in one sentence, written before the body they summarise. The theme draws the box — never rebuild it from paragraphs and rules.',
-  cover:
-    'One title that says what the report concludes, a subtitle that says for whom and when, in a section of its own so the running head starts on page two. The theme places the rule, the type and the logo — never build a cover from spacing.',
-  'section-opener':
-    'One per major section, first in its docx section: a number, a title that states the conclusion, and a tracker of two or three words the running head can carry. Sub-sections are headings, not openers.',
-  'running-head':
-    'Declare it once, in the first section after the cover, and let each section-opener change the tracker; give it the confidentiality line and the date the brief states. Page numbers are on by default — leave them.',
   toc: 'Worth it past roughly eight headings or ten pages; below that it costs a page and answers nothing.',
   divider:
-    'A rule separates what whitespace cannot; two dividers on a page means the spacing is doing too little.',
+    'A rule separates what whitespace cannot; repeated dividers usually need better spacing.',
+  block:
+    'Use a definition from this document’s props.blocks. Copy reference definitions from jto://blocks into the document before invoking them; fill semantic slots and respect their budgets.',
+  group:
+    'A transparent sequence of flow content. Keep placement and optional decorations in the owning block definition.',
   highcharts:
     'Title the chart with its takeaway and name the source. Set the series colours from theme tokens — the library default palette is not this document.',
   chart:

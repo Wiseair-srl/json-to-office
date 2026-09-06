@@ -1,5 +1,5 @@
 {
-  "$comment": "Authored half of the template manifest: what a document is for, which no script can derive. The rest — theme, pages, components, slots, external assets — is generated from the document itself by scripts/generate-gallery.ts and checked by `pnpm validate:assets`.",
+  "$comment": "Authored half of the template manifest: what a document is for, which no script can derive. The rest \u2014 theme, pages, components, slots, external assets \u2014 is generated from the document itself by scripts/generate-gallery.ts and checked by `pnpm validate:assets`.",
   "templates": {
     "modern-annual-report-1.docx.json": {
       "archetype": "annual-report",
@@ -7,7 +7,7 @@
     },
     "modern-annual-report-2.docx.json": {
       "archetype": "annual-report",
-      "whenToUse": "The same editorial language with photography woven through it. Use when there are real images to show — sites, products, people — rather than charts alone."
+      "whenToUse": "The same editorial language with photography woven through it. Use when there are real images to show \u2014 sites, products, people \u2014 rather than charts alone."
     },
     "modern-annual-report-3.docx.json": {
       "archetype": "annual-report",
@@ -15,7 +15,7 @@
     },
     "standard-annual-report.docx.json": {
       "archetype": "annual-report",
-      "whenToUse": "A conventional corporate annual report — cover, contents, numbered sections, financial tables. Use when the document has to look like every other annual report on the shelf, which is sometimes exactly the brief."
+      "whenToUse": "A conventional corporate annual report \u2014 cover, contents, numbered sections, financial tables. Use when the document has to look like every other annual report on the shelf, which is sometimes exactly the brief."
     },
     "tech-report.docx.json": {
       "archetype": "technical-report",
@@ -31,11 +31,15 @@
     },
     "management-plan.pptx.json": {
       "archetype": "consulting-deck",
-      "whenToUse": "A structured plan deck — agenda, workstreams, timeline, owners. The closest of the three to a consulting readout; use for a kickoff, a steering committee or a plan on a page."
+      "whenToUse": "A structured plan deck \u2014 agenda, workstreams, timeline, owners. The closest of the three to a consulting readout; use for a kickoff, a steering committee or a plan on a page."
     },
     "minimalist-pitch-deck.pptx.json": {
       "archetype": "pitch-deck",
       "whenToUse": "A spare, high-contrast pitch deck built on circles and type. Use when the deck is presented rather than read, and when the argument is short enough to hold one idea per slide."
+    },
+    "client-report-blocks.docx.json": {
+      "archetype": "client report with document-local JSON blocks",
+      "whenToUse": "Learn, copy and customize JSON definitions for cover, section-opener, key-takeaways and running-head. Definitions and invocations are embedded in the complete playground document."
     }
   }
 }

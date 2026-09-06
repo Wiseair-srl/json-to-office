@@ -13,11 +13,14 @@ import {
   createComponentSchemaObject,
   STANDARD_COMPONENTS_REGISTRY,
 } from '../../schemas/component-registry';
-import { extractStandardComponentNames } from '@json-to-office/shared';
+import {
+  readBlockDefinitions,
+  validateBlockInvocations,
+  extractStandardComponentNames,
+} from '@json-to-office/shared';
 import {
   comprehensiveValidateDocument,
   collectImageSourceConflicts,
-  collectChromeBlockPlacement,
   collectIndentConflicts,
   collectNoteRevisionConflicts,
   collectTextBoxShapeConflicts,
@@ -53,12 +56,6 @@ const SEMANTIC_COLLECTORS: readonly {
     // optional field.
     why: 'image source mutual-exclusivity',
     collect: collectImageSourceConflicts,
-  },
-  {
-    // Header and column contents are structurally any component, so the
-    // schema cannot say where page chrome may sit.
-    why: 'a running-head outside a top-level section',
-    collect: collectChromeBlockPlacement,
   },
   {
     why: 'indent hanging/firstLine mutual-exclusivity',
@@ -255,7 +252,12 @@ export function validateDocument(
 
   // Semantic rules run on every document, valid or not: they describe payloads
   // the structural check already accepted.
-  const semanticConflicts = collectSemanticConflicts(data);
+  const semanticConflicts = [
+    ...collectSemanticConflicts(data),
+    ...validateBlockInvocations(data, readBlockDefinitions(data), 'docx', [
+      ...(options?.knownCustomNames ?? []),
+    ]),
+  ];
   if (semanticConflicts.length > 0) {
     finalErrors = [...finalErrors, ...semanticConflicts];
     finalValid = false;
@@ -319,7 +321,15 @@ export function validateJsonDocument(
 
   // Semantic rules run on every document, valid or not: they describe payloads
   // the structural check already accepted.
-  const semanticConflicts = collectSemanticConflicts(result.parsed);
+  const semanticConflicts = [
+    ...collectSemanticConflicts(result.parsed),
+    ...validateBlockInvocations(
+      result.parsed,
+      readBlockDefinitions(result.parsed),
+      'docx',
+      [...(options?.knownCustomNames ?? [])]
+    ),
+  ];
   if (semanticConflicts.length > 0) {
     finalErrors = [...finalErrors, ...semanticConflicts];
     finalValid = false;
