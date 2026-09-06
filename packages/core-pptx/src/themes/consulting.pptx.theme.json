@@ -2,7 +2,7 @@
   "name": "consulting",
   "displayName": "Consulting House",
   "description": "The house style for decision decks — near-black ink, three greys and one deep-blue accent, Calibri body under Arial headings, hairline rules, no fills behind text, safe fonts only",
-  "whenToUse": "Decision decks and client readouts: an action title on every slide, one chart with a takeaway and a source; the theme the consulting-deck profile expects.",
+  "whenToUse": "Decision decks and client readouts: one message per slide, a chart that carries it, a source under it; the twin of the DOCX house theme, so a deck and its report match.",
   "version": "1.0.0",
   "colors": {
     "primary": "#1A1F26",

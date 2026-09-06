@@ -47,26 +47,37 @@ const report = (...children: unknown[]) => {
 
 describe('a size off the theme scale', () => {
   it('is off by default and a warning on client-report, with the nearest scale size as the fix', () => {
-    const doc = report(para('Body.'), sized('Lead paragraph.', 14));
+    // Both body paragraphs at 14pt: the role is consistent, so this is a
+    // size off the scale rather than a role drifting from the theme.
+    const doc = report(sized('Lead.', 14), sized('Lead paragraph.', 14));
     expect(findings(doc, QUALITY_CODES.TYPE_OFF_SCALE)).toEqual([]);
-    const [warning] = onReport(doc, QUALITY_CODES.TYPE_OFF_SCALE);
-    expect(warning).toMatchObject({
-      severity: 'warning',
-      path: '/children/0/children/1/props/font/size',
-      evidence: {
-        actual: 14,
-        expected: 13,
-        unit: 'pt',
-        values: { source: 'theme' },
-      },
-      fixes: [
-        {
-          op: 'replace',
-          path: '/children/0/children/1/props/font/size',
-          value: 13,
+    // One finding for the role at that size, whose patch snaps both places
+    // together: snapping one alone would leave the role at two sizes.
+    expect(onReport(doc, QUALITY_CODES.TYPE_OFF_SCALE)).toEqual([
+      expect.objectContaining({
+        severity: 'warning',
+        path: '/children/0/children/0/props/font/size',
+        relatedPaths: ['/children/0/children/1/props/font/size'],
+        evidence: {
+          actual: 14,
+          expected: 13,
+          unit: 'pt',
+          values: { source: 'theme' },
         },
-      ],
-    });
+        fixes: [
+          {
+            op: 'replace',
+            path: '/children/0/children/0/props/font/size',
+            value: 13,
+          },
+          {
+            op: 'replace',
+            path: '/children/0/children/1/props/font/size',
+            value: 13,
+          },
+        ],
+      }),
+    ]);
   });
 
   it('accepts every size the theme paints: styles, roles and scale steps', () => {
@@ -96,6 +107,25 @@ describe('a size off the theme scale', () => {
   it('says nothing about sizes a block compiled from its definition', () => {
     const doc = report(invocation('kpi-row'), invocation('cover'));
     expect(onReport(doc, QUALITY_CODES.TYPE_OFF_SCALE)).toEqual([]);
+  });
+});
+
+describe('another profile on the house theme', () => {
+  it('inherits none of the report requirements from the theme alone', () => {
+    const doc = report(
+      sized('Lead paragraph.', 14),
+      heading('Two', 2),
+      heading('Two again', 2, 16)
+    );
+    for (const code of [
+      QUALITY_CODES.TYPE_OFF_SCALE,
+      QUALITY_CODES.TYPE_SIZE_COUNT,
+      QUALITY_CODES.TYPE_ROLE_DRIFT,
+    ]) {
+      expect(
+        findings(doc, code, { profile: profile('executive-report') })
+      ).toEqual([]);
+    }
   });
 });
 
@@ -180,6 +210,25 @@ describe('one role at two sizes', () => {
         },
       ],
     });
+  });
+
+  it('names the sizes the role is actually painted at, and yields no off-scale finding on the same pointer', () => {
+    const doc = report(
+      heading('Two', 2, 18),
+      para('Body.'),
+      heading('Two again', 2, 20)
+    );
+    const drift = onReport(doc, QUALITY_CODES.TYPE_ROLE_DRIFT);
+    expect(drift.map((finding) => finding.message)).toEqual([
+      '"heading2" is painted at 18pt here and at 20pt elsewhere; the theme sets it at 12.5pt.',
+      '"heading2" is painted at 20pt here and at 18pt elsewhere; the theme sets it at 12.5pt.',
+    ]);
+    expect(drift.map((finding) => finding.relatedPaths)).toEqual([
+      undefined,
+      undefined,
+    ]);
+    // 20pt is off the scale too, but one pointer gets one fix.
+    expect(onReport(doc, QUALITY_CODES.TYPE_OFF_SCALE)).toEqual([]);
   });
 
   it('is silent when a role is consistent, even at an authored size', () => {

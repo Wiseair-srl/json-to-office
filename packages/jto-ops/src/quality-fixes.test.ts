@@ -223,8 +223,8 @@ const FIXTURES: readonly Fixture[] = [
     format: 'docx',
     code: 'W_QUALITY_TYPE_OFF_SCALE',
     document: consultingReport([
-      { name: 'paragraph', props: { text: 'Body.' } },
       { name: 'paragraph', props: { text: 'Lead.', font: { size: 14 } } },
+      { name: 'paragraph', props: { text: 'Body.', font: { size: 14 } } },
     ]),
   },
   {

@@ -263,30 +263,35 @@ export const ROLE_SCALE_STEPS: Record<TypeRoleName, number> = {
   source: -2,
 };
 export type TypeScale = Static<typeof ScaleSchema>;
-type Scale = TypeScale;
 
 /**
  * `base × ratio^step`, snapped to the nearest baseline multiple and clamped to
  * the schema's 5-200pt window. A step-0 role keeps `base` exactly: snapping a
  * role that asked for no scaling would silently retune the authored base size.
  */
-function scaledSize(scale: Scale, step: number): number {
+function scaledSize(scale: TypeScale, step: number): number {
   if (step === 0) return scale.base;
   const baseline = scale.baselinePt ?? 4;
   const exact = scale.base * (scale.ratio ?? 1.25) ** step;
   return Math.max(5, Math.min(200, Math.round(exact / baseline) * baseline));
 }
 
+/** The smallest role step (`footer`) to one past the largest (`display`). */
+const SCALE_STEP_RANGE = { from: -2, to: 5 } as const;
+
 /**
- * Every size the scale reaches between `from` and `to` steps of the base,
- * ascending and without duplicates: what "on the theme's type scale" means
- * for a size an author wrote by hand. The default window spans the smallest
- * role (`footer`, -2) to one step above `display` (4), so a cover title one
- * step past the largest role still counts as on scale.
+ * Every size the scale reaches from the smallest role step to one step above
+ * the largest, ascending and without duplicates: what "on the theme's type
+ * scale" means for a size an author wrote by hand. The extra step lets a
+ * cover title one past `display` count as on scale.
  */
-export function typeScaleSizes(scale: Scale, from = -2, to = 5): number[] {
+export function typeScaleSizes(scale: TypeScale): number[] {
   const sizes = new Set<number>();
-  for (let step = from; step <= to; step += 1) {
+  for (
+    let step = SCALE_STEP_RANGE.from;
+    step <= SCALE_STEP_RANGE.to;
+    step += 1
+  ) {
     sizes.add(scaledSize(scale, step));
   }
   return [...sizes].sort((a, b) => a - b);
