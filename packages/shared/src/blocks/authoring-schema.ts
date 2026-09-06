@@ -17,7 +17,8 @@ const pointer = (description: string): Schema => ({
   pattern: '^(|/.*)$',
   description,
 });
-const referenceDescriptions = {
+export type BlockAuthoringFormat = 'docx' | 'pptx';
+const referenceDescriptions = (format: BlockAuthoringFormat) => ({
   $slot:
     'Read a named input slot by JSON Pointer, e.g. /title or /client/name.',
   $item:
@@ -25,8 +26,20 @@ const referenceDescriptions = {
   $theme:
     'Read the active theme by JSON Pointer, e.g. /colors/primary. A missing value requires a default.',
   $context:
-    'Read document or section context by JSON Pointer, e.g. /document/title or /section/tracker.',
-};
+    format === 'pptx'
+      ? 'Read deck or slide context by JSON Pointer, e.g. /document/title, /slide/width or /slide/index.'
+      : 'Read document or section context by JSON Pointer, e.g. /document/title or /section/tracker.',
+});
+const measureDescriptions = (format: BlockAuthoringFormat) =>
+  format === 'pptx'
+    ? {
+        axis: 'Measure the slide canvas width or height, in the unit given.',
+        unit: 'Measurement unit: points, twentieths of a point, or inches. Defaults to pt; use in for frame coordinates.',
+      }
+    : {
+        axis: 'Measure the usable page width or height after margins, using the containing section’s page settings.',
+        unit: 'Measurement unit: points, twentieths of a point, or inches. Defaults to pt.',
+      };
 const describe = (schema: AuthoringSchema, description: string): Schema => ({
   ...(typeof schema === 'boolean' ? { allOf: [schema] } : schema),
   description,
@@ -58,9 +71,12 @@ const directiveNames = Object.keys(BLOCK_DIRECTIVES) as BlockDirective[];
 export function createBlockAuthoringSchema(
   definitions: Record<string, Schema>,
   componentDefinition: string,
-  excludedComponents: readonly string[] = []
+  excludedComponents: readonly string[] = [],
+  format: BlockAuthoringFormat = 'docx'
 ): Schema {
   const prefix = `BlockTemplate_${componentDefinition}`;
+  const references = referenceDescriptions(format);
+  const measure = measureDescriptions(format);
   const bodyName = `${prefix}_Body`;
   const ref = (name: string): Schema => ({ $ref: `#/definitions/${name}` });
   if (definitions[bodyName]) return ref(bodyName);
@@ -238,7 +254,7 @@ export function createBlockAuthoringSchema(
         case '$context':
           specs[directive] = object(
             {
-              [directive]: pointer(referenceDescriptions[directive]),
+              [directive]: pointer(references[directive]),
               default: describe(
                 value(),
                 'Fallback value or binding used only when the referenced value is missing. Null, false and empty values do not trigger it.'
@@ -326,8 +342,7 @@ export function createBlockAuthoringSchema(
             {
               $measure: {
                 enum: ['width', 'height'],
-                description:
-                  'Measure the usable page width or height after margins, using the containing section’s page settings.',
+                description: measure.axis,
               },
               fraction: {
                 type: 'number',
@@ -338,8 +353,7 @@ export function createBlockAuthoringSchema(
               },
               unit: {
                 enum: ['pt', 'twip', 'in'],
-                description:
-                  'Measurement unit: points, twentieths of a point, or inches. Defaults to pt.',
+                description: measure.unit,
               },
             },
             ['$measure']

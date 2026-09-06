@@ -79,11 +79,16 @@ export {
 
 export type { PptxJsonComponentDefinition } from './schemas/document';
 
-// Schema Export Metadata
+// Schema Export: the shared converter enriched with PPTX block-body authoring
 export {
+  convertToJsonSchema,
   PPTX_COMPONENT_METADATA,
   PPTX_BASE_SCHEMA_METADATA,
 } from './schemas/export';
+export {
+  addPptxBlockAuthoringSchemas,
+  dispatchPptxRootByRenderer,
+} from './schemas/block-authoring';
 
 // Component Defaults
 export {
@@ -131,6 +136,7 @@ export {
   PPTX_RENDERER_IDS,
   DEFAULT_PPTX_RENDERER_ID,
   collectPptxRendererErrors,
+  pptxComponentDefinitionName,
 } from './schemas/renderer';
 export type { PptxRendererId } from './schemas/renderer';
 
@@ -185,10 +191,9 @@ export {
 } from '@json-to-office/shared';
 export type { ParsedSemver } from '@json-to-office/shared';
 
-// Re-export schema utils
+// Re-export schema utils (`convertToJsonSchema` is the PPTX-enriched one above)
 export {
   fixSchemaReferences,
-  convertToJsonSchema,
   createComponentSchema,
   exportSchemaToFile,
 } from '@json-to-office/shared';

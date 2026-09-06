@@ -62,112 +62,119 @@ export interface JsonBlockDefinition {
   };
 }
 
-export const BlockSlotSchema: TSchema = Type.Recursive((Self) =>
-  Type.Object(
-    {
-      type: Type.Union(
-        [
-          'string',
-          'number',
-          'integer',
-          'boolean',
-          'object',
-          'array',
-          'component',
-        ].map((v) => Type.Literal(v)),
-        {
-          description:
-            'Content type accepted by this slot. Use component for a document component or registered plugin.',
-        }
-      ),
-      description: Type.Optional(
-        Type.String({
-          description: 'Explain this slot’s content and purpose to authors.',
-        })
-      ),
-      required: Type.Optional(
-        Type.Boolean({
-          description:
-            'Require a value when no default is provided. Defaults to false.',
-        })
-      ),
-      default: Type.Optional(
-        Type.Unknown({
-          description:
-            'Value used when the caller omits this slot. Must satisfy the slot’s type and constraints.',
-        })
-      ),
-      enum: Type.Optional(
-        Type.Array(Type.Union([Type.String(), Type.Number(), Type.Boolean()]), {
-          minItems: 1,
-          description: 'Allowed scalar values for this slot.',
-        })
-      ),
-      minItems: Type.Optional(
-        Type.Integer({
-          minimum: 0,
-          description: 'Minimum number of array entries, inclusive.',
-        })
-      ),
-      maxItems: Type.Optional(
-        Type.Integer({
-          minimum: 0,
-          description: 'Maximum number of array entries, inclusive.',
-        })
-      ),
-      minLength: Type.Optional(
-        Type.Integer({
-          minimum: 0,
-          description: 'Minimum string length in characters, inclusive.',
-        })
-      ),
-      maxLength: Type.Optional(
-        Type.Integer({
-          minimum: 0,
-          description: 'Maximum string length in characters, inclusive.',
-        })
-      ),
-      minimum: Type.Optional(
-        Type.Number({ description: 'Minimum numeric value, inclusive.' })
-      ),
-      maximum: Type.Optional(
-        Type.Number({ description: 'Maximum numeric value, inclusive.' })
-      ),
-      maxWords: Type.Optional(
-        Type.Integer({
-          minimum: 1,
-          description:
-            'Maximum whitespace-separated word count. Exceeding it fails validation.',
-        })
-      ),
-      oneLine: Type.Optional(
-        Type.Boolean({
-          description:
-            'Reject newline characters in string values. Does not prevent visual line wrapping.',
-        })
-      ),
-      items: Type.Optional({
-        ...Self,
-        description: 'Slot type and constraints for each array entry.',
-      }),
-      properties: Type.Optional(
-        Type.Record(Type.String(), Self, {
-          description:
-            'Named child slots accepted by an object slot. Undeclared properties are rejected.',
-        })
-      ),
-      role: Type.Optional(
-        Type.Union(
-          BLOCK_SLOT_ROLES.map((role) => Type.Literal(role)),
+export const BlockSlotSchema: TSchema = Type.Recursive(
+  (Self) =>
+    Type.Object(
+      {
+        type: Type.Union(
+          [
+            'string',
+            'number',
+            'integer',
+            'boolean',
+            'object',
+            'array',
+            'component',
+          ].map((v) => Type.Literal(v)),
           {
             description:
-              'Content role for quality profiles: actionTitle, takeaway, source, tracker or footer. A profile may require or measure it; the theme only styles it.',
+              'Content type accepted by this slot. Use component for a document component or registered plugin.',
           }
-        )
-      ),
-    },
-    { additionalProperties: false }
-  )
+        ),
+        description: Type.Optional(
+          Type.String({
+            description: 'Explain this slot’s content and purpose to authors.',
+          })
+        ),
+        required: Type.Optional(
+          Type.Boolean({
+            description:
+              'Require a value when no default is provided. Defaults to false.',
+          })
+        ),
+        default: Type.Optional(
+          Type.Unknown({
+            description:
+              'Value used when the caller omits this slot. Must satisfy the slot’s type and constraints.',
+          })
+        ),
+        enum: Type.Optional(
+          Type.Array(
+            Type.Union([Type.String(), Type.Number(), Type.Boolean()]),
+            {
+              minItems: 1,
+              description: 'Allowed scalar values for this slot.',
+            }
+          )
+        ),
+        minItems: Type.Optional(
+          Type.Integer({
+            minimum: 0,
+            description: 'Minimum number of array entries, inclusive.',
+          })
+        ),
+        maxItems: Type.Optional(
+          Type.Integer({
+            minimum: 0,
+            description: 'Maximum number of array entries, inclusive.',
+          })
+        ),
+        minLength: Type.Optional(
+          Type.Integer({
+            minimum: 0,
+            description: 'Minimum string length in characters, inclusive.',
+          })
+        ),
+        maxLength: Type.Optional(
+          Type.Integer({
+            minimum: 0,
+            description: 'Maximum string length in characters, inclusive.',
+          })
+        ),
+        minimum: Type.Optional(
+          Type.Number({ description: 'Minimum numeric value, inclusive.' })
+        ),
+        maximum: Type.Optional(
+          Type.Number({ description: 'Maximum numeric value, inclusive.' })
+        ),
+        maxWords: Type.Optional(
+          Type.Integer({
+            minimum: 1,
+            description:
+              'Maximum whitespace-separated word count. Exceeding it fails validation.',
+          })
+        ),
+        oneLine: Type.Optional(
+          Type.Boolean({
+            description:
+              'Reject newline characters in string values. Does not prevent visual line wrapping.',
+          })
+        ),
+        items: Type.Optional({
+          ...Self,
+          description: 'Slot type and constraints for each array entry.',
+        }),
+        properties: Type.Optional(
+          Type.Record(Type.String(), Self, {
+            description:
+              'Named child slots accepted by an object slot. Undeclared properties are rejected.',
+          })
+        ),
+        role: Type.Optional(
+          Type.Union(
+            BLOCK_SLOT_ROLES.map((role) => Type.Literal(role)),
+            {
+              description:
+                'Content role for quality profiles: actionTitle, takeaway, source, tracker or footer. A profile may require or measure it; the theme only styles it.',
+            }
+          )
+        ),
+      },
+      { additionalProperties: false }
+    ),
+  // Named so the export hoists it under a stable definition rather than a
+  // TypeBox ordinal that shifts with what the process built before it.
+  { $id: 'BlockSlot' }
 );
 
 export const JsonBlockDefinitionSchema = Type.Unsafe<JsonBlockDefinition>(

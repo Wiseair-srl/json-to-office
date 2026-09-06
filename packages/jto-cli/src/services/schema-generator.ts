@@ -127,10 +127,11 @@ export class SchemaGenerator {
         return outputPath;
       }
     } else {
-      // PPTX schema generation — different CustomComponentInfo shape
-      const { generateUnifiedDocumentSchema } = await import(
-        '@json-to-office/shared-pptx'
-      );
+      // PPTX schema generation — different CustomComponentInfo shape. The
+      // JSON export is the PPTX one: it carries the block-body authoring
+      // schemas the shared converter does not.
+      const { generateUnifiedDocumentSchema, convertToJsonSchema } =
+        await import('@json-to-office/shared-pptx');
 
       const schema = generateUnifiedDocumentSchema({
         customComponents: customComponents.map((m) => ({
@@ -152,9 +153,7 @@ export class SchemaGenerator {
       });
 
       if (format === 'json') {
-        const { convertToJsonSchema, exportSchemaToFile } = await import(
-          '@json-to-office/shared'
-        );
+        const { exportSchemaToFile } = await import('@json-to-office/shared');
         const jsonSchema = convertToJsonSchema(schema, {
           $id: 'presentation.schema.json',
         });
