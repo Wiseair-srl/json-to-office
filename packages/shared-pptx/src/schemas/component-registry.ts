@@ -15,6 +15,8 @@ import {
   pptxPropsSchemaForRenderer,
   type PptxRendererId,
 } from './renderer';
+import { BlockInvocationPropsSchema } from '@json-to-office/shared';
+import { PptxGroupPropsSchema } from './components/group';
 
 /**
  * Component definition with metadata
@@ -30,7 +32,6 @@ export interface PptxStandardComponentDefinition {
    * Omit to allow the full recursive union (backward-compat).
    */
   allowedChildren?: readonly string[];
-  hasPlaceholders?: boolean;
   category: 'container' | 'content' | 'layout';
   description: string;
   /**
@@ -44,6 +45,13 @@ export interface PptxStandardComponentDefinition {
 }
 import { PresentationPropsSchema } from './components/presentation';
 import { SlidePropsSchema } from './components/slide';
+
+/** What a slide holds: content, a document-local block, or a transparent group. */
+const SLIDE_CHILDREN: readonly string[] = [
+  ...PPTX_SLIDE_CONTENT_COMPONENTS.map(({ name }) => name),
+  'block',
+  'group',
+];
 
 /**
  * SINGLE SOURCE OF TRUTH for all standard PPTX components
@@ -74,14 +82,31 @@ export const PPTX_STANDARD_COMPONENTS_REGISTRY: readonly PptxStandardComponentDe
       name: 'slide',
       propsSchema: SlidePropsSchema,
       hasChildren: true,
-      allowedChildren: PPTX_SLIDE_CONTENT_COMPONENTS.map(({ name }) => name),
-      hasPlaceholders: true,
+      allowedChildren: SLIDE_CHILDREN,
       category: 'container',
       // No `propsRequired`: every slide prop is optional and nothing outside
       // the schema asks for one, so `{ "name": "slide", "children": [...] }`
       // is a whole slide and the published schema says so.
       description:
         'Slide container - groups content elements on a single slide. One idea per slide: past roughly 40 words of body text, split the content across more slides.',
+    },
+
+    {
+      name: 'group',
+      propsSchema: PptxGroupPropsSchema,
+      hasChildren: true,
+      allowedChildren: SLIDE_CHILDREN,
+      category: 'layout',
+      description:
+        'Transparent group of slide content; also the inspectable result of block expansion. Give it a frame (x/y/w/h or grid) to position children within it, and a direction to distribute them into equal or weighted cells.',
+    },
+    {
+      name: 'block',
+      propsSchema: BlockInvocationPropsSchema,
+      hasChildren: false,
+      category: 'layout',
+      description:
+        'Invoke a JSON block defined in this document’s props.blocks. Fill its named slots; no block names are built into the engine and no coordinates are accepted here.',
     },
 
     // Content components are canonical in @json-to-office/shared so DOCX
@@ -140,7 +165,6 @@ export { pptxComponentRequiresProps };
 export function createPptxComponentSchemaObject(
   component: PptxStandardComponentDefinition,
   recursiveRef?: TSchema,
-  placeholderRef?: TSchema,
   profile?: { renderer: PptxRendererId; requireDiscriminator: boolean }
 ): TSchema {
   const schema: Record<string, TSchema> = {
@@ -189,30 +213,6 @@ export function createPptxComponentSchemaObject(
     schema.children = Type.Optional(Type.Array(recursiveRef));
   }
 
-  if (
-    component.hasPlaceholders &&
-    (placeholderRef ?? recursiveRef) &&
-    profile?.renderer !== 'office-open'
-  ) {
-    const baseProperties = (schema.props as any).properties ?? {};
-    const phRef = placeholderRef ?? recursiveRef!;
-    schema.props = Type.Object(
-      {
-        ...baseProperties,
-        placeholders: Type.Optional(
-          Type.Record(Type.String(), phRef, {
-            description:
-              'Content for named placeholders: { "title": { "name": "text", ... } }',
-          })
-        ),
-      },
-      {
-        additionalProperties: false,
-        description: (component.propsSchema as any).description,
-      }
-    );
-  }
-
   // Optionality is decided from the canonical definition, never from the
   // pruned/placeholder-augmented copy above: the deep validator checks the
   // canonical schema, so reading anything else here is how the published
@@ -257,7 +257,7 @@ export function createAllPptxComponentSchemasNarrowed(
     if (!comp.hasChildren) {
       leafSchemas.set(
         comp.name,
-        createPptxComponentSchemaObject(comp, undefined, selfRef, profile)
+        createPptxComponentSchemaObject(comp, undefined, profile)
       );
     }
   }
@@ -274,11 +274,33 @@ export function createAllPptxComponentSchemasNarrowed(
     for (let i = pending.length - 1; i >= 0; i--) {
       const comp = pending[i];
 
+      if (comp.name === 'group') {
+        // A group holds what a slide holds, itself included, so it recurses
+        // through the self-reference narrowed to slide content — never a
+        // slide or the root.
+        const content = Type.Intersect([
+          selfRef,
+          Type.Object({
+            name: Type.Union([
+              ...comp.allowedChildren!.map((name) => Type.Literal(name)),
+              ...pluginSchemas.map(
+                (schema) => (schema as any).properties?.name ?? Type.String()
+              ),
+            ]),
+          }),
+        ]);
+        resolved.set(
+          comp.name,
+          createPptxComponentSchemaObject(comp, content, profile)
+        );
+        pending.splice(i, 1);
+        continue;
+      }
       if (!comp.allowedChildren) {
         // No allowedChildren declared — fallback to full recursive ref
         resolved.set(
           comp.name,
-          createPptxComponentSchemaObject(comp, selfRef, selfRef, profile)
+          createPptxComponentSchemaObject(comp, selfRef, profile)
         );
         pending.splice(i, 1);
         continue;
@@ -301,19 +323,9 @@ export function createAllPptxComponentSchemasNarrowed(
           ? allChildSchemas[0]
           : Type.Union(allChildSchemas);
 
-      // Placeholders hold what `children` holds: a named slot is a position
-      // for a content component, not a second way into the tree. Passing the
-      // narrowed union rather than `selfRef` is what stops the published
-      // schema from accepting a `slide` — or the `pptx` root — as a
-      // placeholder value, which the deep walk also refuses.
       resolved.set(
         comp.name,
-        createPptxComponentSchemaObject(
-          comp,
-          childrenType,
-          childrenType,
-          profile
-        )
+        createPptxComponentSchemaObject(comp, childrenType, profile)
       );
       pending.splice(i, 1);
     }

@@ -646,40 +646,6 @@ describe('PptxIR feature requirements', () => {
 });
 
 describe('PptxIR uncompiled components', () => {
-  it('reports a component it cannot lower instead of dropping it', async () => {
-    // The highcharts pre-pass now runs before compilation, so a slide-level
-    // `highcharts` is fetched from the export server and replaced by an image
-    // before the compiler ever sees it. Placeholder content is merged with its
-    // declaration during compilation, so the pre-pass deliberately leaves it
-    // alone — which makes a placeholder the case where "cannot lower" still has
-    // to be reported rather than silently dropped. Both seams report it: the
-    // pre-pass that could not expand it, and the compiler that could not lower
-    // it.
-    const { unsupported } = await compileDocumentToIr(
-      deck([
-        slide([], {
-          placeholders: {
-            body: {
-              name: 'highcharts',
-              props: {
-                options: { chart: { width: 960, height: 720 }, series: [] },
-                x: 1,
-                y: 1,
-                w: 4,
-                h: 3,
-              },
-            },
-          },
-        }),
-      ])
-    );
-
-    expect(unsupported).toEqual([
-      { name: 'highcharts', path: 'slides[0].elements[0]' },
-      { name: 'highcharts', path: 'slides[0].placeholders.body' },
-    ]);
-  });
-
   it('lowers tables rather than reporting them', async () => {
     const { unsupported, ir } = await compileDocumentToIr(
       deck([

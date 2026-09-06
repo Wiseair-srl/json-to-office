@@ -3,8 +3,10 @@
  */
 
 import { Type, Static } from '@sinclair/typebox';
-import { FontRegistrySchema } from '@json-to-office/shared';
-import { TemplateSlideDefinitionSchema } from './template';
+import {
+  BlockDefinitionsSchema,
+  FontRegistrySchema,
+} from '@json-to-office/shared';
 import { GridConfigSchema, ThemeConfigSchema } from '../theme';
 import { PptxComponentDefaultsSchema } from '../component-defaults';
 
@@ -72,11 +74,7 @@ export const PresentationPropsSchema = Type.Object(
     ),
     componentDefaults: Type.Optional(PptxComponentDefaultsSchema),
     grid: Type.Optional(GridConfigSchema),
-    templates: Type.Optional(
-      Type.Array(TemplateSlideDefinitionSchema, {
-        description: 'Template slide definitions (reusable slide templates)',
-      })
-    ),
+    blocks: Type.Optional(BlockDefinitionsSchema),
   },
   {
     description: 'Presentation container props',

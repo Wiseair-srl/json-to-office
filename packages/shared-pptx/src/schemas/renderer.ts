@@ -26,12 +26,6 @@ export function pptxPropsSchemaForRenderer(
   }
 
   switch (componentName) {
-    case 'pptx':
-      delete properties?.templates;
-      break;
-    case 'slide':
-      delete properties?.template;
-      break;
     case 'image':
       for (const key of ['svg', 'sizing', 'rotate', 'rounding', 'hyperlink']) {
         delete properties?.[key];
@@ -95,17 +89,6 @@ export function collectPptxRendererErrors(data: unknown): ValidationError[] {
         unsupported(`${path}/props/transition`, 'slide transitions');
       }
     } else {
-      if (node.name === 'pptx' && props?.templates !== undefined) {
-        unsupported(`${path}/props/templates`, 'masters/templates');
-      }
-      if (node.name === 'slide') {
-        if (props?.template !== undefined) {
-          unsupported(`${path}/props/template`, 'masters/templates');
-        }
-        if (props?.placeholders !== undefined) {
-          unsupported(`${path}/props/placeholders`, 'placeholders');
-        }
-      }
       // Every chart type but one. `@office-open` spells a bubble series as
       // `xValues`/`yValues`/`bubbleSize` rather than categories and values,
       // and there is no unambiguous reading of a category label as a numeric

@@ -5,6 +5,7 @@
 import type {
   ServicesConfig,
   FontRegistryDefinition,
+  JsonBlockDefinition,
 } from '@json-to-office/shared';
 import type {
   GradientFill,
@@ -41,7 +42,8 @@ export interface PresentationComponentDefinition {
     pageNumberFormat?: '9' | '09';
     componentDefaults?: PptxComponentDefaults;
     grid?: GridConfig;
-    templates?: TemplateSlideDefinition[];
+    /** Document-local JSON block definitions, invoked with `name: "block"`. */
+    blocks?: Record<string, JsonBlockDefinition>;
   };
   children?: PptxComponentInput[];
 }
@@ -68,10 +70,7 @@ export interface SlideComponentDefinition {
       speed?: string;
     };
     notes?: string;
-    layout?: string;
     hidden?: boolean;
-    template?: string;
-    placeholders?: Record<string, PptxComponentInput>;
   };
   children?: PptxComponentInput[];
 }
@@ -92,7 +91,6 @@ export interface ProcessedPresentation {
   language?: string;
   pageNumberFormat: '9' | '09';
   slides: ProcessedSlide[];
-  templates?: TemplateSlideDefinition[];
   services?: ServicesConfig;
 }
 
@@ -112,10 +110,7 @@ export interface ProcessedSlide {
    */
   transition?: { type?: string; speed?: string };
   notes?: string;
-  layout?: string;
   hidden?: boolean;
-  template?: string;
-  placeholders?: Record<string, PptxComponentInput>;
 }
 
 export interface GridConfig {
@@ -140,37 +135,6 @@ export type TextStyle = NonNullable<
 export type StyleName = keyof NonNullable<ThemeConfigJson['styles']>;
 
 export type PptxThemeConfig = ThemeConfigJson;
-
-export interface PlaceholderDefinition {
-  name: string;
-  x?: number;
-  y?: number;
-  w?: number;
-  h?: number;
-  grid?: GridPosition;
-  defaults?: PptxComponentInput;
-}
-
-export interface TemplateSlideDefinition {
-  name: string;
-  background?: {
-    color?: string;
-    gradient?: GradientFill;
-    image?: { path?: string; base64?: string };
-  };
-  margin?: number | [number, number, number, number];
-  slideNumber?: {
-    x: number;
-    y: number;
-    w?: number;
-    h?: number;
-    color?: string;
-    fontSize?: number;
-  };
-  objects?: PptxComponentInput[];
-  placeholders?: PlaceholderDefinition[];
-  grid?: GridConfig;
-}
 
 export interface SlideContext {
   slideNumber: number;

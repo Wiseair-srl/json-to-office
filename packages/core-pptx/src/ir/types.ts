@@ -42,8 +42,6 @@ export interface PptxIR {
   language?: string;
   /** Deduplicated binary/external assets, in first-use order. */
   resources: PptxIrResource[];
-  /** Reusable slide masters compiled from authored templates. */
-  masters: PptxIrMaster[];
   slides: PptxIrSlide[];
 }
 
@@ -700,15 +698,13 @@ export interface PptxIrGroupElement extends PptxIrElementBase {
 }
 
 /* ------------------------------------------------------------------ *
- * Slides and masters
+ * Slides
  * ------------------------------------------------------------------ */
 
 export interface PptxIrSlide {
   /** Deterministic: `slide${n}`, 1-based in generated order. */
   id: string;
   path: string;
-  /** Name of a master in `PptxIR.masters`, when the slide uses one. */
-  masterName?: string;
   background?: PptxIrBackground;
   elements: PptxIrElement[];
   notes?: string;
@@ -731,41 +727,4 @@ export type PptxIrBackground =
 export interface PptxIrTransition {
   type: string;
   speed?: 'slow' | 'medium' | 'fast';
-}
-
-export interface PptxIrMaster {
-  name: string;
-  background?: PptxIrBackground;
-  /**
-   * Content margin, in inches: a single value or [top, right, bottom, left].
-   *
-   * Not decoration — a format sizes an unconstrained table against the master's
-   * margins, so dropping this silently resizes tables.
-   */
-  margin?: number | [number, number, number, number];
-  /** Fixed decoration drawn on every slide using this master. */
-  elements: PptxIrElement[];
-  /** Slide-number field placement, when the template defines one. */
-  slideNumber?: PptxIrSlideNumber;
-  /** Named regions a slide can fill; positions already resolved. */
-  placeholders: PptxIrPlaceholder[];
-}
-
-export interface PptxIrSlideNumber {
-  transform: PptxIrTransform;
-  color?: PptxIrColor;
-  /** Points. */
-  fontSize?: number;
-}
-
-/**
- * A placeholder as the *master* declares it.
- *
- * Slide-side placeholder content is not a placeholder in the IR — it has
- * already been merged with the declaration and emitted as a normal element on
- * the slide. This entry exists so a master can still declare the region.
- */
-export interface PptxIrPlaceholder {
-  name: string;
-  transform?: PptxIrTransform;
 }

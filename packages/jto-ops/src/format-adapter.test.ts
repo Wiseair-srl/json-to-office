@@ -797,31 +797,20 @@ describe('generation warnings sink', () => {
   });
 });
 
-/** A deck whose slide fills a placeholder its template never declared. */
-function deckWithUnknownPlaceholder() {
+/** A deck whose grid placement falls off the grid, so layout clamps and warns. */
+function deckWithClampedGrid() {
   return {
     name: 'pptx',
-    props: {
-      slideWidth: 13.333,
-      slideHeight: 7.5,
-      templates: [
-        {
-          name: 'base',
-          placeholders: [{ name: 'title', x: 0.5, y: 0.5, w: 8, h: 1 }],
-        },
-      ],
-    },
+    props: { slideWidth: 13.333, slideHeight: 7.5 },
     children: [
       {
         name: 'slide',
-        props: {
-          template: 'base',
-          placeholders: {
-            title: { name: 'text', props: { text: 'Declared' } },
-            subtitle: { name: 'text', props: { text: 'Never declared' } },
+        children: [
+          {
+            name: 'text',
+            props: { text: 'Off the grid', grid: { column: 40, row: 0 } },
           },
-        },
-        children: [],
+        ],
       },
     ],
   };
@@ -842,10 +831,10 @@ describe('preparation warnings', () => {
     expect(withCode(warnings, 'theme_not_found')).toHaveLength(1);
   });
 
-  it('reports an unknown pptx placeholder once across prepare and render', async () => {
+  it('reports a clamped pptx grid placement once across prepare and render', async () => {
     const adapter = new PptxFormatAdapter();
     const warnings: GenerationWarning[] = [];
-    const document = deckWithUnknownPlaceholder();
+    const document = deckWithClampedGrid();
 
     const prepared = await adapter.prepareDocument(document, { warnings });
     await adapter.generateBuffer(document, {
@@ -854,20 +843,22 @@ describe('preparation warnings', () => {
       deterministic: true,
     });
 
-    expect(withCode(warnings, 'UNKNOWN_PLACEHOLDER')).toHaveLength(1);
+    expect(withCode(warnings, 'GRID_POSITION_CLAMPED')).toHaveLength(1);
   });
 
   it('still reports it when no prepared model is reused', async () => {
     const warnings: GenerationWarning[] = [];
 
-    await new PptxFormatAdapter().generateBuffer(deckWithUnknownPlaceholder(), {
+    await new PptxFormatAdapter().generateBuffer(deckWithClampedGrid(), {
       warnings,
       deterministic: true,
     });
 
     // Only the prepare/render overlap is deduplicated: whatever the render
     // pipeline reports on its own is left exactly as it was.
-    expect(withCode(warnings, 'UNKNOWN_PLACEHOLDER').length).toBeGreaterThan(0);
+    expect(withCode(warnings, 'GRID_POSITION_CLAMPED').length).toBeGreaterThan(
+      0
+    );
   });
 });
 

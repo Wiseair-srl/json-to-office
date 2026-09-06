@@ -306,4 +306,10 @@ export const QUALITY_REFERENCE_DIGESTS: Readonly<Record<string, string>> = {
     'c70d4adeb5c2d57712a9ad27814aeaa5a03b9d2403c56126f7f4ad25c0de352a',
   'technical-presentation/excellent':
     '2e6b70ef98a686c1a311adb36298a6b14e16b758ba72e3aad82479929fa06f6d',
+  'consulting-deck/poor':
+    'c3cca4f9856c08d3af56b8f5008aff9dc1b0051dca623812bf9e693060b7fa7a',
+  'consulting-deck/professional':
+    'b37ba8f0a4bd1b5f2b1e5d611093c9b63a2b4240b4317d145f995e180227fce0',
+  'consulting-deck/excellent':
+    'a83f33d2b836e55e21aee461337cb1d213e06e1f855e0162deef0b435c3ed189',
 };

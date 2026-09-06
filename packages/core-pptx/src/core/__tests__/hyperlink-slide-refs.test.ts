@@ -167,57 +167,59 @@ describe('slide-targeted hyperlinks', () => {
     expect(rels).toContain('https://example.com');
   });
 
-  // A template placeholder's `defaults.props` is merged into the rendered
-  // component, so it reaches the writer exactly like a component's own props.
-  // Remapping only slide children, slide `placeholders` and template `objects`
-  // left this fourth merge site emitting raw authored indexes.
-  describe('template placeholder defaults', () => {
-    function templated(
+  // Block bodies and component-slot `props` are merged into the rendered
+  // component, so a `hyperlink.slide` written in a definition reaches the
+  // writer exactly like a component's own — and must be rebased the same way.
+  describe('block definitions', () => {
+    function blocked(
       defaultSlideRef: number,
       children: ReturnType<typeof slide>[]
     ): PresentationComponentDefinition {
       return {
         name: 'pptx',
         props: {
-          title: 'Placeholder defaults',
-          templates: [
-            {
-              name: 'linked',
-              placeholders: [
+          title: 'Block links',
+          blocks: {
+            linked: {
+              slots: { body: { type: 'component', required: true } },
+              body: [
                 {
-                  name: 'body',
-                  x: 1,
-                  y: 1,
-                  w: 4,
-                  h: 1,
-                  defaults: {
-                    name: 'text',
-                    props: { hyperlink: { slide: defaultSlideRef } },
+                  $slot: '/body',
+                  props: {
+                    x: 1,
+                    y: 1,
+                    w: 4,
+                    h: 1,
+                    hyperlink: { slide: defaultSlideRef },
                   },
                 },
               ],
             },
-          ],
+          },
         },
         children,
-      };
+      } as unknown as PresentationComponentDefinition;
     }
 
-    function usingTemplate(text: string) {
+    function usingBlock(text: string) {
       return {
         name: 'slide',
-        props: {
-          template: 'linked',
-          placeholders: { body: { name: 'text', props: { text } } },
-        },
-        children: [],
+        children: [
+          {
+            name: 'block',
+            props: {
+              ref: 'linked',
+              slots: { body: { name: 'text', props: { text } } },
+            },
+          },
+        ],
       } as unknown as ReturnType<typeof slide>;
     }
 
-    it('rebases a defaults slide ref past a slide dropped by enabled: false', async () => {
+    it('rebases a definition slide ref past a slide dropped by enabled: false', async () => {
       const { zip, warnings } = await build(
-        templated(4, [
-          usingTemplate('First'),
+        blocked(4, [
+          usingBlock('First'),
           disable(slide('Second')),
           slide('Third'),
           slide('Fourth'),
@@ -231,9 +233,9 @@ describe('slide-targeted hyperlinks', () => {
       expect(warnings).toEqual([]);
     });
 
-    it('drops a defaults slide ref that is out of range and warns', async () => {
+    it('drops a definition slide ref that is out of range and warns', async () => {
       const { zip, warnings } = await build(
-        templated(9, [usingTemplate('First'), slide('Second'), slide('Third')])
+        blocked(9, [usingBlock('First'), slide('Second'), slide('Third')])
       );
 
       await expectNoDanglingSlideRels(zip);

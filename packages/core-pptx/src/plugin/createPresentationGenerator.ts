@@ -22,6 +22,7 @@ import type {
   ValidationResult,
 } from './types';
 import { validatePresentation, cleanComponentProps } from './validation';
+import { expandPptxBlocksWithPlugins } from '../blocks/document';
 import { generatePluginPresentationSchema, exportPluginSchema } from './schema';
 import { processPresentation } from '../core/structure';
 import type { PresentationPackagingOptions } from '../core/finalizePackage';
@@ -100,152 +101,79 @@ function createBuilderImpl<
   const componentMap = new Map(state.components.map((c) => [c.name, c]));
 
   /**
-   * Process custom components in slide children, recursively resolving them
-   * to standard PptxComponentInput elements.
+   * Expand one registered component at its authored path.
+   *
+   * The shared block/plugin composition walks the tree; this is the code it
+   * calls when it meets a registered name. Children have already been
+   * expanded by the time it runs, so a container plugin receives standard
+   * components exactly as before.
    */
-  async function processSlideComponents(
-    components: PptxComponentInput[],
+  function pluginRenderer(
     warningsCollector: PipelineWarning[],
     theme: PptxThemeConfig,
-    validateEmitted: ValidateEmitted | undefined,
-    parentName?: string,
-    depth = 0
-  ): Promise<PptxComponentInput[]> {
-    if (depth > 20) {
-      throw new Error(
-        'Maximum component nesting depth exceeded (20). Check for circular component references.'
-      );
-    }
-    const processed: PptxComponentInput[] = [];
-
-    for (const componentData of components) {
-      const customComponent = componentMap.get(componentData.name);
-
-      if (customComponent) {
-        try {
-          if (!componentData.props) {
-            throw new Error(
-              `Custom component '${componentData.name}' must have a 'props' property. ` +
-                `Use format: { name: '${componentData.name}', props: {...} }`
-            );
-          }
-
-          const componentWithVersion = componentData as {
-            name: string;
-            version?: string;
-            props: Record<string, any>;
-            children?: PptxComponentInput[];
-          };
-
-          // Resolve version
-          const versionEntry = resolveComponentVersion(
-            customComponent.name,
-            customComponent.versions,
-            componentWithVersion.version
-          );
-
-          // Validate and clean props
-          const cleanedProps = cleanComponentProps(
-            versionEntry,
-            componentWithVersion.props
-          );
-
-          // Process nested children if container
-          let nestedChildren: unknown[] | undefined;
-          if (
-            componentWithVersion.children &&
-            Array.isArray(componentWithVersion.children)
-          ) {
-            nestedChildren = await processSlideComponents(
-              componentWithVersion.children,
-              warningsCollector,
-              theme,
-              validateEmitted,
-              undefined,
-              depth + 1
-            );
-          }
-
-          // Create addWarning callback
-          const versionLabel = componentWithVersion.version
-            ? `${customComponent.name}@${componentWithVersion.version}`
-            : customComponent.name;
-
-          const addWarning = (
-            message: string,
-            context?: Record<string, unknown>
-          ) => {
-            warningsCollector.push({
-              code: (context?.code as string) ?? 'PLUGIN_WARNING',
-              message,
-              component: versionLabel,
-              slide: context?.slide as number | undefined,
-            });
-          };
-
-          // Call render
-          const result = await versionEntry.render({
-            props: cleanedProps,
-            theme,
-            addWarning,
-            children: nestedChildren,
-          });
-
-          const resultComponents = (
-            Array.isArray(result) ? result : [result]
-          ) as PptxComponentInput[];
-
-          validateEmitted?.(resultComponents, versionLabel, parentName);
-
-          // Recursively process in case result contains more custom components
-          const processedResult = await processSlideComponents(
-            resultComponents,
-            warningsCollector,
-            theme,
-            validateEmitted,
-            parentName,
-            depth + 1
-          );
-          processed.push(...processedResult);
-
-          if (state.debug) {
-            console.log(
-              `Processed custom component '${versionLabel}':`,
-              processedResult
-            );
-          }
-        } catch (error) {
-          if (error instanceof ComponentValidationError) {
-            throw error;
-          }
-          throw new Error(
-            `Error processing custom component '${customComponent.name}': ${
-              error instanceof Error ? error.message : String(error)
-            }`
-          );
-        }
-      } else {
-        // Standard component — process children recursively
-        if (componentData.children && Array.isArray(componentData.children)) {
-          const processedChildren = await processSlideComponents(
-            componentData.children,
-            warningsCollector,
-            theme,
-            validateEmitted,
-            componentData.name,
-            depth + 1
-          );
-          processed.push({
-            ...componentData,
-            children: processedChildren,
-          });
-        } else {
-          processed.push(componentData);
-        }
+    validateEmitted: ValidateEmitted | undefined
+  ): (component: Record<string, unknown>, path: string) => Promise<unknown[]> {
+    return async (component, path) => {
+      const customComponent = componentMap.get(String(component.name))!;
+      if (!component.props) {
+        throw new Error(
+          `Custom component '${customComponent.name}' must have a 'props' property. ` +
+            `Use format: { name: '${customComponent.name}', props: {...} }`
+        );
       }
-    }
-
-    return processed;
+      const version = component.version as string | undefined;
+      const versionEntry = resolveComponentVersion(
+        customComponent.name,
+        customComponent.versions,
+        version
+      );
+      const cleanedProps = cleanComponentProps(
+        versionEntry,
+        component.props as Record<string, unknown>
+      );
+      const versionLabel = version
+        ? `${customComponent.name}@${version}`
+        : customComponent.name;
+      const addWarning = (
+        message: string,
+        context?: Record<string, unknown>
+      ) => {
+        warningsCollector.push({
+          code: (context?.code as string) ?? 'PLUGIN_WARNING',
+          message,
+          component: versionLabel,
+          slide: context?.slide as number | undefined,
+        });
+      };
+      let result: unknown;
+      try {
+        result = await versionEntry.render({
+          props: cleanedProps,
+          theme,
+          addWarning,
+          children: component.children as unknown[] | undefined,
+        });
+      } catch (error) {
+        if (error instanceof ComponentValidationError) throw error;
+        throw new Error(
+          `Error processing custom component '${customComponent.name}': ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+      }
+      const emitted = (
+        Array.isArray(result) ? result : [result]
+      ) as PptxComponentInput[];
+      // The authored parent decides what emitted output may be: a slide for
+      // slide-level plugins, the deck for slide-emitting ones.
+      const depth = path.split('/children/').length - 1;
+      validateEmitted?.(
+        emitted,
+        versionLabel,
+        depth === 1 ? 'pptx' : depth === 2 ? 'slide' : undefined
+      );
+      return emitted;
+    };
   }
 
   /**
@@ -398,20 +326,17 @@ function createBuilderImpl<
               }
             };
 
-      // Process custom components in all slide children
-      const processedChildren = modedRoot.children
-        ? await processAllSlides(
-            modedRoot.children,
-            warnings,
-            resolvedTheme,
-            validateEmitted
-          )
-        : [];
-
-      const processedDocument: PresentationComponentDefinition = {
-        ...modedRoot,
-        children: processedChildren,
-      };
+      // Document-local JSON blocks and registered code share one bounded
+      // expansion, in both directions: a plugin can emit a block, a block can
+      // name a plugin. Nothing here loads code by name; a missing
+      // registration is a validation error.
+      const expanded = await expandPptxBlocksWithPlugins(
+        modedRoot,
+        resolvedTheme,
+        new Set(componentMap.keys()),
+        pluginRenderer(warnings, resolvedTheme, validateEmitted)
+      );
+      const processedDocument = expanded.document;
 
       // Validate the fully expanded tree once more. This covers output from
       // nested custom containers whose intermediate parent semantics are
@@ -445,6 +370,8 @@ function createBuilderImpl<
       const processed = processPresentation(processedDocument, {
         theme: resolvedTheme,
         services: state.services,
+        sourceMap: expanded.sourceMap,
+        warnings,
       });
       const hasHighcharts = containsHighcharts(processed);
       const resolvedFonts = await resolveDocumentFonts(
@@ -490,44 +417,6 @@ function createBuilderImpl<
       }
       throw error;
     }
-  }
-
-  /**
-   * Process custom components inside all slides.
-   * Walks the top-level children (slides), then processes each slide's children.
-   */
-  async function processAllSlides(
-    children: PptxComponentInput[],
-    warnings: PipelineWarning[],
-    theme: PptxThemeConfig,
-    validateEmitted: ValidateEmitted | undefined
-  ): Promise<PptxComponentInput[]> {
-    const result: PptxComponentInput[] = [];
-
-    for (const child of children) {
-      if (child.name === 'slide' && child.children) {
-        const processedSlideChildren = await processSlideComponents(
-          child.children,
-          warnings,
-          theme,
-          validateEmitted,
-          'slide'
-        );
-        result.push({ ...child, children: processedSlideChildren });
-      } else {
-        // Non-slide top-level children — process in case they're custom
-        const processedTopLevel = await processSlideComponents(
-          [child],
-          warnings,
-          theme,
-          validateEmitted,
-          'pptx'
-        );
-        result.push(...processedTopLevel);
-      }
-    }
-
-    return result;
   }
 
   /**

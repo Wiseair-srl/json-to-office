@@ -322,19 +322,24 @@ describe('expandHighchartsComponents', () => {
     expect('resources' in requestBody()).toBe(false);
   });
 
-  it('reports a highcharts placeholder as unexpanded instead of rendering it', async () => {
-    // Placeholder content is merged with its declaration during compilation, so
-    // it cannot be rendered here at the right size. The old component layer had
-    // no such seam — it rendered whatever it was handed.
+  it('expands a highcharts inside a group, where a block body puts it', async () => {
     const result = await expandHighchartsComponents(
       {
         ...presentation([], EMPTY_THEME),
         slides: [
           {
-            components: [],
-            placeholders: {
-              body: { name: 'highcharts', props: { options: CHART_600x400 } },
-            },
+            components: [
+              {
+                name: 'group',
+                props: {},
+                children: [
+                  {
+                    name: 'highcharts',
+                    props: { options: CHART_600x400, x: 1, y: 1, w: 4, h: 3 },
+                  },
+                ],
+              },
+            ],
           },
         ],
       },
@@ -342,10 +347,10 @@ describe('expandHighchartsComponents', () => {
       []
     );
 
-    expect(result.unexpanded).toEqual([
-      { name: 'highcharts', path: 'slides[0].placeholders.body' },
-    ]);
-    expect(mockFetch).not.toHaveBeenCalled();
+    expect(result.unexpanded).toEqual([]);
+    const child = result.presentation.slides[0].components[0].children![0];
+    expect(child.name).toBe('image');
+    expect(child.props).toMatchObject({ x: 1, y: 1, w: 4, h: 3 });
   });
 
   describe('theme palette injection', () => {

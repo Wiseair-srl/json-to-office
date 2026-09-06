@@ -45,23 +45,6 @@ function remapHyperlink(
     : { ...hyperlink, slide: rendered };
 }
 
-/**
- * Rewrite `hyperlink.slide` in a bare props bag. Template placeholder
- * `defaults` are merged into a component at render time without ever being a
- * component themselves, so they need rebasing on their own — otherwise a
- * `defaults.props.hyperlink.slide` reaches the writer as a raw authored index.
- */
-export function remapHyperlinkProps<T extends Record<string, unknown>>(
-  props: T,
-  map: SlideIndexMap
-): T {
-  const hyperlink = props.hyperlink as HyperlinkProps | undefined;
-  if (!hyperlink || typeof hyperlink !== 'object') return props;
-
-  const remapped = remapHyperlink(hyperlink, map);
-  return remapped === hyperlink ? props : { ...props, hyperlink: remapped };
-}
-
 /** Rewrite every `hyperlink.slide` in a component subtree. Returns a new tree. */
 export function remapHyperlinkSlideRefs(
   component: PptxComponentInput,

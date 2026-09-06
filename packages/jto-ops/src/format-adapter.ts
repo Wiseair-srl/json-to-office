@@ -116,7 +116,7 @@ function warningKey(warning: GenerationWarning): string {
 /**
  * Drop render warnings this model's preparation already reported.
  *
- * Preparation repeats work the render does again — pptx placeholder and grid
+ * Preparation repeats work the render does again — pptx block, layout and grid
  * resolution above all — so reusing a prepared model would report those
  * warnings twice. Deliberately narrow: nothing is deduplicated except against
  * what preparing this very model emitted.

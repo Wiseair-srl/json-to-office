@@ -453,24 +453,26 @@ describe('renderer normalization parity', () => {
     expect(findings).toEqual([]);
   });
 
-  it('sees presentation componentDefaults and template objects', () => {
+  it('sees presentation componentDefaults and block bodies, at authored pointers', () => {
     const findings = pptxDiagnostics(
       deck(
         {
           ...CANVAS,
           componentDefaults: { text: { fontSize: 6 } },
-          templates: [
-            {
-              name: 'branded',
-              objects: [{ name: 'text', props: { text: 'Template label' } }],
+          blocks: {
+            branded: {
+              slots: {},
+              body: [{ name: 'text', props: { text: 'Block label' } }],
             },
-          ],
+          },
         },
         [
           {
             name: 'slide',
-            props: { template: 'branded' },
-            children: [{ name: 'text', props: { text: 'Slide label' } }],
+            children: [
+              { name: 'block', props: { ref: 'branded' } },
+              { name: 'text', props: { text: 'Slide label' } },
+            ],
           },
         ]
       )
@@ -479,25 +481,25 @@ describe('renderer normalization parity', () => {
       expect.arrayContaining([
         expect.objectContaining({
           code: QUALITY_CODES.FONT_SIZE_MIN,
-          path: '/props/templates/0/objects/0/props',
+          path: '/children/0/children/0/props',
         }),
         expect.objectContaining({
           code: QUALITY_CODES.FONT_SIZE_MIN,
-          path: '/children/0/children/0/props',
+          path: '/children/0/children/1/props',
         }),
       ])
     );
   });
 
-  it('analyzes shared template objects once but counts them on every slide', () => {
+  it('counts block content toward every slide that invokes it', () => {
     const findings = pptxDiagnostics(
       deck(
         {
           ...CANVAS,
-          templates: [
-            {
-              name: 'shared',
-              objects: [
+          blocks: {
+            shared: {
+              slots: {},
+              body: [
                 {
                   name: 'text',
                   props: {
@@ -507,22 +509,26 @@ describe('renderer normalization parity', () => {
                 },
               ],
             },
-          ],
+          },
         },
         [
-          { name: 'slide', props: { template: 'shared' } },
-          { name: 'slide', props: { template: 'shared' } },
+          {
+            name: 'slide',
+            children: [{ name: 'block', props: { ref: 'shared' } }],
+          },
+          {
+            name: 'slide',
+            children: [{ name: 'block', props: { ref: 'shared' } }],
+          },
         ]
       )
     );
 
     expect(
-      findings.filter(
-        (finding) =>
-          finding.code === QUALITY_CODES.FONT_SIZE_MIN &&
-          finding.path === '/props/templates/0/objects/0/props'
-      )
-    ).toHaveLength(1);
+      findings
+        .filter((finding) => finding.code === QUALITY_CODES.FONT_SIZE_MIN)
+        .map((finding) => finding.path)
+    ).toEqual(['/children/0/children/0/props', '/children/1/children/0/props']);
     expect(
       findings
         .filter((finding) => finding.code === QUALITY_CODES.SLIDE_DENSITY)
@@ -530,36 +536,37 @@ describe('renderer normalization parity', () => {
     ).toEqual(['/children/0', '/children/1']);
   });
 
-  it('uses the renderer placeholder merge precedence', () => {
+  it('merges definition props beneath a component slot and reports at the slot', () => {
     const findings = pptxDiagnostics(
       deck(
         {
           ...CANVAS,
-          templates: [
-            {
-              name: 'branded',
-              placeholders: [
+          blocks: {
+            branded: {
+              slots: { body: { type: 'component', required: true } },
+              body: [
                 {
-                  name: 'body',
-                  x: 1,
-                  y: 1,
-                  w: 4,
-                  h: 1,
-                  defaults: { name: 'text', props: { fontSize: 6 } },
+                  $slot: '/body',
+                  props: { x: 1, y: 1, w: 4, h: 1, fontSize: 6 },
                 },
               ],
             },
-          ],
+          },
         },
         [
           {
             name: 'slide',
-            props: {
-              template: 'branded',
-              placeholders: {
-                body: { name: 'text', props: { text: 'Placeholder body' } },
+            children: [
+              {
+                name: 'block',
+                props: {
+                  ref: 'branded',
+                  slots: {
+                    body: { name: 'text', props: { text: 'Slot body' } },
+                  },
+                },
               },
-            },
+            ],
           },
         ]
       )
@@ -568,7 +575,7 @@ describe('renderer normalization parity', () => {
       expect.arrayContaining([
         expect.objectContaining({
           code: QUALITY_CODES.FONT_SIZE_MIN,
-          path: '/children/0/props/placeholders/body/props',
+          path: '/children/0/children/0/props/slots/body/props',
         }),
       ])
     );
@@ -689,7 +696,7 @@ describe('shipped profiles', () => {
 });
 
 describe('preparation failures', () => {
-  const broken = { name: 'pptx', props: { ...CANVAS, templates: 'nope' } };
+  const broken = { name: 'pptx', props: { ...CANVAS, blocks: 'nope' } };
 
   it('records the failure rather than reporting a clean deck', () => {
     const analysis = analyzePptxQuality(broken);

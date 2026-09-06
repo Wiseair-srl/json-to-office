@@ -299,75 +299,101 @@ describe('deep prop validation in nested slide content', () => {
   });
 });
 
-describe('slide placeholders', () => {
-  it('accepts a slide with valid placeholder components', () => {
+describe('document-local blocks', () => {
+  const definitions = {
+    titled: {
+      slots: { title: { type: 'string', required: true, maxWords: 4 } },
+      body: [
+        {
+          name: 'text',
+          props: { text: { $slot: '/title' }, x: 1, y: 1, w: 8, h: 1 },
+        },
+      ],
+    },
+  };
+
+  it('accepts a slide invoking a block defined in the document', () => {
     const result = validate.document(
       deck(
         [
-          slide([], {
-            template: 'content',
-            placeholders: {
-              title: { name: 'text', props: { text: 'Hello' } },
-            },
-          }),
+          slide([
+            { name: 'block', props: { ref: 'titled', slots: { title: 'Hi' } } },
+          ]),
         ],
-        {
-          templates: [
-            {
-              name: 'content',
-              placeholders: [{ name: 'title', x: 1, y: 1, w: 8, h: 1 }],
-            },
-          ],
-        }
+        { blocks: definitions }
       )
     );
-
     expect(result.errors ?? []).toEqual([]);
     expect(result.valid).toBe(true);
   });
 
-  it('flags a bad prop inside a placeholder component', () => {
+  it('rejects an undefined reference, an unknown slot and a budget overrun', () => {
     const result = validate.document(
-      deck([
-        slide([], {
-          placeholders: {
-            title: {
-              name: 'text',
-              props: { text: 'Hello', fontColor: 'CC785C' },
+      deck(
+        [
+          slide([
+            { name: 'block', props: { ref: 'missing' } },
+            {
+              name: 'block',
+              props: {
+                ref: 'titled',
+                slots: { title: 'one two three four five', extra: 1 },
+              },
             },
-          },
+          ]),
+        ],
+        { blocks: definitions }
+      )
+    );
+    expect(result.valid).toBe(false);
+    expect(result.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'block_unknown_reference',
+          path: '/children/0/children/0/props/ref',
+        }),
+        expect.objectContaining({
+          code: 'block_slot_budget',
+          path: '/children/0/children/1/props/slots/title',
+        }),
+        expect.objectContaining({
+          code: 'block_unknown_slot',
+          path: '/children/0/children/1/props/slots/extra',
         }),
       ])
-    );
-
-    expect(result.valid).toBe(false);
-    expect(result.errors).toContainEqual(
-      expect.objectContaining({
-        path: expect.stringContaining(
-          '/children/0/props/placeholders/title/props'
-        ),
-        message: expect.stringMatching(/fontColor/),
-      })
     );
   });
 
-  it('flags an unknown component in a placeholder at a /name path', () => {
+  it('rejects coordinates on an invocation and section effects in a deck', () => {
     const result = validate.document(
-      deck([
-        slide([], {
-          placeholders: {
-            title: { name: 'textt', props: { text: 'typo' } },
+      deck(
+        [
+          slide([
+            {
+              name: 'block',
+              props: { ref: 'titled', slots: { title: 'Hi' }, x: 1 },
+            },
+          ]),
+        ],
+        {
+          blocks: {
+            ...definitions,
+            sectioned: { slots: {}, body: [], section: { pageBreak: true } },
           },
+        }
+      )
+    );
+    expect(result.valid).toBe(false);
+    expect(result.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: expect.stringContaining('/children/0/children/0/props'),
+        }),
+        expect.objectContaining({
+          code: 'block_format',
+          path: '/props/blocks/sectioned/section',
         }),
       ])
-    );
-
-    expect(result.valid).toBe(false);
-    expect(result.errors).toContainEqual(
-      expect.objectContaining({
-        path: '/children/0/props/placeholders/title/name',
-        code: 'unknown_component',
-      })
     );
   });
 });
@@ -546,16 +572,16 @@ describe('wrong-typed sibling keys are rejected (#292 parity)', () => {
     expect(result.errors.some((e) => e.path === '/$schema')).toBe(true);
   });
 
-  it('rejects a wrong-typed enabled inside a placeholder value', () => {
+  it('rejects a wrong-typed enabled inside a group', () => {
     const result = validate.document(
       deck([
-        slide([], { placeholders: { title: { ...text, enabled: 'yes' } } }),
+        slide([{ name: 'group', children: [{ ...text, enabled: 'yes' }] }]),
       ])
     );
     expect(result.valid).toBe(false);
     expect(
       result.errors.some(
-        (e) => e.path === '/children/0/props/placeholders/title/enabled'
+        (e) => e.path === '/children/0/children/0/children/0/enabled'
       )
     ).toBe(true);
   });

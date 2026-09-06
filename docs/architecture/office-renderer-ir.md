@@ -307,8 +307,6 @@ Run `pnpm generate:renderer-docs` after changing a feature or capability set.
 
 | Feature                 | Note                                       | `pptxgenjs` | `office-open` |
 | ----------------------- | ------------------------------------------ | ----------- | ------------- |
-| `masters`               | Authored slide masters.                    | yes         | —             |
-| `placeholders`          | Named master placeholder regions.          | yes         | —             |
 | `rich-text`             | Multiple formatted runs in one text body.  | yes         | yes           |
 | `complex-bullet-glyphs` | Astral or multi-code-point bullet glyphs.  | —           | yes           |
 | `text`                  | Text bodies and uniform runs.              | yes         | yes           |

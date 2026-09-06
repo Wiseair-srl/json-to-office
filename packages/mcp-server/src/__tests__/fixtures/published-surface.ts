@@ -140,7 +140,9 @@ export const PUBLISHED_SURFACE: Record<FormatName, PublishedComponentSurface> =
       rootComponent: 'pptx',
       renderers: {
         pptxgenjs: [
+          'block',
           'chart',
+          'group',
           'highcharts',
           'image',
           'pptx',
@@ -150,7 +152,9 @@ export const PUBLISHED_SURFACE: Record<FormatName, PublishedComponentSurface> =
           'text',
         ],
         'office-open': [
+          'block',
           'chart',
+          'group',
           'highcharts',
           'image',
           'pptx',
@@ -162,7 +166,26 @@ export const PUBLISHED_SURFACE: Record<FormatName, PublishedComponentSurface> =
       },
       allowedChildren: {
         pptx: ['slide'],
-        slide: ['chart', 'highcharts', 'image', 'shape', 'table', 'text'],
+        slide: [
+          'block',
+          'chart',
+          'group',
+          'highcharts',
+          'image',
+          'shape',
+          'table',
+          'text',
+        ],
+        group: [
+          'block',
+          'chart',
+          'group',
+          'highcharts',
+          'image',
+          'shape',
+          'table',
+          'text',
+        ],
       },
     },
   };

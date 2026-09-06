@@ -12,10 +12,6 @@
  */
 
 export const PPTX_FEATURES = [
-  /** Slide masters compiled from authored templates. */
-  'masters',
-  /** Named placeholder regions declared by a master. */
-  'placeholders',
   /** Multiple independently-formatted runs inside one text body. */
   'rich-text',
   /**

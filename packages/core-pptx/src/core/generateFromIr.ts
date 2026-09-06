@@ -244,26 +244,26 @@ export type IrRenderOptions = Pick<
   chartFonts?: readonly RasterizeFontFace[];
 };
 
-/** Whether any slide, template or placeholder carries an enabled `highcharts`. */
+/** Whether any slide carries an enabled `highcharts`, groups included. */
 export function containsHighcharts(
   presentation: ProcessedPresentation
 ): boolean {
   const named = (
-    components: readonly { name: string; enabled?: boolean }[] | undefined
-  ) =>
+    components:
+      | readonly {
+          name: string;
+          enabled?: boolean;
+          children?: readonly unknown[];
+        }[]
+      | undefined
+  ): boolean =>
     components?.some(
       (component) =>
-        component.name === 'highcharts' && component.enabled !== false
+        component.enabled !== false &&
+        (component.name === 'highcharts' ||
+          named(component.children as typeof components))
     ) ?? false;
-  return (
-    presentation.slides.some(
-      (slide) =>
-        named(slide.components) ||
-        named(Object.values(slide.placeholders ?? {}))
-    ) ||
-    (presentation.templates?.some((template) => named(template.objects)) ??
-      false)
-  );
+  return presentation.slides.some((slide) => named(slide.components));
 }
 
 function parseDocument(

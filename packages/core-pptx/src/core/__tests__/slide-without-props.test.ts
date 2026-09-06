@@ -42,7 +42,6 @@ describe('slide without props', () => {
 
     expect(processed.slides).toHaveLength(2);
     expect(processed.slides[0].components).toHaveLength(1);
-    expect(processed.slides[0].placeholders).toBeUndefined();
     expect(processed.slides[0].background).toBeUndefined();
     expect(processed.slides[0].notes).toBeUndefined();
     expect(processed.slides[1].notes).toBe('this one has props');

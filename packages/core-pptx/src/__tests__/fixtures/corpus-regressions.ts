@@ -33,19 +33,25 @@ const slide = (
 ): unknown => ({ name: 'slide', props, children });
 
 export const CASES: CorpusCase[] = [
-  // --- template objects see the slide they are drawn on -------------------
+  // --- block bodies see the slide they are drawn on -----------------------
   {
-    name: 'template/object-page-number',
+    name: 'block/body-page-number',
     document: deck(
       [
-        slide([{ name: 'text', props: { text: 'one' } }], { template: 'base' }),
-        slide([{ name: 'text', props: { text: 'two' } }], { template: 'base' }),
+        slide([
+          { name: 'block', props: { ref: 'base' } },
+          { name: 'text', props: { text: 'one' } },
+        ]),
+        slide([
+          { name: 'block', props: { ref: 'base' } },
+          { name: 'text', props: { text: 'two' } },
+        ]),
       ],
       {
-        templates: [
-          {
-            name: 'base',
-            objects: [
+        blocks: {
+          base: {
+            slots: {},
+            body: [
               {
                 name: 'text',
                 props: {
@@ -58,56 +64,33 @@ export const CASES: CorpusCase[] = [
               },
             ],
           },
-        ],
+        },
       }
     ),
   },
   {
-    name: 'template/object-language',
+    name: 'block/body-language',
     document: deck(
       [
-        slide([{ name: 'text', props: { text: 'corpo' } }], {
-          template: 'base',
-        }),
+        slide([
+          { name: 'block', props: { ref: 'base' } },
+          { name: 'text', props: { text: 'corpo' } },
+        ]),
       ],
       {
         language: 'it-IT',
-        templates: [
-          {
-            name: 'base',
-            objects: [
+        blocks: {
+          base: {
+            slots: {},
+            body: [
               {
                 name: 'text',
                 props: { text: 'Intestazione', x: 0.3, y: 0.1, w: 5, h: 0.4 },
               },
             ],
           },
-        ],
+        },
       }
-    ),
-  },
-  {
-    name: 'template/margin',
-    document: deck(
-      [
-        slide(
-          [
-            {
-              name: 'table',
-              props: {
-                rows: [
-                  ['a', 'b'],
-                  ['c', 'd'],
-                ],
-                x: 0.5,
-                y: 0.5,
-              },
-            },
-          ],
-          { template: 'base' }
-        ),
-      ],
-      { templates: [{ name: 'base', margin: 1.25 }] }
     ),
   },
 

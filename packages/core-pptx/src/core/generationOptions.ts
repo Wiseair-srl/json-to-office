@@ -57,6 +57,18 @@ export interface GenerationOptions extends PresentationPackagingOptions {
   renderer?: PptxRendererId;
   /** Canonical prepared model; internal hosts use it to avoid a second prologue. */
   prepared?: PreparedDocument<PptxQualityModel, PptxQualityFact>;
+  /**
+   * Compiled pointer → authored pointer, from block expansion. Diagnostics
+   * raised while processing an expanded tree (a text that cannot fit its
+   * declared bounds) are reported at the slot the author can patch.
+   */
+  sourceMap?: Readonly<Record<string, string>>;
+  /**
+   * Sink for warnings raised while processing: a grid placement clamped back
+   * onto the grid by layout. Hosts that prepare once and render from the
+   * prepared model hear each warning once.
+   */
+  warnings?: PipelineWarning[];
 }
 
 /** Result from `generateBufferWithWarnings`. */

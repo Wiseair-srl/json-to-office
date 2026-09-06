@@ -11,6 +11,11 @@
  * is a quality profile's decision (`consulting-deck`), never the theme's.
  *
  * SAFE_FONTS only: nothing here needs a font registry on any Office install.
+ *
+ * One projection differs from the report: the small roles — footer, tracker,
+ * source — take `text2` rather than `textMuted`. On a projected slide a 9pt
+ * run in the light grey sits under the 4.5 : 1 the contrast rule asks of
+ * small text; the darker grey passes it and reads as the same voice.
  */
 
 import type { PptxThemeConfig } from '../types';
@@ -86,7 +91,7 @@ export const CONSULTING_PPTX_THEME: PptxThemeConfig = {
       },
       quote: { face: 'body', size: 18, color: 'text2', lineHeight: 1.3 },
       label: { face: 'body', size: 12, weight: 700, color: 'text2' },
-      footer: { face: 'body', size: 9, color: 'textMuted' },
+      footer: { face: 'body', size: 9, color: 'text2' },
       tableHeader: { face: 'body', size: 12, weight: 700, color: 'primary' },
       tableCell: { face: 'body', size: 12, color: 'text' },
       chartLabel: { face: 'body', size: 11, weight: 400, color: 'text2' },
@@ -95,9 +100,9 @@ export const CONSULTING_PPTX_THEME: PptxThemeConfig = {
         size: 10,
         case: 'upper',
         tracking: 6,
-        color: 'textMuted',
+        color: 'text2',
       },
-      source: { face: 'body', size: 9, color: 'textMuted' },
+      source: { face: 'body', size: 9, color: 'text2' },
     },
     scale: {
       wide169: { base: 14, ratio: 1.2, baselinePt: 2 },

@@ -18,6 +18,16 @@
  */
 
 export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
+  'block/background-and-body':
+    'a163f5f832750fa768d36ac8994999d78a8da9a83374f853dc287b24fdad87bd',
+  'block/slots-and-component-props':
+    'c5390933264effc85e50e5bf3eafd9b208a660de8eb392ce26ab6d3105905d87',
+  'block/row-distribution':
+    '7c1eb19f4396244cb25c5672ccfc92d90e2027f65b56e8722306f9cf32eec013',
+  'block/body-page-number':
+    '384d493f10e29bed93fa00d28a31605debdafbf61eaa428c2327245f909f876f',
+  'block/body-language':
+    'df2689f62435ada343cf15f29eb21bf40925d082fbfdfd35a05d2e315fafe892',
   'theme/shared-foundation':
     '7af49a5ffbaf84ea7bed36d868a83cd4c9549dd89eaba2f6e970160883f63c17',
   'text/plain':
@@ -76,10 +86,6 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
     'b670b17d96e9ca97211de83894624aec304bc450886874259f5b7b5b0d586262',
   'layout/grid':
     'a0f1131c5fe3048c3c0789eb304ea8a4ad03882a0950dc02c5c00a6e76e6ecf3',
-  'template/background-and-objects':
-    '77081e5b9646da95237159f1d8286439e5fea53c4a5fbf36bacabde284e8f06d',
-  'template/placeholders':
-    '5b0402b552e02ea0e6a982694ae074a7d80bb28e8f586136b18881c1f3df45dc',
   'table/plain':
     '4c05995aa71dd873f13b45ec39834e2b19da4b2891e66de6deb85af69cc0ade5',
   'table/formatting':
@@ -114,12 +120,6 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
     '407196d4d120fd4af8cd8f993a1c7d05f0e69f51038663d3adcdbd045d4a762c',
   'slide/disabled-content':
     '50c4cf5537a17f32a494132266d8745d318e56f7b6c83ee09fe418a9da563d4b',
-  'template/object-page-number':
-    'fa38b86e14fd8bbc3dea301fa3dd19607680715986e092f0f84efa40f8a94d67',
-  'template/object-language':
-    '154130fdb6be35d89c9e6b180e7249ff6ccc65c5c0cb6a0fe0b4ef0e89deac9d',
-  'template/margin':
-    'f91fd6c8e7af6b840c0b68cfbfece552944e2a66c0afa7dd979a1c5d131b8c70',
   'text/runs-inherit-underline':
     '508cce02c1cddbd4f550cdcbb953313d1802275339ac4d232a0542bac760a868',
   'text/runs-inherit-strike':

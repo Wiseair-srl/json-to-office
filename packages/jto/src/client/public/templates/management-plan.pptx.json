@@ -76,13 +76,16 @@
         }
       }
     },
-    "templates": [
-      {
-        "name": "grid",
-        "background": {
-          "color": "background"
+    "blocks": {
+      "grid": {
+        "description": "Slide chrome shared by the grid slides of this deck.",
+        "slots": {},
+        "slide": {
+          "background": {
+            "color": "background"
+          }
         },
-        "objects": [
+        "body": [
           {
             "name": "shape",
             "props": {
@@ -183,7 +186,7 @@
           }
         ]
       }
-    ]
+    }
   },
   "children": [
     {
@@ -468,10 +471,15 @@
     {
       "name": "slide",
       "props": {
-        "template": "grid",
         "notes": "Key objectives — 01 Efficiency, 02 Accountability, 03 Coordination, 04 Growth."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "grid"
+          }
+        },
         {
           "name": "shape",
           "props": {
@@ -792,10 +800,15 @@
     {
       "name": "slide",
       "props": {
-        "template": "grid",
         "notes": "What is a management plan — definition, purpose, importance."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "grid"
+          }
+        },
         {
           "name": "image",
           "props": {
@@ -930,10 +943,15 @@
     {
       "name": "slide",
       "props": {
-        "template": "grid",
         "notes": "Vision and mission connection — company vision vs mission."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "grid"
+          }
+        },
         {
           "name": "text",
           "props": {
@@ -1254,10 +1272,15 @@
     {
       "name": "slide",
       "props": {
-        "template": "grid",
         "notes": "Strategic priorities — +122% with short/medium/long-term cards."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "grid"
+          }
+        },
         {
           "name": "shape",
           "props": {
@@ -1741,10 +1764,15 @@
     {
       "name": "slide",
       "props": {
-        "template": "grid",
         "notes": "Managing resources — 25M total resource donut gauge."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "grid"
+          }
+        },
         {
           "name": "shape",
           "props": {
@@ -1929,10 +1957,15 @@
         "meta": {
           "title": "Process grid"
         },
-        "template": "grid",
         "notes": "Process grid 01-06 with flow arrows."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "grid"
+          }
+        },
         {
           "name": "shape",
           "props": {
@@ -2313,10 +2346,15 @@
         "meta": {
           "title": "Communication channels"
         },
-        "template": "grid",
         "notes": "Internal & external communication; 5K stat tile."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "grid"
+          }
+        },
         {
           "name": "image",
           "props": {
@@ -2661,10 +2699,15 @@
     {
       "name": "slide",
       "props": {
-        "template": "grid",
         "notes": "Mitigating risks — photos, who we serve, +122%."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "grid"
+          }
+        },
         {
           "name": "image",
           "props": {
@@ -3198,10 +3241,15 @@
     {
       "name": "slide",
       "props": {
-        "template": "grid",
         "notes": "Budget & forecasting — 76K/46K/56K stats and cards."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "grid"
+          }
+        },
         {
           "name": "shape",
           "props": {
@@ -3580,10 +3628,15 @@
     {
       "name": "slide",
       "props": {
-        "template": "grid",
         "notes": "Change management — 4 photo/caption columns."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "grid"
+          }
+        },
         {
           "name": "shape",
           "props": {
@@ -3826,10 +3879,15 @@
     {
       "name": "slide",
       "props": {
-        "template": "grid",
         "notes": "Sustainable practices — two banners 01/02."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "grid"
+          }
+        },
         {
           "name": "image",
           "props": {
@@ -4499,10 +4557,15 @@
     {
       "name": "slide",
       "props": {
-        "template": "grid",
         "notes": "Compliance framework — 25M, 20/43/78%, +43,43% potential risks."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "grid"
+          }
+        },
         {
           "name": "image",
           "props": {
@@ -4814,10 +4877,15 @@
     {
       "name": "slide",
       "props": {
-        "template": "grid",
         "notes": "Tracking progress — 20/40/60/76% donut gauges."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "grid"
+          }
+        },
         {
           "name": "shape",
           "props": {
@@ -5042,10 +5110,15 @@
         "meta": {
           "title": "Team member"
         },
-        "template": "grid",
         "notes": "Team member — portraits and blue info card."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "grid"
+          }
+        },
         {
           "name": "image",
           "props": {
@@ -5321,10 +5394,15 @@
     {
       "name": "slide",
       "props": {
-        "template": "grid",
         "notes": "Moving forward — contact strip and photo."
       },
       "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "grid"
+          }
+        },
         {
           "name": "shape",
           "props": {

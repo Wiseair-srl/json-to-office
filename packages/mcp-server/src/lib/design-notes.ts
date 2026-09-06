@@ -68,6 +68,10 @@ const PPTX_DESIGN_NOTES: DesignNotes = {
     'State the takeaway in the title and cite the source; drive the series colours from theme tokens so the chart belongs to the deck.',
   chart:
     'Set the series colours explicitly from the theme, one accent per series — the auto palette reads as default Office. Bars from zero, and never 3D.',
+  block:
+    'Use a definition from this deck’s props.blocks — copy one from jto://blocks first. Fill its slots and nothing else: geometry lives in the definition, and an action title states a claim in two lines.',
+  group:
+    'A transparent sequence of slide content, or a frame with a direction that distributes its children into cells. Reach for it inside a block definition; a bare group on a slide is rarely clearer than the components themselves.',
 };
 
 const NOTES: Readonly<Record<FormatName, DesignNotes>> = {

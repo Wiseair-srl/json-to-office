@@ -55,20 +55,22 @@ const KNOWN_TRUE_FINDINGS: Readonly<Record<string, readonly string[]>> = {
   'standard-annual-report.docx.json': ['W_QUALITY_FONT_COUNT at /props'],
   'minimalist-pitch-deck.pptx.json': [
     'W_QUALITY_TEXT_CONTRAST at /children/0/children/1',
-    'W_QUALITY_TEXT_CONTRAST at /children/2/children/2',
-    'W_QUALITY_TEXT_CONTRAST at /children/3/children/3',
-    'W_QUALITY_TEXT_CONTRAST at /children/3/children/5',
-    'W_QUALITY_TEXT_CONTRAST at /children/4/children/8',
-    'W_QUALITY_TEXT_CONTRAST at /children/7/children/7',
-    'W_QUALITY_TEXT_CONTRAST at /children/8/children/4',
-    'W_QUALITY_TEXT_CONTRAST at /children/9/children/21',
-    'W_QUALITY_TEXT_CONTRAST at /children/12/children/6',
+    'W_QUALITY_TEXT_CONTRAST at /children/2/children/3',
+    'W_QUALITY_TEXT_CONTRAST at /children/3/children/4',
+    'W_QUALITY_TEXT_CONTRAST at /children/3/children/6',
+    'W_QUALITY_TEXT_CONTRAST at /children/4/children/9',
+    'W_QUALITY_TEXT_CONTRAST at /children/7/children/8',
+    'W_QUALITY_TEXT_CONTRAST at /children/8/children/5',
+    'W_QUALITY_TEXT_CONTRAST at /children/9/children/22',
     'W_QUALITY_TEXT_CONTRAST at /children/12/children/7',
+    'W_QUALITY_TEXT_CONTRAST at /children/12/children/8',
     // Same two boxes as ever on the laptop-mockup slide; the mockup itself
     // became nine native shapes, which moved every later index along by eight.
-    'W_QUALITY_TEXT_CONTRAST at /children/13/children/14',
+    // Every slide that carried a template now invokes its chrome block as its
+    // first child, which moved those slides' indexes along by one.
     'W_QUALITY_TEXT_CONTRAST at /children/13/children/15',
-    'W_QUALITY_TEXT_CONTRAST at /children/14/children/11',
+    'W_QUALITY_TEXT_CONTRAST at /children/13/children/16',
+    'W_QUALITY_TEXT_CONTRAST at /children/14/children/12',
     'W_QUALITY_TEXT_CONTRAST at /children/17/children/6',
     'W_QUALITY_TEXT_CONTRAST at /children/17/children/8',
     'W_QUALITY_TEXT_CONTRAST at /children/17/children/9',
