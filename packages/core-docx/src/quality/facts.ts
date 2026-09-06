@@ -1326,10 +1326,10 @@ export function prepareDocxQualityDocument(
 }
 
 function slotIsFilled(value: unknown): boolean {
+  if (typeof value === 'string') return value.trim() !== '';
   return (
     value !== undefined &&
     value !== null &&
-    value !== '' &&
     value !== false &&
     (!Array.isArray(value) || value.length > 0)
   );

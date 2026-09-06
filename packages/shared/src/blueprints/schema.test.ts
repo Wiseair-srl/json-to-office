@@ -39,4 +39,16 @@ describe('blueprint schema', () => {
     );
     expect(issues.map((issue) => issue.path)).toContain('/extra');
   });
+  it('rejects a page range whose min exceeds its max', () => {
+    expect(
+      validateBlueprint({
+        ...blueprint,
+        variants: {
+          plain: { ...blueprint.variants.plain, pages: { min: 8, max: 4 } },
+        },
+      })
+    ).toEqual([
+      { path: '/variants/plain/pages', message: 'min (8) exceeds max (4)' },
+    ]);
+  });
 });
