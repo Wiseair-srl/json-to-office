@@ -381,7 +381,7 @@ Every rule above reads the document; one pass reads the page. `jto_preview` with
 | `rendered/overlap`          | `W_QUALITY_RENDERED_OVERLAP`          | warning        | Two words from different lines whose boxes intersect by more than 30% of the smaller                                                          |
 | `rendered/text-missing`     | `W_QUALITY_RENDERED_TEXT_MISSING`     | warning        | An authored string that appears nowhere in the PDF: fully clipped, hidden, or dropped by the renderer                                         |
 | `rendered/font-substituted` | `W_QUALITY_RENDERED_FONT_SUBSTITUTED` | info / warning | A requested family the PDF embeds no face of; a warning when the document declared a source for it, information when the host simply lacks it |
-| `rendered/empty-page`       | `W_QUALITY_RENDERED_EMPTY_PAGE`       | info           | A page with no body text (`kind: blank`), or in docx one whose only words are its running head or footer (`kind: chrome-only`)                |
+| `rendered/empty-page`       | `W_QUALITY_RENDERED_EMPTY_PAGE`       | info           | A wordless page (`kind: blank`), or in docx one whose only words are its running head or footer (`kind: chrome-only`)                         |
 | `rendered/heading-stranded` | `W_QUALITY_RENDERED_HEADING_STRANDED` | warning        | DOCX: a heading that is the last body line on its page                                                                                        |
 | `rendered/paragraph-split`  | `W_QUALITY_RENDERED_PARAGRAPH_SPLIT`  | info           | DOCX: a paragraph leaving one line alone on either side of a page break (`kind: orphan` or `widow`)                                           |
 
