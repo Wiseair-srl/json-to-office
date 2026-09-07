@@ -72,8 +72,10 @@ same set runs against the current product and against the report milestone:
 pnpm evals -- --set client-report-checkpoint --repeat 3 --judge --out ./evals-out/checkpoint-before
 ```
 
-The scorecard records the set's id and the hash of its file, so a comparison
-made across an edited set says so.
+Without `--repeat` a set runs at its own `repeat`; with it, the flag wins and
+the CLI says when that falls short of the design. The scorecard records the
+set's id, the hash of its file, the runs it was designed for and the runs
+made, so a comparison across an edited or under-run set says so.
 
 ## Briefs
 

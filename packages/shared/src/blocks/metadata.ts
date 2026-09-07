@@ -1,3 +1,4 @@
+import { isScaffoldMarker } from '@json-to-office/quality';
 import { Value } from '@sinclair/typebox/value';
 import {
   BlockDefinitionsSchema,
@@ -173,10 +174,6 @@ function visitInvocationSlots(
     }
   }
 }
-
-/** A whole-string `{{…}}` scaffold marker, as `jto_scaffold` writes them. */
-const isScaffoldMarker = (value: string): boolean =>
-  /^\s*\{\{[^{}]*\}\}\s*$/.test(value);
 
 /** Metadata is always read from authored definitions, never from a named catalog. */
 export function blockSlotBudgets(

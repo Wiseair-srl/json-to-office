@@ -958,7 +958,10 @@ boundary matrix rendering a KPI row after a paragraph through LibreOffice:
   column layout, as before.
 
 Byte changes are the grid values and the removed section break; content,
-styles and chrome are unchanged.
+styles and chrome are unchanged. The grid is rounded to whole twips, the last
+cell absorbing the remainder so the cells still sum to the measure; the
+three `text-box-nested-columns*` cases with a percentage gap moved a second
+time for that.
 
 The same matrix moved the report block goldens (`blocks/report-chrome-*`,
 `blocks/report-data-*`) through the playground template rather than the
