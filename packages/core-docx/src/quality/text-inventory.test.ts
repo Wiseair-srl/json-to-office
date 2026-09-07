@@ -99,6 +99,42 @@ describe('collectDocxTextInventory', () => {
     ]);
   });
 
+  it('treats a table in a running footer as chrome, cells and all', () => {
+    const entries = collectDocxTextInventory([
+      {
+        name: 'section',
+        props: {
+          footer: [
+            {
+              name: 'table',
+              props: {
+                columns: [
+                  { cells: [{ content: 'Confidential' }] },
+                  {
+                    cells: [
+                      {
+                        content: {
+                          name: 'heading',
+                          props: { text: 'Page {PAGE}', level: 4 },
+                        },
+                      },
+                    ],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        children: [{ name: 'paragraph', props: { text: 'Body' } }],
+      },
+    ]);
+    expect(entries.map((e) => [e.role, e.repeats ?? false, e.text])).toEqual([
+      ['chrome', true, 'Confidential'],
+      ['chrome', true, 'Page {PAGE}'],
+      ['body', false, 'Body'],
+    ]);
+  });
+
   it('carries the declared width of a framed paragraph in points, never its height', () => {
     const [entry] = collectDocxTextInventory([
       {
