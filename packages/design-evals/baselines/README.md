@@ -9,9 +9,33 @@ guards. Their transcripts did not record tool responses, so successful artifact
 delivery cannot be verified from the scorecards alone. Preserve the original
 numbers; use fresh matched runs with the guards before making acceptance claims.
 
-| File                                | Mode | Server | Model           | Runs | Judge |
-| ----------------------------------- | ---- | ------ | --------------- | ---- | ----- |
-| `2026-09-04-cold-server-2.0.0.json` | cold | 2.0.0  | claude-sonnet-5 | 40   | yes   |
+| File                                                  | Mode | Server | Model           | Runs                                       | Judge               |
+| ----------------------------------------------------- | ---- | ------ | --------------- | ------------------------------------------ | ------------------- |
+| `2026-09-04-cold-server-2.0.0.json`                   | cold | 2.0.0  | claude-sonnet-5 | 40                                         | yes                 |
+| `2026-09-07-checkpoint-before-cold-server-4.4.0.json` | cold | 4.4.0  | claude-sonnet-5 | 24 (set `client-report-checkpoint`, 8 × 3) | yes (claude-opus-5) |
+
+## The client-report checkpoint "before" set
+
+`2026-09-07-checkpoint-before-cold-server-4.4.0.json` is #360's fixed-revision
+record of the current product on the `client-report-checkpoint` brief set,
+before the #362 integration work. It carries the delivery and retry guards the
+older sets lack: every run's `jto_generate` returned `ok` with an artifact, 0
+failed, 0 retries, 0 contaminated, usage complete. A local Highcharts export
+server (`endpointClass: local`) was part of the render environment; the
+"after" run for #362 must keep it.
+
+What it measures is not a pre-block product. Cold at 4.4.0, the agent calls
+`jto_scaffold` on its own, so every run went through blueprint → fill map →
+patch → generate with the consulting theme, the client-report profile and the
+report blocks. The delta to the #362 run is the integration and repair work
+still owed, not the existence of blocks.
+
+Judged in one pass by claude-opus-5: 3/24 would ship (13%), 13/24 at level ≥4,
+median level 4, median genericness 2. Two product defects recur in the
+rationales and are not caught by any static rule (`qualityByCode` is empty and
+the harness recorded no rendered findings): the `highcharts.com` credit left in
+the plot area (13 rationales) and empty or near-empty pages under a running head
+(10 rationales; `cr-workforce-planning` runs 2 and 3 fell to level 1 on it).
 
 ## Reading one
 

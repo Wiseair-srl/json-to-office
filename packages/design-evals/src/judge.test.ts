@@ -88,6 +88,29 @@ describe('judgeDocument', () => {
     expect(capture.last.images).toHaveLength(1);
   });
 
+  it('keeps only the rubric fields, so a recorded set has one shape', async () => {
+    // Three of twenty-four checkpoint verdicts carried the schema envelope's
+    // `"type": "object"` into the committed baseline.
+    const result = await judgeDocument({
+      brief: BRIEF,
+      sheet: SHEET,
+      call: call({
+        type: 'object',
+        level: 3,
+        wouldShip: false,
+        genericness: 2,
+        rationale: 'x',
+        note: 'extra',
+      }),
+    });
+    expect(Object.keys(result.verdict).sort()).toEqual([
+      'genericness',
+      'level',
+      'rationale',
+      'wouldShip',
+    ]);
+  });
+
   it('refuses an answer that is not a verdict rather than scoring it', async () => {
     await expect(
       judgeDocument({
