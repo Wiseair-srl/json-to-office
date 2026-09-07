@@ -227,12 +227,12 @@ describe('deep prop validation in nested containers and regions', () => {
             {
               name: 'text-box',
               props: { width: 200, height: 100 },
-              // font.size is capped at 120; deep inside a text-box this was
+              // font.size is capped at 1638; deep inside a text-box this was
               // silently accepted before the whole-tree walk.
               children: [
                 {
                   name: 'paragraph',
-                  props: { text: 'big', font: { size: 200 } },
+                  props: { text: 'big', font: { size: 5000 } },
                 },
               ],
             },
@@ -244,7 +244,7 @@ describe('deep prop validation in nested containers and regions', () => {
     expect(result.valid).toBe(false);
     expect(
       (result.errors ?? []).some(
-        (e) => e.path.includes('/font/size') && /120/.test(e.message)
+        (e) => e.path.includes('/font/size') && /1638/.test(e.message)
       )
     ).toBe(true);
   });
@@ -500,7 +500,7 @@ describe('deep prop validation in nested containers and regions', () => {
                       {
                         content: {
                           name: 'paragraph',
-                          props: { text: 'x', font: { size: 200 } },
+                          props: { text: 'x', font: { size: 5000 } },
                         },
                       },
                     ],
@@ -519,7 +519,7 @@ describe('deep prop validation in nested containers and regions', () => {
         (e) =>
           e.path ===
             '/children/0/children/0/props/columns/0/cells/0/content/props/font/size' &&
-          /120/.test(e.message)
+          /1638/.test(e.message)
       )
     ).toBe(true);
   });
@@ -588,7 +588,10 @@ describe('deep prop validation in nested containers and regions', () => {
                                   {
                                     content: {
                                       name: 'paragraph',
-                                      props: { text: 'z', font: { size: 200 } },
+                                      props: {
+                                        text: 'z',
+                                        font: { size: 5000 },
+                                      },
                                     },
                                   },
                                 ],
@@ -611,7 +614,7 @@ describe('deep prop validation in nested containers and regions', () => {
     expect(
       (result.errors ?? []).some(
         (e) =>
-          e.path.endsWith('/content/props/font/size') && /120/.test(e.message)
+          e.path.endsWith('/content/props/font/size') && /1638/.test(e.message)
       )
     ).toBe(true);
   });
@@ -652,7 +655,7 @@ describe('deep prop validation in nested containers and regions', () => {
                 ],
               },
             },
-            { name: 'paragraph', props: { text: 'b', font: { size: 999 } } },
+            { name: 'paragraph', props: { text: 'b', font: { size: 5000 } } },
           ],
         },
       ],
