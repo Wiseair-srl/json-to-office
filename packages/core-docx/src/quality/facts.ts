@@ -222,10 +222,12 @@ export interface DocxThemeFact extends QualityFact {
 }
 
 /**
- * One paragraph or heading with text, and the size it paints at. `role` is
- * the style the size belongs to; `authored` says the size was written on the
- * node rather than inherited; `generated` says a block compiled the node, so
- * its pointer is not the author's to patch.
+ * One painted size, wherever the document paints it: a paragraph, a heading, a
+ * table cell, a line of a running head. `role` is the style the size belongs
+ * to; `authored` says the size was written rather than inherited, and then
+ * `sizePath` is the pointer that wrote it — the only thing a fix can replace.
+ * `generated` says a block compiled the node, so its pointer is not the
+ * author's to patch.
  */
 export interface DocxTextSizeFact extends QualityFact {
   kind: 'docx/text-size';
@@ -233,6 +235,8 @@ export interface DocxTextSizeFact extends QualityFact {
   fontSizePt: number;
   authored: boolean;
   generated: boolean;
+  /** Pointer to the authored size value; absent when the size is inherited. */
+  sizePath?: string;
 }
 
 /** A colour written as a literal rather than as a theme token. */
@@ -986,6 +990,137 @@ function walkActive(
   );
 }
 
+/**
+ * The size a text node paints and where it was written, as a fact with no
+ * provenance yet: `addFact` maps the pointers, and the caller decides whether
+ * a block generated it.
+ */
+function textSizeFact(
+  node: Rec,
+  props: Rec,
+  path: string,
+  typography: Typography,
+  role?: string
+): Omit<DocxTextSizeFact, 'generated'> | undefined {
+  const size = effectiveFontSize(node, props, typography);
+  if (size === undefined) return undefined;
+  return {
+    id: `docx:text-size:${path}`,
+    kind: 'docx/text-size',
+    path,
+    role: role ?? styleKey(node, props),
+    fontSizePt: size.fontSizePt,
+    authored: size.authored,
+    ...(size.authored && { sizePath: `${path}/props/font/size` }),
+  };
+}
+
+/**
+ * Sizes a table paints. Two kinds, because a table has two: the size an
+ * author wrote on a cell, a column's defaults or the table's — reported at
+ * the pointer that wrote it — and the size every cell nobody touched
+ * inherits, which no fix can move but which the page shows all the same.
+ *
+ * Authored sizes are read off the authored props rather than the resolved
+ * ones: the theme's `componentDefaults.table` is merged into a table's props
+ * before this walk sees it, so a resolved `cellDefaults.font.size` is usually
+ * the theme talking, not the author.
+ */
+function tableTextSizeFacts(
+  props: Rec,
+  authored: Rec | undefined,
+  path: string,
+  typography: Typography,
+  page: PageBox
+): Array<Omit<DocxTextSizeFact, 'generated'>> {
+  const facts: Array<Omit<DocxTextSizeFact, 'generated'>> = [];
+  const sizeOf = (holder: unknown): number | undefined =>
+    finiteNumber(asRecord(asRecord(holder)?.font)?.size);
+  const authoredSize = (
+    holder: unknown,
+    pointer: string,
+    role: string
+  ): void => {
+    const size = sizeOf(holder);
+    if (size === undefined) return;
+    facts.push({
+      id: `docx:text-size:${pointer}`,
+      kind: 'docx/text-size',
+      path: pointer,
+      role,
+      fontSizePt: size,
+      authored: true,
+      sizePath: `${pointer}/font/size`,
+    });
+  };
+  // A cell holds a string or a component. A component of its own carries its
+  // own size, and lives under `content` rather than among the children the
+  // walk reaches, so it is visited here or nowhere.
+  const cellContent = (
+    holder: unknown,
+    pointer: string,
+    role: string
+  ): void => {
+    const content = asRecord(holder)?.content;
+    if (asRecord(content) === undefined) return;
+    walkActive(content, `${pointer}/content`, page, (node, nodePath) => {
+      if (node.name !== 'paragraph' && node.name !== 'heading') return;
+      const nodeProps = asRecord(node.props) ?? {};
+      if (typeof nodeProps.text !== 'string' || nodeProps.text.trim() === '')
+        return;
+      const fact = textSizeFact(node, nodeProps, nodePath, typography, role);
+      if (fact) facts.push(fact);
+    });
+  };
+  if (authored) {
+    authoredSize(
+      authored.cellDefaults,
+      `${path}/props/cellDefaults`,
+      'tableCell'
+    );
+    authoredSize(
+      authored.headerCellDefaults,
+      `${path}/props/headerCellDefaults`,
+      'tableHeader'
+    );
+    const columns = Array.isArray(authored.columns) ? authored.columns : [];
+    columns.forEach((column, index) => {
+      const record = asRecord(column) ?? {};
+      const columnPath = `${path}/props/columns/${index}`;
+      authoredSize(
+        record.cellDefaults,
+        `${columnPath}/cellDefaults`,
+        'tableCell'
+      );
+      authoredSize(record.header, `${columnPath}/header`, 'tableHeader');
+      cellContent(record.header, `${columnPath}/header`, 'tableHeader');
+      const cells = Array.isArray(record.cells) ? record.cells : [];
+      cells.forEach((cell, cellIndex) => {
+        authoredSize(cell, `${columnPath}/cells/${cellIndex}`, 'tableCell');
+        cellContent(cell, `${columnPath}/cells/${cellIndex}`, 'tableCell');
+      });
+    });
+  }
+  // What every untouched cell inherits, off the resolved defaults: the
+  // theme's `tableCell` and `tableHeader` roles, unless the author moved them.
+  for (const [key, role] of [
+    ['cellDefaults', 'tableCell'],
+    ['headerCellDefaults', 'tableHeader'],
+  ] as const) {
+    const size = sizeOf(props[key]);
+    if (size === undefined) continue;
+    facts.push({
+      id: `docx:text-size:${path}:${role}`,
+      kind: 'docx/text-size',
+      path,
+      role,
+      fontSizePt: size,
+      authored: false,
+    });
+  }
+  return facts;
+}
+
 export function prepareDocxQualityDocument(
   document: ReportComponentDefinition,
   options: PrepareDocxQualityOptions = {}
@@ -1084,6 +1219,53 @@ export function prepareDocxQualityDocument(
     const header = part('header');
     const footer = part('footer');
     inherited = { header, footer };
+    // Text a running head or a footer paints. Only the parts this section
+    // declares: an inherited part was walked where it was written. The role
+    // is the surface rather than the paragraph style, because a footer set
+    // smaller than body copy is the design, not a body style drifting.
+    for (const kind of ['header', 'footer'] as const) {
+      if (!Array.isArray(props[kind])) continue;
+      // A block's section effect drew this; the author has no pointer in it.
+      const drawnByBlock = !Array.isArray(
+        asRecord(
+          asRecord(
+            (Array.isArray(themed.document.children)
+              ? (themed.document.children as unknown as Rec[])
+              : [])[index]
+          )?.props
+        )?.[kind]
+      );
+      const part = props[kind] as unknown[];
+      const visitChrome = (child: Rec, childPath: string): void => {
+        if (child.name !== 'paragraph' && child.name !== 'heading') return;
+        const childProps = asRecord(child.props) ?? {};
+        if (
+          typeof childProps.text !== 'string' ||
+          childProps.text.trim() === ''
+        )
+          return;
+        const fact = textSizeFact(
+          child,
+          childProps,
+          childPath,
+          typography,
+          kind
+        );
+        if (fact)
+          addFact({
+            ...fact,
+            generated: drawnByBlock || authoredPath(childPath) !== childPath,
+          });
+      };
+      part.forEach((child, childIndex) =>
+        walkActive(
+          child,
+          `/children/${index}/props/${kind}/${childIndex}`,
+          basePage,
+          visitChrome
+        )
+      );
+    }
     addFact({
       id: `docx:section-chrome:${index}`,
       kind: 'docx/section-chrome',
@@ -1221,6 +1403,15 @@ export function prepareDocxQualityDocument(
     if (node.name === 'table') {
       const fact = tableFact(props, path, page.availableWidthTwips);
       if (fact) addFact(fact);
+      for (const size of tableTextSizeFacts(
+        props,
+        authoredPropsAt(path),
+        path,
+        typography,
+        page
+      )) {
+        addFact({ ...size, generated: authoredPath(size.path) !== size.path });
+      }
       const design = tableDesignFact(
         props,
         path,
@@ -1305,17 +1496,9 @@ export function prepareDocxQualityDocument(
     if (node.name === 'paragraph' || node.name === 'heading') {
       const fact = lineBoxFact(node, props, path, typography, context.document);
       if (fact) addFact(fact);
-      const size = effectiveFontSize(node, props, typography);
-      if (size && typeof props.text === 'string' && props.text.trim() !== '') {
-        addFact({
-          id: `docx:text-size:${path}`,
-          kind: 'docx/text-size',
-          path,
-          role: styleKey(node, props),
-          fontSizePt: size.fontSizePt,
-          authored: size.authored,
-          generated: authoredPath(path) !== path,
-        });
+      if (typeof props.text === 'string' && props.text.trim() !== '') {
+        const fact = textSizeFact(node, props, path, typography);
+        if (fact) addFact({ ...fact, generated: authoredPath(path) !== path });
       }
     }
 

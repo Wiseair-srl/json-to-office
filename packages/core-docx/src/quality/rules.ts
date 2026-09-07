@@ -870,7 +870,7 @@ export const docxRequiredChromeRule: QualityRule<
 > = {
   id: 'docx/required-chrome',
   description:
-    'A block slot with a role the profile requires — a takeaway, a source — left empty. Off unless a profile names roles.',
+    'A block slot with a role a profile or policy requires — a takeaway, a source — left empty. Off until one names roles.',
   code: QUALITY_CODES.CHROME_MISSING,
   category: 'consistency',
   defaultSeverity: 'warning',
@@ -911,7 +911,7 @@ export const docxRunningHeadRule: QualityRule<
 > = {
   id: 'docx/running-head',
   description:
-    'A body section without the running head the profile expects. Off unless a profile names parts.',
+    'A body section without the running head a profile or policy expects. Off until one names parts.',
   code: QUALITY_CODES.CHROME_MISSING,
   category: 'consistency',
   defaultSeverity: 'warning',
@@ -1000,7 +1000,7 @@ function roleDriftFacts(
     if (expected === undefined) continue;
     for (const fact of members) {
       if (
-        fact.authored &&
+        fact.sizePath !== undefined &&
         !fact.generated &&
         Math.abs(fact.fontSizePt - expected) > SIZE_TOLERANCE_PT
       )
@@ -1037,7 +1037,7 @@ export const docxTypeScaleRule: QualityRule<DocxQualityModel, DocxQualityFact> =
   {
     id: 'docx/type-scale',
     description:
-      'An authored size the theme never paints: not a style, not a font role, not a step of its scale. Off unless a profile enables it.',
+      'An authored size the theme never paints: not a style, not a font role, not a step of its scale. Off until a profile or policy enables it.',
     code: QUALITY_CODES.TYPE_OFF_SCALE,
     category: 'consistency',
     defaultSeverity: 'warning',
@@ -1051,7 +1051,7 @@ export const docxTypeScaleRule: QualityRule<DocxQualityModel, DocxQualityFact> =
       const drifting = roleDriftFacts(facts, theme);
       const offScale = textSizeFacts(facts).filter(
         (fact) =>
-          fact.authored &&
+          fact.sizePath !== undefined &&
           !fact.generated &&
           !drifting.has(fact) &&
           !scale.some(
@@ -1070,7 +1070,7 @@ export const docxTypeScaleRule: QualityRule<DocxQualityModel, DocxQualityFact> =
       return [...groups.values()].map((members) => {
         const [first] = members;
         const nearest = nearestSize(first.fontSizePt, scale)!;
-        const sizePaths = members.map((fact) => `${fact.path}/props/font/size`);
+        const sizePaths = members.map((fact) => fact.sizePath!);
         const count =
           members.length === 1
             ? ''
@@ -1109,7 +1109,7 @@ export const docxSizeCountRule: QualityRule<DocxQualityModel, DocxQualityFact> =
   {
     id: 'docx/size-count',
     description:
-      'More distinct text sizes on the page than the profile allows, blocks included. Off unless a profile enables it.',
+      'More distinct text sizes than maximumSizes allows, blocks included. Off until a profile or policy enables it.',
     code: QUALITY_CODES.TYPE_SIZE_COUNT,
     category: 'consistency',
     defaultSeverity: 'warning',
@@ -1162,7 +1162,7 @@ export const docxRoleDriftRule: QualityRule<DocxQualityModel, DocxQualityFact> =
   {
     id: 'docx/role-drift',
     description:
-      'One heading level or paragraph style painted at two sizes; the theme size is the fix. Off unless a profile enables it.',
+      'One heading level, table role or paragraph style painted at two sizes; the theme size is the fix. Off until a profile or policy enables it.',
     code: QUALITY_CODES.TYPE_ROLE_DRIFT,
     category: 'consistency',
     defaultSeverity: 'warning',
@@ -1179,7 +1179,7 @@ export const docxRoleDriftRule: QualityRule<DocxQualityModel, DocxQualityFact> =
             Math.abs(member.fontSizePt - expected) <= SIZE_TOLERANCE_PT
         );
         const others = sizes.filter((size) => size !== fact.fontSizePt);
-        const sizePath = `${fact.path}/props/font/size`;
+        const sizePath = fact.sizePath!;
         findings.push({
           path: sizePath,
           ...(keeper && { relatedPaths: [keeper.path] }),
