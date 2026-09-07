@@ -21,8 +21,8 @@ record of the current product on the `client-report-checkpoint` brief set,
 before the #362 integration work. It carries the delivery and retry guards the
 older sets lack: every run's `jto_generate` returned `ok` with an artifact, 0
 failed, 0 retries, 0 contaminated, usage complete. A local Highcharts export
-server (`endpointClass: local`) was part of the render environment, and the
-#362 run must keep it.
+server (`endpointClass: local`) was part of the render environment; the
+"after" run for #362 must keep it.
 
 What it measures is not a pre-block product. Cold at 4.4.0, the agent calls
 `jto_scaffold` on its own, so every run went through blueprint → fill map →
