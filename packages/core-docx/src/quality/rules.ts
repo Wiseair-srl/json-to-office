@@ -1232,7 +1232,7 @@ export const DOCX_QUALITY_PROFILES = {
     id: 'client-report',
     formats: ['docx'],
     description:
-      'Client or public-administration report: a running head with page numbers on every section after the cover, a takeaway and a source wherever a block declares them, no heading skipped, and every size on the theme scale with at most eight in play.',
+      'Client or public-administration report: a running head with page numbers on every section after the cover, a takeaway and a source wherever a block declares them, no heading skipped, every size on the theme scale with at most eight in play, and no page rendered empty under the running head.',
     rules: {
       'docx/required-chrome': {
         parameters: { required: ['takeaway', 'source'] },
@@ -1247,6 +1247,11 @@ export const DOCX_QUALITY_PROFILES = {
       'docx/type-scale': { enabled: true },
       'docx/size-count': { enabled: true, parameters: { maximumSizes: 8 } },
       'docx/role-drift': { enabled: true },
+      // The report blocks place every figure in a captioned block, so a page
+      // with no text under the running head is a stray break or an empty
+      // section, not a plate. A genuine full-page figure suppresses this at
+      // its page through the policy.
+      'rendered/empty-page': { severity: 'warning' },
     },
   },
   'executive-report': {

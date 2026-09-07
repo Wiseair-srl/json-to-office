@@ -117,6 +117,56 @@ describe.skipIf(!RUN)('rendered pass over a LibreOffice PDF', () => {
     expect(findings.summary?.inventory.missing).toBe(0);
   }, 120_000);
 
+  it('notes a page carrying only its running head and footer as empty', async () => {
+    // The trailing page of a report under a running head: the section chrome
+    // repeats on it, so the page has words, but none of them are content.
+    const document = report([
+      {
+        name: 'section',
+        props: {
+          header: [{ name: 'paragraph', props: { text: 'Client report' } }],
+          footer: [{ name: 'paragraph', props: { text: 'Page {PAGE}' } }],
+        },
+        children: [
+          {
+            name: 'paragraph',
+            props: { text: 'Lead paragraph of the report.' },
+          },
+          { name: 'paragraph', props: { text: ' ', pageBreak: true } },
+        ],
+      },
+    ]);
+    const { rendered, findings } = await renderWithFindings(document);
+    expect(rendered.totalPages).toBe(2);
+    const empty = findings.diagnostics.filter(
+      (d) => d.code === 'W_QUALITY_RENDERED_EMPTY_PAGE'
+    );
+    expect(empty).toHaveLength(1);
+    expect(empty[0]).toMatchObject({
+      severity: 'info',
+      message: expect.stringMatching(/only its running head or footer/),
+      context: { mapping: 'unmapped', page: 2, kind: 'chrome-only' },
+    });
+    expect(findings.summary?.inventory.missing).toBe(0);
+
+    // The client-report profile owns the promotion to warning: a report's
+    // figures live in captioned blocks, so a text-free page is a defect.
+    const promoted = await collectRenderedFindings({
+      format: 'docx',
+      document,
+      render: {},
+      rendered: rendered.rendered!,
+      adapter: getAdapter('docx'),
+      quality: { profile: { id: 'client-report' } },
+    });
+    expect(
+      promoted.diagnostics.filter(
+        (d) => d.code === 'W_QUALITY_RENDERED_EMPTY_PAGE'
+      )
+    ).toEqual([expect.objectContaining({ severity: 'warning' })]);
+    expect(promoted.summary?.profileId).toBe('client-report');
+  }, 120_000);
+
   it('reports nothing on a clean report, and reuses cached geometry on a re-preview', async () => {
     const document = report([
       { name: 'heading', props: { text: 'Executive summary', level: 1 } },

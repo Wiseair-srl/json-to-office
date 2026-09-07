@@ -301,7 +301,63 @@ describe('analyzeRenderedDocument', () => {
       expect.objectContaining({
         code: QUALITY_CODES.RENDERED_EMPTY_PAGE,
         severity: 'info',
-        context: { mapping: 'unmapped', page: 2 },
+        context: { mapping: 'unmapped', page: 2, kind: 'blank' },
+      }),
+    ]);
+  });
+
+  it('keeps a pptx slide with any word, chrome or not, out of the empty pages', () => {
+    // A deck declares no chrome inventory: an image slide carrying only its
+    // slide number is the legitimate case, so only a wordless slide counts.
+    const result = analyzeRenderedDocument({
+      format: 'pptx',
+      pages: [
+        page([word('Title', 10, 100)], { widthPt: 960, heightPt: 540 }),
+        page([word('2', 900, 520)], { widthPt: 960, heightPt: 540 }),
+        page([], { widthPt: 960, heightPt: 540 }),
+      ],
+      inventory: [entry('/t', 'Title', 'slide-text')],
+    });
+    expect(result.findings).toEqual([
+      expect.objectContaining({
+        code: QUALITY_CODES.RENDERED_EMPTY_PAGE,
+        context: { mapping: 'unmapped', page: 3, kind: 'blank' },
+      }),
+    ]);
+  });
+
+  it('notes a page that carries only its running head and footer as empty', () => {
+    // The stray trailing page of a report: the section chrome repeats on it,
+    // so the page has words, but none of them are body copy.
+    const result = analyzeRenderedDocument({
+      format: 'docx',
+      pages: [
+        page([
+          word('Client', 10, 10),
+          word('report', 50, 10),
+          word('Visible', 10, 100),
+          word('Page', 10, 830),
+          word('1', 40, 830),
+        ]),
+        page([
+          word('Client', 10, 10),
+          word('report', 50, 10),
+          word('Page', 10, 830),
+          word('2', 40, 830),
+        ]),
+      ],
+      inventory: [
+        entry('/c', 'Client report', 'chrome', { repeats: true }),
+        entry('/f', 'Page {PAGE}', 'chrome', { repeats: true }),
+        entry('/v', 'Visible'),
+      ],
+    });
+    expect(result.findings).toEqual([
+      expect.objectContaining({
+        code: QUALITY_CODES.RENDERED_EMPTY_PAGE,
+        severity: 'info',
+        message: expect.stringMatching(/only its running head or footer/),
+        context: { mapping: 'unmapped', page: 2, kind: 'chrome-only' },
       }),
     ]);
   });
