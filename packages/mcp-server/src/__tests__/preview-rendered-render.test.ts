@@ -95,33 +95,26 @@ describe.skipIf(!RUN)('rendered pass over a LibreOffice PDF', () => {
     expect(codes).not.toContain('W_QUALITY_RENDERED_SPILL');
   }, 120_000);
 
-  it('reports a text box the renderer dropped entirely as missing text', async () => {
+  it('notes a page with nothing on it as information, at no pointer', async () => {
+    // A trailing empty paragraph forced onto its own page. LibreOffice lays
+    // a stray break out the same way on every platform, unlike the
+    // pathological text boxes that vanish on one and paginate on another.
     const document = report([
-      {
-        name: 'text-box',
-        props: {
-          width: 4000,
-          height: 800,
-          floating: {
-            horizontalPosition: { offset: 720 },
-            verticalPosition: { offset: 14500 },
-          },
-        },
-        children: [{ name: 'paragraph', props: { text: `Boxed. ${LONG}` } }],
-      },
+      { name: 'paragraph', props: { text: 'Lead paragraph of the report.' } },
+      { name: 'paragraph', props: { text: ' ', pageBreak: true } },
     ]);
-    const { findings } = await renderWithFindings(document);
-    const codes = findings.diagnostics.map((d) => d.code);
-    expect(codes).toContain('W_QUALITY_RENDERED_TEXT_MISSING');
-    expect(codes).toContain('W_QUALITY_RENDERED_EMPTY_PAGE');
-    const missing = findings.diagnostics.find(
-      (d) => d.code === 'W_QUALITY_RENDERED_TEXT_MISSING'
+    const { rendered, findings } = await renderWithFindings(document);
+    expect(rendered.totalPages).toBe(2);
+    const empty = findings.diagnostics.filter(
+      (d) => d.code === 'W_QUALITY_RENDERED_EMPTY_PAGE'
     );
-    expect(missing).toMatchObject({
-      path: '/children/0/children/0/props/text',
-      context: { mapping: 'mapped' },
+    expect(empty).toHaveLength(1);
+    expect(empty[0]).toMatchObject({
+      severity: 'info',
+      context: { mapping: 'unmapped', page: 2 },
     });
-    expect(findings.summary.inventory.missing).toBe(1);
+    expect(empty[0]).not.toHaveProperty('path');
+    expect(findings.summary?.inventory.missing).toBe(0);
   }, 120_000);
 
   it('reports nothing on a clean report, and reuses cached geometry on a re-preview', async () => {
