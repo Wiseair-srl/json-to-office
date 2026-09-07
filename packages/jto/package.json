@@ -1,6 +1,6 @@
 {
   "name": "@json-to-office/jto",
-  "version": "4.0.0",
+  "version": "4.4.0",
   "description": "JSON to Office CLI - Unified document and presentation generation",
   "type": "module",
   "bin": {
