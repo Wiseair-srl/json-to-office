@@ -82,6 +82,7 @@ async function renderedMeasurement(
           document,
           render: {},
           rendered: rendered.rendered,
+          ...(rendered.prepared && { prepared: rendered.prepared }),
           adapter: getAdapter(format as 'docx' | 'pptx'),
         });
         diagnostics = findings.diagnostics;

@@ -236,4 +236,56 @@ describe('assignInventory', () => {
       'ambiguous',
     ]);
   });
+
+  it('lets a contents entry claim the contents line so the heading keeps its own', () => {
+    const pages = [
+      page([
+        word('Contents', 10, 40),
+        word('Alpha', 10, 60),
+        word('section', 50, 60),
+        word('Alpha', 10, 200),
+        word('section', 50, 200),
+      ]),
+    ];
+    const { matches } = assignInventory(pages, [
+      { path: '/toc', text: 'Alpha section', optional: true },
+      { path: '/h', text: 'Alpha section' },
+    ]);
+    expect(
+      matches.map((m) => [m.status, m.occurrences[0]?.parts[0].yMin])
+    ).toEqual([
+      ['mapped', 60],
+      ['mapped', 200],
+    ]);
+  });
+
+  it('skips an optional entry the page lacks instead of calling it missing', () => {
+    const { matches } = assignInventory(
+      [page([word('Other', 10, 40)])],
+      [
+        { path: '/toc', text: 'Collected elsewhere', optional: true },
+        { path: '/p', text: 'Really absent text' },
+      ]
+    );
+    expect(matches.map((m) => m.status)).toEqual(['skipped', 'missing']);
+  });
+
+  it('matches a contents line that the field prefixed with a heading number', () => {
+    const pages = [
+      page([
+        word('1.2', 10, 60),
+        word('Alpha', 40, 60),
+        word('section', 80, 60),
+        word('Alpha', 10, 200),
+        word('section', 50, 200),
+      ]),
+    ];
+    const { matches } = assignInventory(pages, [
+      { path: '/toc', text: 'Alpha section', optional: true },
+      { path: '/h', text: 'Alpha section' },
+    ]);
+    expect(matches.map((m) => m.occurrences[0]?.parts[0].yMin)).toEqual([
+      60, 200,
+    ]);
+  });
 });

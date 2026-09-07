@@ -48,6 +48,8 @@ import {
   type PdfTextPage,
 } from '@json-to-office/jto-ops';
 
+import type { PreparedDocument } from '@json-to-office/quality';
+
 import type { FormatAdapter, FormatName } from '../lib/adapters.js';
 import {
   ERROR_CODES,
@@ -326,6 +328,12 @@ export interface PreviewRenderSuccess {
   timings: { generateMs: number; convertMs: number; rasterizeMs: number };
   /** Present when `rendered` was requested and poppler could read the PDF. */
   rendered?: RenderedGeometry;
+  /**
+   * The prepared document the render was generated from, when `rendered`
+   * was requested: the rendered pass maps its findings through the same
+   * facts, so the document is prepared once and rendered from that.
+   */
+  prepared?: PreparedDocument;
 }
 
 export type PreviewRenderResult = PreviewRenderSuccess | Failure;
@@ -648,12 +656,18 @@ export async function renderPreview(
 ): Promise<PreviewRenderResult> {
   const {
     format,
-    document,
     signal,
     onProgress,
     outputMode = 'auto',
     maxPages = MAX_PREVIEW_PAGES,
   } = options;
+  // One object for preparation and generation: the adapter reuses a
+  // prepared model only for the very document it was prepared from, and a
+  // string parsed twice is two documents.
+  const document: unknown =
+    typeof options.document === 'string'
+      ? JSON.parse(options.document)
+      : options.document;
   const dpi = options.dpi ?? PREVIEW_DEFAULT_DPI;
   const render = options.render ?? {};
   const diagnostics: Diagnostic[] = [];
@@ -707,22 +721,41 @@ export async function renderPreview(
   const warnings: GenerationWarning[] = [];
   let officeBytes: Buffer;
   let converters: ConverterVersions;
+  let prepared: PreparedDocument | undefined;
   try {
+    const adapter = options.getAdapter(format);
+    // The rendered pass needs the prepared facts — the text inventory, the
+    // font families — and generation needs the prepared model. Preparing
+    // here and handing the result to both is what keeps a rendered preview
+    // at one preparation instead of two; its warnings land in the same sink.
+    // Without pdftotext the pass cannot run, so nothing is prepared for it.
+    const prepare =
+      options.rendered &&
+      adapter.prepareDocument &&
+      (await pdftotextAvailable())
+        ? adapter.prepareDocument.bind(adapter)
+        : undefined;
     // The version probe is a cold `soffice --version`; running it beside
-    // generation hides most of its cost behind work that had to happen anyway.
+    // preparation and generation hides most of its cost behind work that had
+    // to happen anyway.
     const [buffer, versions] = await Promise.all([
-      options.getAdapter(format).generateBuffer(document, {
-        ...render,
-        // The bytes are on their way to LibreOffice and then to a PNG, and
-        // LibreOffice draws the vector — so the raster fallback every inline
-        // SVG carries for Word before 2016 is never read here. Producing it
-        // dominates a preview whose artwork is many small SVGs.
-        svgRasterFallback: false,
-        warnings,
-        fonts: {
-          onResolved: (fonts) => resolvedFonts.push(...fonts),
-        },
-      }),
+      (async () => {
+        if (prepare)
+          prepared = await prepare(document, { ...render, warnings });
+        return adapter.generateBuffer(document, {
+          ...render,
+          ...(prepared && { prepared }),
+          // The bytes are on their way to LibreOffice and then to a PNG, and
+          // LibreOffice draws the vector — so the raster fallback every inline
+          // SVG carries for Word before 2016 is never read here. Producing it
+          // dominates a preview whose artwork is many small SVGs.
+          svgRasterFallback: false,
+          warnings,
+          fonts: {
+            onResolved: (fonts) => resolvedFonts.push(...fonts),
+          },
+        });
+      })(),
       readConverterVersions(dependencies, signal),
     ]);
     officeBytes = buffer;
@@ -818,6 +851,7 @@ export async function renderPreview(
         cache: { hits, misses, enabled: cache.enabled },
         timings: { generateMs, convertMs: 0, rasterizeMs: 0 },
         ...(cachedGeometry && { rendered: cachedGeometry }),
+        ...(prepared && { prepared }),
       };
     }
   }
@@ -1006,6 +1040,7 @@ export async function renderPreview(
         rasterizeMs: elapsed(rasterizeStarted),
       },
       ...(rendered && { rendered }),
+      ...(prepared && { prepared }),
     };
   } finally {
     // Order matters: the fontconfig stager freezes its staged directory to

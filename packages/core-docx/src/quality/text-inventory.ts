@@ -12,6 +12,14 @@
  * An allowlist by component, unlike the placeholder walk that visits every
  * string: a colour, a style name or a file path is a string the page never
  * shows, and an entry the PDF cannot contain would read as clipped text.
+ *
+ * Two kinds of string are painted without being authored where they show.
+ * A table of contents repeats the headings it collects — cached into the
+ * field so headless LibreOffice shows them — and a native chart sets its
+ * title and axis titles inside the drawing. Both are inventoried where they
+ * render so a heading's first occurrence is not stolen by the contents page;
+ * the contents entries are `optional`, since which headings a field collects
+ * is the field's decision and an entry the page lacks is no defect.
  */
 
 import type { QualityFact } from '@json-to-office/quality';
@@ -24,6 +32,7 @@ export type DocxTextRole =
   | 'table-cell'
   | 'statistic'
   | 'caption'
+  | 'toc-entry'
   | 'chrome';
 
 export interface DocxTextFact extends QualityFact {
@@ -44,6 +53,19 @@ export interface DocxTextFact extends QualityFact {
   repeats?: boolean;
   /** Compiled by a block: `path` is the authored slot, not the paragraph. */
   generated?: boolean;
+  /**
+   * Painted by the renderer from other authored text — a contents entry —
+   * so its absence is not a defect and never a `missing` finding.
+   */
+  optional?: boolean;
+}
+
+/** A `toc` component's outline range, as the field parses `props.depth`. */
+function tocDepth(depth: unknown): { from: number; to: number } {
+  const range = asRecord(depth) ?? {};
+  const from = typeof range.from === 'number' ? range.from : 1;
+  const to = typeof range.to === 'number' ? range.to : 3;
+  return { from, to };
 }
 
 type Rec = Record<string, unknown>;
@@ -90,18 +112,51 @@ export function collectDocxTextInventory(
       path,
       text,
       role,
-      order: entries.length,
+      // Renumbered once the walk is done: contents entries are spliced in.
+      order: -1,
       ...extra,
     });
   };
 
+  // Contents fields collect headings that come later in the walk, so they
+  // are resolved after it: each `toc` remembers where in the inventory its
+  // entries belong, every heading remembers which user section held it.
+  interface Heading {
+    text: string;
+    /** Outline level; a style-mapped paragraph carries its theme style instead. */
+    level?: number;
+    themeStyle?: string;
+    section: number | undefined;
+  }
+  interface Toc {
+    /** Inventory index the entries are spliced in at. */
+    at: number;
+    path: string;
+    depth: { from: number; to: number };
+    /** Theme styles the field maps in as entries, whatever their level. */
+    styles: ReadonlySet<string>;
+    /** The user section to restrict to; undefined for the whole document. */
+    section: number | undefined;
+  }
+  const headings: Heading[] = [];
+  const tocs: Toc[] = [];
+  let sectionCount = 0;
+
   // A header or cell is `{ content }`, where content is a string or a
   // component; a bare string is tolerated for the compiled forms that use it.
+  interface Inherited {
+    repeats?: boolean;
+    /** Ordinal of the enclosing user `section`, for contents scoping. */
+    section?: number;
+    /** Inside a table cell, which the contents field never collects from. */
+    inCell?: boolean;
+  }
+
   const visitCell = (
     cell: unknown,
     path: string,
     role: DocxTextRole,
-    inherited: { repeats?: boolean }
+    inherited: Inherited
   ): void => {
     // A footer is often a borderless table. Its cells repeat on every page
     // like any other chrome, so the role and the repeat flag have to survive
@@ -119,24 +174,27 @@ export function collectDocxTextInventory(
         add(`${path}/content`, rec.content, cellRole, extra);
       else {
         const inner = asRecord(rec.content);
-        if (inner) visitNode(inner, `${path}/content`, inherited);
+        if (inner)
+          visitNode(inner, `${path}/content`, { ...inherited, inCell: true });
       }
       return;
     }
-    if (typeof rec.name === 'string') visitNode(rec, path, inherited);
+    if (typeof rec.name === 'string')
+      visitNode(rec, path, { ...inherited, inCell: true });
   };
 
-  const visitNode = (
-    node: Rec,
-    path: string,
-    inherited: { repeats?: boolean }
-  ): void => {
+  const visitNode = (node: Rec, path: string, inherited: Inherited): void => {
     if (node.enabled === false) return;
     const props = asRecord(node.props) ?? {};
     const name = typeof node.name === 'string' ? node.name : '';
     const extra: Partial<DocxTextFact> = {
       ...(inherited.repeats && { repeats: true }),
     };
+    // Children of a user section carry its ordinal, for contents scoping.
+    const scope: Inherited =
+      name === 'section'
+        ? { ...inherited, section: ++sectionCount }
+        : inherited;
 
     switch (name) {
       case 'heading': {
@@ -152,6 +210,35 @@ export function collectDocxTextInventory(
             ? props.level
             : 1;
         add(`${path}/props/text`, props.text, 'heading', { ...extra, level });
+        if (
+          typeof props.text === 'string' &&
+          props.text.trim() !== '' &&
+          !scope.inCell
+        ) {
+          headings.push({ text: props.text, level, section: scope.section });
+        }
+        break;
+      }
+      case 'toc': {
+        // The title is a plain paragraph the field carries; the entries
+        // come after the walk. `auto` scope is the section when the field
+        // sits in a user section, the document otherwise — as the compiler
+        // resolves it.
+        add(`${path}/props/title`, props.title, 'toc-entry', extra);
+        const styles = new Set<string>();
+        if (Array.isArray(props.styles)) {
+          for (const mapping of props.styles) {
+            const id = asRecord(mapping)?.styleId;
+            if (typeof id === 'string') styles.add(id);
+          }
+        }
+        tocs.push({
+          at: entries.length,
+          path,
+          depth: tocDepth(props.depth),
+          styles,
+          section: props.scope === 'document' ? undefined : scope.section,
+        });
         break;
       }
       case 'paragraph': {
@@ -165,6 +252,18 @@ export function collectDocxTextInventory(
             ...(frame && { frame }),
           }
         );
+        if (
+          typeof props.themeStyle === 'string' &&
+          typeof props.text === 'string' &&
+          props.text.trim() !== '' &&
+          !scope.inCell
+        ) {
+          headings.push({
+            text: props.text,
+            themeStyle: props.themeStyle,
+            section: scope.section,
+          });
+        }
         break;
       }
       case 'list': {
@@ -221,8 +320,32 @@ export function collectDocxTextInventory(
         add(`${path}/props/description`, props.description, 'statistic', extra);
         break;
       }
+      case 'chart': {
+        // A native chart draws its title and axis titles as text the PDF
+        // carries — the title unless `showTitle` hides it, the axis titles
+        // only where the chart has axes. Series names and category labels
+        // it may abbreviate, so those stay out.
+        if (props.showTitle !== false) {
+          add(`${path}/props/title`, props.title, 'caption', extra);
+        }
+        if (props.type !== 'pie' && props.type !== 'doughnut') {
+          add(
+            `${path}/props/catAxisTitle`,
+            props.catAxisTitle,
+            'caption',
+            extra
+          );
+          add(
+            `${path}/props/valAxisTitle`,
+            props.valAxisTitle,
+            'caption',
+            extra
+          );
+        }
+        add(`${path}/props/caption`, props.caption, 'caption', extra);
+        break;
+      }
       case 'image':
-      case 'chart':
       case 'highcharts':
       case 'visual':
       case 'visual-native': {
@@ -251,7 +374,7 @@ export function collectDocxTextInventory(
     if (Array.isArray(node.children)) {
       node.children.forEach((child, index) => {
         const rec = asRecord(child);
-        if (rec) visitNode(rec, `${path}/children/${index}`, inherited);
+        if (rec) visitNode(rec, `${path}/children/${index}`, scope);
       });
     }
   };
@@ -259,6 +382,39 @@ export function collectDocxTextInventory(
   children.forEach((child, index) => {
     const rec = asRecord(child);
     if (rec) visitNode(rec, `${basePath}/${index}`, {});
+  });
+
+  // Splice contents entries in, last field first so earlier indices hold,
+  // then renumber: reading order is the whole point of the inventory.
+  for (const toc of [...tocs].reverse()) {
+    // Headings within the outline range, plus every paragraph whose theme
+    // style the field maps — those enter whatever the range says.
+    const collected = headings.filter(
+      (heading) =>
+        (toc.section === undefined || heading.section === toc.section) &&
+        (heading.level !== undefined
+          ? heading.level >= toc.depth.from && heading.level <= toc.depth.to
+          : heading.themeStyle !== undefined &&
+            toc.styles.has(heading.themeStyle))
+    );
+    entries.splice(
+      toc.at,
+      0,
+      ...collected.map(
+        (heading, index): DocxTextFact => ({
+          id: `docx:text:${toc.path}:entry:${index}`,
+          kind: 'docx/text',
+          path: toc.path,
+          text: heading.text,
+          role: 'toc-entry',
+          order: 0,
+          optional: true,
+        })
+      )
+    );
+  }
+  entries.forEach((entry, index) => {
+    entry.order = index;
   });
   return entries;
 }

@@ -18,17 +18,26 @@
  * Pure: geometry and fonts are extracted by the caller (see
  * `extractPdfTextGeometry`, `extractPdfFonts`), so every rule here is
  * testable from captured fixtures with no converter on the host.
+ *
+ * The checks draft findings; the quality engine turns them into
+ * diagnostics. Each check is one rule of `RENDERED_QUALITY_RULES`, so a
+ * profile can switch one off or move its severity, a policy can suppress
+ * one at a pointer and a gate can make one blocking — the same levers every
+ * static rule answers to, applied to the pass that measures.
  */
 
 import {
-  QUALITY_CODES,
-  type QualityCategory,
+  QualityEngine,
+  type QualityAnalysis,
+  type QualityAnalyzeOptions,
   type QualityDiagnostic,
-  type DiagnosticSeverity,
+  type QualityFact,
+  type QualityRuleFinding,
 } from '@json-to-office/quality';
 import type { PdfFontInfo } from './pdf-fonts';
 import { familyRendered } from './pdf-fonts';
 import type { PdfTextPage, PdfTextWord } from './pdf-text-geometry';
+import { RENDERED_QUALITY_RULES, type RenderedRuleId } from './rendered-rules';
 import {
   assignInventory,
   type InventoryEntry,
@@ -47,6 +56,7 @@ export interface RenderedTextEntry extends InventoryEntry {
     | 'table-cell'
     | 'statistic'
     | 'caption'
+    | 'toc-entry'
     | 'chrome'
     | 'slide-text';
   level?: number;
@@ -69,6 +79,8 @@ export interface RequestedFont {
 
 export interface RenderedAnalysisInput {
   format: 'docx' | 'pptx';
+  /** Renderer identity, for a profile that declares renderer targets. */
+  renderer?: string;
   pages: readonly PdfTextPage[];
   inventory: readonly RenderedTextEntry[];
   /** Fonts the PDF carries; `undefined` when the host could not inspect them. */
@@ -84,14 +96,69 @@ export interface RenderedAnalysisSummary {
   words: number;
   /** Inventory entries by mapping outcome. */
   inventory: Record<MappingStatus, number>;
-  /** Findings by mapping outcome. */
+  /** Findings by mapping outcome, after suppressions. */
   findings: Record<RenderedMapping, number>;
   fonts?: { requested: number; substituted: number };
+  /** Findings a policy suppression removed. */
+  suppressed: number;
+  /** Whether a policy gate made any finding blocking. */
+  blocked: boolean;
+  /** Whether a policy `maxDiagnostics` budget cut the findings returned. */
+  truncated: boolean;
+  /** The quality profile the pass ran under, when one applied. */
+  profileId?: string;
 }
 
 export interface RenderedAnalysis {
-  findings: QualityDiagnostic[];
+  /** The pass's diagnostics, as the quality engine finalised them. */
+  findings: readonly QualityDiagnostic[];
   summary: RenderedAnalysisSummary;
+  /** The engine's own account: evaluated rules, rule errors, truncation. */
+  analysis: QualityAnalysis;
+}
+
+/**
+ * The checks' output before the engine: a rule finding with its rule id.
+ * Code, category and default severity are the rule's, declared once in
+ * `RENDERED_QUALITY_RULES`; a draft states a severity only where one rule
+ * varies it per finding.
+ */
+export interface RenderedFindingDraft extends QualityRuleFinding {
+  ruleId: RenderedRuleId;
+  path: string;
+}
+
+export interface RenderedDraft {
+  drafts: readonly RenderedFindingDraft[];
+  /** The same drafts partitioned by rule, for the pack's `evaluate`. */
+  byRule: ReadonlyMap<RenderedRuleId, readonly RenderedFindingDraft[]>;
+  /** Inventory entries by mapping outcome. */
+  inventory: Record<MappingStatus, number>;
+  fonts?: { requested: number; substituted: number };
+}
+
+/** What the rules read: the whole input of the pass, as one fact. */
+export interface RenderedGeometryFact extends QualityFact {
+  kind: 'rendered/geometry';
+  input: RenderedAnalysisInput;
+}
+
+export function isRenderedGeometryFact(
+  fact: QualityFact
+): fact is RenderedGeometryFact {
+  return fact.kind === 'rendered/geometry';
+}
+
+const drafts = new WeakMap<RenderedGeometryFact, RenderedDraft>();
+
+/** The pass's drafts for a fact, computed once and shared by every rule. */
+export function renderedDraftFor(fact: RenderedGeometryFact): RenderedDraft {
+  let draft = drafts.get(fact);
+  if (!draft) {
+    draft = draftRenderedFindings(fact.input);
+    drafts.set(fact, draft);
+  }
+  return draft;
 }
 
 /** Spill below this is sub-visual: renderer rounding, descender fuzz. */
@@ -99,21 +166,10 @@ export const VISIBLE_SPILL_PT = 2;
 /** Two words overlap when their intersection covers this much of the smaller. */
 const OVERLAP_FRACTION = 0.3;
 
-type RuleId =
-  | 'rendered/clip'
-  | 'rendered/spill'
-  | 'rendered/overlap'
-  | 'rendered/text-missing'
-  | 'rendered/font-substituted'
-  | 'rendered/empty-page'
-  | 'rendered/heading-stranded'
-  | 'rendered/paragraph-split';
-
 interface FindingDraft {
-  ruleId: RuleId;
-  code: string;
-  category: QualityCategory;
-  severity: DiagnosticSeverity;
+  ruleId: RenderedRuleId;
+  /** Only for a rule whose severity varies per finding. */
+  severity?: QualityRuleFinding['severity'];
   message: string;
   path: string;
   mapping: RenderedMapping;
@@ -125,17 +181,13 @@ interface FindingDraft {
 }
 
 /**
- * A draft as the quality contract spells it. Every rendered finding is
- * advisory (`blocking: false`) and carries its mapping status and page on
- * `context`, so one place decides that rather than eight rules.
+ * A draft as the engine reads it. Every rendered finding carries its
+ * mapping status and page on `context`, so one place decides that rather
+ * than eight rules; severity and blocking are the engine's to settle.
  */
-function finding(draft: FindingDraft): QualityDiagnostic {
-  const { ruleId, mapping, page, context, ...rest } = draft;
+function finding(draft: FindingDraft): RenderedFindingDraft {
+  const { mapping, page, context, ...rest } = draft;
   return {
-    source: 'quality',
-    ruleId,
-    certainty: 'rendered',
-    blocking: false,
     ...rest,
     context: {
       ...context,
@@ -208,14 +260,16 @@ function unionBox(parts: readonly OccurrencePart[]) {
   );
 }
 
-/** Run the pass. */
-export function analyzeRenderedDocument(
-  input: RenderedAnalysisInput
-): RenderedAnalysis {
+/**
+ * Run every check and return its drafts, ungated. `analyzeRenderedDocument`
+ * is the entry point; the rule pack reads this through `renderedDraftFor`,
+ * once per fact, so eight rules share one matching pass.
+ */
+function draftRenderedFindings(input: RenderedAnalysisInput): RenderedDraft {
   const { pages, format } = input;
   const { matches, chromeWords } = assignInventory(pages, input.inventory);
   const owners = wordOwners(matches);
-  const findings: QualityDiagnostic[] = [];
+  const findings: RenderedFindingDraft[] = [];
 
   const ownerOf = (pageIndex: number, word: number) =>
     owners.get(`${pageIndex}:${word}`);
@@ -258,9 +312,6 @@ export function analyzeRenderedDocument(
     findings.push(
       finding({
         ruleId: 'rendered/clip',
-        code: QUALITY_CODES.RENDERED_CLIP,
-        category: 'integrity',
-        severity: 'warning',
         mapping: bucket.match ? 'mapped' : 'unmapped',
         page: bucket.page,
         path: bucket.match?.entry.path ?? '',
@@ -289,9 +340,6 @@ export function analyzeRenderedDocument(
     findings.push(
       finding({
         ruleId: 'rendered/clip',
-        code: QUALITY_CODES.RENDERED_CLIP,
-        category: 'integrity',
-        severity: 'warning',
         mapping: 'mapped',
         page: o.endPageIndex + 1,
         path: match.entry.path,
@@ -334,9 +382,6 @@ export function analyzeRenderedDocument(
       findings.push(
         finding({
           ruleId: 'rendered/spill',
-          code: QUALITY_CODES.RENDERED_SPILL,
-          category: 'integrity',
-          severity: 'warning',
           mapping: 'mapped',
           page: o.pageIndex + 1,
           path: match.entry.path,
@@ -398,9 +443,6 @@ export function analyzeRenderedDocument(
         findings.push(
           finding({
             ruleId: 'rendered/overlap',
-            code: QUALITY_CODES.RENDERED_OVERLAP,
-            category: 'integrity',
-            severity: 'warning',
             mapping,
             page: pageIndex + 1,
             path: pathA || pathB,
@@ -426,9 +468,6 @@ export function analyzeRenderedDocument(
     findings.push(
       finding({
         ruleId: 'rendered/text-missing',
-        code: QUALITY_CODES.RENDERED_TEXT_MISSING,
-        category: 'integrity',
-        severity: 'warning',
         mapping: 'mapped',
         path: match.entry.path,
         message: `"${excerpt(match.entry.text)}" does not appear anywhere in the rendered pages.`,
@@ -453,8 +492,6 @@ export function analyzeRenderedDocument(
       findings.push(
         finding({
           ruleId: 'rendered/font-substituted',
-          code: QUALITY_CODES.RENDERED_FONT_SUBSTITUTED,
-          category: 'brand',
           severity: requested.declared ? 'warning' : 'info',
           mapping: requested.path ? 'mapped' : 'unmapped',
           path: requested.path ?? '',
@@ -482,9 +519,6 @@ export function analyzeRenderedDocument(
     findings.push(
       finding({
         ruleId: 'rendered/empty-page',
-        code: QUALITY_CODES.RENDERED_EMPTY_PAGE,
-        category: 'integrity',
-        severity: 'info',
         mapping: 'unmapped',
         page: pageIndex + 1,
         path: '',
@@ -513,9 +547,6 @@ export function analyzeRenderedDocument(
       findings.push(
         finding({
           ruleId: 'rendered/heading-stranded',
-          code: QUALITY_CODES.RENDERED_HEADING_STRANDED,
-          category: 'composition',
-          severity: 'warning',
           mapping: 'mapped',
           page: part.pageIndex + 1,
           path: match.entry.path,
@@ -555,9 +586,6 @@ export function analyzeRenderedDocument(
       findings.push(
         finding({
           ruleId: 'rendered/paragraph-split',
-          code: QUALITY_CODES.RENDERED_PARAGRAPH_SPLIT,
-          category: 'composition',
-          severity: 'info',
           mapping: 'mapped',
           page: (which === 'orphan' ? first.pageIndex : last.pageIndex) + 1,
           path: match.entry.path,
@@ -584,29 +612,98 @@ export function analyzeRenderedDocument(
     skipped: 0,
   };
   for (const match of matches) inventory[match.status] += 1;
+
+  const byRule = new Map<RenderedRuleId, RenderedFindingDraft[]>();
+  for (const draft of findings) {
+    const bucket = byRule.get(draft.ruleId);
+    if (bucket) bucket.push(draft);
+    else byRule.set(draft.ruleId, [draft]);
+  }
+
+  return {
+    drafts: findings,
+    byRule,
+    inventory,
+    // The same gate the check itself runs under: an empty font list
+    // verified nothing, and must not read as "nothing was substituted".
+    ...(input.fonts &&
+      input.fonts.length > 0 &&
+      input.requestedFonts && {
+        fonts: { requested: input.requestedFonts.length, substituted },
+      }),
+  };
+}
+
+let engine: QualityEngine | undefined;
+
+/** The pass's engine: the rendered rule pack, built once. */
+function renderedEngine(): QualityEngine {
+  engine ??= new QualityEngine(RENDERED_QUALITY_RULES.rules);
+  return engine;
+}
+
+/**
+ * Run the pass. Geometry, fonts and inventory become one `rendered/geometry`
+ * fact; the rendered rule pack reads it under the caller's profile and
+ * policy, so the findings come back suppressed, re-severed and gated the
+ * way `jto_validate`'s would.
+ */
+export function analyzeRenderedDocument(
+  input: RenderedAnalysisInput,
+  options: QualityAnalyzeOptions = {}
+): RenderedAnalysis {
+  const fact: RenderedGeometryFact = {
+    id: 'rendered:geometry',
+    kind: 'rendered/geometry',
+    path: '',
+    input,
+  };
+  const analysis = renderedEngine().analyzeSync(
+    {
+      format: input.format,
+      model: undefined,
+      facts: [fact],
+      provenance: {},
+      ...(input.renderer !== undefined && { renderer: input.renderer }),
+    },
+    options
+  );
+  // The rules met any fault in the measuring pass as a rule error; the
+  // summary must not turn that into a crash of an advisory pass.
+  let draft: RenderedDraft | undefined;
+  try {
+    draft = renderedDraftFor(fact);
+  } catch {
+    draft = undefined;
+  }
   const byMapping: Record<RenderedMapping, number> = {
     mapped: 0,
     ambiguous: 0,
     unmapped: 0,
   };
-  for (const f of findings) {
+  for (const f of analysis.diagnostics) {
     byMapping[(f.context?.mapping as RenderedMapping) ?? 'unmapped'] += 1;
   }
-
   return {
-    findings,
+    findings: analysis.diagnostics,
     summary: {
-      pages: pages.length,
-      words: pages.reduce((n, p) => n + p.words.length, 0),
-      inventory,
+      pages: input.pages.length,
+      words: input.pages.reduce((n, p) => n + p.words.length, 0),
+      inventory: draft?.inventory ?? {
+        mapped: 0,
+        ambiguous: 0,
+        missing: 0,
+        skipped: 0,
+      },
       findings: byMapping,
-      // The same gate the check itself runs under: an empty font list
-      // verified nothing, and must not read as "nothing was substituted".
-      ...(input.fonts &&
-        input.fonts.length > 0 &&
-        input.requestedFonts && {
-          fonts: { requested: input.requestedFonts.length, substituted },
-        }),
+      ...(draft?.fonts && { fonts: draft.fonts }),
+      suppressed: analysis.suppressedCount,
+      blocked: analysis.blocked,
+      truncated: analysis.truncated,
+      ...(analysis.profileId !== undefined && {
+        profileId: analysis.profileId,
+      }),
     },
+    analysis,
   };
 }

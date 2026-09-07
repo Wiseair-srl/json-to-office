@@ -257,6 +257,12 @@ export interface InventoryEntry {
   text: string;
   /** Header/footer text repeats per page: every occurrence is legitimate. */
   repeats?: boolean;
+  /**
+   * Painted by the renderer from other authored text — a contents entry —
+   * so it claims its occurrence when there is one and is `skipped`, never
+   * `missing`, when there is not.
+   */
+  optional?: boolean;
 }
 
 export type MappingStatus = 'mapped' | 'ambiguous' | 'missing' | 'skipped';
@@ -354,8 +360,8 @@ export interface InventoryAssignment<T extends InventoryEntry> {
  * stream without those words; each claims the first unclaimed occurrence at
  * or after the previous claim, which is how "Total" in the second table
  * finds the second "Total". An entry with no occurrence is `missing` —
- * fully clipped, or never set — and one whose every occurrence was already
- * claimed is `ambiguous`.
+ * fully clipped, or never set — unless it is optional, and one whose every
+ * occurrence was already claimed is `ambiguous`.
  */
 export function assignInventory<T extends InventoryEntry>(
   pages: readonly PdfTextPage[],
@@ -427,7 +433,9 @@ export function assignInventory<T extends InventoryEntry>(
     }
     let all = findOccurrences(body, segments);
     let partial: InventoryMatch<T>['partial'];
-    if (all.length === 0 && segments.length === 1) {
+    // An optional entry is skipped when absent, so its prefix — the costliest
+    // search here — is never worth looking for.
+    if (all.length === 0 && segments.length === 1 && !entry.optional) {
       const prefix = longestRenderedPrefix(body, needle);
       if (prefix) {
         all = [occurrence(body, prefix.at, prefix.at + prefix.length)];
@@ -435,7 +443,12 @@ export function assignInventory<T extends InventoryEntry>(
       }
     }
     if (all.length === 0) {
-      results.set(entry, { entry, needle, status: 'missing', occurrences: [] });
+      results.set(entry, {
+        entry,
+        needle,
+        status: entry.optional ? 'skipped' : 'missing',
+        occurrences: [],
+      });
       continue;
     }
     const free = all.filter((o) => !claimed.has(o.at));

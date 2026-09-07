@@ -16,6 +16,7 @@ import type {
   QualityProfile,
   QualityRule,
 } from '@json-to-office/quality';
+import { RENDERED_QUALITY_RULES } from '@json-to-office/jto-ops';
 import type { Blueprint } from '@json-to-office/shared';
 
 import type { FormatName } from './adapters.js';
@@ -287,7 +288,15 @@ export function renderDesignGuide(
 
 export async function designGuide(format: FormatName): Promise<DesignGuide> {
   const core = await loadCore(format);
-  const rules = (core?.rules ?? []).map(guideRule);
+  // The rendered pass is a rule pack of its own, format-filtered the way the
+  // engine filters it; the guide lists it beside the format's static rules
+  // so a profile author sees every id a profile can configure.
+  const rules = [
+    ...(core?.rules ?? []),
+    ...RENDERED_QUALITY_RULES.rules.filter(
+      (rule) => rule.formats === undefined || rule.formats.includes(format)
+    ),
+  ].map(guideRule);
   const profiles = Object.values(core?.profiles ?? {})
     .map((profile) => guideProfile(profile, core?.defaultProfileId))
     .sort((a, b) => a.id.localeCompare(b.id));
@@ -316,6 +325,7 @@ export async function designGuide(format: FormatName): Promise<DesignGuide> {
       'the theme registry',
       'the quality profiles',
       'the rule pack',
+      'the rendered rule pack',
       'the block catalogue',
       ...(blueprints.length ? ['the blueprints'] : []),
       'the template gallery',

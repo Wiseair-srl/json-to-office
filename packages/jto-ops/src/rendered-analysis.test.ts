@@ -10,6 +10,7 @@ import {
   analyzeRenderedDocument,
   type RenderedTextEntry,
 } from './rendered-analysis';
+import { RENDERED_QUALITY_RULES } from './rendered-rules';
 
 function word(text: string, x: number, y: number, w = 30, h = 12): PdfTextWord {
   return { text, xMin: x, yMin: y, xMax: x + w, yMax: y + h };
@@ -75,6 +76,9 @@ describe('analyzeRenderedDocument', () => {
       inventory: { mapped: 2, ambiguous: 0, missing: 0, skipped: 0 },
       findings: { mapped: 0, ambiguous: 0, unmapped: 0 },
       fonts: { requested: 1, substituted: 0 },
+      suppressed: 0,
+      blocked: false,
+      truncated: false,
     });
   });
 
@@ -386,5 +390,112 @@ describe('analyzeRenderedDocument', () => {
       ],
     });
     expect(result.findings).toEqual([]);
+  });
+});
+
+describe('the rendered pass under a profile and policy', () => {
+  const clippedPage = () =>
+    page([
+      word('Revenue', 10, 100),
+      word('unbreakablewordthatrunsoff', 560, 100, 120),
+      word('Alone', 10, 700),
+    ]);
+  const input = () => ({
+    format: 'docx' as const,
+    pages: [clippedPage(), page([])],
+    inventory: [
+      entry('/p', 'Revenue unbreakablewordthatrunsoff'),
+      entry('/a', 'Alone'),
+    ],
+  });
+
+  it('runs every rendered rule through the quality engine, format-filtered', () => {
+    const docx = analyzeRenderedDocument(input());
+    expect(docx.analysis.evaluatedRuleIds).toEqual(
+      RENDERED_QUALITY_RULES.rules.map((rule) => rule.id)
+    );
+    const pptx = analyzeRenderedDocument({ ...input(), format: 'pptx' });
+    expect(pptx.analysis.evaluatedRuleIds).not.toContain(
+      'rendered/heading-stranded'
+    );
+    expect(pptx.analysis.evaluatedRuleIds).not.toContain(
+      'rendered/paragraph-split'
+    );
+  });
+
+  it('drops a suppressed finding and counts it', () => {
+    const result = analyzeRenderedDocument(input(), {
+      policy: {
+        suppressions: [
+          {
+            code: QUALITY_CODES.RENDERED_EMPTY_PAGE,
+            reason: 'the back cover is a full-page figure',
+          },
+        ],
+      },
+    });
+    expect(codes(result.findings)).toEqual([QUALITY_CODES.RENDERED_CLIP]);
+    expect(result.summary.suppressed).toBe(1);
+    expect(result.summary.findings).toEqual({
+      mapped: 1,
+      ambiguous: 0,
+      unmapped: 0,
+    });
+  });
+
+  it('lets a profile disable a rule and override a severity, and stamps its id', () => {
+    const result = analyzeRenderedDocument(input(), {
+      profile: {
+        id: 'client-report',
+        formats: ['docx'],
+        rules: {
+          'rendered/empty-page': { severity: 'warning' },
+          'rendered/clip': { enabled: false },
+        },
+      },
+    });
+    expect(result.findings).toEqual([
+      expect.objectContaining({
+        code: QUALITY_CODES.RENDERED_EMPTY_PAGE,
+        severity: 'warning',
+        profileId: 'client-report',
+      }),
+    ]);
+    expect(result.summary.profileId).toBe('client-report');
+    expect(result.analysis.evaluatedRuleIds).not.toContain('rendered/clip');
+  });
+
+  it('refuses a profile for another format', () => {
+    expect(() =>
+      analyzeRenderedDocument(input(), {
+        profile: { id: 'deck', formats: ['pptx'] },
+      })
+    ).toThrow(/does not support format "docx"/);
+  });
+
+  it('marks findings blocking under a gate', () => {
+    const result = analyzeRenderedDocument(input(), {
+      policy: { gate: 'warning' },
+    });
+    const clip = result.findings.find(
+      (f) => f.code === QUALITY_CODES.RENDERED_CLIP
+    );
+    const empty = result.findings.find(
+      (f) => f.code === QUALITY_CODES.RENDERED_EMPTY_PAGE
+    );
+    expect(clip?.blocking).toBe(true);
+    expect(empty?.blocking).toBe(false);
+    expect(result.summary.blocked).toBe(true);
+  });
+
+  it('describes every rule for the design guide with a stable code', () => {
+    const rules = RENDERED_QUALITY_RULES.rules;
+    expect(new Set(rules.map((r) => r.code)).size).toBe(rules.length);
+    for (const rule of rules) {
+      expect(rule.id).toMatch(/^rendered\//);
+      expect(rule.defaultCertainty).toBe('rendered');
+      expect(rule.description).toMatch(/\S/);
+      expect(rule.code).toMatch(/^W_QUALITY_RENDERED_/);
+    }
   });
 });
