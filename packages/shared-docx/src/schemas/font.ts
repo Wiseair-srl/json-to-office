@@ -72,7 +72,7 @@ export const NoProofWordsSchema = Type.Array(Type.String({ minLength: 1 }), {
 export const TextFormattingPropertiesSchema = Type.Object(
   {
     case: Type.Optional(TextCaseSchema),
-    size: Type.Optional(Type.Number({ minimum: 8, maximum: 120 })),
+    size: Type.Optional(Type.Number({ minimum: 8, maximum: 1638 })),
     color: Type.Optional(HexColorSchema),
     bold: Type.Optional(Type.Boolean()),
     fontWeight: Type.Optional(
