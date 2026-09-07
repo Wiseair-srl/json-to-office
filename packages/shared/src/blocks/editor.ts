@@ -29,6 +29,10 @@ import {
 type Schema = Record<string, any>;
 
 /** A block invocation as authored: the component the editor inserts. */
+/** `isScaffoldMarker` from `@json-to-office/quality`, as a JSON-schema pattern. */
+const SCAFFOLD_MARKER_SCHEMA_PATTERN =
+  '^\\s*\\{\\{\\s*[^{}\\n]*?\\S[^{}\\n]*?\\s*\\}\\}\\s*$';
+
 export interface BlockInvocationExample {
   name: 'block';
   props: { ref: string; slots?: Record<string, unknown> };
@@ -125,6 +129,21 @@ export function blockSlotEditorSchema(
     for (const key of ['role', 'required', 'maxWords', 'description'] as const)
       delete rest[key];
     schema = { ...rest };
+    // A scaffold marker is exempt from lengths at validation; the editor
+    // agrees, or a fresh scaffold shows errors the validator does not.
+    if (rest.minLength !== undefined || rest.maxLength !== undefined) {
+      const { minLength, maxLength, ...unbounded } = rest;
+      schema = {
+        ...unbounded,
+        anyOf: [
+          {
+            ...(minLength !== undefined && { minLength }),
+            ...(maxLength !== undefined && { maxLength }),
+          },
+          { pattern: SCAFFOLD_MARKER_SCHEMA_PATTERN },
+        ],
+      };
+    }
     if (oneLine) schema.pattern = '^[^\\r\\n]*$';
     if (items) schema.items = blockSlotEditorSchema(items, componentRef);
     if (properties) {

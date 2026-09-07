@@ -105,7 +105,13 @@ export interface Scorecard {
     /** Ids, present only for a corpus that may be disclosed. */
     briefIds?: string[];
     /** The committed set the ids came from, when `--set` chose them. */
-    briefSet?: { id: string; hash: string };
+    briefSet?: {
+      id: string;
+      hash: string;
+      /** Runs per brief the set was designed for, and the runs this set made. */
+      designedRepeat: number;
+      repeat: number;
+    };
   };
   manifest: RunManifest;
   totals: ScorecardTotals;
@@ -233,7 +239,13 @@ export function buildScorecard(input: {
     stratification: Stratification;
     briefIds?: string[];
     /** The committed set the ids came from, when `--set` chose them. */
-    briefSet?: { id: string; hash: string };
+    briefSet?: {
+      id: string;
+      hash: string;
+      /** Runs per brief the set was designed for, and the runs this set made. */
+      designedRepeat: number;
+      repeat: number;
+    };
   };
   /** Archetype per brief id, so the scorecard can group by it. */
   archetypes: Readonly<Record<string, string>>;

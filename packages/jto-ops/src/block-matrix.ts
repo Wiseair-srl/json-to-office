@@ -455,17 +455,14 @@ function conditions(
   font: MatrixFont,
   canvas: MatrixCanvas
 ): Rec {
-  const sections = children.map((child) =>
-    isRecord(child) && child.name === 'section' && canvas !== 'A4'
-      ? {
-          ...child,
-          props: {
-            ...(isRecord(child.props) ? child.props : {}),
-            page: { size: canvas },
-          },
-        }
-      : child
-  );
+  // Every section takes the canvas, keeping whatever else its own page
+  // override says (a template section can state margins of its own).
+  const sections = children.map((child) => {
+    if (!isRecord(child) || child.name !== 'section') return child;
+    const props = isRecord(child.props) ? child.props : {};
+    const page = isRecord(props.page) ? props.page : {};
+    return { ...child, props: { ...props, page: { ...page, size: canvas } } };
+  });
   // A native chart is drawn by the office-open renderer only.
   const chart = JSON.stringify(sections).includes('"name":"chart"');
   return {
@@ -480,7 +477,10 @@ function conditions(
   };
 }
 
-const BODY_COPY = words(40, 5, true);
+// A seed no slot offset reaches (offsets are sums of slot-name lengths):
+// body copy must not read as the prefix of any slot's text, or the matcher
+// could map a dropped title onto the paragraph after it.
+const BODY_COPY = words(40, 1000, true);
 
 /**
  * A small report with one block at its edge: the chrome at the template's

@@ -81,6 +81,7 @@ export {
   type PlaceholderKind,
   type PlaceholderMatch,
   type PlaceholderOccurrence,
+  isScaffoldMarker,
 } from './placeholder';
 export {
   QualityEngine,

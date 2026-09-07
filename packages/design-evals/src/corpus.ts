@@ -256,8 +256,31 @@ export async function loadBriefSet(
   const parsed = JSON.parse(text) as Omit<BriefSet, 'hash'>;
   if (parsed.id !== id)
     throw new CorpusError(`Brief set ${file} says its id is "${parsed.id}".`);
+  if (typeof parsed.purpose !== 'string' || parsed.purpose.trim() === '')
+    throw new CorpusError(`Brief set "${id}" states no purpose.`);
+  if (!Number.isInteger(parsed.repeat) || (parsed.repeat as number) < 1)
+    throw new CorpusError(
+      `Brief set "${id}" needs a whole "repeat" of at least 1, not ${JSON.stringify(parsed.repeat)}.`
+    );
+  if (
+    !Array.isArray(parsed.covers) ||
+    parsed.covers.some((c) => typeof c !== 'string')
+  )
+    throw new CorpusError(`Brief set "${id}" lists no "covers" shapes.`);
   if (!Array.isArray(parsed.briefs) || parsed.briefs.length === 0)
     throw new CorpusError(`Brief set "${id}" names no briefs.`);
+  for (const [index, entry] of parsed.briefs.entries()) {
+    if (
+      typeof entry?.id !== 'string' ||
+      typeof entry.why !== 'string' ||
+      entry.why.trim() === '' ||
+      !Array.isArray(entry.covers) ||
+      entry.covers.some((c) => !parsed.covers.includes(c))
+    )
+      throw new CorpusError(
+        `Brief set "${id}" entry ${index} needs an id, a why and covers drawn from the set's own list.`
+      );
+  }
   const known = new Set(corpus.briefs.map((brief) => brief.id));
   const missing = parsed.briefs.filter((entry) => !known.has(entry.id));
   if (missing.length > 0)
@@ -274,9 +297,22 @@ export async function loadBriefSet(
   }
   return {
     ...parsed,
-    repeat: Math.max(1, Number(parsed.repeat ?? 1)),
     hash: createHash('sha256').update(text).digest('hex'),
   };
+}
+
+/** The briefs a list of ids names, in the order the list gives them. */
+export function briefsById(corpus: Corpus, ids: readonly string[]): Brief[] {
+  const known = new Map(corpus.briefs.map((brief) => [brief.id, brief]));
+  const missing = ids.filter((id) => !known.has(id));
+  if (missing.length > 0) {
+    throw new CorpusError(
+      `No brief with id ${missing.map((id) => `"${id}"`).join(', ')} in ${
+        corpus.directory
+      }.`
+    );
+  }
+  return ids.map((id) => known.get(id)!);
 }
 
 /**

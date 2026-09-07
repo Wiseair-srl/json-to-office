@@ -730,9 +730,22 @@ describe('scaffold markers and slot budgets', () => {
       'block_slot_budget',
       'block_slot_budget',
     ]);
-    // Half a marker is content, and content is measured.
+    // Half a marker is content, and content is measured; so is an empty
+    // or two-line pair of braces, which the placeholder rule never reports.
     resolveBlockSlot(slot, '{{Measure}} more', '/slots/x', issues);
     expect(issues).toHaveLength(4);
+    resolveBlockSlot(slot, '{{ }}', '/slots/y', issues);
+    resolveBlockSlot(slot, '{{a\nb}}', '/slots/z', issues);
+    expect(issues.length).toBeGreaterThan(4);
+    // A marker in a choice slot is a marker too.
+    const choices: BlockIssue[] = [];
+    resolveBlockSlot(
+      { type: 'string', enum: ['up', 'down'] },
+      '{{up or down}}',
+      '/slots/trend',
+      choices
+    );
+    expect(choices).toEqual([]);
   });
 });
 

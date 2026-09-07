@@ -232,5 +232,27 @@ describe('the client-report checkpoint set', () => {
     );
     const small = await loadCorpus(dir);
     await expect(loadBriefSet(small, 'bad')).rejects.toThrow(/not-there/);
+    await fs.writeFile(
+      path.join(dir, 'sets', 'vague.json'),
+      JSON.stringify({
+        id: 'vague',
+        purpose: 'x',
+        repeat: 'three',
+        covers: ['a'],
+        briefs: [{ id: 'sample-brief', covers: ['a'], why: 'because' }],
+      })
+    );
+    await expect(loadBriefSet(small, 'vague')).rejects.toThrow(/repeat/);
+    await fs.writeFile(
+      path.join(dir, 'sets', 'stray.json'),
+      JSON.stringify({
+        id: 'stray',
+        purpose: 'x',
+        repeat: 2,
+        covers: ['a'],
+        briefs: [{ id: 'sample-brief', covers: ['b'], why: 'because' }],
+      })
+    );
+    await expect(loadBriefSet(small, 'stray')).rejects.toThrow(/covers/);
   });
 });

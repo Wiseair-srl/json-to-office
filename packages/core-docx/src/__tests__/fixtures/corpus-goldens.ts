@@ -455,13 +455,13 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'blocks/text-box-shape-conflicting-borders':
     'e8831bac0d7c7fe3fa4481e903af781c00adc3df77146cdd89aca3d4b48bd103',
   'blocks/text-box-nested-columns':
-    'e4b7916c59bb21c0a9ea4121125b550a5c305da2f774cfd32d90737ba6b727c6',
+    '3e225634ae2070f9dc4d272b2598e071d4120dc406aedb1d9fec51090acddc42',
   'blocks/text-box-nested-columns-widths':
-    'f92dc2ca2da4727c91fedbf48da812488a1724e29591d6b3cf0e0ab95cb04370',
+    '496e35d2cef1b337c4cefb87813e74485b290a1d69e45b4e6d139814347713cf',
   'blocks/text-box-nested-columns-sparse':
     '6e475c059821bf1ff78e336218d0e6eb2a9dcbb26c767b1a0a64d5602aef00a2',
   'blocks/text-box-nested-columns-floating':
-    '28e5a14cd0ab87b771cb23457521ca65908b007eb4c6c26fe4d70c0e2beeee54',
+    '776a787bad34a4387a45e11c91a8c992467ffb2b6f3bc3b6076f7db4bc3d33e1',
   'blocks/divider-default':
     '1cbb14ef7c18087b469cb89811bcc9366b9b005fe9f4d74a5bfaa76c4fec8c6b',
   'blocks/divider-styled':

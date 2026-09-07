@@ -17,6 +17,16 @@ import { QUALITY_CODES, type QualityRuleFinding } from './types';
 /** The marker shape `jto_scaffold` writes and `jto_generate` refuses. */
 export const SCAFFOLD_MARKER_SYNTAX = '{{…}}';
 
+/**
+ * Whether a value is one scaffold marker and nothing else: `{{Client name}}`,
+ * with the same body rule the placeholder pattern applies (something to say,
+ * no newline). The slot budgets exempt exactly what this rule reports and
+ * generation refuses; three sites, one predicate.
+ */
+export function isScaffoldMarker(value: string): boolean {
+  return /^\s*\{\{\s*[^{}\n]*?\S[^{}\n]*?\s*\}\}\s*$/.test(value);
+}
+
 export type PlaceholderKind = 'scaffold-marker' | 'filler';
 
 export interface PlaceholderMatch {

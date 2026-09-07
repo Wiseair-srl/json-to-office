@@ -60,7 +60,8 @@ describe('parseArgs', () => {
   it('runs each brief once unless asked to repeat', () => {
     // Three runs per brief at final acceptance is how run variance becomes
     // visible rather than being averaged into the result.
-    expect(parseArgs([]).repeat).toBe(1);
+    // Absent means "the set's design, else one", resolved in main.
+    expect(parseArgs([]).repeat).toBeUndefined();
     expect(parseArgs(['--repeat', '3']).repeat).toBe(3);
     expect(parseArgs(['--repeat', '0']).repeat).toBe(1);
   });

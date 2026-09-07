@@ -1297,10 +1297,17 @@ function compileColumns(
   // 100-twip `gridCol` per column, and LibreOffice sizes a fixed-layout table
   // from its grid: four KPI columns came out at half the measure with the
   // paragraph after them wrapped up beside the table (#343).
-  const cells = widths.map(
+  // Whole twips: an odd gap would leave half a twip on each side of it,
+  // and a grid is a measurement. The last cell absorbs the rounding so the
+  // cells still sum to the measure.
+  const exact = widths.map(
     (width, index) =>
       width + gaps[index] / 2 + (index > 0 ? gaps[index - 1] / 2 : 0)
   );
+  const cells = exact.map((cell) => Math.round(cell));
+  const total = exact.reduce((sum, cell) => sum + cell, 0);
+  cells[cells.length - 1] +=
+    Math.round(total) - cells.reduce((a, b) => a + b, 0);
 
   // Round-robin: the only distribution available without measuring text, and
   // the one this has always used.

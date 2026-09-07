@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { analyzeLayoutGroups } from '../layout';
+import { analyzeLayoutGroups, determineComponentLayout } from '../layout';
 import { ComponentDefinition } from '../../types';
 
 describe('Layout PageBreak', () => {
@@ -300,5 +300,29 @@ describe('Layout PageBreak', () => {
       expect(groups[0].breakBefore).toBe(false);
       expect(groups[1].breakBefore).toBe(true);
     });
+  });
+});
+
+describe('column layout is decided by a top-level columns only', () => {
+  it('never declares a section multi-column for a container holding columns', () => {
+    const columns = {
+      name: 'columns',
+      props: { columns: [{ width: '50%' }, { width: '50%' }] },
+      children: [{ name: 'paragraph', props: { text: 'a' } }],
+    };
+    for (const container of ['group', 'text-box'])
+      expect(
+        determineComponentLayout({
+          name: container,
+          children: [columns],
+        } as never)
+      ).toBe('single');
+    // The nested columns compile to a table; a two-column newspaper section
+    // around that table drew a KPI row at half the measure (#343).
+    const groups = analyzeLayoutGroups([
+      { name: 'paragraph', props: { text: 'before' } } as never,
+      { name: 'group', children: [columns] } as never,
+    ]);
+    expect(groups.map((g) => g.layout)).toEqual(['single']);
   });
 });

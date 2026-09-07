@@ -139,9 +139,17 @@ describe('the generator', () => {
       (c) => c.canvas === 'LETTER' && c.block === 'report'
     )!;
     for (const section of letter.document.children as {
-      props?: { page?: unknown };
+      props?: { page?: { size?: string } };
     }[])
-      expect(section.props?.page).toEqual({ size: 'LETTER' });
+      expect(section.props?.page?.size).toBe('LETTER');
+    // A section's own page override survives the canvas: the template's
+    // third section states its margins, and the A4 case is A4 there too.
+    const a4 = cases.find((c) => c.canvas === 'A4' && c.block === 'report')!;
+    const third = (a4.document.children as { props?: { page?: unknown } }[])[2];
+    expect(third.props?.page).toMatchObject({
+      size: 'A4',
+      margins: { left: 720, right: 720 },
+    });
     const fallback = cases.find((c) => c.font === 'fallback')!;
     expect(
       (fallback.document.props as { themeOverrides?: unknown }).themeOverrides

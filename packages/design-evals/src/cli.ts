@@ -28,6 +28,7 @@ import {
   selectBriefs,
   type Brief,
   type Corpus,
+  briefsById,
   loadBriefSet,
   type BriefSet,
 } from './corpus.js';
@@ -56,8 +57,11 @@ export interface CliOptions {
   skillPath?: string;
   /** Vision model that scores the rubric; omitted means hard metrics only. */
   judgeModel?: string;
-  /** Runs per brief. Three at final acceptance, so run variance is visible. */
-  repeat: number;
+  /**
+   * Runs per brief, when `--repeat` was given. Otherwise a brief set's own
+   * `repeat`, else one. Three at final acceptance, so run variance is visible.
+   */
+  repeat?: number;
 }
 
 export function parseArgs(argv: readonly string[]): CliOptions {
@@ -99,7 +103,9 @@ export function parseArgs(argv: readonly string[]): CliOptions {
     ...((flags.has('judge') || values.get('judge') !== undefined) && {
       judgeModel: values.get('judge') ?? DEFAULT_JUDGE_MODEL,
     }),
-    repeat: Math.max(1, Number(values.get('repeat') ?? 1)),
+    ...(values.get('repeat') !== undefined && {
+      repeat: Math.max(1, Number(values.get('repeat')) || 1),
+    }),
   };
 }
 
@@ -185,18 +191,25 @@ export async function main(argv: readonly string[]): Promise<number> {
       line(error instanceof Error ? error.message : String(error));
       return 1;
     }
+  }
+  // The set's design decides the runs unless the flag says otherwise; a
+  // shortfall is loud, because a scorecard stamped with the set would
+  // otherwise read as three runs per brief when it holds one.
+  const repeat = options.repeat ?? briefSet?.repeat ?? 1;
+  if (briefSet) {
     line(
-      `brief set ${briefSet.id}: ${briefSet.briefs.length} brief(s), designed for ${briefSet.repeat} run(s) each${
-        options.repeat < briefSet.repeat ? ` (running ${options.repeat})` : ''
-      }`
+      `brief set ${briefSet.id}: ${briefSet.briefs.length} brief(s), ${repeat} run(s) each` +
+        (repeat < briefSet.repeat
+          ? ` — the set is designed for ${briefSet.repeat}`
+          : '')
     );
   }
-  const briefs = selectBriefs(
-    corpus,
-    briefSet
-      ? briefSet.briefs.map((entry) => entry.id).join(',')
-      : options.briefs
-  );
+  const briefs = briefSet
+    ? briefsById(
+        corpus,
+        briefSet.briefs.map((entry) => entry.id)
+      )
+    : selectBriefs(corpus, options.briefs);
   const workspaceRoot =
     process.env[WORKSPACE_DIR_ENV] ??
     (await fs.mkdtemp(path.join(os.tmpdir(), 'jto-evals-ws-')));
@@ -244,10 +257,10 @@ export async function main(argv: readonly string[]): Promise<number> {
   // necessarily the tree any of the briefs ran against.
   const atStart = treeState(root);
   const attempts = briefs.flatMap((brief) =>
-    Array.from({ length: options.repeat }, (_, pass) => ({ brief, pass }))
+    Array.from({ length: repeat }, (_, pass) => ({ brief, pass }))
   );
   for (const [index, { brief, pass }] of attempts.entries()) {
-    const label = options.repeat > 1 ? `${brief.id}#${pass + 1}` : brief.id;
+    const label = repeat > 1 ? `${brief.id}#${pass + 1}` : brief.id;
     line(`[${index + 1}/${attempts.length}] ${label}`);
     const run = await runBrief({
       brief,
@@ -305,7 +318,14 @@ export async function main(argv: readonly string[]): Promise<number> {
       ...(corpus.kind === 'development' && {
         briefIds: briefs.map((brief) => brief.id),
       }),
-      ...(briefSet && { briefSet: { id: briefSet.id, hash: briefSet.hash } }),
+      ...(briefSet && {
+        briefSet: {
+          id: briefSet.id,
+          hash: briefSet.hash,
+          designedRepeat: briefSet.repeat,
+          repeat,
+        },
+      }),
     },
     archetypes: Object.fromEntries(
       briefs.map((brief) => [brief.id, brief.archetype])
