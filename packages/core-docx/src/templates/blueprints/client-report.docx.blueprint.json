@@ -62,7 +62,7 @@
                 "slots": {
                   "number": "01",
                   "title": "{{Section title: the finding, as a statement}}",
-                  "tracker": "{{Tracker: one or two words}}"
+                  "tracker": "{{Tracker: one word}}"
                 }
               }
             },
@@ -120,7 +120,7 @@
                 "slots": {
                   "number": "02",
                   "title": "{{Section title: the finding, as a statement}}",
-                  "tracker": "{{Tracker: one or two words}}"
+                  "tracker": "{{Tracker: one word}}"
                 }
               }
             },
@@ -193,7 +193,7 @@
                 "slots": {
                   "number": "03",
                   "title": "{{Section title: the finding, as a statement}}",
-                  "tracker": "{{Tracker: one or two words}}"
+                  "tracker": "{{Tracker: one word}}"
                 }
               }
             },
@@ -247,7 +247,7 @@
                 "slots": {
                   "number": "04",
                   "title": "{{Section title: the finding, as a statement}}",
-                  "tracker": "{{Tracker: one or two words}}"
+                  "tracker": "{{Tracker: one word}}"
                 }
               }
             },
@@ -319,7 +319,7 @@
                 "slots": {
                   "number": "01",
                   "title": "{{Section title: the finding, as a statement}}",
-                  "tracker": "{{Tracker: one or two words}}"
+                  "tracker": "{{Tracker: one word}}"
                 }
               }
             },
@@ -360,7 +360,7 @@
                 "slots": {
                   "number": "02",
                   "title": "{{Section title: the finding, as a statement}}",
-                  "tracker": "{{Tracker: one or two words}}"
+                  "tracker": "{{Tracker: one word}}"
                 }
               }
             },
@@ -398,7 +398,7 @@
                 "slots": {
                   "number": "03",
                   "title": "{{Section title: the finding, as a statement}}",
-                  "tracker": "{{Tracker: one or two words}}"
+                  "tracker": "{{Tracker: one word}}"
                 }
               }
             },
@@ -449,7 +449,7 @@
                 "slots": {
                   "number": "04",
                   "title": "{{Section title: the finding, as a statement}}",
-                  "tracker": "{{Tracker: one or two words}}"
+                  "tracker": "{{Tracker: one word}}"
                 }
               }
             },

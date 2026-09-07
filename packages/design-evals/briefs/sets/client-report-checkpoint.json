@@ -1,0 +1,48 @@
+{
+  "id": "client-report-checkpoint",
+  "purpose": "The 6–8 varied client-report briefs #360 asks for, chosen before any implementation comparison and held fixed through the #362 checkpoint: the same ids run against the current product and against the report milestone, three times each, so the delta is between products and not between questions.",
+  "repeat": 3,
+  "covers": ["narrative", "dense-tables", "long-text", "chart-labels"],
+  "briefs": [
+    {
+      "id": "cr-brand-repositioning",
+      "covers": ["narrative"],
+      "why": "Low density, two options to weigh and one to recommend: the argument carries the document, and a report that leans on figures it does not have shows it."
+    },
+    {
+      "id": "cr-esg-reporting-readiness",
+      "covers": ["narrative", "dense-tables"],
+      "why": "Low density with one three-way count (34 / 29 / 19 datapoints) that belongs in a table, and a conclusion about what the first report cannot say."
+    },
+    {
+      "id": "cr-cost-programme-review",
+      "covers": ["dense-tables"],
+      "why": "High density: workstreams against plan (118%, 41%, 33%), banked against target, named decisions and owners — a data table with a note is the natural centre."
+    },
+    {
+      "id": "cr-pricing-review-logistics",
+      "covers": ["dense-tables", "chart-labels"],
+      "why": "High density with a segmented book (12% below cost, 40% near it, top 15% at 34% margin) and three repricing tiers, each with expected churn: tiers as table rows and as chart categories."
+    },
+    {
+      "id": "cr-market-entry-nordics",
+      "covers": ["chart-labels", "dense-tables"],
+      "why": "Four country names as categories, two payback cases over 26 and 34 months as series, and three named entry conditions: the widest chart labels in the corpus."
+    },
+    {
+      "id": "cr-workforce-planning",
+      "covers": ["chart-labels", "long-text"],
+      "why": "A headcount bridge year by year — a chart whose categories are years and whose series are hires, attrition and mix — beside a costed plan that has to be argued in prose."
+    },
+    {
+      "id": "cr-service-model-redesign",
+      "covers": ["long-text"],
+      "why": "Medium density whose hardest requirement is text: who loses access if counters close has to be said plainly, at length, next to a channel table."
+    },
+    {
+      "id": "cr-post-merger-integration",
+      "covers": ["long-text", "narrative"],
+      "why": "A sequence with six-month milestones and a stated cost of deferral: the recommendation is a timeline in prose, with the synergy figures in support."
+    }
+  ]
+}

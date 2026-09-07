@@ -1292,6 +1292,15 @@ function compileColumns(
 
   const available = getAvailableWidthTwips(ctx.theme, ctx.themeName);
   const { widths, gaps } = columnMetrics(configs, props.gap, available);
+  // A cell is its column plus half of each gap beside it, so the cells sum
+  // to the measure and the grid says so. Without a grid, docx.js writes a
+  // 100-twip `gridCol` per column, and LibreOffice sizes a fixed-layout table
+  // from its grid: four KPI columns came out at half the measure with the
+  // paragraph after them wrapped up beside the table (#343).
+  const cells = widths.map(
+    (width, index) =>
+      width + gaps[index] / 2 + (index > 0 ? gaps[index - 1] / 2 : 0)
+  );
 
   // Round-robin: the only distribution available without measuring text, and
   // the one this has always used.
@@ -1309,7 +1318,7 @@ function compileColumns(
       kind: 'table',
       id: scope.id,
       path,
-      columnGrid: { unit: 'twips', values: [] },
+      columnGrid: { unit: 'twips', values: cells },
       width: { kind: 'percent', value: 100 },
       layout: 'fixed',
       borders: NO_BORDERS,
@@ -1336,7 +1345,7 @@ function compileColumns(
                       children: [],
                     },
                   ],
-              widthTwips: widths[index],
+              widthTwips: cells[index],
               margins: {
                 topTwips: 0,
                 rightTwips: gaps[index] / 2,

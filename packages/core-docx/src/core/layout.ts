@@ -296,14 +296,13 @@ export function determineComponentLayout(
     return 'single';
   }
 
-  // Check if component contains children
-  if ('children' in component && (component as any).children) {
-    const hasColumns = (component as any).children.some(
-      (child: ComponentDefinition) => isColumnsComponent(child)
-    );
-    return hasColumns ? 'multi-column' : 'single';
-  }
-
+  // A container is never a column layout, whatever it holds. A `columns`
+  // nested in a group, a text box or a block compiles to a table (see
+  // `compileColumns`), and declaring the section multi-column around it put
+  // that table inside a two-column newspaper section: a KPI row after any
+  // paragraph rendered at half the measure with the next paragraph flowing
+  // up beside it (#343). Only a top-level `columns` decides a section's
+  // column layout, and that case returned above.
   return 'single';
 }
 

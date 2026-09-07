@@ -174,6 +174,10 @@ function visitInvocationSlots(
   }
 }
 
+/** A whole-string `{{…}}` scaffold marker, as `jto_scaffold` writes them. */
+const isScaffoldMarker = (value: string): boolean =>
+  /^\s*\{\{[^{}]*\}\}\s*$/.test(value);
+
 /** Metadata is always read from authored definitions, never from a named catalog. */
 export function blockSlotBudgets(
   document: unknown,
@@ -181,7 +185,13 @@ export function blockSlotBudgets(
 ): BlockSlotBudget[] {
   const result: BlockSlotBudget[] = [];
   visitInvocationSlots(document, blocks, (ref, slot, value, pointer, name) => {
-    if (typeof value === 'string' && slot.maxWords !== undefined)
+    // A scaffold marker is not content and is not budgeted; the placeholder
+    // rule reports it and generation refuses it.
+    if (
+      typeof value === 'string' &&
+      slot.maxWords !== undefined &&
+      !isScaffoldMarker(value)
+    )
       result.push({
         block: ref,
         slot: name,
