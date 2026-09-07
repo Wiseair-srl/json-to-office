@@ -5,6 +5,7 @@ import {
   authoredTextForMatch,
   findOccurrences,
   indexDocument,
+  needleSegments,
   normalizeForMatch,
 } from './rendered-text-match';
 
@@ -19,12 +20,16 @@ describe('normalizeForMatch / authoredTextForMatch', () => {
   it('folds ligatures, case and punctuation', () => {
     expect(normalizeForMatch('ﬁnance — Q4!')).toBe('financeq4');
   });
-  it('strips markup the page never shows', () => {
+  it('strips markup the page never shows and cuts the needle at fields', () => {
     expect(
-      authoredTextForMatch(
+      needleSegments(
         'Revenue **grew** 12%.[^rev] See [the appendix](#app) — page {PAGE}'
       )
-    ).toBe('Revenue grew 12%.  See the appendix — page  ');
+    ).toEqual(['revenuegrew12', 'seetheappendixpage']);
+    expect(needleSegments('Figure {SEQ:figure}: Revenue by [@region]')).toEqual(
+      ['figure', 'revenueby']
+    );
+    expect(authoredTextForMatch('a *b* [c](d)')).toBe('a b c');
   });
 });
 
@@ -33,7 +38,7 @@ describe('findOccurrences', () => {
     const index = indexDocument([
       page([word('Reve', 10, 10), word('nue', 40, 10), word('grew', 80, 10)]),
     ]);
-    const hits = findOccurrences(index, 'revenue');
+    const hits = findOccurrences(index, ['revenue']);
     expect(hits).toHaveLength(1);
     expect(hits[0].parts).toEqual([
       { pageIndex: 0, words: [0, 1], xMin: 10, xMax: 70, yMin: 10, yMax: 22 },
@@ -45,7 +50,7 @@ describe('findOccurrences', () => {
       page([word('Total', 10, 10), word('x', 50, 10)]),
       page([word('Total', 10, 40)]),
     ]);
-    const hits = findOccurrences(index, 'total');
+    const hits = findOccurrences(index, ['total']);
     expect(hits.map((h) => h.pageIndex)).toEqual([0, 1]);
   });
 
@@ -54,13 +59,38 @@ describe('findOccurrences', () => {
       page([word('Revenue', 10, 800), word('grew', 50, 800)]),
       page([word('twelve', 10, 40), word('percent', 50, 40)]),
     ]);
-    const [hit] = findOccurrences(index, 'revenuegrewtwelvepercent');
+    const [hit] = findOccurrences(index, ['revenuegrewtwelvepercent']);
     expect(hit.pageIndex).toBe(0);
     expect(hit.endPageIndex).toBe(1);
     expect(hit.parts.map((p) => [p.pageIndex, p.words])).toEqual([
       [0, [0, 1]],
       [1, [0, 1]],
     ]);
+  });
+});
+
+describe('findOccurrences on boundaries and fields', () => {
+  it('never matches inside a word', () => {
+    const index = indexDocument([
+      page([word('homepage', 10, 10), word('pages', 60, 10)]),
+    ]);
+    expect(findOccurrences(index, ['page'])).toEqual([]);
+  });
+
+  it('bridges a rendered field value between two segments', () => {
+    const index = indexDocument([
+      page([
+        word('Figure', 10, 10),
+        word('1:', 50, 10),
+        word('Revenue', 70, 10),
+        word('by', 120, 10),
+        word('region', 140, 10),
+      ]),
+    ]);
+    const hits = findOccurrences(index, ['figure', 'revenuebyregion']);
+    expect(hits).toHaveLength(1);
+    expect(hits[0].parts[0].words).toEqual([0, 1, 2, 3, 4]);
+    expect(findOccurrences(index, ['figure', 'nowhere'])).toEqual([]);
   });
 });
 
@@ -141,6 +171,49 @@ describe('assignInventory', () => {
     expect(matches[0].status).toBe('mapped');
     expect(matches[0].partial).toEqual({ matchedChars: 24, totalChars: 45 });
     expect(matches[0].occurrences[0].parts[0].words).toEqual([0, 1, 2, 3]);
+  });
+
+  it('claims a bare page number in the band even when the footer is only a field', () => {
+    const split = [
+      page([
+        word('Revenue', 10, 500),
+        word('grew', 50, 500),
+        word('2', 300, 820),
+      ]),
+      page([
+        word('twelve', 10, 300),
+        word('percent', 50, 300),
+        word('3', 300, 820),
+      ]),
+    ];
+    const { matches, chromeWords } = assignInventory(split, [
+      { path: '/f', text: '{PAGE}', repeats: true },
+      { path: '/p', text: 'Revenue grew twelve percent' },
+    ]);
+    expect(matches[0].status).toBe('skipped');
+    expect(matches[1].status).toBe('mapped');
+    expect(matches[1].partial).toBeUndefined();
+    expect([...chromeWords]).toEqual(['0:2', '1:2']);
+  });
+
+  it('keeps chrome out of the body: a footer word never claims a body row', () => {
+    const pagesWithBody = [
+      page([
+        word('See', 10, 400),
+        word('the', 30, 400),
+        word('next', 50, 400),
+        word('page', 80, 400),
+        word('Page', 10, 820),
+        word('1', 40, 820),
+      ]),
+    ];
+    const { matches } = assignInventory(pagesWithBody, [
+      { path: '/f', text: 'Page {PAGE}', repeats: true },
+      { path: '/p', text: 'See the next page' },
+    ]);
+    expect(matches[0].occurrences.map((o) => o.parts[0].words)).toEqual([[4]]);
+    expect(matches[1].status).toBe('mapped');
+    expect(matches[1].partial).toBeUndefined();
   });
 
   it('reports text the PDF never shows as missing, and short needles as skipped', () => {

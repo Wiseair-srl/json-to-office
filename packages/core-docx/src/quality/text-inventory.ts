@@ -34,13 +34,12 @@ export interface DocxTextFact extends QualityFact {
   level?: number;
   /** Position in reading order across the whole document, from 0. */
   order: number;
-  /** Set when the paragraph sits in a floating frame with fixed geometry. */
-  frame?: {
-    xPt?: number;
-    yPt?: number;
-    widthPt: number;
-    heightPt?: number;
-  };
+  /**
+   * Set when the paragraph sits in a floating frame. Only the width is a
+   * bound: a docx frame's height is a minimum the frame grows past, so the
+   * rendered pass compares width alone.
+   */
+  frame?: { widthPt: number };
   /** Header or footer text repeats on every page of its section. */
   repeats?: boolean;
   /** Compiled by a block: `path` is the authored slot, not the paragraph. */
@@ -55,31 +54,16 @@ function asRecord(value: unknown): Rec | undefined {
     : undefined;
 }
 
-function pointerSegment(value: string): string {
-  return value.replace(/~/g, '~0').replace(/\//g, '~1');
-}
-
 function twipsToPt(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value)
     ? value / 20
     : undefined;
 }
 
-/** A floating frame's declared box, in points, when it fixes a width. */
+/** A floating frame's declared width, in points, when it fixes one. */
 function frameOf(props: Rec): DocxTextFact['frame'] | undefined {
-  const floating = asRecord(props.floating);
-  if (!floating) return undefined;
-  const widthPt = twipsToPt(floating.width);
-  if (widthPt === undefined) return undefined;
-  const heightPt = twipsToPt(floating.height);
-  const xPt = twipsToPt(asRecord(floating.horizontalPosition)?.offset);
-  const yPt = twipsToPt(asRecord(floating.verticalPosition)?.offset);
-  return {
-    widthPt,
-    ...(heightPt !== undefined && { heightPt }),
-    ...(xPt !== undefined && { xPt }),
-    ...(yPt !== undefined && { yPt }),
-  };
+  const widthPt = twipsToPt(asRecord(props.floating)?.width);
+  return widthPt === undefined ? undefined : { widthPt };
 }
 
 /**
@@ -180,19 +164,33 @@ export function collectDocxTextInventory(
         break;
       }
       case 'table': {
-        if (Array.isArray(props.columns)) {
-          props.columns.forEach((column, columnIndex) => {
-            const rec = asRecord(column);
-            if (!rec) return;
-            const columnPath = `${path}/props/columns/${columnIndex}`;
-            visitCell(rec.header, `${columnPath}/header`, 'table-header');
-          });
-          props.columns.forEach((column, columnIndex) => {
-            const rec = asRecord(column);
-            if (!rec || !Array.isArray(rec.cells)) return;
-            const columnPath = `${path}/props/columns/${columnIndex}`;
-            rec.cells.forEach((cell, cellIndex) =>
-              visitCell(cell, `${columnPath}/cells/${cellIndex}`, 'table-cell')
+        // The model is column-major; the page is read row by row, and so is
+        // the inventory, or a duplicate cell string lands on the wrong cell.
+        const columns = Array.isArray(props.columns)
+          ? props.columns.map(asRecord)
+          : [];
+        columns.forEach((column, columnIndex) => {
+          if (!column) return;
+          visitCell(
+            column.header,
+            `${path}/props/columns/${columnIndex}/header`,
+            'table-header'
+          );
+        });
+        const rows = Math.max(
+          0,
+          ...columns.map((column) =>
+            Array.isArray(column?.cells) ? column.cells.length : 0
+          )
+        );
+        for (let row = 0; row < rows; row++) {
+          columns.forEach((column, columnIndex) => {
+            if (!column || !Array.isArray(column.cells)) return;
+            if (row >= column.cells.length) return;
+            visitCell(
+              column.cells[row],
+              `${path}/props/columns/${columnIndex}/cells/${row}`,
+              'table-cell'
             );
           });
         }
@@ -240,7 +238,7 @@ export function collectDocxTextInventory(
 
   children.forEach((child, index) => {
     const rec = asRecord(child);
-    if (rec) visitNode(rec, `${basePath}/${pointerSegment(String(index))}`, {});
+    if (rec) visitNode(rec, `${basePath}/${index}`, {});
   });
   return entries;
 }

@@ -46,13 +46,13 @@ describe('collectDocxTextInventory', () => {
         '/children/3/props/columns/0/cells/0/content',
         'Revenue',
       ],
+      [7, 'table-cell', '/children/3/props/columns/1/cells/0/content', '12'],
       [
-        7,
+        8,
         'table-cell',
         '/children/3/props/columns/0/cells/1/content',
         'Margin',
       ],
-      [8, 'table-cell', '/children/3/props/columns/1/cells/0/content', '12'],
       [
         9,
         'body',
@@ -94,7 +94,7 @@ describe('collectDocxTextInventory', () => {
     ]);
   });
 
-  it('carries the declared box of a framed paragraph in points', () => {
+  it('carries the declared width of a framed paragraph in points, never its height', () => {
     const [entry] = collectDocxTextInventory([
       {
         name: 'paragraph',
@@ -109,11 +109,6 @@ describe('collectDocxTextInventory', () => {
         },
       },
     ]);
-    expect(entry.frame).toEqual({
-      widthPt: 144,
-      heightPt: 72,
-      xPt: 36,
-      yPt: 72,
-    });
+    expect(entry.frame).toEqual({ widthPt: 144 });
   });
 });

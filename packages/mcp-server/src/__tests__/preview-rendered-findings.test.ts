@@ -116,11 +116,12 @@ describe('requestedFontsFromFacts', () => {
     expect(
       requestedFontsFromFacts('docx', facts, [
         { family: 'inter', declared: true },
-        { family: 'DM Sans', declared: false },
+        { family: 'DM Sans', declared: true },
+        { family: 'Courier New', declared: false },
       ])
     ).toEqual([
       { family: 'Inter', path: '/theme/fonts/body', declared: true },
-      { family: 'DM Sans' },
+      { family: 'DM Sans', declared: true },
     ]);
   });
 });
@@ -218,5 +219,6 @@ describe('collectRenderedFindings', () => {
         severity: 'warning',
       }),
     ]);
+    expect(result.summary).toBeUndefined();
   });
 });

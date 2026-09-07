@@ -22,7 +22,11 @@ import {
   PREVIEW_ERROR_CODES as CODES,
   type PreviewErrorCode,
 } from './codes.js';
-import { diagnostic, type Diagnostic } from '../lib/errors.js';
+import {
+  diagnostic,
+  qualityDiagnosticToEnvelope,
+  type Diagnostic,
+} from '../lib/errors.js';
 import type { RenderOptionsInput } from '../lib/schema.js';
 import type { RenderedGeometry } from './render.js';
 
@@ -36,7 +40,8 @@ export interface RenderedFindingsInput {
 
 export interface RenderedFindings {
   diagnostics: Diagnostic[];
-  summary: RenderedAnalysisSummary;
+  /** Absent when the pass could not run; the diagnostics say why. */
+  summary?: RenderedAnalysisSummary;
 }
 
 type Rec = Record<string, unknown>;
@@ -85,9 +90,11 @@ export function inventoryFromFacts(
 }
 
 /**
- * Families the document asked for. Authored uses carry their pointer; the
- * families the render resolved cover what the theme supplied, and say
- * whether the document declared a source for each.
+ * Families the pass should find in the PDF: every family the document's
+ * text uses (a `font-family` fact, with its pointer) plus every family the
+ * render resolved from a declared source. A theme family nothing on the page
+ * uses — the default mono face in a report without code — is never embedded
+ * and must not read as substituted.
  */
 export function requestedFontsFromFacts(
   format: FormatName,
@@ -116,20 +123,12 @@ export function requestedFontsFromFacts(
   for (const fact of facts as readonly (QualityFact & Rec)[]) {
     if (fact.kind === kind) add(fact.family, fact.path);
   }
-  for (const font of resolvedFonts) add(font.family);
+  for (const font of resolvedFonts) if (font.declared) add(font.family);
   return requested;
 }
 
 function skipped(code: PreviewErrorCode, message: string): RenderedFindings {
-  return {
-    diagnostics: [diagnostic(code, message, { severity: 'warning' })],
-    summary: {
-      pages: 0,
-      words: 0,
-      inventory: { mapped: 0, ambiguous: 0, missing: 0, skipped: 0 },
-      findings: { mapped: 0, ambiguous: 0, unmapped: 0 },
-    },
-  };
+  return { diagnostics: [diagnostic(code, message, { severity: 'warning' })] };
 }
 
 /** Run the rendered pass over a preview's geometry. */
@@ -169,29 +168,7 @@ export async function collectRenderedFindings(
     ),
   });
   return {
-    diagnostics: analysis.findings.map((finding) => ({
-      source: finding.source,
-      ruleId: finding.ruleId,
-      category: finding.category,
-      certainty: finding.certainty,
-      severity: finding.severity,
-      code: finding.code,
-      message: finding.message,
-      // The root pointer is the honest answer for an unmapped finding, and
-      // an absent path is how the envelope spells "no location".
-      ...(finding.path !== '' && { path: finding.path }),
-      blocking: finding.blocking,
-      ...(finding.suggestion !== undefined && {
-        suggestion: finding.suggestion,
-      }),
-      ...(finding.context !== undefined && { context: { ...finding.context } }),
-      ...(finding.relatedPaths !== undefined && {
-        relatedPaths: finding.relatedPaths,
-      }),
-      ...(finding.evidence !== undefined && {
-        evidence: { ...finding.evidence },
-      }),
-    })),
+    diagnostics: analysis.findings.map(qualityDiagnosticToEnvelope),
     summary: analysis.summary,
   };
 }

@@ -635,7 +635,19 @@ export function validationDiagnostics(
 export function qualityAnalysisDiagnostics(
   analysis: QualityAnalysis
 ): Diagnostic[] {
-  return analysis.diagnostics.map((diagnostic) => ({
+  return analysis.diagnostics.map(qualityDiagnosticToEnvelope);
+}
+
+/**
+ * One quality diagnostic in the envelope's shape. An empty path — the
+ * document root, which is what an unmapped rendered finding honestly has —
+ * is left out, because an absent `path` is how the envelope spells "no
+ * location".
+ */
+export function qualityDiagnosticToEnvelope(
+  diagnostic: QualityAnalysis['diagnostics'][number]
+): Diagnostic {
+  return {
     source: diagnostic.source,
     ruleId: diagnostic.ruleId,
     category: diagnostic.category,
@@ -643,7 +655,7 @@ export function qualityAnalysisDiagnostics(
     severity: diagnostic.severity,
     code: diagnostic.code,
     message: diagnostic.message,
-    path: diagnostic.path,
+    ...(diagnostic.path !== '' && { path: diagnostic.path }),
     blocking: diagnostic.blocking,
     ...(diagnostic.suggestion !== undefined && {
       suggestion: diagnostic.suggestion,
@@ -660,7 +672,7 @@ export function qualityAnalysisDiagnostics(
     ...(diagnostic.fixes !== undefined && {
       fixes: diagnostic.fixes,
     }),
-  }));
+  };
 }
 
 function looksLikeValidationErrors(value: unknown): value is ValidationError[] {

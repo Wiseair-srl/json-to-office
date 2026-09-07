@@ -537,10 +537,17 @@ function createCacheIO(cacheDir: string | null): CacheIO {
       try {
         const raw = await fs.readFile(renderedPath(documentKey), 'utf8');
         const parsed = JSON.parse(raw) as Partial<RenderedGeometry>;
-        return Array.isArray(parsed.pages) &&
-          Array.isArray(parsed.resolvedFonts)
-          ? (parsed as RenderedGeometry)
-          : undefined;
+        const wellFormed =
+          Array.isArray(parsed.pages) &&
+          parsed.pages.every(
+            (page) =>
+              typeof page === 'object' &&
+              page !== null &&
+              Array.isArray((page as PdfTextPage).words) &&
+              Array.isArray((page as PdfTextPage).lines)
+          ) &&
+          Array.isArray(parsed.resolvedFonts);
+        return wellFormed ? (parsed as RenderedGeometry) : undefined;
       } catch {
         return undefined;
       }
@@ -774,17 +781,33 @@ export async function renderPreview(
 
     const served = await readAllCached(cache, keys, resolved.pages);
     // Geometry is cached with the pages; without it the PDF has to exist
-    // again, so a rendered request falls through to a conversion.
+    // again, so a rendered request falls through to a conversion — unless
+    // the host has no pdftotext, in which case reconverting would only
+    // produce the same warning, and the cached pages are the whole answer.
     const cachedGeometry = options.rendered
       ? await cache.readRendered(keys.documentKey)
       : undefined;
-    if (served && (!options.rendered || cachedGeometry)) {
+    const geometryUnavailable =
+      options.rendered === true &&
+      !cachedGeometry &&
+      !(await pdftotextAvailable());
+    if (
+      served &&
+      (!options.rendered || cachedGeometry || geometryUnavailable)
+    ) {
       hits = served.length;
       progressTotal = 1 + served.length;
       for (const page of served) report(`Page ${page.page} from cache`);
       return {
         ok: true,
-        diagnostics: [...diagnostics, ...resolved.diagnostics],
+        diagnostics: [
+          ...diagnostics,
+          ...resolved.diagnostics,
+          ...(geometryUnavailable ? [pdftotextMissing()] : []),
+          ...(cachedGeometry && !cachedGeometry.fonts
+            ? [pdffontsMissing()]
+            : []),
+        ],
         format,
         totalPages: cachedTotal,
         pages: served,
@@ -872,23 +895,6 @@ export async function renderPreview(
     }
     await cache.writeMeta(keys.documentKey, totalPages);
 
-    // The rendered pass reads the PDF while it exists; the temp tree below
-    // is gone before this function returns.
-    let rendered: RenderedGeometry | undefined;
-    if (options.rendered) {
-      const read = await readRenderedGeometry(
-        pdfPath,
-        resolvedFonts.map((font) => ({
-          family: font.family,
-          declared: font.sources.length > 0,
-        }))
-      );
-      diagnostics.push(...read.diagnostics);
-      rendered = read.geometry;
-      if (rendered) await cache.writeRendered(keys.documentKey, rendered);
-    }
-    if (signal?.aborted) return cancelled();
-
     const resolved = resolvePages(parsed.ranges, totalPages, maxPages);
     if (!resolved.ok) return resolved;
     diagnostics.push(...resolved.diagnostics);
@@ -900,6 +906,26 @@ export async function renderPreview(
       maxPages
     );
     if (refusal) return refusal;
+
+    // The rendered pass reads the PDF while it exists — the temp tree below
+    // is gone before this function returns — and only once the request is
+    // known to be answerable, so a refusal never pays for it.
+    let rendered: RenderedGeometry | undefined;
+    if (options.rendered) {
+      const read = await readRenderedGeometry(
+        pdfPath,
+        resolvedFonts.map((font) => ({
+          family: font.family,
+          // A source that was declared but failed still counts as declared:
+          // the recipient will see the same substitution.
+          declared: font.sources.length > 0 || font.warnings.length > 0,
+        }))
+      );
+      diagnostics.push(...read.diagnostics);
+      rendered = read.geometry;
+      if (rendered) await cache.writeRendered(keys.documentKey, rendered);
+    }
+    if (signal?.aborted) return cancelled();
 
     progressTotal = 2 + resolved.pages.length;
     const rasterizeStarted = process.hrtime.bigint();
@@ -989,6 +1015,29 @@ export async function renderPreview(
   }
 }
 
+function pdftotextMissing(): Diagnostic {
+  return diagnostic(
+    PREVIEW_ERROR_CODES.RENDERED_UNAVAILABLE,
+    'Rendered findings need pdftotext (poppler), which was not found on this host; the pages rendered without them.',
+    {
+      severity: 'warning',
+      suggestion:
+        'Install poppler-utils (it ships pdftotext and pdffonts beside pdftoppm) or set PDFTOTEXT_PATH.',
+    }
+  );
+}
+
+function pdffontsMissing(): Diagnostic {
+  return diagnostic(
+    PREVIEW_ERROR_CODES.RENDERED_UNAVAILABLE,
+    'Font substitution was not checked: pdffonts (poppler) was not found or failed; the other rendered findings are complete.',
+    {
+      severity: 'info',
+      suggestion: 'Install poppler-utils or set PDFFONTS_PATH.',
+    }
+  );
+}
+
 /**
  * Text geometry and fonts off the PDF, degrading rather than failing: the
  * preview's own dependencies are LibreOffice and pdftoppm, and a host with
@@ -1000,54 +1049,36 @@ async function readRenderedGeometry(
   resolvedFonts: RenderedGeometry['resolvedFonts']
 ): Promise<{ geometry?: RenderedGeometry; diagnostics: Diagnostic[] }> {
   if (!(await pdftotextAvailable())) {
-    return {
-      diagnostics: [
-        diagnostic(
-          PREVIEW_ERROR_CODES.RENDERED_UNAVAILABLE,
-          'Rendered findings need pdftotext (poppler), which was not found on this host; the pages rendered without them.',
-          {
-            severity: 'warning',
-            suggestion:
-              'Install poppler-utils (it ships pdftotext and pdffonts beside pdftoppm) or set PDFTOTEXT_PATH.',
-          }
-        ),
-      ],
-    };
+    return { diagnostics: [pdftotextMissing()] };
   }
-  const diagnostics: Diagnostic[] = [];
-  let pages: PdfTextPage[];
-  try {
-    pages = await extractPdfTextGeometry(pdfPath, { layout: true });
-  } catch (error) {
+  // Two independent poppler spawns over the same file.
+  const [geometry, fonts] = await Promise.all([
+    extractPdfTextGeometry(pdfPath, { layout: true }).then(
+      (pages) => ({ pages }),
+      (error: unknown) => ({ error })
+    ),
+    pdffontsAvailable().then((available) =>
+      available ? extractPdfFonts(pdfPath).catch(() => undefined) : undefined
+    ),
+  ]);
+  if ('error' in geometry) {
     return {
       diagnostics: [
         diagnostic(
           PREVIEW_ERROR_CODES.RENDERED_UNAVAILABLE,
-          `Rendered findings were skipped: pdftotext failed (${message(error)}).`,
+          `Rendered findings were skipped: pdftotext failed (${message(geometry.error)}).`,
           { severity: 'warning' }
         ),
       ],
     };
   }
-  let fonts: PdfFontInfo[] | undefined;
-  if (await pdffontsAvailable()) {
-    fonts = await extractPdfFonts(pdfPath).catch(() => undefined);
-  }
-  if (!fonts) {
-    diagnostics.push(
-      diagnostic(
-        PREVIEW_ERROR_CODES.RENDERED_UNAVAILABLE,
-        'Font substitution was not checked: pdffonts (poppler) was not found or failed; the other rendered findings are complete.',
-        {
-          severity: 'info',
-          suggestion: 'Install poppler-utils or set PDFFONTS_PATH.',
-        }
-      )
-    );
-  }
   return {
-    geometry: { pages, ...(fonts && { fonts }), resolvedFonts },
-    diagnostics,
+    geometry: {
+      pages: geometry.pages,
+      ...(fonts && { fonts }),
+      resolvedFonts,
+    },
+    diagnostics: fonts ? [] : [pdffontsMissing()],
   };
 }
 

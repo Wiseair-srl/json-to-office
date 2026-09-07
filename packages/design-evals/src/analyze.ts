@@ -72,19 +72,24 @@ async function renderedMeasurement(
       getAdapter,
     });
     if (!rendered.ok) return undefined;
-    const findings = rendered.rendered
-      ? await collectRenderedFindings({
+    // The page count stands on its own: a fault in the pass must not turn a
+    // rendered count back into a structural guess.
+    let diagnostics: readonly unknown[] = [];
+    if (rendered.rendered) {
+      try {
+        const findings = await collectRenderedFindings({
           format: format as 'docx' | 'pptx',
           document,
           render: {},
           rendered: rendered.rendered,
           adapter: getAdapter(format as 'docx' | 'pptx'),
-        })
-      : undefined;
-    return {
-      pages: rendered.totalPages,
-      diagnostics: findings?.diagnostics ?? [],
-    };
+        });
+        diagnostics = findings.diagnostics;
+      } catch {
+        diagnostics = [];
+      }
+    }
+    return { pages: rendered.totalPages, diagnostics };
   } catch {
     return undefined;
   }

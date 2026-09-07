@@ -6,13 +6,20 @@
  * glyphs drop out), concatenate every word fragment into one stream, and
  * search that. Narrow boxes hard-wrap a word mid-word and letter-spaced text
  * makes poppler emit per-cluster fragments; a per-word comparison loses both,
- * a stream keeps them.
+ * a stream keeps them. A match must start where a fragment starts and end
+ * where one ends, so "page" never matches inside "homepage".
  *
  * The stream spans the whole document, not one page, so a paragraph that
  * breaks across a page is still one match — which is exactly the case the
  * widow and orphan checks need. Running heads and footers would interleave
- * the two halves, so text that repeats by design is matched first, page by
- * page, and its words are removed from the stream before anything else is.
+ * the two halves, so text that repeats by design is matched first, inside
+ * the top and bottom bands of each page, and its rows are removed from the
+ * stream before anything else is; a row of nothing but digits in those
+ * bands is a page number and goes with them.
+ *
+ * Fields, footnote marks and cross-references render a value the author
+ * never typed. The needle is cut at each of them into segments that must
+ * follow one another in the stream with at most a short gap between.
  *
  * Duplicate strings — "Total" in three tables — are why a search returns
  * every occurrence. `assignInventory` resolves them by reading order: the
@@ -30,19 +37,30 @@ export function normalizeForMatch(value: string): string {
     .replace(/[^a-z0-9]/g, '');
 }
 
+/** Marks a place where the renderer paints something the author did not type. */
+const FIELD = '';
+
 /**
  * Authored strings carry markup the page never shows: emphasis markers,
- * footnote references, link targets, field codes. Strip those before folding
- * so the needle is what LibreOffice actually set. Fields become nothing —
- * "Page {PAGE}" matches the word "Page" — because their rendered value is
- * unknowable here.
+ * link targets, and fields, footnote references and cross-references whose
+ * rendered value is unknowable here. The first two are dropped; the others
+ * become a `FIELD` mark that `needleSegments` splits on.
  */
 export function authoredTextForMatch(text: string): string {
   return text
-    .replace(/\{[A-Z_]+(?::[^}]*)?\}/g, ' ')
-    .replace(/\[\^[^\]\s]+\]/g, ' ')
+    .replace(/\{[^}\s]+\}/g, FIELD)
+    .replace(/\[\^[^\]\s]+\]/g, FIELD)
+    .replace(/\[@[^\]\s]+\]/g, FIELD)
     .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
     .replace(/[*_`]+/g, '');
+}
+
+/** Folded segments of an authored string, split at every field. */
+export function needleSegments(text: string): string[] {
+  return authoredTextForMatch(text)
+    .split(FIELD)
+    .map(normalizeForMatch)
+    .filter((segment) => segment !== '');
 }
 
 /** A word of the document: which page, which index on it. */
@@ -70,11 +88,12 @@ export interface TextOccurrence {
   parts: OccurrencePart[];
 }
 
-interface StreamIndex {
+export interface StreamIndex {
   pages: readonly PdfTextPage[];
   /** One entry per word of the document, in stream order. */
   refs: WordRef[];
   fragments: string[];
+  /** Offset of each fragment in `stream`; excluded fragments are empty. */
   positions: number[];
   stream: string;
 }
@@ -105,9 +124,54 @@ export function indexDocument(
   return { pages, refs, fragments, positions, stream: fragments.join('') };
 }
 
-function partsOf(index: StreamIndex, touched: number[]): OccurrencePart[] {
+/** Index of the first non-empty fragment starting at or after `offset`. */
+function fragmentAt(index: StreamIndex, offset: number): number {
+  let low = 0;
+  let high = index.positions.length - 1;
+  // Last fragment whose position is <= offset; empty fragments share their
+  // successor's position, so walk forward past them afterwards.
+  while (low < high) {
+    const mid = Math.ceil((low + high) / 2);
+    if (index.positions[mid] <= offset) low = mid;
+    else high = mid - 1;
+  }
+  while (low < index.fragments.length && index.fragments[low] === '') low++;
+  return low;
+}
+
+/** Whether [at, end) starts on a fragment boundary and ends on one. */
+function alignedToFragments(
+  index: StreamIndex,
+  at: number,
+  end: number
+): boolean {
+  const first = fragmentAt(index, at);
+  if (first >= index.fragments.length || index.positions[first] !== at) {
+    return false;
+  }
+  let i = first;
+  while (
+    i < index.fragments.length &&
+    index.positions[i] + index.fragments[i].length < end
+  ) {
+    i++;
+  }
+  return (
+    i < index.fragments.length &&
+    index.positions[i] + index.fragments[i].length === end
+  );
+}
+
+function partsOf(
+  index: StreamIndex,
+  at: number,
+  end: number
+): OccurrencePart[] {
   const parts: OccurrencePart[] = [];
-  for (const i of touched) {
+  for (let i = fragmentAt(index, at); i < index.fragments.length; i++) {
+    const start = index.positions[i];
+    if (start >= end) break;
+    if (index.fragments[i] === '') continue;
     const ref = index.refs[i];
     const w = index.pages[ref.pageIndex].words[ref.word];
     let part = parts[parts.length - 1];
@@ -131,36 +195,52 @@ function partsOf(index: StreamIndex, touched: number[]): OccurrencePart[] {
   return parts;
 }
 
-/** Every occurrence of a folded needle in the stream, in reading order. */
+function occurrence(
+  index: StreamIndex,
+  at: number,
+  end: number
+): TextOccurrence {
+  const parts = partsOf(index, at, end);
+  return {
+    at,
+    pageIndex: parts[0].pageIndex,
+    endPageIndex: parts[parts.length - 1].pageIndex,
+    parts,
+  };
+}
+
+/** The most a rendered field value may add between two segments, folded. */
+export const MAX_FIELD_GAP = 24;
+
+/**
+ * Every occurrence of a segmented needle in the stream, in reading order:
+ * the first segment anywhere, each following one within `MAX_FIELD_GAP`
+ * characters of the previous, the whole aligned to fragment boundaries.
+ */
 export function findOccurrences(
   index: StreamIndex,
-  needle: string
+  segments: readonly string[]
 ): TextOccurrence[] {
-  if (needle === '') return [];
+  if (segments.length === 0 || segments[0] === '') return [];
   const hits: TextOccurrence[] = [];
   let searchFrom = 0;
   for (;;) {
-    const at = index.stream.indexOf(needle, searchFrom);
+    const at = index.stream.indexOf(segments[0], searchFrom);
     if (at === -1) break;
     searchFrom = at + 1;
-    const end = at + needle.length;
-    const touched: number[] = [];
-    // Fragments are in stream order, so the first fragment past `end` ends
-    // the scan; a binary search would be faster but this runs once per
-    // occurrence over a few thousand words.
-    for (let i = 0; i < index.fragments.length; i++) {
-      const start = index.positions[i];
-      if (start >= end) break;
-      const stop = start + index.fragments[i].length;
-      if (stop > at && index.fragments[i] !== '') touched.push(i);
+    let end = at + segments[0].length;
+    let complete = true;
+    for (let s = 1; s < segments.length; s++) {
+      const next = index.stream.indexOf(segments[s], end);
+      if (next === -1 || next - end > MAX_FIELD_GAP) {
+        complete = false;
+        break;
+      }
+      end = next + segments[s].length;
     }
-    const parts = partsOf(index, touched);
-    hits.push({
-      at,
-      pageIndex: parts[0].pageIndex,
-      endPageIndex: parts[parts.length - 1].pageIndex,
-      parts,
-    });
+    if (!complete || !alignedToFragments(index, at, end)) continue;
+    hits.push(occurrence(index, at, end));
+    searchFrom = end;
   }
   return hits;
 }
@@ -192,28 +272,42 @@ export interface InventoryMatch<T extends InventoryEntry = InventoryEntry> {
 export const MIN_NEEDLE_LENGTH = 3;
 /** A prefix shorter than this could be any sentence; it proves nothing. */
 export const MIN_PARTIAL_PREFIX = 16;
+/** Running heads and footers live in the outer fifth of the page. */
+export const CHROME_BAND = 0.2;
 
 /**
- * The longest prefix of `needle` that occurs in the stream, when the whole
- * does not — a paragraph whose tail was clipped still starts where it was
- * written. Binary search over the prefix length: occurrence of a prefix is
- * monotone in its length.
+ * The longest leading part of `needle` that occurs in the stream, when the
+ * whole does not — a paragraph whose tail was clipped still starts where it
+ * was written. Every place the first `MIN_PARTIAL_PREFIX` characters occur
+ * on a fragment boundary is extended character by character; the longest
+ * extension wins.
  */
 export function longestRenderedPrefix(
   index: StreamIndex,
   needle: string
-): number {
-  if (needle.length < MIN_PARTIAL_PREFIX) return 0;
-  if (findOccurrences(index, needle.slice(0, MIN_PARTIAL_PREFIX)).length === 0)
-    return 0;
-  let low = MIN_PARTIAL_PREFIX;
-  let high = needle.length - 1;
-  while (low < high) {
-    const mid = Math.ceil((low + high) / 2);
-    if (index.stream.includes(needle.slice(0, mid))) low = mid;
-    else high = mid - 1;
+): { length: number; at: number } | undefined {
+  if (needle.length < MIN_PARTIAL_PREFIX) return undefined;
+  const anchor = needle.slice(0, MIN_PARTIAL_PREFIX);
+  let best: { length: number; at: number } | undefined;
+  let searchFrom = 0;
+  for (;;) {
+    const at = index.stream.indexOf(anchor, searchFrom);
+    if (at === -1) break;
+    searchFrom = at + 1;
+    const first = fragmentAt(index, at);
+    if (first >= index.fragments.length || index.positions[first] !== at) {
+      continue;
+    }
+    let length = MIN_PARTIAL_PREFIX;
+    while (
+      length < needle.length &&
+      index.stream.charCodeAt(at + length) === needle.charCodeAt(length)
+    ) {
+      length++;
+    }
+    if (!best || length > best.length) best = { length, at };
   }
-  return low;
+  return best;
 }
 
 /** Vertical overlap of more than half the shorter box: one row of text. */
@@ -226,79 +320,111 @@ function sameRow(
   return shorter > 0 && overlap > shorter / 2;
 }
 
-function needleOf(entry: InventoryEntry): string {
-  return normalizeForMatch(authoredTextForMatch(entry.text));
+function inChromeBand(
+  page: PdfTextPage,
+  box: { yMin: number; yMax: number }
+): boolean {
+  return (
+    box.yMax <= page.heightPt * CHROME_BAND ||
+    box.yMin >= page.heightPt * (1 - CHROME_BAND)
+  );
 }
 
-/**
- * Attribute rendered occurrences to inventory entries.
- *
- * Repeating entries go first and claim every occurrence, page by page.
- * The rest are visited in document order over a stream without those
- * words; each claims the first unclaimed occurrence at or after the previous
- * claim, which is how "Total" in the second table finds the second "Total".
- * An entry with no occurrence is `missing` — fully clipped, or never set —
- * and one whose every occurrence was already claimed is `ambiguous`.
- */
+const PAGE_NUMBER_ROW = /^[0-9\s./|-]*$/;
+
 export interface InventoryAssignment<T extends InventoryEntry> {
   matches: InventoryMatch<T>[];
   /** `pageIndex:word` keys of every word chrome claimed — whole rows. */
   chromeWords: ReadonlySet<string>;
 }
 
+/**
+ * Attribute rendered occurrences to inventory entries.
+ *
+ * Repeating entries go first and claim their occurrences inside the page
+ * bands, one row each; rows of nothing but digits in those bands — page
+ * numbers — go with them. The rest are visited in document order over a
+ * stream without those words; each claims the first unclaimed occurrence at
+ * or after the previous claim, which is how "Total" in the second table
+ * finds the second "Total". An entry with no occurrence is `missing` —
+ * fully clipped, or never set — and one whose every occurrence was already
+ * claimed is `ambiguous`.
+ */
 export function assignInventory<T extends InventoryEntry>(
   pages: readonly PdfTextPage[],
   inventory: readonly T[]
 ): InventoryAssignment<T> {
   const results = new Map<T, InventoryMatch<T>>();
   const chromeWords = new Set<string>();
-  const full = indexDocument(pages);
-
-  for (const entry of inventory) {
-    if (!entry.repeats) continue;
-    const needle = needleOf(entry);
-    if (needle.length < MIN_NEEDLE_LENGTH) {
-      results.set(entry, { entry, needle, status: 'skipped', occurrences: [] });
-      continue;
-    }
-    const occurrences = findOccurrences(full, needle).filter(
-      (o) => o.pageIndex === o.endPageIndex
-    );
-    // A running head or footer owns its whole row: the page number beside
-    // it is a field whose rendered value the inventory cannot know, and it
-    // would otherwise sit in the stream between two halves of a paragraph.
-    for (const o of occurrences) {
-      for (const part of o.parts) {
-        pages[part.pageIndex].words.forEach((w, i) => {
-          if (sameRow(w, part)) chromeWords.add(`${part.pageIndex}:${i}`);
-        });
-      }
-    }
-    results.set(entry, {
-      entry,
-      needle,
-      status: occurrences.length > 0 ? 'mapped' : 'missing',
-      occurrences,
+  const claimRow = (
+    pageIndex: number,
+    box: { yMin: number; yMax: number }
+  ): void => {
+    pages[pageIndex].words.forEach((w, i) => {
+      if (sameRow(w, box)) chromeWords.add(`${pageIndex}:${i}`);
     });
+  };
+
+  const repeating = inventory.filter((entry) => entry.repeats);
+  if (repeating.length > 0) {
+    const full = indexDocument(pages);
+    for (const entry of repeating) {
+      const segments = needleSegments(entry.text);
+      const needle = segments.join('');
+      if (needle.length < MIN_NEEDLE_LENGTH) {
+        results.set(entry, {
+          entry,
+          needle,
+          status: 'skipped',
+          occurrences: [],
+        });
+        continue;
+      }
+      const occurrences = findOccurrences(full, segments).filter(
+        (o) =>
+          o.pageIndex === o.endPageIndex &&
+          inChromeBand(pages[o.pageIndex], o.parts[0])
+      );
+      for (const o of occurrences) claimRow(o.pageIndex, o.parts[0]);
+      results.set(entry, {
+        entry,
+        needle,
+        status: occurrences.length > 0 ? 'mapped' : 'missing',
+        occurrences,
+      });
+    }
   }
+  // A row of digits alone in a band is a page number, whatever its footer
+  // said around it — including a footer that was nothing but the field.
+  pages.forEach((page, pageIndex) => {
+    page.words.forEach((word, i) => {
+      if (chromeWords.has(`${pageIndex}:${i}`)) return;
+      if (!inChromeBand(page, word)) return;
+      const row = page.words.filter((w) => sameRow(w, word));
+      if (row.every((w) => PAGE_NUMBER_ROW.test(w.text))) {
+        claimRow(pageIndex, word);
+      }
+    });
+  });
 
   const body = indexDocument(pages, chromeWords);
   const claimed = new Set<number>();
   let cursor = 0;
   for (const entry of inventory) {
     if (entry.repeats) continue;
-    const needle = needleOf(entry);
+    const segments = needleSegments(entry.text);
+    const needle = segments.join('');
     if (needle.length < MIN_NEEDLE_LENGTH) {
       results.set(entry, { entry, needle, status: 'skipped', occurrences: [] });
       continue;
     }
-    let all = findOccurrences(body, needle);
+    let all = findOccurrences(body, segments);
     let partial: InventoryMatch<T>['partial'];
-    if (all.length === 0) {
+    if (all.length === 0 && segments.length === 1) {
       const prefix = longestRenderedPrefix(body, needle);
-      if (prefix > 0) {
-        all = findOccurrences(body, needle.slice(0, prefix));
-        partial = { matchedChars: prefix, totalChars: needle.length };
+      if (prefix) {
+        all = [occurrence(body, prefix.at, prefix.at + prefix.length)];
+        partial = { matchedChars: prefix.length, totalChars: needle.length };
       }
     }
     if (all.length === 0) {

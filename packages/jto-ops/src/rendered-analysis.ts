@@ -176,12 +176,29 @@ function wordOwners(
 }
 
 /** Line index for every word of a page, when poppler grouped lines. */
+const lineMaps = new WeakMap<PdfTextPage, Map<number, number>>();
 function lineOfWord(page: PdfTextPage): Map<number, number> {
+  const cached = lineMaps.get(page);
+  if (cached) return cached;
   const lines = new Map<number, number>();
   page.lines.forEach((line, index) => {
     for (const w of line.words) lines.set(w, index);
   });
+  lineMaps.set(page, lines);
   return lines;
+}
+
+/** The box around every part of an occurrence. */
+function unionBox(parts: readonly OccurrencePart[]) {
+  return parts.reduce(
+    (box, part) => ({
+      xMin: Math.min(box.xMin, part.xMin),
+      yMin: Math.min(box.yMin, part.yMin),
+      xMax: Math.max(box.xMax, part.xMax),
+      yMax: Math.max(box.yMax, part.yMax),
+    }),
+    { xMin: Infinity, yMin: Infinity, xMax: -Infinity, yMax: -Infinity }
+  );
 }
 
 /** Run the pass. */
@@ -291,18 +308,22 @@ export function analyzeRenderedDocument(
     const box = match.entry.box;
     if (!box || match.status !== 'mapped') continue;
     for (const o of match.occurrences) {
-      const heightPt =
-        Math.max(...o.parts.map((p) => p.yMax)) -
-        Math.min(...o.parts.map((p) => p.yMin));
-      const widthPt =
-        Math.max(...o.parts.map((p) => p.xMax)) -
-        Math.min(...o.parts.map((p) => p.xMin));
-      const overHeight =
-        box.heightPt !== undefined ? heightPt - box.heightPt : 0;
-      const overWidth = box.widthPt !== undefined ? widthPt - box.widthPt : 0;
-      const over = Math.max(overHeight, overWidth);
-      if (over <= VISIBLE_SPILL_PT) continue;
-      const axis = overHeight >= overWidth ? 'taller' : 'wider';
+      const extent = unionBox(o.parts);
+      const rendered = {
+        heightPt: extent.yMax - extent.yMin,
+        widthPt: extent.xMax - extent.xMin,
+      };
+      const worst = (['heightPt', 'widthPt'] as const)
+        .filter((axis) => box[axis] !== undefined)
+        .map((axis) => ({
+          axis,
+          declared: box[axis] as number,
+          rendered: rendered[axis],
+          over: rendered[axis] - (box[axis] as number),
+        }))
+        .sort((a, b) => b.over - a.over)[0];
+      if (!worst || worst.over <= VISIBLE_SPILL_PT) continue;
+      const word = worst.axis === 'heightPt' ? 'taller' : 'wider';
       findings.push(
         finding({
           ruleId: 'rendered/spill',
@@ -312,19 +333,15 @@ export function analyzeRenderedDocument(
           mapping: 'mapped',
           page: o.pageIndex + 1,
           path: match.entry.path,
-          message: `"${excerpt(match.entry.text)}" rendered ${round(over)} pt ${axis} than its ${round(axis === 'taller' ? (box.heightPt as number) : (box.widthPt as number))} pt box on page ${o.pageIndex + 1}.`,
+          message: `"${excerpt(match.entry.text)}" rendered ${round(worst.over)} pt ${word} than its ${round(worst.declared)} pt box on page ${o.pageIndex + 1}.`,
           suggestion:
             'Shorten the text, reduce its size, or enlarge the box; the renderer let it spill past the edge the author drew.',
           evidence: {
             summary: 'Rendered extent against the declared box',
-            actual: round(axis === 'taller' ? heightPt : widthPt),
-            expected: round(
-              axis === 'taller'
-                ? (box.heightPt as number)
-                : (box.widthPt as number)
-            ),
+            actual: round(worst.rendered),
+            expected: round(worst.declared),
             unit: 'pt',
-            values: { marginPt: round(-over) },
+            values: { marginPt: round(-worst.over) },
           },
         })
       );
@@ -336,23 +353,33 @@ export function analyzeRenderedDocument(
     const lines = lineOfWord(page);
     const seen = new Set<string>();
     const words = page.words;
-    for (let i = 0; i < words.length; i++) {
-      for (let j = i + 1; j < words.length; j++) {
-        const a = words[i];
+    // Sorted by top edge so the inner loop stops at the first word that
+    // starts below the outer one: nothing after it can intersect.
+    const byTop = words
+      .map((_, i) => i)
+      .sort((a, b) => words[a].yMin - words[b].yMin);
+    for (let p = 0; p < byTop.length; p++) {
+      const i = byTop[p];
+      const a = words[i];
+      for (let q = p + 1; q < byTop.length; q++) {
+        const j = byTop[q];
         const b = words[j];
-        if (b.yMin >= a.yMax && lines.size === 0) continue;
-        const lineA = lines.get(i);
-        const lineB = lines.get(j);
-        if (lineA !== undefined && lineA === lineB) continue;
+        if (b.yMin >= a.yMax) break;
         const shared = intersects(a, b);
         if (shared <= 0) continue;
+        const lineA = lines.get(i);
+        if (lineA !== undefined && lineA === lines.get(j)) continue;
         const smaller = Math.min(area(a), area(b));
         if (smaller <= 0 || shared / smaller < OVERLAP_FRACTION) continue;
         const ownerA = ownerOf(pageIndex, i);
         const ownerB = ownerOf(pageIndex, j);
         const pathA = ownerA?.entry.path ?? '';
         const pathB = ownerB?.entry.path ?? '';
-        const key = [pathA, pathB].sort().join('|') || `${i}:${j}`;
+        // One finding per authored pair; unmapped pairs are each their own.
+        const key =
+          pathA && pathB
+            ? [pathA, pathB].sort().join('|')
+            : `${Math.min(i, j)}:${Math.max(i, j)}`;
         if (seen.has(key)) continue;
         seen.add(key);
         const mapping: RenderedMapping =
