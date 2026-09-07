@@ -162,6 +162,11 @@ function alignedToFragments(
   );
 }
 
+/**
+ * The stream range [at, end) as one part per page it touches, each with the
+ * union box of its words — how a paragraph broken across a page reports the
+ * geometry of both halves without losing which page each is on.
+ */
 function partsOf(
   index: StreamIndex,
   at: number,
@@ -195,6 +200,7 @@ function partsOf(
   return parts;
 }
 
+/** One match of a stream range, with the pages it spans. */
 function occurrence(
   index: StreamIndex,
   at: number,
@@ -320,6 +326,7 @@ function sameRow(
   return shorter > 0 && overlap > shorter / 2;
 }
 
+/** Whether a box sits in the top or bottom fifth, where chrome lives. */
 function inChromeBand(
   page: PdfTextPage,
   box: { yMin: number; yMax: number }

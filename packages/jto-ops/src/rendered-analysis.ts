@@ -124,6 +124,11 @@ interface FindingDraft {
   context?: Record<string, unknown>;
 }
 
+/**
+ * A draft as the quality contract spells it. Every rendered finding is
+ * advisory (`blocking: false`) and carries its mapping status and page on
+ * `context`, so one place decides that rather than eight rules.
+ */
 function finding(draft: FindingDraft): QualityDiagnostic {
   const { ruleId, mapping, page, context, ...rest } = draft;
   return {
@@ -144,6 +149,7 @@ function round(value: number): number {
   return Math.round(value * 10) / 10;
 }
 
+/** Area the two word boxes share, in square points; 0 when they miss. */
 function intersects(a: PdfTextWord, b: PdfTextWord): number {
   const w = Math.min(a.xMax, b.xMax) - Math.max(a.xMin, b.xMin);
   const h = Math.min(a.yMax, b.yMax) - Math.max(a.yMin, b.yMin);
@@ -154,6 +160,7 @@ function area(w: PdfTextWord): number {
   return Math.max(0, w.xMax - w.xMin) * Math.max(0, w.yMax - w.yMin);
 }
 
+/** Text as a message can quote it: whitespace collapsed, length capped. */
 function excerpt(text: string, max = 60): string {
   const flat = text.replace(/\s+/g, ' ').trim();
   return flat.length > max ? `${flat.slice(0, max - 1)}…` : flat;
@@ -593,7 +600,10 @@ export function analyzeRenderedDocument(
       words: pages.reduce((n, p) => n + p.words.length, 0),
       inventory,
       findings: byMapping,
+      // The same gate the check itself runs under: an empty font list
+      // verified nothing, and must not read as "nothing was substituted".
       ...(input.fonts &&
+        input.fonts.length > 0 &&
         input.requestedFonts && {
           fonts: { requested: input.requestedFonts.length, substituted },
         }),
