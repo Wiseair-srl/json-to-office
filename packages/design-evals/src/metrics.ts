@@ -186,7 +186,12 @@ export function documentMetrics(input: {
       qualityByCode[code] = (qualityByCode[code] ?? 0) + 1;
       if (PLACEHOLDER_CODES.has(code)) placeholderLeaks += 1;
     }
-    if (FONT_SUBSTITUTION_CODES.has(code)) fontSubstitutions += 1;
+    // A host font the preview lacked is the preview's substitution, not the
+    // document's; the rendered rule marks the document's own as declared.
+    const declared =
+      code !== 'W_QUALITY_RENDERED_FONT_SUBSTITUTED' ||
+      (entry.context as { declared?: unknown } | undefined)?.declared === true;
+    if (FONT_SUBSTITUTION_CODES.has(code) && declared) fontSubstitutions += 1;
   }
 
   return {

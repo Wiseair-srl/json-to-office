@@ -58,7 +58,7 @@ async function renderWithFindings(document: unknown) {
 }
 
 describe.skipIf(!RUN)('rendered pass over a LibreOffice PDF', () => {
-  it('measures a framed paragraph spilling far past its declared box', async () => {
+  it('reports a framed paragraph cut off at the page foot as truncated, at its pointer', async () => {
     const document = report([
       {
         name: 'paragraph',
@@ -75,18 +75,24 @@ describe.skipIf(!RUN)('rendered pass over a LibreOffice PDF', () => {
       },
     ]);
     const { findings } = await renderWithFindings(document);
-    const spill = findings.diagnostics.filter(
-      (d) => d.code === 'W_QUALITY_RENDERED_SPILL'
+    const codes = findings.diagnostics.map((d) => d.code);
+    const clip = findings.diagnostics.filter(
+      (d) => d.code === 'W_QUALITY_RENDERED_CLIP'
     );
-    expect(spill).toHaveLength(1);
-    expect(spill[0]).toMatchObject({
-      certainty: 'rendered',
-      path: '/children/0/props/text',
-      context: { mapping: 'mapped', page: 1 },
-    });
-    // Declared 40 pt tall; the renderer let it run down the page.
-    expect(spill[0].evidence?.expected).toBe(40);
-    expect(spill[0].evidence?.actual as number).toBeGreaterThan(400);
+    // Two clips, both the paragraph's: its head rendered and the tail did
+    // not (truncated), and a word at the frame's top sits past the page edge.
+    expect(clip.length, codes.join(',')).toBeGreaterThanOrEqual(1);
+    for (const finding of clip) {
+      expect(finding).toMatchObject({
+        certainty: 'rendered',
+        path: '/children/0/props/text',
+        context: { mapping: 'mapped', page: 1 },
+      });
+    }
+    const truncated = clip.find((d) => d.context?.kind === 'truncated');
+    expect(truncated).toBeDefined();
+    expect(truncated?.evidence?.actual as number).toBeLessThan(100);
+    expect(codes).not.toContain('W_QUALITY_RENDERED_SPILL');
   }, 120_000);
 
   it('reports a text box the renderer dropped entirely as missing text', async () => {

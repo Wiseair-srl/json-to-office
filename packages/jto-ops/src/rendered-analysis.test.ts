@@ -181,6 +181,26 @@ describe('analyzeRenderedDocument', () => {
     });
   });
 
+  it('reports each unmapped overlapping pair on a page', () => {
+    const result = analyzeRenderedDocument({
+      format: 'pptx',
+      pages: [
+        page([
+          word('a', 10, 100, 40, 20),
+          word('b', 20, 108, 30, 10),
+          word('c', 300, 100, 40, 20),
+          word('d', 310, 108, 30, 10),
+        ]),
+      ],
+      inventory: [],
+    });
+    expect(codes(result.findings)).toEqual([
+      QUALITY_CODES.RENDERED_OVERLAP,
+      QUALITY_CODES.RENDERED_OVERLAP,
+    ]);
+    expect(result.summary.findings.unmapped).toBe(2);
+  });
+
   it('does not call the words of one line an overlap', () => {
     const result = analyzeRenderedDocument({
       format: 'docx',

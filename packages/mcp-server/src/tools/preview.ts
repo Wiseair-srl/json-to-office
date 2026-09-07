@@ -472,6 +472,7 @@ Needs LibreOffice and poppler on the host (see jto_info.previewDependencies); wh
         if (!source.ok) return source;
 
         const onProgress = progressReporter(ctx);
+        const renderOptions = pickRenderOptions(args, themePath.path);
         // A sheet renders small and never inlines the pages themselves, so
         // the per-page inline budget must not refuse a twenty-slide deck
         // before anything has been composed.
@@ -483,7 +484,7 @@ Needs LibreOffice and poppler on the host (see jto_info.previewDependencies); wh
           document: source.document,
           ...(args.pages !== undefined && { pages: args.pages }),
           ...(dpi !== undefined && { dpi }),
-          render: pickRenderOptions(args, themePath.path),
+          render: renderOptions,
           outputMode: sheetRequested ? 'path' : args.outputMode ?? 'auto',
           ...(args.renderedFindings === true && { rendered: true }),
           getAdapter: deps.getAdapter,
@@ -505,7 +506,7 @@ Needs LibreOffice and poppler on the host (see jto_info.previewDependencies); wh
         const findings = await collectRenderedFindings({
           format: args.format,
           document: source.document,
-          render: pickRenderOptions(args, themePath.path),
+          render: renderOptions,
           rendered: rendered.rendered,
           adapter,
         });
@@ -632,7 +633,7 @@ function withRenderedFindings(
     payload: {
       ...delivery.payload,
       diagnostics: [...delivery.payload.diagnostics, ...findings.diagnostics],
-      rendered: findings.summary,
+      ...(findings.summary && { rendered: findings.summary }),
     },
   };
 }

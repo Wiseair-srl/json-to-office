@@ -169,11 +169,11 @@ export function totals(runs: readonly RunMetrics[]): ScorecardTotals {
     withAnyIntegrityDefect: defective.length,
     integrityDefectRate: runs.length === 0 ? 0 : defective.length / runs.length,
     renderedFindingsMapped: runs.reduce(
-      (n, run) => n + (run.renderedFindings?.mapped ?? 0),
+      (n, run) => n + run.renderedFindings.mapped,
       0
     ),
     renderedFindingsUnmapped: runs.reduce(
-      (n, run) => n + (run.renderedFindings?.unmapped ?? 0),
+      (n, run) => n + run.renderedFindings.unmapped,
       0
     ),
     withPlaceholderLeak: runs.filter((run) => run.placeholderLeaks > 0).length,
