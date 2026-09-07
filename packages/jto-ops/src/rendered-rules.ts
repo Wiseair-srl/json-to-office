@@ -101,7 +101,7 @@ export const RENDERED_QUALITY_RULES: QualityRulePack = {
       id: 'rendered/empty-page',
       code: QUALITY_CODES.RENDERED_EMPTY_PAGE,
       description:
-        'A page with no text at all: a full-page figure is fine, a blank page from a stray break is not.',
+        'A page with no body text (`kind: blank`), or in docx one whose only words are its running head or footer (`kind: chrome-only`): a full-page figure is fine, a blank page from a stray break or an empty section is not.',
       category: 'integrity',
       defaultSeverity: 'info',
     }),

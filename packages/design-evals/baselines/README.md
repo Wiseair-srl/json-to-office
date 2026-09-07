@@ -37,6 +37,13 @@ the harness recorded no rendered findings): the `highcharts.com` credit left in
 the plot area (13 rationales) and empty or near-empty pages under a running head
 (10 rationales; `cr-workforce-planning` runs 2 and 3 fell to level 1 on it).
 
+Both were fixed after this set was recorded, and the second changed the metric
+itself: the rendered pass now counts a page whose only words are its running
+head and footer as empty (`W_QUALITY_RENDERED_EMPTY_PAGE`, `kind: chrome-only`),
+and the client-report profile reports it at `warning`. The 0 rendered findings
+here were recorded under the older rule, so a non-zero count in the "after" set
+is partly the rule seeing more, not only the documents changing.
+
 ## Reading one
 
 `totals` are mechanical and `judge` is an opinion; they are separate objects on

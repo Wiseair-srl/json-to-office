@@ -512,19 +512,28 @@ function draftRenderedFindings(input: RenderedAnalysisInput): RenderedDraft {
     }
   }
 
-  // -- Empty pages: no text at all. A full-page figure is legitimate, so
-  // this is information, not a warning.
+  // -- Empty pages: no body text. In docx the running head and footer repeat
+  // on a stray page too, so chrome does not count as content there; a deck
+  // declares no chrome inventory, so a slide with any word is not empty (an
+  // image slide carrying its slide number is the legitimate case). A
+  // full-page figure is legitimate, so this is information, not a warning.
   pages.forEach((page, pageIndex) => {
-    if (page.words.length > 0) return;
+    const hasBody =
+      format === 'docx'
+        ? page.words.some((_, i) => !chromeWords.has(`${pageIndex}:${i}`))
+        : page.words.length > 0;
+    if (hasBody) return;
+    const kind = page.words.length > 0 ? 'chrome-only' : 'blank';
     findings.push(
       finding({
         ruleId: 'rendered/empty-page',
         mapping: 'unmapped',
         page: pageIndex + 1,
         path: '',
-        message: `Page ${pageIndex + 1} carries no text. A full-page figure is fine; a blank page from a stray break is not.`,
+        message: `Page ${pageIndex + 1} carries ${kind === 'chrome-only' ? 'only its running head or footer' : 'no text'}. A full-page figure is fine; a blank page from a stray break or an empty section is not.`,
         suggestion:
           'Preview the page; remove the page break or the empty section if nothing was meant to be there.',
+        context: { kind },
       })
     );
   });
