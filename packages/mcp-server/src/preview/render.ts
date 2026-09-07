@@ -664,10 +664,14 @@ export async function renderPreview(
   // One object for preparation and generation: the adapter reuses a
   // prepared model only for the very document it was prepared from, and a
   // string parsed twice is two documents.
-  const document: unknown =
-    typeof options.document === 'string'
-      ? JSON.parse(options.document)
-      : options.document;
+  let document: unknown = options.document;
+  if (typeof options.document === 'string') {
+    try {
+      document = JSON.parse(options.document);
+    } catch (error) {
+      return failure(ERROR_CODES.INVALID_JSON, message(error));
+    }
+  }
   const dpi = options.dpi ?? PREVIEW_DEFAULT_DPI;
   const render = options.render ?? {};
   const diagnostics: Diagnostic[] = [];
@@ -740,8 +744,16 @@ export async function renderPreview(
     // to happen anyway.
     const [buffer, versions] = await Promise.all([
       (async () => {
-        if (prepare)
-          prepared = await prepare(document, { ...render, warnings });
+        // Preparation only feeds the rendered pass. A document it cannot
+        // handle is left to generation, whose validation names the pointers
+        // at fault, and `collectRenderedFindings` reports the skipped pass.
+        if (prepare) {
+          try {
+            prepared = await prepare(document, { ...render, warnings });
+          } catch {
+            prepared = undefined;
+          }
+        }
         return adapter.generateBuffer(document, {
           ...render,
           ...(prepared && { prepared }),

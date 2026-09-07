@@ -288,4 +288,16 @@ describe('assignInventory', () => {
       60, 200,
     ]);
   });
+
+  it('hands a lone occurrence to the authored entry, releasing the optional claim', () => {
+    const { matches } = assignInventory(
+      [page([word('Alpha', 10, 200), word('section', 50, 200)])],
+      [
+        { path: '/toc', text: 'Alpha section', optional: true },
+        { path: '/h', text: 'Alpha section' },
+      ]
+    );
+    expect(matches.map((m) => m.status)).toEqual(['skipped', 'mapped']);
+    expect(matches[1].occurrences[0].parts[0].yMin).toBe(200);
+  });
 });

@@ -421,7 +421,8 @@ export function assignInventory<T extends InventoryEntry>(
   });
 
   const body = indexDocument(pages, chromeWords);
-  const claimed = new Set<number>();
+  /** Stream offset → the entry that claimed the occurrence there. */
+  const claimed = new Map<number, T>();
   let cursor = 0;
   for (const entry of inventory) {
     if (entry.repeats) continue;
@@ -451,7 +452,25 @@ export function assignInventory<T extends InventoryEntry>(
       });
       continue;
     }
-    const free = all.filter((o) => !claimed.has(o.at));
+    let free = all.filter((o) => !claimed.has(o.at));
+    if (free.length === 0 && !entry.optional) {
+      // Every occurrence is taken. One taken by an optional entry — a
+      // contents line for a heading the page shows only once — is the
+      // author's text, not the field's: the optional claim is released and
+      // the entry that was actually written keeps its occurrence.
+      const held = all.find((o) => claimed.get(o.at)?.optional);
+      if (held) {
+        const holder = claimed.get(held.at) as T;
+        claimed.delete(held.at);
+        results.set(holder, {
+          entry: holder,
+          needle: results.get(holder)?.needle ?? '',
+          status: 'skipped',
+          occurrences: [],
+        });
+        free = [held];
+      }
+    }
     if (free.length === 0) {
       results.set(entry, {
         entry,
@@ -462,7 +481,7 @@ export function assignInventory<T extends InventoryEntry>(
       continue;
     }
     const chosen = free.find((o) => o.at >= cursor) ?? free[0];
-    claimed.add(chosen.at);
+    claimed.set(chosen.at, entry);
     cursor = chosen.at;
     results.set(entry, {
       entry,
