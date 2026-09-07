@@ -461,7 +461,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'blocks/text-box-nested-columns-sparse':
     '6e475c059821bf1ff78e336218d0e6eb2a9dcbb26c767b1a0a64d5602aef00a2',
   'blocks/text-box-nested-columns-floating':
-    '776a787bad34a4387a45e11c91a8c992467ffb2b6f3bc3b6076f7db4bc3d33e1',
+    '15ad7c5b9ef8af1a66db33a1ae9fef7331a4499f51483d7ecadd80557ef69578',
   'blocks/divider-default':
     '1cbb14ef7c18087b469cb89811bcc9366b9b005fe9f4d74a5bfaa76c4fec8c6b',
   'blocks/divider-styled':

@@ -1300,10 +1300,16 @@ function compileColumns(
   // Whole twips: an odd gap would leave half a twip on each side of it,
   // and a grid is a measurement. The last cell absorbs the rounding so the
   // cells still sum to the measure.
-  const exact = widths.map(
+  // Stated widths that already fill the measure plus a gap would state a
+  // grid wider than the table; the top-level path refuses that, and a nested
+  // `columns` scales its cells back to the measure instead.
+  const stated = widths.map(
     (width, index) =>
       width + gaps[index] / 2 + (index > 0 ? gaps[index - 1] / 2 : 0)
   );
+  const statedTotal = stated.reduce((sum, cell) => sum + cell, 0);
+  const scale = statedTotal > available ? available / statedTotal : 1;
+  const exact = stated.map((cell) => cell * scale);
   const cells = exact.map((cell) => Math.round(cell));
   const total = exact.reduce((sum, cell) => sum + cell, 0);
   cells[cells.length - 1] +=

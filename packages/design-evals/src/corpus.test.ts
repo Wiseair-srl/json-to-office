@@ -254,5 +254,16 @@ describe('the client-report checkpoint set', () => {
       })
     );
     await expect(loadBriefSet(small, 'stray')).rejects.toThrow(/covers/);
+    await fs.writeFile(
+      path.join(dir, 'sets', 'claims.json'),
+      JSON.stringify({
+        id: 'claims',
+        purpose: 'x',
+        repeat: 2,
+        covers: ['a', 'charts'],
+        briefs: [{ id: 'sample-brief', covers: ['a'], why: 'because' }],
+      })
+    );
+    await expect(loadBriefSet(small, 'claims')).rejects.toThrow(/charts/);
   });
 });

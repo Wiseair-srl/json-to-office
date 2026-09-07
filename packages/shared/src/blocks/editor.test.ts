@@ -6,6 +6,7 @@ import {
   blockInvocationExample,
   blockInvocationPropsSchema,
   blockReferencesFromDocument,
+  blockSlotEditorSchema,
 } from './editor';
 import { readBlockDefinitions, validateBlockInvocations } from './evaluator';
 import type { JsonBlockDefinition } from './schema';
@@ -282,5 +283,20 @@ describe('block dependencies and references', () => {
         { template: 't', format: 'pptx' }
       )
     ).toEqual([]);
+  });
+});
+
+describe('editor schema and scaffold markers', () => {
+  it('lets a marker stand in a bounded or enumerated string slot', () => {
+    const bounded = blockSlotEditorSchema(
+      { type: 'string', maxLength: 6, enum: ['up', 'down'] } as never,
+      undefined as never
+    ) as { anyOf: unknown[]; enum?: unknown; maxLength?: unknown };
+    expect(bounded.enum).toBeUndefined();
+    expect(bounded.maxLength).toBeUndefined();
+    expect(bounded.anyOf).toEqual([
+      { maxLength: 6, enum: ['up', 'down'] },
+      { type: 'string', pattern: expect.stringContaining('\\{\\{') },
+    ]);
   });
 });
