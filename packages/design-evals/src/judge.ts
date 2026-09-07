@@ -67,7 +67,15 @@ function asVerdict(value: unknown): JudgeVerdict {
       `The judge answered something that is not a verdict: ${JSON.stringify(value).slice(0, 200)}`
     );
   }
-  return record as JudgeVerdict;
+  // Only the rubric's fields: a judge that echoes its schema envelope
+  // (`"type": "object"`) or adds commentary keys must not leak them into a
+  // recorded baseline, where every run has to carry the same shape.
+  return {
+    level: record.level,
+    wouldShip: record.wouldShip,
+    genericness: record.genericness,
+    rationale: record.rationale,
+  };
 }
 
 /**

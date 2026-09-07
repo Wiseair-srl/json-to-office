@@ -1087,7 +1087,6 @@
         "credential": "none"
       },
       "judge": {
-        "type": "object",
         "level": 3,
         "wouldShip": false,
         "genericness": 2,
@@ -1224,7 +1223,6 @@
         "credential": "none"
       },
       "judge": {
-        "type": "object",
         "level": 3,
         "wouldShip": false,
         "genericness": 2,
@@ -1395,7 +1393,6 @@
         "credential": "none"
       },
       "judge": {
-        "type": "object",
         "level": 4,
         "wouldShip": false,
         "genericness": 2,
