@@ -71,6 +71,7 @@ export function familyRendered(
   return fonts.some((font) => foldFontName(font.baseName).startsWith(folded));
 }
 
+/** Where to look for `pdffonts`, most explicit first. */
 function pdffontsCandidates(): string[] {
   const candidates: string[] = [];
   const configured = process.env.PDFFONTS_PATH?.trim();
@@ -89,6 +90,7 @@ function pdffontsCandidates(): string[] {
   return [...new Set(candidates)];
 }
 
+/** One spawn, stdout captured; nothing here touches the filesystem. */
 async function run(
   binary: string,
   args: string[],
@@ -108,6 +110,7 @@ async function run(
 }
 
 let pdffontsPromise: Promise<string> | undefined;
+/** The binary, memoized: success is cached, failure retries next call. */
 async function resolvePdffonts(): Promise<string> {
   if (!pdffontsPromise) {
     pdffontsPromise = (async () => {

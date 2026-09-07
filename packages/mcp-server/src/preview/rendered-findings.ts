@@ -127,6 +127,10 @@ export function requestedFontsFromFacts(
   return requested;
 }
 
+/**
+ * The pass could not run. No summary: a zero-filled one would read as "no
+ * findings" when the truth is that nothing was looked at.
+ */
 function skipped(code: PreviewErrorCode, message: string): RenderedFindings {
   return { diagnostics: [diagnostic(code, message, { severity: 'warning' })] };
 }

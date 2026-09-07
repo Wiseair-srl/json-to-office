@@ -54,6 +54,7 @@ function asRecord(value: unknown): Rec | undefined {
     : undefined;
 }
 
+/** Twips to points; `undefined` for anything that is not a finite number. */
 function twipsToPt(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value)
     ? value / 20
@@ -129,6 +130,13 @@ export function collectDocxTextInventory(
 
     switch (name) {
       case 'heading': {
+        // A heading inside a running header or footer is chrome, not a
+        // document heading: it repeats on every page, and the rendered pass
+        // would otherwise read it as a heading stranded at the page foot.
+        if (inherited.repeats) {
+          add(`${path}/props/text`, props.text, 'chrome', extra);
+          break;
+        }
         const level =
           typeof props.level === 'number' && Number.isFinite(props.level)
             ? props.level

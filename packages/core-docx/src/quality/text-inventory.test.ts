@@ -76,17 +76,22 @@ describe('collectDocxTextInventory', () => {
     expect(entries.map((e) => e.text)).toEqual(['shown']);
   });
 
-  it('marks section header and footer text as repeating chrome', () => {
+  it('marks section header and footer text as repeating chrome, headings included', () => {
     const entries = collectDocxTextInventory([
       {
         name: 'section',
         props: {
-          header: [{ name: 'paragraph', props: { text: 'Client report' } }],
+          header: [
+            { name: 'heading', props: { text: 'Client report', level: 3 } },
+          ],
           footer: [{ name: 'paragraph', props: { text: 'Page {PAGE}' } }],
         },
         children: [{ name: 'paragraph', props: { text: 'Body' } }],
       },
     ]);
+    // A heading in a running header repeats on every page; calling it a
+    // heading would read as one stranded at the foot of each of them.
+    expect(entries[0].level).toBeUndefined();
     expect(entries.map((e) => [e.role, e.path, e.repeats ?? false])).toEqual([
       ['chrome', '/children/0/props/header/0/props/text', true],
       ['chrome', '/children/0/props/footer/0/props/text', true],

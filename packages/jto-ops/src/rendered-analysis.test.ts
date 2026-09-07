@@ -264,6 +264,18 @@ describe('analyzeRenderedDocument', () => {
     });
   });
 
+  it('reports no font check when the PDF carries no fonts to check against', () => {
+    const result = analyzeRenderedDocument({
+      format: 'docx',
+      pages: [page([word('Visible', 10, 100)])],
+      inventory: [entry('/v', 'Visible')],
+      fonts: [],
+      requestedFonts: [{ family: 'Inter', declared: true }],
+    });
+    expect(result.findings).toEqual([]);
+    expect(result.summary.fonts).toBeUndefined();
+  });
+
   it('stays quiet about fonts when the host could not inspect the PDF', () => {
     const result = analyzeRenderedDocument({
       format: 'docx',
