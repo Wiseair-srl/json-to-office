@@ -251,6 +251,7 @@ The chart is a PNG drawn by a browser that has never seen the document, so on it
 | `subtitle`, axis `labels` and `title`               | the label size in the secondary text colour                                                                   |
 | `legend.itemStyle`, `plotOptions.series.dataLabels` | the label size in the primary text colour, with the `chartLabel` role's weight when the theme states one      |
 | `caption`, `credits.style`                          | the source size in the secondary text colour                                                                  |
+| `credits.enabled`                                   | `false` — the highcharts.com credit never reaches a document unless the author sets `credits.enabled: true`   |
 
 The label size is the theme's `chartLabel` type role and the source size its `source` role when the theme declares them ([shared visual layers](/reference/theme-schema#shared-visual-layers)); otherwise labels sit one point under the body size in docx and two under the body style in pptx, and the source one point under that (the caption size in pptx).
 

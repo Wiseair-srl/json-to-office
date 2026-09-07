@@ -59,6 +59,7 @@ describe('withChartTypography', () => {
       },
     });
     expect(options.credits).toEqual({
+      enabled: false,
       style: { fontSize: '10.7px', color: '#4B5563' },
     });
     expect(options.caption).toEqual({

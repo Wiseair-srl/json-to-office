@@ -203,9 +203,9 @@ describe('the consulting house theme', () => {
       color: '#1A1F26',
       fontWeight: '400',
     });
-    expect(infile.credits.style).toEqual({
-      fontSize: '16px',
-      color: '#4B5563',
+    expect(infile.credits).toEqual({
+      enabled: false,
+      style: { fontSize: '16px', color: '#4B5563' },
     });
   });
 });
