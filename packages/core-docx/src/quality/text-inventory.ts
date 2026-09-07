@@ -97,23 +97,33 @@ export function collectDocxTextInventory(
 
   // A header or cell is `{ content }`, where content is a string or a
   // component; a bare string is tolerated for the compiled forms that use it.
-  const visitCell = (cell: unknown, path: string, role: DocxTextRole): void => {
+  const visitCell = (
+    cell: unknown,
+    path: string,
+    role: DocxTextRole,
+    inherited: { repeats?: boolean }
+  ): void => {
+    // A footer is often a borderless table. Its cells repeat on every page
+    // like any other chrome, so the role and the repeat flag have to survive
+    // the descent — otherwise the text is matched once, as body copy.
+    const cellRole = inherited.repeats ? 'chrome' : role;
+    const extra = inherited.repeats ? { repeats: true as const } : {};
     if (typeof cell === 'string') {
-      add(path, cell, role);
+      add(path, cell, cellRole, extra);
       return;
     }
     const rec = asRecord(cell);
     if (!rec) return;
     if ('content' in rec) {
       if (typeof rec.content === 'string')
-        add(`${path}/content`, rec.content, role);
+        add(`${path}/content`, rec.content, cellRole, extra);
       else {
         const inner = asRecord(rec.content);
-        if (inner) visitNode(inner, `${path}/content`, {});
+        if (inner) visitNode(inner, `${path}/content`, inherited);
       }
       return;
     }
-    if (typeof rec.name === 'string') visitNode(rec, path, {});
+    if (typeof rec.name === 'string') visitNode(rec, path, inherited);
   };
 
   const visitNode = (
@@ -182,7 +192,8 @@ export function collectDocxTextInventory(
           visitCell(
             column.header,
             `${path}/props/columns/${columnIndex}/header`,
-            'table-header'
+            'table-header',
+            inherited
           );
         });
         const rows = Math.max(
@@ -198,7 +209,8 @@ export function collectDocxTextInventory(
             visitCell(
               column.cells[row],
               `${path}/props/columns/${columnIndex}/cells/${row}`,
-              'table-cell'
+              'table-cell',
+              inherited
             );
           });
         }
