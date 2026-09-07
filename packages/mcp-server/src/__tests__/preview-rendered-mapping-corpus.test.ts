@@ -26,7 +26,7 @@ import { describe, expect, it } from 'vitest';
 import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { assignInventory } from '@json-to-office/jto-ops';
+import { assignInventory, pdftotextAvailable } from '@json-to-office/jto-ops';
 
 import { getAdapter } from '../lib/adapters.js';
 import { probePreviewDependencies } from '../preview/dependencies.js';
@@ -40,7 +40,7 @@ const dependencies = await probePreviewDependencies();
 const RUN =
   dependencies.libreoffice.available &&
   dependencies.pdftoppm.available &&
-  dependencies.pdftotext?.available !== false;
+  (await pdftotextAvailable());
 
 type Expected = 'mapped' | 'missing' | 'skipped' | 'ambiguous';
 
