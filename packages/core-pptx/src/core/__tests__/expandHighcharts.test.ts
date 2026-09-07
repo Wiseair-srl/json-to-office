@@ -595,8 +595,9 @@ describe('theme typography injection', () => {
       labels: { style: { fontSize: '20px', color: '#4B5563' } },
       title: { style: { fontSize: '20px', color: '#4B5563' } },
     });
-    // Credits at the caption size.
+    // Credits at the caption size, and off unless the author turns them on.
     expect(infile.credits).toEqual({
+      enabled: false,
       style: { fontSize: '16.7px', color: '#4B5563' },
     });
   });

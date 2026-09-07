@@ -975,9 +975,9 @@ describe('theme typography injection', () => {
       fontSize: '12.7px',
       color: '#282829',
     });
-    expect(infile.credits.style).toEqual({
-      fontSize: '11.3px',
-      color: '#58595B',
+    expect(infile.credits).toEqual({
+      enabled: false,
+      style: { fontSize: '11.3px', color: '#58595B' },
     });
     expect(infile.series).toEqual(chart.options.series);
   });

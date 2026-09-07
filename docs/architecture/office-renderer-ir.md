@@ -976,3 +976,23 @@ page break; and the data-table states its own horizontal cell padding (the
 label column flush left, six points between columns, figures flush right),
 because a theme that sets only top and bottom padding pins the other two
 sides to zero and adjacent right-aligned headers ran into each other.
+
+### Section bookmark anchors (#360 checkpoint)
+
+Every DOCX corpus golden that carries a section moves (150 of 283). The
+docx.js renderer used to open a section's bookmark in a zero-spacing paragraph
+before the first block and close it in a bare Normal paragraph after the last
+one. The closing paragraph cost a line, and on a section whose last page was
+already full that line became an empty page carrying nothing but the running
+head and footer — the defect the client-report checkpoint judge named in ten
+of twenty-four rationales. Both anchors now ride inside the edge paragraphs
+(`w:bookmarkStart` before the first run, `w:bookmarkEnd` after the last); a
+section that begins or ends with a table gets a one-point exact paragraph
+(`w:line="20" w:lineRule="exact"`, no spacing) instead. The office-open
+renderer already wrote the anchors as section children and does not change.
+
+In the same release `withChartTypography` writes `credits.enabled: false`
+beneath the author's Highcharts options in both formats, so the
+`highcharts.com` credit no longer lands in the plot area of a report chart
+(thirteen rationales). An authored `credits.enabled: true` still wins. No
+corpus golden carries a rendered chart, so no golden moves for it.

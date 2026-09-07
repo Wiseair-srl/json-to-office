@@ -193,7 +193,10 @@ export function withChartTypography<T extends Options>(
     plotOptions: fill(options.plotOptions, {
       series: { dataLabels: { style: labelText } },
     }),
-    credits: fill(options.credits, { style: mutedSource }),
+    // The library credit is a link to highcharts.com drawn into the plot
+    // area; a client document never carries it unless the author asks. An
+    // authored `enabled` — true included — wins, as every other key does.
+    credits: fill(options.credits, { enabled: false, style: mutedSource }),
   };
 }
 

@@ -16,7 +16,9 @@ import {
   Header,
   ImageRun,
   Packer,
+  LineRuleType,
   Paragraph,
+  type Run,
   Table,
   type ICommentOptions,
   type ILevelsOptions,
@@ -461,10 +463,12 @@ function partChildren(part: DocxIrHeaderFooter, resources: EmitResources) {
 /**
  * A section's blocks, wrapped in its bookmark range when it has one.
  *
- * The anchors are zero-spacing paragraphs because OOXML has nowhere else to put
- * them: a bookmark is an inline construct, so covering a section means opening
- * one before its content and closing it after, without the anchor paragraphs
- * themselves adding visible space.
+ * A bookmark is an inline construct, so covering a section means opening it
+ * inside the first paragraph and closing it inside the last. When that edge
+ * block is a table, the anchor goes in a paragraph of its own — one point
+ * tall, exact, no spacing — because a bare Normal paragraph there costs a
+ * full line, and a section whose last page was already full pushed that line
+ * onto an empty page carrying nothing but the running head.
  */
 function sectionChildren(
   section: DocxIrSection,
@@ -474,20 +478,37 @@ function sectionChildren(
   const bookmark = section.bookmark;
   if (!bookmark) return blocks;
 
-  const out: (Paragraph | Table)[] = [];
+  const out: (Paragraph | Table)[] = [...blocks];
   if (bookmark.opens) {
-    out.push(
-      new Paragraph({
-        children: [new BookmarkStart(bookmark.name, bookmark.id)],
-        spacing: { before: 0, after: 0, line: 0 },
-      })
-    );
+    const start = new BookmarkStart(bookmark.name, bookmark.id);
+    const first = out[0];
+    if (first instanceof Paragraph) {
+      // Ahead of the runs, so the range covers the paragraph's own text: a
+      // section-scoped TOC lists a heading only when the heading is inside.
+      // docx.js types the front slot as a run, but it is a raw root splice.
+      first.addRunToFront(start as unknown as Run);
+    } else {
+      out.unshift(anchorParagraph(start));
+    }
   }
-  out.push(...blocks);
   if (bookmark.closes) {
-    out.push(new Paragraph({ children: [new BookmarkEnd(bookmark.id)] }));
+    const end = new BookmarkEnd(bookmark.id);
+    const last = out[out.length - 1];
+    if (last instanceof Paragraph) {
+      last.addChildElement(end);
+    } else {
+      out.push(anchorParagraph(end));
+    }
   }
   return out;
+}
+
+/** A paragraph that exists only to hold a bookmark anchor next to a table. */
+function anchorParagraph(anchor: BookmarkStart | BookmarkEnd): Paragraph {
+  return new Paragraph({
+    children: [anchor],
+    spacing: { before: 0, after: 0, line: 20, lineRule: LineRuleType.EXACT },
+  });
 }
 
 function coreProperties(ir: DocxIR): Record<string, unknown> {
