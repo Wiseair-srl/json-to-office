@@ -355,11 +355,13 @@ describe('analyzeRenderedDocument', () => {
       format: 'docx',
       pages: [
         page([word('Revenue', 10, 800), word('grew', 50, 800)]),
+        // Words a space apart: at a wider gap two aligned lines read as
+        // two table columns, and the paragraph would be read column-wise.
         page([
           word('twelve', 10, 40),
-          word('percent', 50, 40),
+          word('percent', 43, 40),
           word('this', 10, 54),
-          word('year', 50, 54),
+          word('year', 43, 54),
         ]),
       ],
       inventory: [entry('/p', 'Revenue grew twelve percent this year')],

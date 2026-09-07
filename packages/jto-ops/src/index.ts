@@ -59,6 +59,7 @@ export {
   assignInventory,
   authoredTextForMatch,
   normalizeForMatch,
+  readingOrder,
   type InventoryEntry,
   type InventoryMatch,
   type MappingStatus,
