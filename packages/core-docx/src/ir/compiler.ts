@@ -2306,9 +2306,12 @@ function compileStatistic(
  * A list: one numbering definition plus one paragraph per item.
  *
  * The levels come from `resolveListLevels`, shared with the outline pre-pass so
- * a cross-reference cannot predict a different marker from the one drawn. List
- * items deliberately carry no run formatting of their own — they inherit the
- * Normal style, which is what makes a list look like the body text around it.
+ * a cross-reference cannot predict a different marker from the one drawn. Items
+ * name the Normal style, which is what makes an unstyled list look like the
+ * body text around it; a `font` on the list layers run formatting on top of it,
+ * through the same `runFormatting` the paragraph path uses, so a colour token,
+ * a size or an italic reads the same either side. With no `font` the base is
+ * empty and the items render exactly as they always have.
  */
 function compileList(
   component: ComponentDefinition,
@@ -2322,6 +2325,14 @@ function compileList(
 
   const items = (props.items ?? []) as ListItem[];
   if (items.length === 0) return [];
+
+  // One base style for the whole list, resolved once: `font` is a list-level
+  // prop, so every item shares it and inline decorators layer on top.
+  const base = runFormatting(
+    (props.font ?? {}) as Record<string, any>,
+    props,
+    ctx
+  );
 
   // One binding for the whole list: ids are declared on the list, and markers
   // may appear in any item.
@@ -2378,18 +2389,26 @@ function compileList(
         { ctx, path: itemPath, id: `${scope.id}:i${index}` },
         revision === undefined
           ? parseInline(text, {
-              base: {},
+              base,
               hyperlinks: true,
               ...(notes ? { resolveNote: notes.resolve } : {}),
               resolvePlaceholder: placeholderResolver(ctx),
               resolveCrossReference: crossReferenceResolver(ctx, itemPath),
             })
-          : compileRevision(revision as Record<string, any>, {}, ctx),
+          : compileRevision(revision as Record<string, any>, base, ctx),
         {
           styleId: 'Normal',
           formatting: {
             alignment: compileAlignment(props.alignment) ?? 'left',
             spacing: itemSpacing(props.spacing, index, items.length),
+            // Every item carries the flags, not just the first: keeping a list
+            // with what introduces it means keeping it whole.
+            ...(props.keepNext !== undefined
+              ? { keepNext: props.keepNext }
+              : {}),
+            ...(props.keepLines !== undefined
+              ? { keepLines: props.keepLines }
+              : {}),
           },
           ...(commentIds && index === firstRendered
             ? { commentOpen: commentIds }

@@ -1,5 +1,27 @@
 # @json-to-office/shared-docx
 
+## 4.3.0
+
+### Minor Changes
+
+- 88a3683: fix(docx): raise the `font.size` cap from 120pt to the format's real limit
+
+  The cap had no basis in the format. OOXML stores font size in `w:sz` as half-points (`ST_HpsMeasure`, an unsigned measurement with no low ceiling), and Word's own UI accepts up to 1638pt. Successive caps — 72pt originally, 120pt since `font.scale` landed — still rejected valid display type: cover numerals, chapter headings, pull quotes. The maximum is now 1638; the `minimum: 8` sanity floor is unchanged.
+
+  The renderer never clamped — `w:sz` is emitted as `size * 2` at every conversion site — so documents that set a size above the cap already produced correct output; only the schema disagreed. A 163pt heading now validates and round-trips to `<w:sz w:val="326"/>`.
+
+  `TextFormattingPropertiesSchema` is spread into the component font schema and both theme style schemas, so the new range applies uniformly to `props.font`, `theme.styles.*` and `theme.styles.TOC1..6`.
+
+- d413e25: feat(docx): `list` accepts `font`, `keepNext` and `keepLines`
+
+  Styling and hanging indent were not orthogonal. A list's items were built on an empty base run style and carried no keep flags, so a consumer rendering a nested block — a tree of conditions under its heading — had to choose: `list` for the hanging indent but no colour or size, or `paragraph` for the styling but no indent. Inline decorators (`**bold**`, `*italic*`) were the only variation reachable inside an item.
+
+  `ListPropsSchema` now carries `font` — the same `Type.Partial(FontDefinitionSchema)` the paragraph uses — plus optional `keepNext` and `keepLines`. The schema is `additionalProperties: false` with validation on by default, so without this the props were rejected before reaching the renderer.
+
+  `compileList` resolves the `font` once for the whole list through the same `runFormatting` the paragraph path uses, so a colour token, a size in points, or an italic reads identically either side, and the resolved base is the parse base for both plain items and tracked-change ones. The keep flags are set on every item, not just the first: keeping a list with what introduces it means keeping it whole.
+
+  Distinct from a level's `font`, which styles the marker glyph and nothing else — the two compose. Fully additive: a list with no `font` still gets an empty base and no keep flags, and renders byte-for-byte as before.
+
 ## 4.0.0
 
 ### Minor Changes

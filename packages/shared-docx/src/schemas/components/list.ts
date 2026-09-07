@@ -8,7 +8,7 @@ import {
   JustifiedAlignmentSchema,
   IndentSchema,
 } from './common';
-import { HexColorSchema } from '../font';
+import { FontDefinitionSchema, HexColorSchema } from '../font';
 import { RevisionSchema } from './revision';
 import { CommentSchema } from './comment';
 
@@ -221,8 +221,23 @@ export const ListPropsSchema = Type.Object(
           'Starting number for level 0. Applies whether or not `levels` is given; a `start` on the level itself wins.',
       })
     ),
+    // Base run style for every item's text, same shape as the paragraph's.
+    // Inline decorators in an item still layer on top of it. Distinct from a
+    // level's `font`, which styles the marker glyph and nothing else.
+    font: Type.Optional(Type.Partial(FontDefinitionSchema)),
     spacing: Type.Optional(ListSpacingSchema),
     alignment: Type.Optional(JustifiedAlignmentSchema),
+    keepNext: Type.Optional(
+      Type.Boolean({
+        description:
+          'Keep every item with what follows, so the list stays with the text that introduces it',
+      })
+    ),
+    keepLines: Type.Optional(
+      Type.Boolean({
+        description: 'Keep all lines of each item together on the same page',
+      })
+    ),
     indent: Type.Optional(
       Type.Union([Type.Number({ minimum: 0 }), IndentSchema])
     ),

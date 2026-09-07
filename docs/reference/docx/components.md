@@ -97,7 +97,7 @@ Two caveats:
 - **The number is cached at generation time.** Word recomputes every field on open (the document sets `updateFields`), but headless LibreOffice — and therefore the PDF export — shows the cached value, so a `[@id]` in a PDF reflects the document as generated. `[@id]` (relative) is the approximation: its true value depends on where the reference sits, which only Word resolves.
 - **A reference the pre-pass cannot resolve degrades rather than breaking.** An unknown id renders as the literal `[@id]` text with a warning — never as Word's "Error! Reference source not found". A target that exists but carries no number (a bullet-list item, an unnumbered heading) gets a real field with no cached value: blank until the reader updates fields, and a warning suggesting `:none`.
 
-The `font` prop, where present, is a partial font override with the same fields as a theme font definition: `family`, `size` (8–120), `color`, `bold`, `fontWeight` (100–900, wins over `bold`), `italic`, `underline`, `lineSpacing`, `spacing`, `characterSpacing` (`{ type: 'condensed' | 'expanded', value }`).
+The `font` prop, where present, is a partial font override with the same fields as a theme font definition: `family`, `size` (8–1638), `color`, `bold`, `fontWeight` (100–900, wins over `bold`), `italic`, `underline`, `lineSpacing`, `spacing`, `characterSpacing` (`{ type: 'condensed' | 'expanded', value }`).
 
 In `lineSpacing`, `value` is points for `exactly` and `atLeast` and a multiple of single spacing for `multiple`. `exactly` pins an absolute line box and clips the glyphs to it, and unlike `size` it has no floor — an empty spacer paragraph legitimately pins a fraction of a point. On a paragraph or heading that has text, a box smaller than the type it holds is reported as [`W_QUALITY_LINE_BOX_COLLAPSE`](/guide/design-quality#built-in-docx-rules).
 
@@ -394,18 +394,21 @@ Note the conventions differ between the two color families: `borderColor` (table
 
 Bulleted or numbered lists with up to nine nesting levels and fully configurable numbering.
 
-| Prop        | Type                                                     | Required | Default        | Description                                                              |
-| ----------- | -------------------------------------------------------- | -------- | -------------- | ------------------------------------------------------------------------ |
-| `items`     | `(string \| { text, level?, id?, revision? })[]` (min 1) | **yes**  | —              | `level` is 0–8; `id` bookmarks the item (see below)                      |
-| `reference` | `string`                                                 | no       | auto-generated | Numbering configuration ID (share it to continue numbering across lists) |
-| `levels`    | `Level[]` (1–9 items)                                    | no       | —              | Per-level configuration (see below)                                      |
-| `format`    | LevelFormat \| `'numbered'` \| `'none'`                  | no       | bullets        | Shorthand for the level-0 format                                         |
-| `bullet`    | `string`                                                 | no       | —              | Custom bullet character                                                  |
-| `start`     | `number` (≥ 1)                                           | no       | `1`            | Level-0 starting number (applies with or without `levels`)               |
-| `spacing`   | `{ before?, after?, item? }` (points)                    | no       | —              | `item` = spacing between items                                           |
-| `alignment` | `'left'` \| `'center'` \| `'right'` \| `'justify'`       | no       | —              |                                                                          |
-| `indent`    | `number` \| `{ left?, hanging? }`                        | no       | —              |                                                                          |
-| `comment`   | `Comment`                                                | no       | —              | Review comment spanning the whole list (see [Comments](#comments))       |
+| Prop        | Type                                                     | Required | Default        | Description                                                                                                                               |
+| ----------- | -------------------------------------------------------- | -------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `items`     | `(string \| { text, level?, id?, revision? })[]` (min 1) | **yes**  | —              | `level` is 0–8; `id` bookmarks the item (see below)                                                                                       |
+| `reference` | `string`                                                 | no       | auto-generated | Numbering configuration ID (share it to continue numbering across lists)                                                                  |
+| `levels`    | `Level[]` (1–9 items)                                    | no       | —              | Per-level configuration (see below)                                                                                                       |
+| `format`    | LevelFormat \| `'numbered'` \| `'none'`                  | no       | bullets        | Shorthand for the level-0 format                                                                                                          |
+| `bullet`    | `string`                                                 | no       | —              | Custom bullet character                                                                                                                   |
+| `start`     | `number` (≥ 1)                                           | no       | `1`            | Level-0 starting number (applies with or without `levels`)                                                                                |
+| `font`      | partial font object                                      | no       | theme          | Base run style for every item's text (inline decorators layer on top). Distinct from a level's `font`, which styles the marker glyph only |
+| `spacing`   | `{ before?, after?, item? }` (points)                    | no       | —              | `item` = spacing between items                                                                                                            |
+| `alignment` | `'left'` \| `'center'` \| `'right'` \| `'justify'`       | no       | —              |                                                                                                                                           |
+| `keepNext`  | `boolean`                                                | no       | —              | Set on every item, so the list stays with the text that introduces it                                                                     |
+| `keepLines` | `boolean`                                                | no       | —              | Keep all lines of each item on one page                                                                                                   |
+| `indent`    | `number` \| `{ left?, hanging? }`                        | no       | —              |                                                                                                                                           |
+| `comment`   | `Comment`                                                | no       | —              | Review comment spanning the whole list (see [Comments](#comments))                                                                        |
 
 **Level**
 
