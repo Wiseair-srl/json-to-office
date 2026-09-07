@@ -1,5 +1,20 @@
 # @json-to-office/jto
 
+## 4.0.0
+
+### Patch Changes
+
+- 102ab50: Theme-aware consistency rules for DOCX (#332): `docx/type-scale` reports an authored size the theme never paints and snaps it to the nearest size on the theme's scale; `docx/size-count` caps the distinct sizes a document paints, blocks included; `docx/role-drift` reports a heading level or paragraph style painted at two sizes and restores the theme's size. All three are off on the default profile and enabled by `client-report`. Evidence names the expected value and whether it came from the theme or the profile. `QualityRule` gains `defaultEnabled`; the docx theme fact carries `typeScalePt` and `roleSizesPt`; `typeScaleSizes` lists a scale's steps.
+- Updated dependencies [e29475b]
+- Updated dependencies [102ab50]
+  - @json-to-office/quality@4.0.0
+  - @json-to-office/shared-docx@4.0.0
+  - @json-to-office/shared-pptx@4.0.0
+  - @json-to-office/core-docx@4.0.0
+  - @json-to-office/core-pptx@4.0.0
+  - @json-to-office/shared@4.0.0
+  - @json-to-office/jto-cli@4.0.0
+
 ## 3.3.0
 
 ### Minor Changes
