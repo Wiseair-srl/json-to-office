@@ -19,6 +19,8 @@ export const PREVIEW_ERROR_CODES = {
   RENDER_FAILED: 'E_PREVIEW_RENDER_FAILED',
   /** The PDF produced no readable page count — nothing to select from. */
   PAGE_COUNT_UNAVAILABLE: 'E_PREVIEW_PAGE_COUNT_UNAVAILABLE',
+  /** Rendered findings were asked for, but poppler's text tools are absent. */
+  RENDERED_UNAVAILABLE: 'W_PREVIEW_RENDERED_UNAVAILABLE',
 } as const;
 
 export type PreviewErrorCode =

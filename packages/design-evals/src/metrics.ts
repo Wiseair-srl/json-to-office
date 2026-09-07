@@ -44,6 +44,12 @@ export interface DocumentMetrics {
   placeholderLeaks: number;
   /** Fonts the render could not resolve and replaced. */
   fontSubstitutions: number;
+  /**
+   * Findings of the rendered pass (#344) by whether they reached an authored
+   * pointer. Unmapped findings are mapping gaps to close, reported so the
+   * pass's own precision is visible in every scorecard.
+   */
+  renderedFindings: { mapped: number; unmapped: number };
 }
 
 /** The judge's answer for this run, when one was asked for. */
@@ -114,6 +120,7 @@ export function failedRun(
     qualityByCode: {},
     placeholderLeaks: 0,
     fontSubstitutions: 0,
+    renderedFindings: { mapped: 0, unmapped: 0 },
     iterations: 0,
     turns: 0,
     foreignTools: [],
@@ -129,6 +136,8 @@ interface Diagnostic {
   code?: unknown;
   severity?: unknown;
   blocking?: unknown;
+  certainty?: unknown;
+  context?: unknown;
 }
 
 /** Codes that mean text nobody meant to ship reached the document. */
@@ -141,6 +150,7 @@ const PLACEHOLDER_CODES = new Set([
 const FONT_SUBSTITUTION_CODES = new Set([
   'W_FONT_UNRESOLVED',
   'W_FONT_SUBSTITUTED',
+  'W_QUALITY_RENDERED_FONT_SUBSTITUTED',
 ]);
 
 /**
@@ -159,9 +169,16 @@ export function documentMetrics(input: {
   let blockingFindings = 0;
   let placeholderLeaks = 0;
   let fontSubstitutions = 0;
+  const renderedFindings = { mapped: 0, unmapped: 0 };
 
   for (const entry of input.diagnostics) {
     const code = typeof entry.code === 'string' ? entry.code : '';
+    if (entry.certainty === 'rendered') {
+      const mapping = (entry.context as { mapping?: unknown } | undefined)
+        ?.mapping;
+      if (mapping === 'unmapped') renderedFindings.unmapped += 1;
+      else renderedFindings.mapped += 1;
+    }
     if (entry.blocking === true || entry.severity === 'error') {
       blockingFindings += 1;
     }
@@ -178,6 +195,7 @@ export function documentMetrics(input: {
     qualityByCode: Object.fromEntries(Object.entries(qualityByCode).sort()),
     placeholderLeaks,
     fontSubstitutions,
+    renderedFindings,
   };
 }
 

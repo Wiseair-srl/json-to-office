@@ -37,7 +37,16 @@ import {
   type GenerationWarning,
   type ResolvedFont,
 } from '@json-to-office/shared';
-import { getFontStager, type FontStageHandle } from '@json-to-office/jto-ops';
+import {
+  extractPdfFonts,
+  extractPdfTextGeometry,
+  getFontStager,
+  pdffontsAvailable,
+  pdftotextAvailable,
+  type FontStageHandle,
+  type PdfFontInfo,
+  type PdfTextPage,
+} from '@json-to-office/jto-ops';
 
 import type { FormatAdapter, FormatName } from '../lib/adapters.js';
 import {
@@ -108,7 +117,8 @@ export function defaultPreviewCacheDir(): string {
 }
 
 /** Cache files are content-addressed; unrelated names never belong to us. */
-const CACHE_ENTRY_NAME = /^[a-f0-9]{64}\.(?:png|meta\.json)(?:\.tmp-\d+-\d+)?$/;
+const CACHE_ENTRY_NAME =
+  /^[a-f0-9]{64}\.(?:png|meta\.json|rendered\.json)(?:\.tmp-\d+-\d+)?$/;
 
 /**
  * Verify an existing cache directory without following a planted symlink.
@@ -258,6 +268,11 @@ export interface RenderPreviewOptions {
   render?: RenderOptionsInput;
   /** How the caller intends to receive pages; decides the pre-flight refusal. */
   outputMode?: PreviewOutputMode;
+  /**
+   * Read text geometry and embedded fonts off the PDF for the rendered pass
+   * (#344). Cached beside the page count, so a re-preview still answers.
+   */
+  rendered?: boolean;
   getAdapter(format: FormatName): FormatAdapter;
   /** Injectable for the missing-dependency path. */
   probe?: DependencyProbe;
@@ -273,6 +288,18 @@ export interface PreviewProgress {
   progress: number;
   total: number;
   message: string;
+}
+
+/** What the rendered pass reads off the PDF: every word, every font. */
+export interface RenderedGeometry {
+  pages: PdfTextPage[];
+  /** Absent when `pdffonts` was not on the host. */
+  fonts?: PdfFontInfo[];
+  /**
+   * Every family the render resolved, and whether the document supplied a
+   * source for it (staged for LibreOffice) or left it to the host.
+   */
+  resolvedFonts: { family: string; declared: boolean }[];
 }
 
 export interface RenderedPage {
@@ -297,6 +324,8 @@ export interface PreviewRenderSuccess {
   converters: ConverterVersions;
   cache: { hits: number; misses: number; enabled: boolean };
   timings: { generateMs: number; convertMs: number; rasterizeMs: number };
+  /** Present when `rendered` was requested and poppler could read the PDF. */
+  rendered?: RenderedGeometry;
 }
 
 export type PreviewRenderResult = PreviewRenderSuccess | Failure;
@@ -455,6 +484,8 @@ interface CacheIO {
   enabled: boolean;
   readMeta(documentKey: string): Promise<number | undefined>;
   writeMeta(documentKey: string, totalPages: number): Promise<void>;
+  readRendered(documentKey: string): Promise<RenderedGeometry | undefined>;
+  writeRendered(documentKey: string, geometry: RenderedGeometry): Promise<void>;
   readPage(key: string): Promise<Buffer | undefined>;
   writePage(key: string, png: Buffer): Promise<void>;
 }
@@ -465,12 +496,16 @@ function createCacheIO(cacheDir: string | null): CacheIO {
       enabled: false,
       readMeta: async () => undefined,
       writeMeta: async () => {},
+      readRendered: async () => undefined,
+      writeRendered: async () => {},
       readPage: async () => undefined,
       writePage: async () => {},
     };
   }
 
   const metaPath = (key: string) => path.join(cacheDir, `${key}.meta.json`);
+  const renderedPath = (key: string) =>
+    path.join(cacheDir, `${key}.rendered.json`);
   const pagePath = (key: string) => path.join(cacheDir, `${key}.png`);
 
   return {
@@ -495,6 +530,27 @@ function createCacheIO(cacheDir: string | null): CacheIO {
         cacheDir,
         metaPath(documentKey),
         Buffer.from(JSON.stringify({ totalPages }))
+      );
+    },
+
+    async readRendered(documentKey) {
+      try {
+        const raw = await fs.readFile(renderedPath(documentKey), 'utf8');
+        const parsed = JSON.parse(raw) as Partial<RenderedGeometry>;
+        return Array.isArray(parsed.pages) &&
+          Array.isArray(parsed.resolvedFonts)
+          ? (parsed as RenderedGeometry)
+          : undefined;
+      } catch {
+        return undefined;
+      }
+    },
+
+    async writeRendered(documentKey, geometry) {
+      await writeAtomic(
+        cacheDir,
+        renderedPath(documentKey),
+        Buffer.from(JSON.stringify(geometry))
       );
     },
 
@@ -717,7 +773,12 @@ export async function renderPreview(
     if (refusal) return refusal;
 
     const served = await readAllCached(cache, keys, resolved.pages);
-    if (served) {
+    // Geometry is cached with the pages; without it the PDF has to exist
+    // again, so a rendered request falls through to a conversion.
+    const cachedGeometry = options.rendered
+      ? await cache.readRendered(keys.documentKey)
+      : undefined;
+    if (served && (!options.rendered || cachedGeometry)) {
       hits = served.length;
       progressTotal = 1 + served.length;
       for (const page of served) report(`Page ${page.page} from cache`);
@@ -733,6 +794,7 @@ export async function renderPreview(
         converters,
         cache: { hits, misses, enabled: cache.enabled },
         timings: { generateMs, convertMs: 0, rasterizeMs: 0 },
+        ...(cachedGeometry && { rendered: cachedGeometry }),
       };
     }
   }
@@ -809,6 +871,23 @@ export async function renderPreview(
       );
     }
     await cache.writeMeta(keys.documentKey, totalPages);
+
+    // The rendered pass reads the PDF while it exists; the temp tree below
+    // is gone before this function returns.
+    let rendered: RenderedGeometry | undefined;
+    if (options.rendered) {
+      const read = await readRenderedGeometry(
+        pdfPath,
+        resolvedFonts.map((font) => ({
+          family: font.family,
+          declared: font.sources.length > 0,
+        }))
+      );
+      diagnostics.push(...read.diagnostics);
+      rendered = read.geometry;
+      if (rendered) await cache.writeRendered(keys.documentKey, rendered);
+    }
+    if (signal?.aborted) return cancelled();
 
     const resolved = resolvePages(parsed.ranges, totalPages, maxPages);
     if (!resolved.ok) return resolved;
@@ -900,6 +979,7 @@ export async function renderPreview(
         convertMs,
         rasterizeMs: elapsed(rasterizeStarted),
       },
+      ...(rendered && { rendered }),
     };
   } finally {
     // Order matters: the fontconfig stager freezes its staged directory to
@@ -907,6 +987,68 @@ export async function renderPreview(
     if (stageHandle) await stageHandle.cleanup().catch(() => {});
     await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
   }
+}
+
+/**
+ * Text geometry and fonts off the PDF, degrading rather than failing: the
+ * preview's own dependencies are LibreOffice and pdftoppm, and a host with
+ * those but without `pdftotext` still gets its pages, plus a warning that
+ * names what the rendered pass needed.
+ */
+async function readRenderedGeometry(
+  pdfPath: string,
+  resolvedFonts: RenderedGeometry['resolvedFonts']
+): Promise<{ geometry?: RenderedGeometry; diagnostics: Diagnostic[] }> {
+  if (!(await pdftotextAvailable())) {
+    return {
+      diagnostics: [
+        diagnostic(
+          PREVIEW_ERROR_CODES.RENDERED_UNAVAILABLE,
+          'Rendered findings need pdftotext (poppler), which was not found on this host; the pages rendered without them.',
+          {
+            severity: 'warning',
+            suggestion:
+              'Install poppler-utils (it ships pdftotext and pdffonts beside pdftoppm) or set PDFTOTEXT_PATH.',
+          }
+        ),
+      ],
+    };
+  }
+  const diagnostics: Diagnostic[] = [];
+  let pages: PdfTextPage[];
+  try {
+    pages = await extractPdfTextGeometry(pdfPath, { layout: true });
+  } catch (error) {
+    return {
+      diagnostics: [
+        diagnostic(
+          PREVIEW_ERROR_CODES.RENDERED_UNAVAILABLE,
+          `Rendered findings were skipped: pdftotext failed (${message(error)}).`,
+          { severity: 'warning' }
+        ),
+      ],
+    };
+  }
+  let fonts: PdfFontInfo[] | undefined;
+  if (await pdffontsAvailable()) {
+    fonts = await extractPdfFonts(pdfPath).catch(() => undefined);
+  }
+  if (!fonts) {
+    diagnostics.push(
+      diagnostic(
+        PREVIEW_ERROR_CODES.RENDERED_UNAVAILABLE,
+        'Font substitution was not checked: pdffonts (poppler) was not found or failed; the other rendered findings are complete.',
+        {
+          severity: 'info',
+          suggestion: 'Install poppler-utils or set PDFFONTS_PATH.',
+        }
+      )
+    );
+  }
+  return {
+    geometry: { pages, ...(fonts && { fonts }), resolvedFonts },
+    diagnostics,
+  };
 }
 
 /** Every requested page, or undefined when any of them is not on disk. */

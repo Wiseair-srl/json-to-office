@@ -94,6 +94,11 @@ export {
   type PrepareDocxQualityOptions,
 } from './quality/facts';
 export {
+  collectDocxTextInventory,
+  type DocxTextFact,
+  type DocxTextRole,
+} from './quality/text-inventory';
+export {
   DOCX_DEFAULT_QUALITY_PROFILE,
   DOCX_QUALITY_PROFILES,
   DOCX_QUALITY_RULES,

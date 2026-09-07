@@ -87,6 +87,11 @@ import {
   buildContactSheet,
   type ContactSheet,
 } from '../preview/contact-sheet.js';
+import {
+  collectRenderedFindings,
+  type RenderedFindings,
+} from '../preview/rendered-findings.js';
+import type { RenderedAnalysisSummary } from '@json-to-office/jto-ops';
 
 /** Pages a contact sheet renders at: small on the page, many on the sheet. */
 export const CONTACT_SHEET_DPI = 72;
@@ -109,6 +114,7 @@ export interface PreviewToolInput
   dpi?: number;
   outputMode?: PreviewOutputMode;
   contactSheet?: boolean;
+  renderedFindings?: boolean;
   filenamePrefix?: string;
   maxDiagnostics?: number;
 }
@@ -222,6 +228,61 @@ const contactSheetSchema = {
   additionalProperties: false,
 };
 
+const mappingCounts = (description: string) => ({
+  type: 'object' as const,
+  description,
+  properties: {
+    mapped: { type: 'integer' as const },
+    ambiguous: { type: 'integer' as const },
+    unmapped: { type: 'integer' as const },
+  },
+  required: ['mapped', 'ambiguous', 'unmapped'],
+  additionalProperties: false,
+});
+
+const renderedSchema = {
+  type: 'object' as const,
+  description:
+    'Summary of the rendered pass, when `renderedFindings` was set. The findings themselves are quality diagnostics with certainty "rendered" in `diagnostics`; each carries `context.mapping` — "mapped" to an authored pointer, "ambiguous" when only one side of a pair mapped, "unmapped" when no authored text owns the words (reported at the document root, never dropped) — and `context.page`.',
+  properties: {
+    pages: {
+      type: 'integer' as const,
+      description: 'Pages read from the PDF.',
+    },
+    words: {
+      type: 'integer' as const,
+      description: 'Words poppler segmented.',
+    },
+    inventory: {
+      type: 'object' as const,
+      description:
+        'Authored text entries by how they matched the PDF: mapped to one occurrence, ambiguous (every occurrence already claimed by an earlier duplicate), missing (never rendered — reported as a finding), skipped (too short to match).',
+      properties: {
+        mapped: { type: 'integer' as const },
+        ambiguous: { type: 'integer' as const },
+        missing: { type: 'integer' as const },
+        skipped: { type: 'integer' as const },
+      },
+      required: ['mapped', 'ambiguous', 'missing', 'skipped'],
+      additionalProperties: false,
+    },
+    findings: mappingCounts('Rendered findings by mapping outcome.'),
+    fonts: {
+      type: 'object' as const,
+      description:
+        'Requested families checked against the PDF; absent when pdffonts was unavailable.',
+      properties: {
+        requested: { type: 'integer' as const },
+        substituted: { type: 'integer' as const },
+      },
+      required: ['requested', 'substituted'],
+      additionalProperties: false,
+    },
+  },
+  required: ['pages', 'words', 'inventory', 'findings'],
+  additionalProperties: false,
+};
+
 const pageSchema = {
   type: 'object' as const,
   properties: {
@@ -248,6 +309,8 @@ export function register(server: McpServer, deps: ToolDeps): void {
       description: `Render a document to PNG pages and look at them. Use this whenever the question is visual — did the table overflow, did the title wrap, is the slide crowded — rather than reasoning about the JSON.
 
 Pages are selected with printer syntax, 1-based and inclusive: "all" (default), "3", "2-5", "4-" (to the end), "-3" (from the start), or a comma-separated mix like "1-3,7". At most ${MAX_PREVIEW_PAGES} pages per call.
+
+Set renderedFindings: true to also run the rendered-certainty pass over the PDF LibreOffice produced: text past the page edge or its frame, words drawn over each other, authored text that never rendered, substituted font families, empty pages, headings stranded at a page foot and paragraphs split into a lone line. They come back as quality diagnostics with certainty "rendered", each with a mapping status (\`context.mapping\`) and page; \`rendered\` summarises the pass. Advisory: nothing here blocks generation, and an unmapped finding is a mapping gap to look at, not noise.
 
 Set contactSheet: true to get one labelled image tiling every selected page instead of the pages themselves — the way to judge cross-page consistency (rhythm, alignment, chrome) in a single look. It renders at ${CONTACT_SHEET_DPI} DPI unless \`dpi\` says otherwise, inlines when the sheet fits one image block, and is written to the output root when it does not.
 
@@ -293,6 +356,12 @@ Needs LibreOffice and poppler on the host (see jto_info.previewDependencies); wh
             description: `Return one labelled image tiling every selected page instead of the pages themselves. Cross-page consistency — rhythm, alignment, chrome — becomes a single look. Renders at ${CONTACT_SHEET_DPI} DPI unless \`dpi\` says otherwise, and falls back to a written file when the sheet outgrows the inline budget.`,
             default: false,
           },
+          renderedFindings: {
+            type: 'boolean',
+            description:
+              'Run the rendered-certainty pass over the converted PDF and return its findings in `diagnostics` (certainty "rendered") with a `rendered` summary. Needs poppler’s pdftotext; pdffonts adds the font check. Costs one pass over the PDF text, not a second conversion.',
+            default: false,
+          },
           filenamePrefix: {
             type: 'string',
             description:
@@ -326,6 +395,7 @@ Needs LibreOffice and poppler on the host (see jto_info.previewDependencies); wh
             },
             pages: { type: 'array', items: pageSchema },
             contactSheet: contactSheetSchema,
+            rendered: renderedSchema,
             renderer: {
               type: 'object',
               description:
@@ -415,13 +485,31 @@ Needs LibreOffice and poppler on the host (see jto_info.previewDependencies); wh
           ...(dpi !== undefined && { dpi }),
           render: pickRenderOptions(args, themePath.path),
           outputMode: sheetRequested ? 'path' : args.outputMode ?? 'auto',
+          ...(args.renderedFindings === true && { rendered: true }),
           getAdapter: deps.getAdapter,
           signal: ctx.mcpReq.signal,
           ...(onProgress && { onProgress }),
         });
         if (!rendered.ok) return rendered;
 
-        return deliver(rendered, args, deps, sourceSummary(source));
+        const delivered = await deliver(
+          rendered,
+          args,
+          deps,
+          sourceSummary(source)
+        );
+        if (!('payload' in delivered) || !rendered.rendered) return delivered;
+
+        // The pass runs after delivery so a refused payload never pays for
+        // it; its findings ride the same diagnostics channel and budget.
+        const findings = await collectRenderedFindings({
+          format: args.format,
+          document: source.document,
+          render: pickRenderOptions(args, themePath.path),
+          rendered: rendered.rendered,
+          adapter,
+        });
+        return withRenderedFindings(delivered, findings);
       });
 
       // The budget applies to whichever channel answered. A sixty-paragraph
@@ -501,6 +589,7 @@ function pickRenderOptions(
  */
 export interface PreviewPayload extends ToolEnvelope {
   format: FormatName;
+  rendered?: RenderedAnalysisSummary;
   source: SourceSummary;
   totalPages: number;
   selection: string;
@@ -532,6 +621,20 @@ interface Delivery {
    * everything was written to disk; exactly one entry for an inlined sheet.
    */
   images: Buffer[];
+}
+
+function withRenderedFindings(
+  delivery: Delivery,
+  findings: RenderedFindings
+): Delivery {
+  return {
+    ...delivery,
+    payload: {
+      ...delivery.payload,
+      diagnostics: [...delivery.payload.diagnostics, ...findings.diagnostics],
+      rendered: findings.summary,
+    },
+  };
 }
 
 async function deliver(
