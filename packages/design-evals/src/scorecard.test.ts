@@ -14,6 +14,7 @@ function run(overrides: Partial<RunMetrics> = {}): RunMetrics {
     qualityByCode: {},
     placeholderLeaks: 0,
     fontSubstitutions: 0,
+    renderedFindings: { mapped: 0, unmapped: 0 },
     iterations: 2,
     turns: 14,
     foreignTools: [],

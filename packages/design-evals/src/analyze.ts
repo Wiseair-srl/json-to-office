@@ -49,25 +49,42 @@ export function structuralPages(format: string, document: unknown): number {
   return Math.max(sections, children.length > 0 ? 1 : 0);
 }
 
-/** The real page count, or undefined when this host cannot render. */
-async function renderedPages(
+/**
+ * The real page count and the rendered pass's findings (#344), or undefined
+ * when this host cannot render. The same PDF answers both questions.
+ */
+async function renderedMeasurement(
   format: string,
   document: unknown
-): Promise<number | undefined> {
+): Promise<{ pages: number; diagnostics: readonly unknown[] } | undefined> {
   try {
-    const { renderPreview, getAdapter } = await import(
+    const { renderPreview, collectRenderedFindings, getAdapter } = await import(
       '@json-to-office/mcp-server'
     );
     const rendered = await renderPreview({
       format: format as 'docx' | 'pptx',
       document,
       dpi: 36,
-      // Nothing looks at these pixels; only the count is wanted, and the
-      // cheapest render that produces a page count is the right one.
+      // Nothing looks at these pixels; only the count and the text geometry
+      // are wanted, and the cheapest render that produces them is right.
       outputMode: 'path',
+      rendered: true,
       getAdapter,
     });
-    return rendered.ok ? rendered.totalPages : undefined;
+    if (!rendered.ok) return undefined;
+    const findings = rendered.rendered
+      ? await collectRenderedFindings({
+          format: format as 'docx' | 'pptx',
+          document,
+          render: {},
+          rendered: rendered.rendered,
+          adapter: getAdapter(format as 'docx' | 'pptx'),
+        })
+      : undefined;
+    return {
+      pages: rendered.totalPages,
+      diagnostics: findings?.diagnostics ?? [],
+    };
   } catch {
     return undefined;
   }
@@ -99,7 +116,7 @@ export async function analyzeDocument(
   const measured =
     options.measurePages === false
       ? undefined
-      : await renderedPages(format, document);
+      : await renderedMeasurement(format, document);
 
   return {
     diagnostics: [
@@ -111,8 +128,9 @@ export async function analyzeDocument(
         severity: 'error' as const,
       })),
       ...quality.diagnostics,
+      ...(measured?.diagnostics ?? []),
     ],
-    pages: measured ?? structuralPages(format, document),
+    pages: measured?.pages ?? structuralPages(format, document),
     pageCountSource: measured === undefined ? 'structural' : 'rendered',
   };
 }

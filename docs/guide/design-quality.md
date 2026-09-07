@@ -370,6 +370,25 @@ DOCX quality coverage is intentionally narrow today. It does not evaluate prose,
 typography, whitespace, widow/orphan behavior, color or the visual result
 produced by Word.
 
+## The rendered pass
+
+Every rule above reads the document; one pass reads the page. `jto_preview` with `renderedFindings: true` converts through LibreOffice as it does for pixels, then reads the PDF's word geometry (`pdftotext -bbox-layout`) and embedded fonts (`pdffonts`) and reports what only ink can show, with `certainty: "rendered"`:
+
+| Rule                        | Code                                  | Severity       | What it reports                                                                                                                               |
+| --------------------------- | ------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `rendered/clip`             | `W_QUALITY_RENDERED_CLIP`             | warning        | Words past the page edge by more than 2 pt, or a paragraph of which only a leading part rendered (`kind: truncated`, with the share found)    |
+| `rendered/spill`            | `W_QUALITY_RENDERED_SPILL`            | warning        | A framed paragraph or slide text box drawn taller or wider than the box it declared                                                           |
+| `rendered/overlap`          | `W_QUALITY_RENDERED_OVERLAP`          | warning        | Two words from different lines whose boxes intersect by more than 30% of the smaller                                                          |
+| `rendered/text-missing`     | `W_QUALITY_RENDERED_TEXT_MISSING`     | warning        | An authored string that appears nowhere in the PDF: fully clipped, hidden, or dropped by the renderer                                         |
+| `rendered/font-substituted` | `W_QUALITY_RENDERED_FONT_SUBSTITUTED` | info / warning | A requested family the PDF embeds no face of; a warning when the document declared a source for it, information when the host simply lacks it |
+| `rendered/empty-page`       | `W_QUALITY_RENDERED_EMPTY_PAGE`       | info           | A page with no text at all                                                                                                                    |
+| `rendered/heading-stranded` | `W_QUALITY_RENDERED_HEADING_STRANDED` | warning        | DOCX: a heading that is the last body line on its page                                                                                        |
+| `rendered/paragraph-split`  | `W_QUALITY_RENDERED_PARAGRAPH_SPLIT`  | info           | DOCX: a paragraph leaving one line alone on either side of a page break (`kind: orphan` or `widow`)                                           |
+
+Findings map back to authored pointers through the document's text inventory: every painted string with its role, in reading order, read off the prepared document so a string a block compiled reports at the slot the author wrote. Matching folds both sides to lowercase alphanumerics (ligatures split, punctuation and bullets drop out) and searches one stream over the whole document, so a paragraph that breaks across a page is still one match; running heads and footers are matched first and their rows removed, so a page number never interleaves the two halves. Duplicate strings are attributed in reading order — "Total" in the second table finds the second "Total" — and an entry whose every occurrence was already claimed is `ambiguous` rather than guessed. When the whole string is absent, its longest rendered prefix (at least 16 folded characters) maps it and reports the truncation.
+
+`context.mapping` on every finding is `mapped`, `ambiguous` (one side of a pair) or `unmapped` (no authored string owns the words; reported at the document root, never dropped), and the `rendered` summary counts inventory entries and findings by outcome. The pass is advisory and does not block generation; it runs in `jto-ops` (`analyzeRenderedDocument`) over geometry the caller extracts, so it is testable from captured fixtures without a converter.
+
 ## Charts and tables
 
 Both formats ask the same questions of a chart and of a table, because both are

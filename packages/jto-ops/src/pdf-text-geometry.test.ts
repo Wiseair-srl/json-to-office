@@ -53,6 +53,67 @@ describe('parsePdfTextBbox', () => {
     const pages = parsePdfTextBbox(
       '<page width="960.0" height="540.0"></page>'
     );
-    expect(pages).toEqual([{ widthPt: 960, heightPt: 540, words: [] }]);
+    expect(pages).toEqual([
+      { widthPt: 960, heightPt: 540, words: [], lines: [] },
+    ]);
+  });
+});
+
+// Captured from `pdftotext -bbox-layout`: the same words, grouped into the
+// flows, blocks and lines poppler's layout analysis found.
+const CAPTURED_LAYOUT = `<html xmlns="http://www.w3.org/1999/xhtml">
+<body>
+<doc>
+  <page width="595.303937" height="841.889764">
+    <flow>
+      <block xMin="54.55" yMin="42.50" xMax="136.00" yMax="58.37">
+        <line xMin="54.55" yMin="42.50" xMax="136.00" yMax="58.37">
+          <word xMin="54.55" yMin="42.50" xMax="79.46" yMax="58.37">Your</word>
+          <word xMin="82.77" yMin="42.50" xMax="136.00" yMax="58.37">Company</word>
+        </line>
+      </block>
+      <block xMin="54.55" yMin="100.00" xMax="200.00" yMax="140.00">
+        <line xMin="54.55" yMin="100.00" xMax="200.00" yMax="118.00">
+          <word xMin="54.55" yMin="100.00" xMax="100.00" yMax="118.00">Revenue</word>
+        </line>
+        <line xMin="54.55" yMin="122.00" xMax="200.00" yMax="140.00">
+          <word xMin="54.55" yMin="122.00" xMax="90.00" yMax="140.00">grew</word>
+        </line>
+      </block>
+    </flow>
+  </page>
+  <page width="595.303937" height="841.889764">
+  </page>
+</doc>
+</body>
+</html>
+`;
+
+describe('parsePdfTextBbox with layout output', () => {
+  it('keeps every word in stream order and records the lines they sit on', () => {
+    const pages = parsePdfTextBbox(CAPTURED_LAYOUT);
+    expect(pages).toHaveLength(2);
+    expect(pages[0].words.map((w) => w.text)).toEqual([
+      'Your',
+      'Company',
+      'Revenue',
+      'grew',
+    ]);
+    expect(pages[0].lines).toEqual([
+      { xMin: 54.55, yMin: 42.5, xMax: 136, yMax: 58.37, words: [0, 1] },
+      { xMin: 54.55, yMin: 100, xMax: 200, yMax: 118, words: [2] },
+      { xMin: 54.55, yMin: 122, xMax: 200, yMax: 140, words: [3] },
+    ]);
+    expect(pages[1]).toEqual({
+      widthPt: 595.303937,
+      heightPt: 841.889764,
+      words: [],
+      lines: [],
+    });
+  });
+
+  it('leaves lines empty for plain -bbox output, where poppler groups nothing', () => {
+    const pages = parsePdfTextBbox(CAPTURED);
+    expect(pages[0].lines).toEqual([]);
   });
 });

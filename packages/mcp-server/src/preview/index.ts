@@ -11,3 +11,4 @@ export * from './limits.js';
 export * from './cache-key.js';
 export * from './dependencies.js';
 export * from './render.js';
+export * from './rendered-findings.js';

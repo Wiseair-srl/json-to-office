@@ -89,10 +89,12 @@ boxes that barely hold it.
 
 **The integrity row cannot be filled yet, and must not be read as 0%.** The
 static rules found no integrity defect in either set, but that row asks about
-_rendered_ defects and the rendered pass (§5E, #344) does not exist; §2 finding
-7 measures the static estimator's ceiling at roughly half of real spills. A 0%
-here would mean "nothing was looked for with the instrument that finds these",
-not "there are none". It is filled when #344 lands.
+_rendered_ defects and the rendered pass (§5E, #344) did not exist when the
+baselines were taken; §2 finding 7 measures the static estimator's ceiling at
+roughly half of real spills. A 0% here would mean "nothing was looked for with
+the instrument that finds these", not "there are none". The report prototype
+of #344 now runs behind `jto_preview`'s `renderedFindings` and inside the
+design-evals harness, so the row is filled by the next matched run.
 
 **Before the shipping metric gates a phase, its variance needs measuring.** Two
 of forty documents ship in both conditions while thirteen flip. That is
@@ -129,7 +131,7 @@ What an agent gets from server 2.0.0 today, and why output lands on generic:
 | 4   | Reference templates are coordinate compositions | 203–421 absolutely positioned nodes per deck, 1–4 templates each, grid unused                                                                                                                                                                              | Not reusable as layouts, too large to copy; agents imitate the approach by hand-placing boxes                                                                 |
 | 5   | No layout abstraction                           | #220–#224 designed, not built                                                                                                                                                                                                                              | Every slide is authored in inches; overflow, misalignment and uneven rhythm follow                                                                            |
 | 6   | Quality rules stop at level 2                   | 5 pptx + 6 docx rules, all integrity / legibility                                                                                                                                                                                                          | Nothing checks coherence (alignment, scale, palette, chrome), information design (chart type, table alignment) or content (placeholder text, untitled slides) |
-| 7   | Half of overflows escape the static estimator   | ground-truth harness ceiling ≈ 50% strict detection; rendered pass not built                                                                                                                                                                               | Defects reach the user unless the agent eyeballs every page                                                                                                   |
+| 7   | Half of overflows escape the static estimator   | ground-truth harness ceiling ≈ 50% strict detection; rendered pass prototyped for reports (#344), mapping calibration corpus outstanding                                                                                                                   | Defects reach the user unless the agent eyeballs every page                                                                                                   |
 | 8   | Taste lives in prose outside the product        | skill 3.1.0: ~40 KB of taste files, partly stale (theme README names docx themes that do not exist; px/opacity rules with no schema mapping); playground prompts: 38 KB, the docx prompt names components (`Report`, `Heading`) the schema does not define | Advice drifts from the schema release after release; nothing enforces it                                                                                      |
 | 9   | Server instructions carry no design workflow    | `SERVER_INSTRUCTIONS`: discover, patch, validate, preview                                                                                                                                                                                                  | The agent decides look, structure and layout alone at every node and picks the "safe" generic option each time                                                |
 | 10  | Nothing measures outcomes                       | calibration suite (false positives only) + ground-truth harness (overflow estimator only); 2 briefs in the skill evals                                                                                                                                     | Quality work is untestable; "better" is opinion                                                                                                               |

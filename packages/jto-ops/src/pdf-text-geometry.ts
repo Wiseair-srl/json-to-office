@@ -31,11 +31,26 @@ export interface PdfTextWord {
   yMax: number;
 }
 
+/**
+ * One line as poppler's layout analysis grouped it (`-bbox-layout` only):
+ * its box plus the indices into `words` of the words on it.
+ */
+export interface PdfTextLine {
+  xMin: number;
+  yMin: number;
+  xMax: number;
+  yMax: number;
+  words: number[];
+}
+
 /** One PDF page: its size in points plus every word poppler segmented. */
 export interface PdfTextPage {
   widthPt: number;
   heightPt: number;
+  /** Every word in stream order, whichever mode produced the page. */
   words: PdfTextWord[];
+  /** Line grouping; empty for plain `-bbox` output, which groups nothing. */
+  lines: PdfTextLine[];
 }
 
 const ENTITIES: Readonly<Record<string, string>> = {
@@ -57,30 +72,50 @@ function decodeEntities(value: string): string {
 
 const PAGE_PATTERN =
   /<page\s+width="([\d.]+)"\s+height="([\d.]+)">([\s\S]*?)<\/page>/g;
-const WORD_PATTERN =
-  /<word\s+xMin="(-?[\d.]+)"\s+yMin="(-?[\d.]+)"\s+xMax="(-?[\d.]+)"\s+yMax="(-?[\d.]+)">([\s\S]*?)<\/word>/g;
+// A line opens or closes; words between the two belong to it. Plain -bbox
+// output has no lines at all, so the same walk yields an empty grouping.
+const LINE_OR_WORD_PATTERN =
+  /<line\s+xMin="(-?[\d.]+)"\s+yMin="(-?[\d.]+)"\s+xMax="(-?[\d.]+)"\s+yMax="(-?[\d.]+)">|<\/line>|<word\s+xMin="(-?[\d.]+)"\s+yMin="(-?[\d.]+)"\s+xMax="(-?[\d.]+)"\s+yMax="(-?[\d.]+)">([\s\S]*?)<\/word>/g;
 
 /**
- * Parse `pdftotext -bbox` output (XHTML with `<page>`/`<word>` elements).
- * Pure — feed it a captured document for tests, or the runner's stdout.
+ * Parse `pdftotext -bbox` or `-bbox-layout` output (XHTML with `<page>`,
+ * optionally `<line>`, and `<word>` elements). Pure — feed it a captured
+ * document for tests, or the runner's stdout.
  */
 export function parsePdfTextBbox(bboxXml: string): PdfTextPage[] {
   const pages: PdfTextPage[] = [];
   for (const pageMatch of bboxXml.matchAll(PAGE_PATTERN)) {
     const words: PdfTextWord[] = [];
-    for (const wordMatch of pageMatch[3].matchAll(WORD_PATTERN)) {
-      words.push({
-        xMin: Number(wordMatch[1]),
-        yMin: Number(wordMatch[2]),
-        xMax: Number(wordMatch[3]),
-        yMax: Number(wordMatch[4]),
-        text: decodeEntities(wordMatch[5]),
-      });
+    const lines: PdfTextLine[] = [];
+    let open: PdfTextLine | undefined;
+    for (const token of pageMatch[3].matchAll(LINE_OR_WORD_PATTERN)) {
+      if (token[0] === '</line>') {
+        if (open) lines.push(open);
+        open = undefined;
+      } else if (token[1] !== undefined) {
+        open = {
+          xMin: Number(token[1]),
+          yMin: Number(token[2]),
+          xMax: Number(token[3]),
+          yMax: Number(token[4]),
+          words: [],
+        };
+      } else {
+        open?.words.push(words.length);
+        words.push({
+          xMin: Number(token[5]),
+          yMin: Number(token[6]),
+          xMax: Number(token[7]),
+          yMax: Number(token[8]),
+          text: decodeEntities(token[9]),
+        });
+      }
     }
     pages.push({
       widthPt: Number(pageMatch[1]),
       heightPt: Number(pageMatch[2]),
       words,
+      lines,
     });
   }
   return pages;
@@ -163,15 +198,16 @@ export async function pdftotextAvailable(): Promise<boolean> {
 /**
  * Extract per-word text geometry from a PDF on disk. One pdftotext spawn,
  * output streamed through stdout — nothing else touches the filesystem.
+ * `layout: true` asks poppler for its line grouping too (`-bbox-layout`).
  */
 export async function extractPdfTextGeometry(
   pdfPath: string,
-  options: { timeoutMs?: number } = {}
+  options: { timeoutMs?: number; layout?: boolean } = {}
 ): Promise<PdfTextPage[]> {
   const binary = await resolvePdftotext();
   const stdout = await run(
     binary,
-    ['-bbox', pdfPath, '-'],
+    [options.layout ? '-bbox-layout' : '-bbox', pdfPath, '-'],
     options.timeoutMs ?? 60_000
   );
   return parsePdfTextBbox(stdout);

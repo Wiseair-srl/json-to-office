@@ -28,6 +28,9 @@ export interface ScorecardTotals {
   withAnyIntegrityDefect: number;
   integrityDefectRate: number;
   withPlaceholderLeak: number;
+  /** Rendered-pass findings across the set, by mapping outcome (#344). */
+  renderedFindingsMapped: number;
+  renderedFindingsUnmapped: number;
   /** Runs that reached for a tool outside the server. Should be 0 in a cold set. */
   contaminated: number;
   medianIterations: number;
@@ -134,6 +137,10 @@ const INTEGRITY_CODES = new Set([
   'W_QUALITY_TABLE_WIDTH_OVERFLOW',
   'W_QUALITY_PLACEHOLDER_TEXT',
   'W_QUALITY_SCAFFOLD_MARKER',
+  'W_QUALITY_RENDERED_CLIP',
+  'W_QUALITY_RENDERED_SPILL',
+  'W_QUALITY_RENDERED_OVERLAP',
+  'W_QUALITY_RENDERED_TEXT_MISSING',
 ]);
 
 function hasIntegrityDefect(run: RunMetrics): boolean {
@@ -161,6 +168,14 @@ export function totals(runs: readonly RunMetrics[]): ScorecardTotals {
     buildsCleanRate: runs.length === 0 ? 0 : clean.length / runs.length,
     withAnyIntegrityDefect: defective.length,
     integrityDefectRate: runs.length === 0 ? 0 : defective.length / runs.length,
+    renderedFindingsMapped: runs.reduce(
+      (n, run) => n + (run.renderedFindings?.mapped ?? 0),
+      0
+    ),
+    renderedFindingsUnmapped: runs.reduce(
+      (n, run) => n + (run.renderedFindings?.unmapped ?? 0),
+      0
+    ),
     withPlaceholderLeak: runs.filter((run) => run.placeholderLeaks > 0).length,
     contaminated: runs.filter((run) => run.foreignTools.length > 0).length,
     // Over completed runs: the median number of edits a run that produced

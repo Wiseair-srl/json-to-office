@@ -138,6 +138,10 @@ export {
   type RenderedPage,
 } from './preview/render.js';
 export {
+  collectRenderedFindings,
+  type RenderedFindings,
+} from './preview/rendered-findings.js';
+export {
   buildContactSheet,
   ContactSheetError,
   type ContactSheet,

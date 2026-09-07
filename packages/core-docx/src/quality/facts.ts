@@ -50,6 +50,7 @@ import {
 import { resolveFontSize } from '../styles/utils/styleHelpers';
 import { getThemeStyles } from '../themes/defaults';
 import { relativeLengthToTwips } from '../utils/widthUtils';
+import { collectDocxTextInventory, type DocxTextFact } from './text-inventory';
 
 type Rec = Record<string, unknown>;
 
@@ -302,6 +303,7 @@ export interface DocxSectionChromeFact extends QualityFact {
 }
 
 export type DocxQualityFact =
+  | DocxTextFact
   | DocxChromeSlotFact
   | DocxSectionChromeFact
   | DocxTableWidthFact
@@ -1384,6 +1386,12 @@ export function prepareDocxQualityDocument(
       excerpt: occurrence.match.excerpt,
     });
   });
+
+  // Every painted string of the expanded tree, for the rendered pass to match
+  // PDF words back to; a compiled paragraph reports at its authored slot.
+  for (const entry of collectDocxTextInventory(resolved.children)) {
+    addFact({ ...entry, generated: authoredPath(entry.path) !== entry.path });
+  }
 
   // Frame-chain state. A chain extends only while nothing rendered between
   // its members, so every visited node advances `previousVisitPath` — and a
