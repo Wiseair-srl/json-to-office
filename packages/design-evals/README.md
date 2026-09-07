@@ -20,16 +20,17 @@ which is the SDK's estimate of what the tokens would cost **at API rates**: on
 a subscription session it is notional and nothing is billed, and the scorecard
 says so. Nothing runs this for you and no PR is gated on it.
 
-| Flag              | Meaning                                                               |
-| ----------------- | --------------------------------------------------------------------- |
-| `--briefs a,b`    | Run a subset of the corpus by id.                                     |
-| `--corpus <dir>`  | Read briefs from elsewhere, still openly recorded.                    |
-| `--sealed-corpus` | As above, and keep the brief text out of every artifact written.      |
-| `--model <id>`    | The exact model to author with. Recorded in the manifest.             |
-| `--skill <path>`  | Run assisted: append this text to the system prompt. Cold without it. |
-| `--max-turns`     | Turn ceiling per brief (default 40).                                  |
-| `--max-retries`   | Retries after a failed session (default 1). Counted, never hidden.    |
-| `--out <dir>`     | Where the run artifacts and `scorecard.json` go.                      |
+| Flag              | Meaning                                                                         |
+| ----------------- | ------------------------------------------------------------------------------- |
+| `--briefs a,b`    | Run a subset of the corpus by id.                                               |
+| `--set <id>`      | Run a committed brief set (`briefs/sets/<id>.json`); exclusive with `--briefs`. |
+| `--corpus <dir>`  | Read briefs from elsewhere, still openly recorded.                              |
+| `--sealed-corpus` | As above, and keep the brief text out of every artifact written.                |
+| `--model <id>`    | The exact model to author with. Recorded in the manifest.                       |
+| `--skill <path>`  | Run assisted: append this text to the system prompt. Cold without it.           |
+| `--max-turns`     | Turn ceiling per brief (default 40).                                            |
+| `--max-retries`   | Retries after a failed session (default 1). Counted, never hidden.              |
+| `--out <dir>`     | Where the run artifacts and `scorecard.json` go.                                |
 
 Full description of what a scorecard contains, and why the numbers are shaped
 the way they are, is in [`docs/architecture/taste-system.md`](../../docs/architecture/taste-system.md#design-evals-measuring-the-whole-loop).
@@ -58,6 +59,21 @@ Then repeat the development corpus on a fixed revision with `--repeat 3
 constant across comparisons. Compare the new chart/table rules against a
 matched run without them; cold versus assisted alone does not measure a PR's
 effect. Keep the sealed acceptance corpus for final acceptance.
+
+## Brief sets
+
+`briefs/sets/<id>.json` names a fixed selection with the reason each brief is
+in it. `client-report-checkpoint` is the 6–8 client-report briefs #360 chose
+before any implementation comparison — narrative, dense tables, long text and
+chart labels, across all three densities — designed for three runs each. The
+same set runs against the current product and against the report milestone:
+
+```bash
+pnpm evals -- --set client-report-checkpoint --repeat 3 --judge --out ./evals-out/checkpoint-before
+```
+
+The scorecard records the set's id and the hash of its file, so a comparison
+made across an edited set says so.
 
 ## Briefs
 

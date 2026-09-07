@@ -415,6 +415,7 @@ describe('JSON report blocks from playground templates', () => {
     ]);
     expect(stats[0].props).toEqual({
       number: '8.8',
+      size: 'medium',
       unit: ' €m',
       description: 'Revenue year to date',
       trend: 'up',
@@ -426,7 +427,7 @@ describe('JSON report blocks from playground templates', () => {
     ];
     const bare = expandBlocks(doc, consultingTheme).document.children[0]
       .children[0].children[0].children[0].props;
-    expect(Object.keys(bare)).toEqual(['number', 'description']);
+    expect(Object.keys(bare)).toEqual(['number', 'description', 'size']);
     doc.children[0].children[0].props.slots.items[0].trend = 'sideways';
     expect(validateDocument(doc).errors).toEqual(
       expect.arrayContaining([
@@ -482,8 +483,13 @@ describe('JSON report blocks from playground templates', () => {
       expect(compiled.name).toBe('table');
       expect(compiled.props.width).toBe(100);
       const [labels, ...data] = compiled.props.columns;
-      expect(labels.header).toEqual({ content: 'Segment' });
-      expect(labels.cellDefaults).toBeUndefined();
+      // The label column sits flush on the measure and keeps six points from
+      // the first figure; the padding is the block's, whatever the theme sets.
+      expect(labels.header).toEqual({
+        content: 'Segment',
+        padding: { left: 0, right: 6 },
+      });
+      expect(labels.cellDefaults).toEqual({ padding: { left: 0, right: 6 } });
       expect(labels.cells.map((c: any) => c.content)).toEqual([
         'Enterprise',
         'Mid-market',
@@ -493,7 +499,10 @@ describe('JSON report blocks from playground templates', () => {
       expect(data).toHaveLength(3);
       for (const column of data) {
         expect(column.header.horizontalAlignment).toBe('right');
-        expect(column.cellDefaults).toEqual({ horizontalAlignment: 'right' });
+        expect(column.cellDefaults).toEqual({
+          horizontalAlignment: 'right',
+          padding: { left: 6, right: 0 },
+        });
         expect(column.cells).toHaveLength(4);
       }
       expect(data[0].cells.map((c: any) => c.content)).toEqual([
@@ -513,7 +522,10 @@ describe('JSON report blocks from playground templates', () => {
       };
       const column = table(doc).props.columns[2];
       expect(column.header.horizontalAlignment).toBe('left');
-      expect(column.cellDefaults).toEqual({ horizontalAlignment: 'left' });
+      expect(column.cellDefaults).toEqual({
+        horizontalAlignment: 'left',
+        padding: { left: 6, right: 0 },
+      });
     });
 
     it('passes the table-design rules on the compiled table, and reports a rounding slip at the authored column', () => {

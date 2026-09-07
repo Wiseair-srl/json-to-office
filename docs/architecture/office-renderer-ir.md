@@ -937,3 +937,37 @@ Two corpus cases are added, `blocks/report-data-consulting` and `blocks/report-d
 ### Figures and footnotes (#337)
 
 Two corpus cases are added, `blocks/figures-consulting` and `blocks/figures-fallback`: numbered `figure` captions over `source-line`s and the `footnotes` list, on the house theme and on `minimal`. No existing golden moves. The `{SEQ:name}` placeholder is new syntax — a `SEQ name \* ARABIC` field written by both renderers with the compiler's count as its cached result (docxjs as a split complex field, office-open as `w:fldSimple`) — so no document that never used it changes. `chart-figure` has no golden: a `highcharts` chart needs the export server and a native `chart` the office-open renderer, and the corpus runs one service-free pipeline.
+
+### Column layout inside blocks (#343)
+
+Seven corpus goldens move: `blocks/report-data-consulting`,
+`blocks/report-data-fallback`, `blocks/figures-consulting` and the four
+`blocks/text-box-nested-columns*` cases. Two changes, both found by the block
+boundary matrix rendering a KPI row after a paragraph through LibreOffice:
+
+- `compileColumns` now writes the table grid (`w:tblGrid`) from the column
+  widths, each cell its column plus half of each gap beside it, so the cells
+  sum to the measure. Without a grid docx.js wrote a 100-twip `gridCol` per
+  column, and LibreOffice sizes a fixed-layout table from its grid.
+- The layout stage no longer declares a section multi-column because a
+  container inside it holds a `columns` component. A nested `columns` — in
+  a group, a text box or a block — compiles to a table; wrapping that table
+  in a two-column newspaper section drew a KPI row at half the measure with
+  the following paragraph flowing up beside it whenever any paragraph
+  preceded the block. Only a top-level `columns` decides a section's
+  column layout, as before.
+
+Byte changes are the grid values and the removed section break; content,
+styles and chrome are unchanged.
+
+The same matrix moved the report block goldens (`blocks/report-chrome-*`,
+`blocks/report-data-*`) through the playground template rather than the
+engine: the cover's title and subtitle now carry their own line spacing
+(1.1) and paragraph spacing instead of inheriting the theme's body values,
+so a twelve-word title on `minimal` no longer pushes the whole keep-together
+chain onto a second page; a KPI row of four sets its statistics `small`;
+every data-table row is `cantSplit`, so a wrapped label never straddles a
+page break; and the data-table states its own horizontal cell padding (the
+label column flush left, six points between columns, figures flush right),
+because a theme that sets only top and bottom padding pins the other two
+sides to zero and adjacent right-aligned headers ran into each other.

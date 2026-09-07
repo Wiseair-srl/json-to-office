@@ -7,6 +7,7 @@ import {
   ARCHETYPES,
   CorpusError,
   developmentCorpusDir,
+  loadBriefSet,
   loadCorpus,
   parseBrief,
   selectBriefs,
@@ -166,5 +167,70 @@ describe('loadCorpus', () => {
     expect(sealed.kind).toBe('sealed');
     expect(sealed.briefs[0].id).toBe('sample-brief');
     await fs.rm(dir, { recursive: true, force: true });
+  });
+});
+
+describe('the client-report checkpoint set', () => {
+  let corpus: Corpus;
+  beforeAll(async () => {
+    corpus = await loadCorpus(developmentCorpusDir());
+  });
+
+  it('names six to eight client-report briefs the corpus holds, each once', async () => {
+    const set = await loadBriefSet(corpus, 'client-report-checkpoint');
+    expect(set.briefs.length).toBeGreaterThanOrEqual(6);
+    expect(set.briefs.length).toBeLessThanOrEqual(8);
+    const ids = set.briefs.map((entry) => entry.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    const selected = selectBriefs(corpus, ids.join(','));
+    expect(selected.map((brief) => brief.archetype)).toEqual(
+      ids.map(() => 'client-report')
+    );
+    expect(set.repeat).toBe(3);
+    expect(set.hash).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('covers narrative, dense tables, long text and chart labels, and says why', async () => {
+    const set = await loadBriefSet(corpus, 'client-report-checkpoint');
+    const covered = new Set(set.briefs.flatMap((entry) => entry.covers));
+    for (const shape of [
+      'narrative',
+      'dense-tables',
+      'long-text',
+      'chart-labels',
+    ])
+      expect(covered, shape).toContain(shape);
+    for (const entry of set.briefs) {
+      expect(entry.why.split(/\s+/).length).toBeGreaterThan(8);
+      for (const shape of entry.covers) expect(set.covers).toContain(shape);
+    }
+    // Every density the corpus stratifies by is represented.
+    const densities = new Set(
+      selectBriefs(corpus, set.briefs.map((e) => e.id).join(',')).map(
+        (brief) => brief.density
+      )
+    );
+    expect([...densities].sort()).toEqual(['high', 'low', 'medium']);
+  });
+
+  it('refuses a set that is missing or names an unknown brief', async () => {
+    await expect(loadBriefSet(corpus, 'no-such-set')).rejects.toThrow(
+      CorpusError
+    );
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'jto-evals-set-'));
+    await fs.writeFile(path.join(dir, 'sample-brief.md'), BRIEF);
+    await fs.mkdir(path.join(dir, 'sets'));
+    await fs.writeFile(
+      path.join(dir, 'sets', 'bad.json'),
+      JSON.stringify({
+        id: 'bad',
+        purpose: 'x',
+        repeat: 1,
+        covers: [],
+        briefs: [{ id: 'not-there', covers: [], why: 'x' }],
+      })
+    );
+    const small = await loadCorpus(dir);
+    await expect(loadBriefSet(small, 'bad')).rejects.toThrow(/not-there/);
   });
 });

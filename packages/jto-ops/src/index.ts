@@ -65,6 +65,27 @@ export {
   type TextOccurrence,
 } from './rendered-text-match.js';
 
+// Block boundary matrix (#343) — boundary documents for every embedded
+// JSON block definition, for the static and rendered calibration suites.
+export {
+  enumerateBlockDefinitions,
+  generateBlockMatrix,
+  blockCaseDocument,
+  reportCaseDocument,
+  boundaryInvocation,
+  boundarySlotValue,
+  overBudgetInvocation,
+  widestNumber,
+  FALLBACK_FONTS,
+  MATRIX_IMAGE,
+  type BlockMatrixCase,
+  type BlockMatrixDefinition,
+  type BlockMatrixOptions,
+  type MatrixCanvas,
+  type MatrixEdge,
+  type MatrixFont,
+} from './block-matrix.js';
+
 // LibreOffice font staging — used by the rasterizer above and by the
 // playground's PDF-preview converter in `@json-to-office/jto`.
 export {

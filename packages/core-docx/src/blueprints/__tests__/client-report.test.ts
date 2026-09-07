@@ -110,7 +110,7 @@ describe('the client-report blueprint', () => {
       expect(title).toMatchObject({
         kind: 'slot',
         type: 'string',
-        maxWords: 16,
+        maxWords: 12,
         oneLine: true,
         required: true,
       });
@@ -124,7 +124,7 @@ describe('the client-report blueprint', () => {
         fillMap.filter((entry) => entry.kind === 'text').length
       ).toBeGreaterThan(0);
       const value = fillMap.find((entry) => entry.slot === 'items.value');
-      expect(value).toMatchObject({ block: 'kpi-row', maxLength: 12 });
+      expect(value).toMatchObject({ block: 'kpi-row', maxLength: 7 });
       if (variant === 'data-heavy') {
         // A marker inside the chart's own options reports the component slot.
         const inChart = fillMap.filter(

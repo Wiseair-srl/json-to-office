@@ -76,6 +76,9 @@ export const BLOCK_SLOT_PLACEMENT_PROPS: readonly string[] = [
   'spacing',
 ];
 
+/** A whole-string `{{…}}` scaffold marker, as `jto_scaffold` writes them. */
+const SCAFFOLD_MARKER = /^\s*\{\{[^{}]*\}\}\s*$/;
+
 export const blockWordCount = (text: string): number =>
   text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
 const present = (value: unknown): boolean =>
@@ -131,7 +134,12 @@ export function resolveBlockSlot(
     issues.push({ path, code: 'block_slot_budget', message });
   if (slot.enum && !slot.enum.includes(value as string | number | boolean))
     issue('Value is not one of the declared choices.');
-  if (typeof value === 'string') {
+  // A scaffold marker is a note about the content to come, not the content:
+  // its length is the guidance's, and it is reported as a marker by the
+  // placeholder rule and refused at generation. Measuring it against the
+  // slot's budget would reject a draft for the words that say how to fill
+  // it (`{{Measure (unit)}}` in a 14-character header).
+  if (typeof value === 'string' && !SCAFFOLD_MARKER.test(value)) {
     if (slot.oneLine && /[\r\n]/.test(value))
       issue('Slot must contain one line.');
     if (slot.minLength !== undefined && value.length < slot.minLength)

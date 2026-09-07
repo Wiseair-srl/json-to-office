@@ -4,6 +4,9 @@ import {
   validateBlockDefinitions,
   validateBlockInvocations,
   toAuthoredBlockPointer,
+  resolveBlockSlot,
+  blockSlotBudgets,
+  type BlockIssue,
   type JsonBlockDefinition,
 } from './index';
 
@@ -707,5 +710,59 @@ describe('PPTX composition on the shared contract', () => {
     expect(
       validateBlockDefinitions({ bad }, 'pptx').map((i) => [i.code, i.path])
     ).toEqual([['block_invalid_binding', '/props/blocks/bad/body/1/props']]);
+  });
+});
+
+describe('scaffold markers and slot budgets', () => {
+  it('measures content against the budget, never the marker that stands for it', () => {
+    const slot = {
+      type: 'string' as const,
+      maxLength: 6,
+      maxWords: 1,
+      oneLine: true,
+    };
+    const issues: BlockIssue[] = [];
+    resolveBlockSlot(slot, '{{Measure (unit)}}', '/slots/header', issues);
+    resolveBlockSlot(slot, ' {{Title: as on the cover}} ', '/slots/t', issues);
+    expect(issues).toEqual([]);
+    resolveBlockSlot(slot, 'Measure (unit)', '/slots/header', issues);
+    expect(issues.map((i) => i.code)).toEqual([
+      'block_slot_budget',
+      'block_slot_budget',
+    ]);
+    // Half a marker is content, and content is measured.
+    resolveBlockSlot(slot, '{{Measure}} more', '/slots/x', issues);
+    expect(issues).toHaveLength(4);
+  });
+});
+
+describe('slot budgets as facts', () => {
+  it('measures content and passes over scaffold markers', () => {
+    const document = {
+      name: 'docx',
+      props: {
+        blocks: {
+          note: { slots: { text: { type: 'string', maxWords: 2 } }, body: [] },
+        },
+      },
+      children: [
+        {
+          name: 'block',
+          props: { ref: 'note', slots: { text: 'one two three' } },
+        },
+        {
+          name: 'block',
+          props: {
+            ref: 'note',
+            slots: { text: '{{Note: a caveat about the numbers}}' },
+          },
+        },
+      ],
+    };
+    const budgets = blockSlotBudgets(document, ['/children/0', '/children/1']);
+    expect(budgets.map((b) => b.path)).toEqual([
+      '/children/0/props/slots/text',
+    ]);
+    expect(budgets[0]).toMatchObject({ words: 3, maxWords: 2 });
   });
 });

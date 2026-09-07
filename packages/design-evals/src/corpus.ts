@@ -222,6 +222,64 @@ export async function loadCorpus(
 }
 
 /**
+ * A named, committed selection of briefs: the checkpoint set #360 fixes
+ * before any comparison, so the same questions are asked of both products.
+ * Lives beside the briefs it names (`<corpus>/sets/<id>.json`); a sealed
+ * corpus has none, and a set that names a brief the corpus lacks is an error.
+ */
+export interface BriefSet {
+  id: string;
+  purpose: string;
+  /** Runs per brief the set was designed for; `--repeat` may override. */
+  repeat: number;
+  covers: string[];
+  briefs: { id: string; covers: string[]; why: string }[];
+  /** SHA-256 over the file, so a scorecard says which version of the set ran. */
+  hash: string;
+}
+
+export async function loadBriefSet(
+  corpus: Corpus,
+  id: string
+): Promise<BriefSet> {
+  if (!/^[a-z0-9-]+$/.test(id))
+    throw new CorpusError(
+      `A brief set id is lowercase words and hyphens: "${id}".`
+    );
+  const file = path.join(corpus.directory, 'sets', `${id}.json`);
+  let text: string;
+  try {
+    text = await fs.readFile(file, 'utf8');
+  } catch {
+    throw new CorpusError(`No brief set "${id}" at ${file}.`);
+  }
+  const parsed = JSON.parse(text) as Omit<BriefSet, 'hash'>;
+  if (parsed.id !== id)
+    throw new CorpusError(`Brief set ${file} says its id is "${parsed.id}".`);
+  if (!Array.isArray(parsed.briefs) || parsed.briefs.length === 0)
+    throw new CorpusError(`Brief set "${id}" names no briefs.`);
+  const known = new Set(corpus.briefs.map((brief) => brief.id));
+  const missing = parsed.briefs.filter((entry) => !known.has(entry.id));
+  if (missing.length > 0)
+    throw new CorpusError(
+      `Brief set "${id}" names ${missing
+        .map((entry) => `"${entry.id}"`)
+        .join(', ')}, not in ${corpus.directory}.`
+    );
+  const seen = new Set<string>();
+  for (const entry of parsed.briefs) {
+    if (seen.has(entry.id))
+      throw new CorpusError(`Brief set "${id}" names "${entry.id}" twice.`);
+    seen.add(entry.id);
+  }
+  return {
+    ...parsed,
+    repeat: Math.max(1, Number(parsed.repeat ?? 1)),
+    hash: createHash('sha256').update(text).digest('hex'),
+  };
+}
+
+/**
  * The briefs a `--briefs` selector names, in corpus order.
  *
  * An unknown id is an error rather than an empty run: a typo that silently

@@ -107,13 +107,13 @@
           "title": {
             "type": "string",
             "oneLine": true,
-            "maxWords": 16,
+            "maxWords": 12,
             "required": true
           },
           "subtitle": {
             "type": "string",
             "oneLine": true,
-            "maxWords": 30,
+            "maxWords": 20,
             "required": false
           },
           "client": {
@@ -202,6 +202,7 @@
                     "default": "accent"
                   }
                 },
+                "spacing": { "before": 0, "after": 4 },
                 "keepNext": true
               }
             }
@@ -212,6 +213,7 @@
               "text": {
                 "$slot": "/title"
               },
+              "spacing": { "before": 0, "after": 10 },
               "font": {
                 "family": {
                   "$theme": "/fonts/body/family",
@@ -228,7 +230,8 @@
                 "color": {
                   "$theme": "/styles/display/color",
                   "default": "textPrimary"
-                }
+                },
+                "lineSpacing": { "type": "multiple", "value": 1.1 }
               },
               "keepNext": true
             }
@@ -257,8 +260,10 @@
                   "color": {
                     "$theme": "/styles/subtitle/color",
                     "default": "textPrimary"
-                  }
+                  },
+                  "lineSpacing": { "type": "multiple", "value": 1.1 }
                 },
+                "spacing": { "before": 0, "after": 6 },
                 "keepNext": true
               }
             }
@@ -288,7 +293,8 @@
                     "$theme": "/styles/label/color",
                     "default": "textPrimary"
                   }
-                }
+                },
+                "spacing": { "before": 0, "after": 4 }
               }
             }
           },
@@ -317,7 +323,8 @@
                     "$theme": "/styles/label/color",
                     "default": "textPrimary"
                   }
-                }
+                },
+                "spacing": { "before": 0, "after": 2 }
               }
             }
           }
@@ -341,7 +348,7 @@
           "tracker": {
             "type": "string",
             "oneLine": true,
-            "maxWords": 6,
+            "maxWords": 3,
             "required": false
           }
         },
@@ -401,25 +408,25 @@
           "title": {
             "type": "string",
             "oneLine": true,
-            "maxWords": 12,
+            "maxWords": 6,
             "required": false
           },
           "tracker": {
             "type": "string",
             "oneLine": true,
-            "maxWords": 6,
+            "maxWords": 3,
             "required": false
           },
           "confidentiality": {
             "type": "string",
             "oneLine": true,
-            "maxWords": 8,
+            "maxWords": 4,
             "required": false
           },
           "date": {
             "type": "string",
             "oneLine": true,
-            "maxWords": 6,
+            "maxWords": 3,
             "required": false
           },
           "pageNumbers": {
@@ -648,7 +655,7 @@
         ]
       },
       "kpi-row": {
-        "description": "Two to four headline metrics in equal columns: value with its unit, label, and a signed delta with a direction glyph. An optional source collapses with its hairline. Text budgets reject overflow; columns reflow at unchanged type size.",
+        "description": "Two to four headline metrics in equal columns: value with its unit, label, and a signed delta with a direction glyph; four of them set the figures a size smaller. An optional source collapses with its hairline. Text budgets reject overflow; columns reflow at unchanged type size.",
         "slots": {
           "items": {
             "type": "array",
@@ -661,12 +668,12 @@
                 "value": {
                   "type": "string",
                   "required": true,
-                  "maxLength": 12,
+                  "maxLength": 7,
                   "description": "The headline figure, already formatted: 8.8, 94, +18."
                 },
                 "unit": {
                   "type": "string",
-                  "maxLength": 6,
+                  "maxLength": 5,
                   "description": "Suffix drawn after the figure at half its size: %, €m, pts. Write the space yourself when one belongs."
                 },
                 "label": {
@@ -678,7 +685,7 @@
                 },
                 "delta": {
                   "type": "string",
-                  "maxLength": 12,
+                  "maxLength": 10,
                   "description": "Signed change shown beside the figure: +3.2 pts, −0.4."
                 },
                 "trend": {
@@ -724,6 +731,11 @@
                     },
                     "trendValue": {
                       "$item": "/delta"
+                    },
+                    "size": {
+                      "$if": "/items/3",
+                      "then": "small",
+                      "else": "medium"
                     }
                   }
                 }
@@ -834,7 +846,7 @@
         ]
       },
       "data-table": {
-        "description": "A sourced numeric table: a title, a text column of row labels, one to six data columns right-aligned by construction, then optional notes and a source line. With its header, 24 rows keep the table on one page; the table-design rule checks the compiled table for mixed decimals.",
+        "description": "A sourced numeric table: a title, a text column of row labels at a fifth of the measure, one to five data columns right-aligned by construction, then optional notes and a source line. With its header, 24 rows keep the table on one page; the table-design rule checks the compiled table for mixed decimals.",
         "slots": {
           "title": {
             "type": "string",
@@ -857,7 +869,7 @@
             "items": {
               "type": "string",
               "oneLine": true,
-              "maxWords": 8
+              "maxWords": 5
             },
             "description": "Row labels, top to bottom. Every data column lists its cells in this order and at this count."
           },
@@ -865,7 +877,7 @@
             "type": "array",
             "required": true,
             "minItems": 1,
-            "maxItems": 6,
+            "maxItems": 5,
             "items": {
               "type": "object",
               "properties": {
@@ -874,6 +886,7 @@
                   "required": true,
                   "oneLine": true,
                   "maxWords": 4,
+                  "maxLength": 14,
                   "description": "Column header; put the unit here: Revenue (€m)."
                 },
                 "cells": {
@@ -883,7 +896,7 @@
                   "maxItems": 24,
                   "items": {
                     "type": "string",
-                    "maxLength": 16
+                    "maxLength": 10
                   },
                   "description": "One formatted value per row label, rounded the same way down the column."
                 },
@@ -943,13 +956,20 @@
             "props": {
               "width": 100,
               "repeatHeaderOnPageBreak": true,
+              "rows": {
+                "$each": "/labels",
+                "template": { "cantSplit": true }
+              },
               "columns": [
                 {
+                  "width": "22%",
                   "header": {
                     "content": {
                       "$slot": "/labelHeader"
-                    }
+                    },
+                    "padding": { "left": 0, "right": 6 }
                   },
+                  "cellDefaults": { "padding": { "left": 0, "right": 6 } },
                   "cells": {
                     "$each": "/labels",
                     "template": {
@@ -972,7 +992,8 @@
                         },
                         "then": "right",
                         "else": "left"
-                      }
+                      },
+                      "padding": { "left": 6, "right": 0 }
                     },
                     "cellDefaults": {
                       "horizontalAlignment": {
@@ -981,7 +1002,8 @@
                         },
                         "then": "right",
                         "else": "left"
-                      }
+                      },
+                      "padding": { "left": 6, "right": 0 }
                     },
                     "cells": {
                       "$each": {

@@ -28,6 +28,8 @@ import {
   selectBriefs,
   type Brief,
   type Corpus,
+  loadBriefSet,
+  type BriefSet,
 } from './corpus.js';
 import { buildManifest, treeState } from './manifest.js';
 import { loadSkill, type LoadedSkill } from './skill.js';
@@ -44,6 +46,8 @@ export interface CliOptions {
   corpusDir: string;
   sealed: boolean;
   briefs?: string;
+  /** A committed brief set by id (`briefs/sets/<id>.json`); exclusive with `briefs`. */
+  set?: string;
   model: string;
   maxTurns: number;
   maxRetries: number;
@@ -78,6 +82,9 @@ export function parseArgs(argv: readonly string[]): CliOptions {
     sealed: sealedDir !== undefined,
     ...(values.get('briefs') !== undefined && {
       briefs: values.get('briefs') as string,
+    }),
+    ...(values.get('set') !== undefined && {
+      set: values.get('set') as string,
     }),
     model: values.get('model') ?? DEFAULT_MODEL,
     maxTurns: Number(values.get('max-turns') ?? DEFAULT_MAX_TURNS),
@@ -162,7 +169,34 @@ export async function main(argv: readonly string[]): Promise<number> {
     return 1;
   }
 
-  const briefs = selectBriefs(corpus, options.briefs);
+  if (options.set !== undefined && options.briefs !== undefined) {
+    line('--set and --briefs both name the briefs to run; give one.');
+    return 1;
+  }
+  let briefSet: BriefSet | undefined;
+  if (options.set !== undefined) {
+    if (corpus.kind === 'sealed') {
+      line('A sealed corpus has no brief sets; it is run whole.');
+      return 1;
+    }
+    try {
+      briefSet = await loadBriefSet(corpus, options.set);
+    } catch (error) {
+      line(error instanceof Error ? error.message : String(error));
+      return 1;
+    }
+    line(
+      `brief set ${briefSet.id}: ${briefSet.briefs.length} brief(s), designed for ${briefSet.repeat} run(s) each${
+        options.repeat < briefSet.repeat ? ` (running ${options.repeat})` : ''
+      }`
+    );
+  }
+  const briefs = selectBriefs(
+    corpus,
+    briefSet
+      ? briefSet.briefs.map((entry) => entry.id).join(',')
+      : options.briefs
+  );
   const workspaceRoot =
     process.env[WORKSPACE_DIR_ENV] ??
     (await fs.mkdtemp(path.join(os.tmpdir(), 'jto-evals-ws-')));
@@ -271,6 +305,7 @@ export async function main(argv: readonly string[]): Promise<number> {
       ...(corpus.kind === 'development' && {
         briefIds: briefs.map((brief) => brief.id),
       }),
+      ...(briefSet && { briefSet: { id: briefSet.id, hash: briefSet.hash } }),
     },
     archetypes: Object.fromEntries(
       briefs.map((brief) => [brief.id, brief.archetype])

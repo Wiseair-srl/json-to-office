@@ -19,17 +19,17 @@
 
 export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'blocks/figures-consulting':
-    'cbfb2035263638062ed541bbf4727429f387300e9ea7a2ace4fefacc9feabf91',
+    'e714b94e3b45db8b7af815bf57c6d4ade68f4f3964b77e075c4205ba0382de79',
   'blocks/figures-fallback':
     '3204333f5e46ce832d08bc7180d0f610a80c94c940855d9239b4abced5dc90bf',
   'blocks/report-data-consulting':
-    '953750d6efb63045bd97f9bc075af05eb2e2cdc17f62d2a09bc011da070e2f5c',
+    '2bc9e6075afaf4d714c58b0a3acf3cbfede585410301d01a7e4371edacc236d8',
   'blocks/report-data-fallback':
-    '3bbc0cfa051eacc13fee37c6fa79d125b26f0642ec0ebb611ecff9c9d617a394',
+    '521c72228e894ecada3093ff164e9c224a42eb6587c383b346ac40bba383c6e6',
   'blocks/report-chrome-fallback':
-    '7642f9aaa3d347f792d9d12577da709523103631af0c6d43bfa6107c5ea92be6',
+    '9eb8d5d3b15bc1affdc817e8d6326f51e78676868ba9286e93371946d830c72b',
   'blocks/report-chrome-consulting':
-    '6325dba83a9918958cac83c03697656110d202ab0336470ef2a0bd50378a7e17',
+    '46abf43a953a7536ba2058eece37a19361fdc339dc5d134a3ee8f3fe2ac3250b',
   'blocks/key-takeaways-fallback':
     '54ae68a29694e705b9ba617d3b90e410f42dee2506a74306798085551cfe5f43',
   'blocks/key-takeaways-consulting':
@@ -455,13 +455,13 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'blocks/text-box-shape-conflicting-borders':
     'e8831bac0d7c7fe3fa4481e903af781c00adc3df77146cdd89aca3d4b48bd103',
   'blocks/text-box-nested-columns':
-    '6f953e313d336f2144d64e45ffab678e0559e98a94783a3dcb245e5e6ff3a1a9',
+    'e4b7916c59bb21c0a9ea4121125b550a5c305da2f774cfd32d90737ba6b727c6',
   'blocks/text-box-nested-columns-widths':
-    'a0a379d25ae10425659bb426289248196a6d38d66b4f8a0b7a6e735a2fa7d3a9',
+    'f92dc2ca2da4727c91fedbf48da812488a1724e29591d6b3cf0e0ab95cb04370',
   'blocks/text-box-nested-columns-sparse':
-    '201aa883c68862da3c03deef4d7376592a4b65ef6970ac6b3a327c7c5329700f',
+    '6e475c059821bf1ff78e336218d0e6eb2a9dcbb26c767b1a0a64d5602aef00a2',
   'blocks/text-box-nested-columns-floating':
-    '91739f72b5879ec702fc3a066990eb38c4cab19654eeb3a3b98b42a552a1cd98',
+    '28e5a14cd0ab87b771cb23457521ca65908b007eb4c6c26fe4d70c0e2beeee54',
   'blocks/divider-default':
     '1cbb14ef7c18087b469cb89811bcc9366b9b005fe9f4d74a5bfaa76c4fec8c6b',
   'blocks/divider-styled':

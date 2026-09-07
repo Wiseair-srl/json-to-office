@@ -31,6 +31,13 @@ describe('parseArgs', () => {
     });
   });
 
+  it('takes a committed brief set by id', () => {
+    expect(parseArgs(['--set', 'client-report-checkpoint'])).toMatchObject({
+      set: 'client-report-checkpoint',
+    });
+    expect(parseArgs([]).set).toBeUndefined();
+  });
+
   it('marks a supplied acceptance corpus sealed by the flag that names it', () => {
     // Sealing is not something a caller opts into separately and can forget:
     // pointing at an acceptance corpus IS the opt-in.
