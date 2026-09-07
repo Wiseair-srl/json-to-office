@@ -1,5 +1,23 @@
 # @json-to-office/core-docx
 
+## 4.0.0
+
+### Minor Changes
+
+- e29475b: **Breaking (`@json-to-office/mcp-server`)**: `jto_discover`'s `formats[].themes` is now an array of theme objects rather than of names. A client that read it as `string[]` — `themes.includes(name)`, or passing an entry straight to the `theme` option — must read `themes[].name` instead. The names are unchanged and the tools still take a name. Kept as one field rather than added beside the old one: a theme an agent cannot describe is a theme it picks at random, which is what this release exists to stop.
+
+  Discovery describes themes and a generated design guide (#333). Every built-in theme states `whenToUse` beside its voice; `jto_discover` lists themes as `{name, displayName, description, whenToUse, extended}` instead of bare names, and `jto://themes` carries each theme's typefaces, palette and, for an extended theme, its resolved type roles, scale, spacing, chrome recipes and motif. New `jto://guide/design/<format>` resources render the themes, quality profiles, rule pack, block catalogue and blueprints into one page from the registries `jto_validate` enforces; a drift test holds the guide, the catalogue and the resources together. `QualityRule` gains an optional `description`, set on every built-in rule, printed by the guide and pinned against the playground mirror. Server instructions point to the guide.
+
+- 102ab50: Theme-aware consistency rules for DOCX (#332): `docx/type-scale` reports an authored size the theme never paints and snaps it to the nearest size on the theme's scale; `docx/size-count` caps the distinct sizes a document paints, blocks included; `docx/role-drift` reports a heading level or paragraph style painted at two sizes and restores the theme's size. All three are off on the default profile and enabled by `client-report`. Evidence names the expected value and whether it came from the theme or the profile. `QualityRule` gains `defaultEnabled`; the docx theme fact carries `typeScalePt` and `roleSizesPt`; `typeScaleSizes` lists a scale's steps.
+
+### Patch Changes
+
+- Updated dependencies [e29475b]
+- Updated dependencies [102ab50]
+  - @json-to-office/quality@4.0.0
+  - @json-to-office/shared-docx@4.0.0
+  - @json-to-office/shared@4.0.0
+
 ## 3.3.0
 
 ### Minor Changes

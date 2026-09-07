@@ -1,5 +1,15 @@
 # @json-to-office/json-to-docx
 
+## 4.0.0
+
+### Patch Changes
+
+- Updated dependencies [e29475b]
+- Updated dependencies [102ab50]
+  - @json-to-office/shared-docx@4.0.0
+  - @json-to-office/core-docx@4.0.0
+  - @json-to-office/shared@4.0.0
+
 ## 3.0.0
 
 ### Patch Changes
