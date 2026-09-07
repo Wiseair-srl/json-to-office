@@ -152,4 +152,131 @@ describe('collectDocxTextInventory', () => {
     ]);
     expect(entry.frame).toEqual({ widthPt: 144 });
   });
+
+  it('inventories a contents field as optional entries where it renders, headings in range only', () => {
+    const entries = collectDocxTextInventory([
+      { name: 'toc', props: { title: 'Contents', depth: { to: 2 } } },
+      { name: 'heading', props: { text: 'Alpha', level: 1 } },
+      { name: 'heading', props: { text: 'Beta', level: 2 } },
+      { name: 'heading', props: { text: 'Gamma', level: 3 } },
+    ]);
+    expect(
+      entries.map((e) => [e.order, e.role, e.text, e.path, e.optional ?? false])
+    ).toEqual([
+      [0, 'toc-entry', 'Contents', '/children/0/props/title', false],
+      [1, 'toc-entry', 'Alpha', '/children/0', true],
+      [2, 'toc-entry', 'Beta', '/children/0', true],
+      [3, 'heading', 'Alpha', '/children/1/props/text', false],
+      [4, 'heading', 'Beta', '/children/2/props/text', false],
+      [5, 'heading', 'Gamma', '/children/3/props/text', false],
+    ]);
+    expect(new Set(entries.map((e) => e.id)).size).toBe(entries.length);
+  });
+
+  it('restricts a contents field inside a section to that section unless told otherwise', () => {
+    const doc = (scope?: string) => [
+      {
+        name: 'section',
+        props: {},
+        children: [
+          { name: 'toc', props: { ...(scope && { scope }) } },
+          { name: 'heading', props: { text: 'Inside', level: 1 } },
+        ],
+      },
+      {
+        name: 'section',
+        props: {},
+        children: [{ name: 'heading', props: { text: 'Outside', level: 1 } }],
+      },
+    ];
+    const tocEntries = (scope?: string) =>
+      collectDocxTextInventory(doc(scope))
+        .filter((e) => e.role === 'toc-entry')
+        .map((e) => e.text);
+    expect(tocEntries()).toEqual(['Inside']);
+    expect(tocEntries('section')).toEqual(['Inside']);
+    expect(tocEntries('document')).toEqual(['Inside', 'Outside']);
+  });
+
+  it('inventories the title and axis titles a native chart draws, not its labels', () => {
+    const entries = collectDocxTextInventory([
+      {
+        name: 'chart',
+        props: {
+          type: 'bar',
+          title: 'Revenue by quarter',
+          valAxisTitle: 'EUR m',
+          data: [{ name: 'Revenue', labels: ['Q1', 'Q2'], values: [1, 2] }],
+          caption: 'Figure 1',
+        },
+      },
+    ]);
+    expect(entries.map((e) => [e.text, e.path, e.role])).toEqual([
+      ['Revenue by quarter', '/children/0/props/title', 'caption'],
+      ['EUR m', '/children/0/props/valAxisTitle', 'caption'],
+      ['Figure 1', '/children/0/props/caption', 'caption'],
+    ]);
+  });
+
+  it('leaves out a hidden chart title and the axis titles of a chart without axes', () => {
+    const entries = collectDocxTextInventory([
+      {
+        name: 'chart',
+        props: {
+          type: 'pie',
+          title: 'Share',
+          showTitle: false,
+          valAxisTitle: 'Never drawn',
+          data: [{ name: 'S', labels: ['a'], values: [1] }],
+        },
+      },
+    ]);
+    expect(entries).toEqual([]);
+  });
+
+  it('includes style-mapped paragraphs among a contents field entries whatever their level', () => {
+    const entries = collectDocxTextInventory([
+      {
+        name: 'toc',
+        props: {
+          depth: { to: 1 },
+          styles: [{ styleId: 'boxTitle', level: 2 }],
+        },
+      },
+      {
+        name: 'paragraph',
+        props: { text: 'Key finding', themeStyle: 'boxTitle' },
+      },
+      { name: 'paragraph', props: { text: 'Plain body', themeStyle: 'body' } },
+      { name: 'heading', props: { text: 'Deep', level: 3 } },
+    ]);
+    expect(
+      entries.filter((e) => e.role === 'toc-entry').map((e) => e.text)
+    ).toEqual(['Key finding']);
+  });
+
+  it('never collects a heading inside a table cell into a contents field', () => {
+    const entries = collectDocxTextInventory([
+      { name: 'toc', props: {} },
+      {
+        name: 'table',
+        props: {
+          columns: [
+            {
+              header: { content: 'H' },
+              cells: [
+                {
+                  content: {
+                    name: 'heading',
+                    props: { text: 'Cell heading', level: 1 },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      },
+    ]);
+    expect(entries.filter((e) => e.role === 'toc-entry')).toEqual([]);
+  });
 });

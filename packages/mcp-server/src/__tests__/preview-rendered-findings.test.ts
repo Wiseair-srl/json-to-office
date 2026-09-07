@@ -172,7 +172,130 @@ describe('collectRenderedFindings', () => {
       words: 5,
       inventory: { mapped: 3, missing: 0 },
       fonts: { requested: 1, substituted: 1 },
+      suppressed: 0,
+      blocked: false,
     });
+  });
+
+  it('reads the inventory off a prepared document handed in, without preparing again', async () => {
+    const result = await collectRenderedFindings({
+      format: 'docx',
+      document: {},
+      render: {},
+      rendered: { pages: [page], resolvedFonts: [] },
+      prepared: { format: 'docx', model: {}, facts, provenance: {} },
+      adapter: {
+        prepareDocument: async () => {
+          throw new Error('prepared twice');
+        },
+      },
+    });
+    expect(result.diagnostics.map((d) => d.code)).toEqual([
+      'W_QUALITY_RENDERED_SPILL',
+    ]);
+  });
+
+  it('applies the caller profile and policy: disabled rules, suppressions, gate', async () => {
+    const result = await collectRenderedFindings({
+      format: 'docx',
+      document: {},
+      render: {},
+      rendered: {
+        pages: [
+          {
+            ...page,
+            words: [
+              ...page.words,
+              { text: 'stray', xMin: 580, yMin: 300, xMax: 620, yMax: 312 },
+            ],
+          },
+        ],
+        resolvedFonts: [],
+      },
+      adapter,
+      quality: {
+        profile: {
+          id: 'preview-test',
+          formats: ['docx'],
+          rules: { 'rendered/spill': { enabled: false } },
+        },
+        policy: {
+          gate: 'warning',
+          suppressions: [
+            { code: 'W_QUALITY_RENDERED_CLIP', reason: 'known stray' },
+          ],
+        },
+      },
+    });
+    expect(result.diagnostics).toEqual([]);
+    expect(result.summary).toMatchObject({
+      suppressed: 1,
+      blocked: false,
+      profileId: 'preview-test',
+    });
+  });
+
+  it('marks findings blocking under a gate and says so in the summary', async () => {
+    const result = await collectRenderedFindings({
+      format: 'docx',
+      document: {},
+      render: {},
+      rendered: { pages: [page], resolvedFonts: [] },
+      adapter,
+      quality: { policy: { gate: 'warning' } },
+    });
+    expect(result.diagnostics[0]).toMatchObject({
+      code: 'W_QUALITY_RENDERED_SPILL',
+      blocking: true,
+    });
+    expect(result.summary?.blocked).toBe(true);
+  });
+
+  it('judges by the profile the document declares, merged over the shipped one', async () => {
+    const result = await collectRenderedFindings({
+      format: 'docx',
+      document: { name: 'docx', props: { qualityProfile: 'client-report' } },
+      render: {},
+      rendered: { pages: [page], resolvedFonts: [] },
+      adapter,
+      quality: {
+        profile: {
+          id: 'client-report',
+          rules: { 'rendered/spill': { severity: 'info' } },
+        },
+      },
+    });
+    expect(result.diagnostics[0]).toMatchObject({
+      code: 'W_QUALITY_RENDERED_SPILL',
+      severity: 'info',
+    });
+    expect(result.summary?.profileId).toBe('client-report');
+  });
+
+  it('falls back to the format default profile when nobody names one', async () => {
+    const result = await collectRenderedFindings({
+      format: 'docx',
+      document: { name: 'docx' },
+      render: {},
+      rendered: { pages: [page], resolvedFonts: [] },
+      adapter,
+    });
+    expect(result.summary?.profileId).toBe('technical-report');
+  });
+
+  it('reports an unusable policy as an option defect, not a crash', async () => {
+    const result = await collectRenderedFindings({
+      format: 'docx',
+      document: {},
+      render: {},
+      rendered: { pages: [page], resolvedFonts: [] },
+      adapter,
+      quality: { policy: { gate: 'loud' as never } },
+    });
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({ code: 'E_INVALID_QUALITY_POLICY' }),
+    ]);
+    expect(result.summary).toBeUndefined();
   });
 
   it('drops the root path from an unmapped finding rather than pointing at ""', async () => {

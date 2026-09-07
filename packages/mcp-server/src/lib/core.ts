@@ -38,6 +38,8 @@ const CORE_EXPORTS: Record<
     profiles: string;
     defaultProfile: string;
     rules: string;
+    resolveProfile: string;
+    declaredProfile: string;
     blueprints?: string;
     instantiate?: string;
   }
@@ -47,6 +49,8 @@ const CORE_EXPORTS: Record<
     profiles: 'DOCX_QUALITY_PROFILES',
     defaultProfile: 'DOCX_DEFAULT_QUALITY_PROFILE',
     rules: 'DOCX_QUALITY_RULES',
+    resolveProfile: 'resolveDocxQualityProfile',
+    declaredProfile: 'declaredDocxQualityProfile',
     blueprints: 'DOCX_BLUEPRINTS',
     instantiate: 'instantiateDocxBlueprint',
   },
@@ -55,6 +59,8 @@ const CORE_EXPORTS: Record<
     profiles: 'PPTX_QUALITY_PROFILES',
     defaultProfile: 'PPTX_DEFAULT_QUALITY_PROFILE',
     rules: 'PPTX_QUALITY_RULES',
+    resolveProfile: 'resolvePptxQualityProfile',
+    declaredProfile: 'declaredPptxQualityProfile',
   },
 };
 
@@ -81,6 +87,16 @@ export interface LoadedCore {
   defaultProfileId?: string;
   /** The format's rule pack, in evaluation order. */
   rules: readonly QualityRule[];
+  /**
+   * The profile a quality analysis judges by, resolved the way the core's
+   * own analyzer resolves it: a caller's profile named by id layered over
+   * the shipped one, else the document's declared `props.qualityProfile`,
+   * else the format default.
+   */
+  resolveProfile(
+    document: unknown,
+    requested: QualityProfile | undefined
+  ): QualityProfile | undefined;
   /** Bundled blueprints by id; empty for a core that ships none. */
   blueprints: Readonly<Record<string, Blueprint>>;
   /** Instantiate a blueprint; absent for a core that ships none. */
@@ -138,12 +154,23 @@ async function load(format: FormatName): Promise<LoadedCore | undefined> {
     const instantiate = names.instantiate
       ? (core[names.instantiate] as LoadedCore['instantiate'])
       : undefined;
+    const resolveRequested = core[names.resolveProfile] as (
+      requested: QualityProfile | undefined
+    ) => QualityProfile | undefined;
+    const declared = core[names.declaredProfile] as (
+      document: unknown
+    ) => QualityProfile | undefined;
+    const defaultProfile = core[names.defaultProfile] as
+      | QualityProfile
+      | undefined;
     return {
       themeNames: Object.keys(themes).sort(),
       themes,
       profiles,
       ...(defaultProfileId !== undefined && { defaultProfileId }),
       rules,
+      resolveProfile: (document, requested) =>
+        resolveRequested(requested) ?? declared(document) ?? defaultProfile,
       blueprints,
       ...(instantiate && { instantiate }),
     };

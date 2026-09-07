@@ -8,6 +8,7 @@
  * server enforces — no conversion step in between to drift.
  */
 
+import type { QualityPolicy, QualityProfile } from '@json-to-office/quality';
 import { fromJsonSchema } from '@modelcontextprotocol/server';
 import type {
   JsonSchemaType,
@@ -273,6 +274,42 @@ export interface RenderOptionsInput {
   generatedAt?: string;
   baseDir?: string;
 }
+
+/** `qualityOptionsProperty`, as the tool handlers see it after validation. */
+export interface QualityOptionsInput {
+  profile?: QualityProfile;
+  policy?: QualityPolicy;
+}
+
+/**
+ * The design profile and enforcement policy a quality analysis runs under —
+ * one spelling for `jto_validate` and the rendered pass of `jto_preview`, so
+ * a policy that gates one reads the same on the other.
+ */
+export const qualityOptionsProperty: JsonSchemaType = {
+  type: 'object',
+  description:
+    'Optional design profile plus per-run enforcement policy. `jto_validate` judges by them; `jto_preview` applies the same pair to its rendered pass when `renderedFindings` is set.',
+  properties: {
+    profile: {
+      type: 'object',
+      properties: { id: { type: 'string', minLength: 1 } },
+      required: ['id'],
+      additionalProperties: true,
+    },
+    policy: {
+      type: 'object',
+      properties: {
+        gate: {
+          type: 'string',
+          enum: ['none', 'error', 'warning', 'info'],
+        },
+      },
+      additionalProperties: true,
+    },
+  },
+  additionalProperties: false,
+};
 
 /** `artifactOutputProperties`, as the tool handlers see it after validation. */
 export interface ArtifactOutputInput {

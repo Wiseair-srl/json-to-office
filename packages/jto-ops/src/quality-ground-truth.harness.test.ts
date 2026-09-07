@@ -50,6 +50,7 @@ import {
   extractPdfTextGeometry,
   pdftotextAvailable,
 } from './pdf-text-geometry';
+import { normalizeForMatch } from './rendered-text-match';
 
 const TEMPLATES_DIR = path.resolve(
   __dirname,
@@ -169,19 +170,6 @@ interface BoxFact {
 function comparableGroundTruthBox(fact: BoxFact): boolean {
   const normalizedRotation = ((fact.rotationDeg % 360) + 360) % 360;
   return fact.verticalAlign === 'top' && normalizedRotation < 1e-6;
-}
-
-/**
- * Fold rendered text and authored text into the same space: NFKC decomposes
- * ligatures (ﬁ → fi), and stripping non-alphanumerics drops bullet glyphs,
- * inserted hyphens, and punctuation that soffice/poppler render differently
- * from the authored string.
- */
-function normalizeForMatch(value: string): string {
-  return value
-    .normalize('NFKC')
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, '');
 }
 
 /**

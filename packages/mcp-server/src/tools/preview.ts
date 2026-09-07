@@ -49,9 +49,11 @@ import {
   documentSourceProperties,
   formatSchema,
   outputSchema,
+  qualityOptionsProperty,
   renderOptionProperties,
   sourceSummarySchema,
   type DocumentSourceInput,
+  type QualityOptionsInput,
   type RenderOptionsInput,
   type SourceSummary,
 } from '../lib/schema.js';
@@ -115,6 +117,7 @@ export interface PreviewToolInput
   outputMode?: PreviewOutputMode;
   contactSheet?: boolean;
   renderedFindings?: boolean;
+  quality?: QualityOptionsInput;
   filenamePrefix?: string;
   maxDiagnostics?: number;
 }
@@ -266,7 +269,28 @@ const renderedSchema = {
       required: ['mapped', 'ambiguous', 'missing', 'skipped'],
       additionalProperties: false,
     },
-    findings: mappingCounts('Rendered findings by mapping outcome.'),
+    findings: mappingCounts(
+      'Rendered findings by mapping outcome, after policy suppressions.'
+    ),
+    suppressed: {
+      type: 'integer' as const,
+      description: 'Findings a `quality.policy` suppression removed.',
+    },
+    blocked: {
+      type: 'boolean' as const,
+      description:
+        'Whether a `quality.policy.gate` made any rendered finding blocking. The preview itself still succeeds; this is what `jto_validate` would report under the same policy.',
+    },
+    truncated: {
+      type: 'boolean' as const,
+      description:
+        'Whether a `quality.policy.maxDiagnostics` budget cut the rendered findings returned; the mapping counts describe what was kept.',
+    },
+    profileId: {
+      type: 'string' as const,
+      description:
+        'The quality profile the pass judged by: the caller’s, else the one the document declares, else the format default.',
+    },
     fonts: {
       type: 'object' as const,
       description:
@@ -279,7 +303,14 @@ const renderedSchema = {
       additionalProperties: false,
     },
   },
-  required: ['pages', 'words', 'inventory', 'findings'],
+  required: [
+    'pages',
+    'words',
+    'inventory',
+    'findings',
+    'suppressed',
+    'blocked',
+  ],
   additionalProperties: false,
 };
 
@@ -310,7 +341,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
 
 Pages are selected with printer syntax, 1-based and inclusive: "all" (default), "3", "2-5", "4-" (to the end), "-3" (from the start), or a comma-separated mix like "1-3,7". At most ${MAX_PREVIEW_PAGES} pages per call.
 
-Set renderedFindings: true to also run the rendered-certainty pass over the PDF LibreOffice produced: text past the page edge or its frame, words drawn over each other, authored text that never rendered, substituted font families, empty pages, headings stranded at a page foot and paragraphs split into a lone line. They come back as quality diagnostics with certainty "rendered", each with a mapping status (\`context.mapping\`) and page; \`rendered\` summarises the pass. Advisory: nothing here blocks generation, and an unmapped finding is a mapping gap to look at, not noise.
+Set renderedFindings: true to also run the rendered-certainty pass over the PDF LibreOffice produced: text past the page edge or its frame, words drawn over each other, authored text that never rendered, substituted font families, empty pages, headings stranded at a page foot and paragraphs split into a lone line. They come back as quality diagnostics with certainty "rendered", each with a mapping status (\`context.mapping\`) and page; \`rendered\` summarises the pass. The pass judges by the same \`quality\` profile and policy \`jto_validate\` takes — a profile can switch a rendered rule off or move its severity, a policy can suppress one at a pointer or gate it — and by the document’s declared profile or the format default otherwise. Generation never runs the pass, so nothing here blocks \`jto_generate\`; an unmapped finding is a mapping gap to look at, not noise.
 
 Set contactSheet: true to get one labelled image tiling every selected page instead of the pages themselves — the way to judge cross-page consistency (rhythm, alignment, chrome) in a single look. It renders at ${CONTACT_SHEET_DPI} DPI unless \`dpi\` says otherwise, inlines when the sheet fits one image block, and is written to the output root when it does not.
 
@@ -362,6 +393,7 @@ Needs LibreOffice and poppler on the host (see jto_info.previewDependencies); wh
               'Run the rendered-certainty pass over the converted PDF and return its findings in `diagnostics` (certainty "rendered") with a `rendered` summary. Needs poppler’s pdftotext; pdffonts adds the font check. Costs one pass over the PDF text, not a second conversion.',
             default: false,
           },
+          quality: qualityOptionsProperty,
           filenamePrefix: {
             type: 'string',
             description:
@@ -508,7 +540,9 @@ Needs LibreOffice and poppler on the host (see jto_info.previewDependencies); wh
           document: source.document,
           render: renderOptions,
           rendered: rendered.rendered,
+          ...(rendered.prepared && { prepared: rendered.prepared }),
           adapter,
+          ...(args.quality && { quality: args.quality }),
         });
         return withRenderedFindings(delivered, findings);
       });

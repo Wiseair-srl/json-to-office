@@ -27,6 +27,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { RENDERED_QUALITY_RULES } from '@json-to-office/jto-ops';
 
 import Ajv from 'ajv';
 
@@ -493,8 +494,14 @@ describe('tools and resources describe the same surface', () => {
       );
       expectSameNames(
         `${format.name} guide rules`,
-        'rule pack',
-        (core?.rules ?? []).map((rule) => rule.id),
+        'rule packs',
+        [
+          ...(core?.rules ?? []),
+          ...RENDERED_QUALITY_RULES.rules.filter(
+            (rule) =>
+              rule.formats === undefined || rule.formats.includes(format.name)
+          ),
+        ].map((rule) => rule.id),
         'jto://guide/design',
         guide.rules.map((rule: any) => rule.id)
       );

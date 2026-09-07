@@ -52,6 +52,10 @@ export {
   type RequestedFont,
 } from './rendered-analysis.js';
 export {
+  RENDERED_QUALITY_RULES,
+  type RenderedRuleId,
+} from './rendered-rules.js';
+export {
   assignInventory,
   authoredTextForMatch,
   normalizeForMatch,

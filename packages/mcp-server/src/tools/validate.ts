@@ -16,11 +16,7 @@
  */
 
 import type { McpServer } from '@modelcontextprotocol/server';
-import type {
-  QualityAnalysis,
-  QualityPolicy,
-  QualityProfile,
-} from '@json-to-office/quality';
+import type { QualityAnalysis } from '@json-to-office/quality';
 
 import {
   checkRenderer,
@@ -32,12 +28,11 @@ import type { ToolDeps } from '../lib/deps.js';
 import { resolveDocumentSource, sourceSummary } from '../lib/doc-source.js';
 import { scaffoldMarkerOccurrences } from '../lib/scaffold-markers.js';
 import {
-  ERROR_CODES,
   countDiagnostics,
-  diagnostic,
   guarded,
   qualityAnalysisDiagnostics,
   qualityOptionDiagnostic,
+  ruleErrorDiagnostics,
   toolResult,
   validationDiagnostics,
   type Diagnostic,
@@ -47,9 +42,11 @@ import {
   documentSourceProperties,
   formatSchema,
   outputSchema,
+  qualityOptionsProperty,
   renderOptionProperties,
   sourceSummarySchema,
   type DocumentSourceInput,
+  type QualityOptionsInput,
 } from '../lib/schema.js';
 
 const SEVERITY_RANK: Record<Diagnostic['severity'], number> = {
@@ -80,31 +77,13 @@ function capDiagnostics(
   return { kept: ordered.slice(0, limit), truncated: true };
 }
 
-/**
- * A rule that threw is a hole in the report, not a clean bill of health.
- *
- * The engine's default `onRuleError: 'continue'` records the failure and
- * carries on, so the entire class of findings that rule owns disappears from
- * the answer — and an agent handed `ok: true` with an empty list reads that as
- * "nothing to fix" rather than "nobody looked".
- */
-function ruleErrorDiagnostics(analysis: QualityAnalysis): Diagnostic[] {
-  return analysis.ruleErrors.map((entry) =>
-    diagnostic(
-      ERROR_CODES.QUALITY_RULE_ERROR,
-      `Quality rule "${entry.ruleId}" failed: ${entry.message}`,
-      { severity: 'warning', source: 'quality', ruleId: entry.ruleId }
-    )
-  );
-}
-
 const DEFAULT_MAX_DIAGNOSTICS = 100;
 
 interface ValidateArgs extends DocumentSourceInput {
   format: FormatName;
   renderer?: string;
   maxDiagnostics?: number;
-  quality?: { profile?: QualityProfile; policy?: QualityPolicy };
+  quality?: QualityOptionsInput;
   includeCompiled?: boolean;
 }
 
@@ -144,30 +123,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
             description:
               'Also return `compiled`: the document with every block lowered in place, the authored pointers of those blocks, and a source map from each compiled pointer to the slot it came from. Diagnostics already point at authored slots; this is for inspecting what a block became.',
           },
-          quality: {
-            type: 'object',
-            description:
-              'Optional design profile plus per-run enforcement policy.',
-            properties: {
-              profile: {
-                type: 'object',
-                properties: { id: { type: 'string', minLength: 1 } },
-                required: ['id'],
-                additionalProperties: true,
-              },
-              policy: {
-                type: 'object',
-                properties: {
-                  gate: {
-                    type: 'string',
-                    enum: ['none', 'error', 'warning', 'info'],
-                  },
-                },
-                additionalProperties: true,
-              },
-            },
-            additionalProperties: false,
-          },
+          quality: qualityOptionsProperty,
         },
         required: ['format'],
         additionalProperties: false,

@@ -368,6 +368,24 @@ const HOST_DEPENDENCY_ERRORS = new Set([RENDERER_DEPENDENCY_MISSING]);
  * document AND a bad profile needs both answers, and the schema errors are the
  * half it can act on — so that path folds this in beside them instead.
  */
+/**
+ * A rule that threw is a hole in the report, not a clean bill of health.
+ *
+ * The engine's default `onRuleError: 'continue'` records the failure and
+ * carries on, so the entire class of findings that rule owns disappears from
+ * the answer — and an agent handed `ok: true` with an empty list reads that as
+ * "nothing to fix" rather than "nobody looked".
+ */
+export function ruleErrorDiagnostics(analysis: QualityAnalysis): Diagnostic[] {
+  return analysis.ruleErrors.map((entry) =>
+    diagnostic(
+      ERROR_CODES.QUALITY_RULE_ERROR,
+      `Quality rule "${entry.ruleId}" failed: ${entry.message}`,
+      { severity: 'warning', source: 'quality', ruleId: entry.ruleId }
+    )
+  );
+}
+
 export function qualityOptionDiagnostic(
   error: unknown
 ): Diagnostic | undefined {
