@@ -7,6 +7,7 @@ import {
   indexDocument,
   needleSegments,
   normalizeForMatch,
+  readingOrder,
 } from './rendered-text-match';
 
 function word(text: string, x: number, y: number, w = 30, h = 12): PdfTextWord {
@@ -299,5 +300,91 @@ describe('assignInventory', () => {
     );
     expect(matches.map((m) => m.status)).toEqual(['skipped', 'mapped']);
     expect(matches[1].occurrences[0].parts[0].yMin).toBe(200);
+  });
+});
+
+describe('readingOrder', () => {
+  // Two cells of a table row, each wrapped over two lines, as poppler 24
+  // lists them: line by line across the row.
+  // The second cell is right-aligned, so its second line starts further
+  // right than its first; the third row is the label's third line alone.
+  const lineMajor = [
+    word('Item72', 36, 275, 30),
+    word('ownership', 69, 275, 45),
+    word('Item91', 170, 275, 30),
+    word('segment', 203, 275, 40),
+    word('renewal', 36, 288, 40),
+    word('segment', 79, 288, 40),
+    word('margin', 205, 288, 45),
+    word('tail', 36, 301, 25),
+    // A heading a cell padding below the row is not the label's next line.
+    word('Heading', 36, 325, 40),
+  ];
+  it('reads a wrapped table row cell by cell, whatever order poppler gave', () => {
+    const order = readingOrder(lineMajor).map((i) => lineMajor[i].text);
+    expect(order).toEqual([
+      'Item72',
+      'ownership',
+      'renewal',
+      'segment',
+      'tail',
+      'Item91',
+      'segment',
+      'margin',
+      'Heading',
+    ]);
+    const index = indexDocument([page(lineMajor)]);
+    expect(
+      findOccurrences(
+        index,
+        needleSegments('Item72 ownership renewal segment tail')
+      )
+    ).toHaveLength(1);
+    expect(
+      findOccurrences(index, needleSegments('Item91 segment margin'))
+    ).toHaveLength(1);
+  });
+  it('keeps a rotated axis title in the order poppler gave it', () => {
+    const axis = [
+      word('Item68', 88, 534, 11, 38),
+      word('contracted', 88, 470, 11, 60),
+      word('recommendation', 99, 490, 11, 92),
+      word('(€m)', 99, 460, 11, 26),
+      word('after', 36, 600),
+      // Narrow upright words stay upright.
+      word('1:', 80, 600, 8, 13),
+    ];
+    expect(readingOrder(axis).map((i) => axis[i].text)).toEqual([
+      'Item68',
+      'contracted',
+      'recommendation',
+      '(€m)',
+      'after',
+      '1:',
+    ]);
+  });
+  it('leaves prose and a one-line tabbed header as they lie', () => {
+    const prose = [
+      word('one', 72, 100),
+      word('two', 105, 100),
+      word('three', 72, 115),
+      word('four', 105, 115),
+    ];
+    expect(readingOrder(prose).map((i) => prose[i].text)).toEqual([
+      'one',
+      'two',
+      'three',
+      'four',
+    ]);
+    const header = [
+      word('Title', 72, 40),
+      word('Tracker', 480, 40),
+      word('Body', 72, 80),
+    ];
+    expect(readingOrder(header).map((i) => header[i].text)).toEqual([
+      'Title',
+      'Tracker',
+      'Body',
+    ]);
   });
 });

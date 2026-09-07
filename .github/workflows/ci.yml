@@ -266,8 +266,12 @@ jobs:
       - name: Install LibreOffice and poppler
         run: |
           sudo apt-get update
+          # Liberation and Carlito are metric-compatible with Arial and
+          # Calibri: with them the house theme renders at its design widths,
+          # without them every "design font" case is a DejaVu case.
           sudo apt-get install -y --no-install-recommends \
-            libreoffice-writer libreoffice-impress poppler-utils
+            libreoffice-writer libreoffice-impress poppler-utils \
+            fonts-liberation fonts-crosextra-carlito
           soffice --version
           # Some poppler builds print the version to stderr and exit non-zero
           # for `-v`, so presence on PATH is the check and the banner is only

@@ -27,7 +27,7 @@
  * the next unclaimed occurrence at or after the previous claim is the one.
  */
 
-import type { PdfTextPage } from './pdf-text-geometry';
+import type { PdfTextWord, PdfTextPage } from './pdf-text-geometry';
 
 /** Fold rendered and authored text into one comparable form. */
 export function normalizeForMatch(value: string): string {
@@ -112,16 +112,160 @@ export function indexDocument(
   const positions: number[] = [];
   let cursor = 0;
   pages.forEach((page, pageIndex) => {
-    page.words.forEach((word, index) => {
+    for (const index of readingOrder(page.words)) {
+      const word = page.words[index];
       const key = `${pageIndex}:${index}`;
       const fragment = exclude.has(key) ? '' : normalizeForMatch(word.text);
       refs.push({ pageIndex, word: index });
       fragments.push(fragment);
       positions.push(cursor);
       cursor += fragment.length;
-    });
+    }
   });
   return { pages, refs, fragments, positions, stream: fragments.join('') };
+}
+
+/** A run of words on one row with no wide gap between them: one cell's line. */
+interface RowFragment {
+  xMin: number;
+  xMax: number;
+  words: number[];
+}
+
+/**
+ * Word indices in the order a reader takes them, decided from geometry
+ * rather than from the order poppler emitted them: poppler 24 lists a table
+ * row line by line across every cell, poppler 26 lists it cell by cell, and
+ * an authored string in a wrapped cell only survives the second.
+ *
+ * Rows are grouped by vertical overlap and split into fragments at gaps
+ * wider than half the line is tall. A row of two or more fragments opens a
+ * column block; the rows under it belong to the block while each of their
+ * fragments sits inside one column (a right-aligned cell's second line
+ * starts further right; a wrapped label's later lines are the only
+ * fragment of their row) and the rows stay a line apart. A block reads
+ * column by column, so a cell's lines come out together; a row of one
+ * fragment outside any block — prose — reads as it lies.
+ */
+export function readingOrder(words: readonly PdfTextWord[]): number[] {
+  // Rotated text — a chart's value-axis title — comes as boxes taller than
+  // they are wide; rows and columns mean nothing to it, so it keeps the
+  // order poppler gave it, in the slots it had.
+  const rotated = new Set(
+    words
+      .map((_, i) => i)
+      .filter((i) => {
+        const w = words[i];
+        // Three glyphs or more: a "1:" or an "I" is narrow, not rotated.
+        return w.text.length > 2 && w.yMax - w.yMin > 1.5 * (w.xMax - w.xMin);
+      })
+  );
+  const upright = uprightOrder(
+    words,
+    words.map((_, i) => i).filter((i) => !rotated.has(i))
+  );
+  const order: number[] = [];
+  let next = 0;
+  for (let i = 0; i < words.length; i++) {
+    if (rotated.has(i)) order.push(i);
+    else order.push(upright[next++]);
+  }
+  return order;
+}
+
+function uprightOrder(
+  words: readonly PdfTextWord[],
+  indices: readonly number[]
+): number[] {
+  const rows: number[][] = [];
+  const byY = [...indices].sort(
+    (a, b) => words[a].yMin - words[b].yMin || words[a].xMin - words[b].xMin
+  );
+  for (const i of byY) {
+    const row = rows[rows.length - 1];
+    if (row && sameRow(words[row[0]], words[i])) row.push(i);
+    else rows.push([i]);
+  }
+  const fragmentsOf = (row: number[]): RowFragment[] => {
+    const sorted = [...row].sort((a, b) => words[a].xMin - words[b].xMin);
+    const out: RowFragment[] = [];
+    for (const i of sorted) {
+      const last = out[out.length - 1];
+      const w = words[i];
+      // A space is a quarter of the size; half a line's height is two of
+      // them, and a cell gap on a 23-point figure is more than that.
+      const height = w.yMax - w.yMin;
+      if (last && w.xMin - last.xMax <= height / 2) {
+        last.words.push(i);
+        last.xMax = Math.max(last.xMax, w.xMax);
+      } else out.push({ xMin: w.xMin, xMax: w.xMax, words: [i] });
+    }
+    return out;
+  };
+  const fragments = rows.map(fragmentsOf);
+  const boxes = rows.map((row) => ({
+    yMin: Math.min(...row.map((i) => words[i].yMin)),
+    yMax: Math.max(...row.map((i) => words[i].yMax)),
+  }));
+
+  // Rows less than a line apart or overlapping (a cell centred beside a
+  // wrapped label; DejaVu's wrapped lines sit two thirds of a line apart)
+  // belong to one cluster. Columns are the x-intervals its fragments
+  // fall in, merged where they overlap, so a right-aligned cell's shorter
+  // second line joins its first. A fragment across two columns is prose
+  // under the table: it closes the cluster and opens the next.
+  interface Column {
+    xMin: number;
+    xMax: number;
+    fragments: RowFragment[];
+  }
+  const order: number[] = [];
+  let cluster: { rows: number[]; columns: Column[]; multi: boolean } | null =
+    null;
+  const flush = (): void => {
+    if (!cluster) return;
+    if (!cluster.multi) {
+      for (const r of cluster.rows)
+        for (const f of fragments[r]) order.push(...f.words);
+    } else {
+      cluster.columns.sort((a, b) => a.xMin - b.xMin);
+      for (const column of cluster.columns) {
+        column.fragments.sort(
+          (a, b) =>
+            words[a.words[0]].yMin - words[b.words[0]].yMin || a.xMin - b.xMin
+        );
+        for (const f of column.fragments) order.push(...f.words);
+      }
+    }
+    cluster = null;
+  };
+  const overlapping = (columns: Column[], f: RowFragment): Column[] =>
+    columns.filter(
+      (c) => Math.min(c.xMax, f.xMax) - Math.max(c.xMin, f.xMin) > 0
+    );
+  for (let r = 0; r < rows.length; r++) {
+    const lineHeight = boxes[r].yMax - boxes[r].yMin;
+    const adjacent =
+      cluster !== null && boxes[r].yMin - boxes[r - 1].yMax <= lineHeight * 0.9;
+    const wide =
+      cluster !== null &&
+      fragments[r].some((f) => overlapping(cluster!.columns, f).length > 1);
+    if (!adjacent || wide) flush();
+    if (!cluster) cluster = { rows: [], columns: [], multi: false };
+    cluster.rows.push(r);
+    if (fragments[r].length > 1) cluster.multi = true;
+    for (const f of fragments[r]) {
+      const hit = overlapping(cluster.columns, f)[0];
+      if (hit) {
+        hit.xMin = Math.min(hit.xMin, f.xMin);
+        hit.xMax = Math.max(hit.xMax, f.xMax);
+        hit.fragments.push(f);
+      } else
+        cluster.columns.push({ xMin: f.xMin, xMax: f.xMax, fragments: [f] });
+    }
+  }
+  flush();
+  return order;
 }
 
 /** Index of the first non-empty fragment starting at or after `offset`. */

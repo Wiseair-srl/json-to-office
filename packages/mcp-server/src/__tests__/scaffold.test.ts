@@ -128,7 +128,7 @@ describe('what a scaffold is', () => {
       expect(title).toMatchObject({
         kind: 'slot',
         type: 'string',
-        maxWords: 16,
+        maxWords: 12,
         required: true,
       });
       expect(
