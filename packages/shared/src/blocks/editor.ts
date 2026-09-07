@@ -131,16 +131,21 @@ export function blockSlotEditorSchema(
     schema = { ...rest };
     // A scaffold marker is exempt from lengths at validation; the editor
     // agrees, or a fresh scaffold shows errors the validator does not.
-    if (rest.minLength !== undefined || rest.maxLength !== undefined) {
-      const { minLength, maxLength, ...unbounded } = rest;
+    if (
+      rest.minLength !== undefined ||
+      rest.maxLength !== undefined ||
+      rest.enum !== undefined
+    ) {
+      const { minLength, maxLength, enum: choices, ...unbounded } = rest;
       schema = {
         ...unbounded,
         anyOf: [
           {
             ...(minLength !== undefined && { minLength }),
             ...(maxLength !== undefined && { maxLength }),
+            ...(choices !== undefined && { enum: choices }),
           },
-          { pattern: SCAFFOLD_MARKER_SCHEMA_PATTERN },
+          { type: 'string', pattern: SCAFFOLD_MARKER_SCHEMA_PATTERN },
         ],
       };
     }

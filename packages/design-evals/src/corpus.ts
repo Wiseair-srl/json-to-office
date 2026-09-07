@@ -295,6 +295,12 @@ export async function loadBriefSet(
       throw new CorpusError(`Brief set "${id}" names "${entry.id}" twice.`);
     seen.add(entry.id);
   }
+  const assigned = new Set(parsed.briefs.flatMap((entry) => entry.covers));
+  const uncovered = parsed.covers.filter((cover) => !assigned.has(cover));
+  if (uncovered.length > 0)
+    throw new CorpusError(
+      `Brief set "${id}" claims ${uncovered.map((c) => `"${c}"`).join(', ')} but no brief covers it.`
+    );
   return {
     ...parsed,
     hash: createHash('sha256').update(text).digest('hex'),

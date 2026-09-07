@@ -961,7 +961,9 @@ Byte changes are the grid values and the removed section break; content,
 styles and chrome are unchanged. The grid is rounded to whole twips, the last
 cell absorbing the remainder so the cells still sum to the measure; the
 three `text-box-nested-columns*` cases with a percentage gap moved a second
-time for that.
+time for that, and `text-box-nested-columns-floating` a third: stated widths
+that fill the measure plus a gap are scaled back so the grid never exceeds
+the table (the top-level path refuses such a configuration outright).
 
 The same matrix moved the report block goldens (`blocks/report-chrome-*`,
 `blocks/report-data-*`) through the playground template rather than the

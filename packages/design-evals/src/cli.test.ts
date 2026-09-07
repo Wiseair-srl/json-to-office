@@ -36,6 +36,8 @@ describe('parseArgs', () => {
       set: 'client-report-checkpoint',
     });
     expect(parseArgs([]).set).toBeUndefined();
+    // A bare flag is not "every brief"; main refuses the empty id.
+    expect(parseArgs(['--set']).set).toBe('');
   });
 
   it('marks a supplied acceptance corpus sealed by the flag that names it', () => {

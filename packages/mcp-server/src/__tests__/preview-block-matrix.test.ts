@@ -226,6 +226,8 @@ describe.skipIf(!RUN)('rendered block boundary matrix', () => {
         ...rows,
       ].join('\n')
     );
-    expect(rows).toHaveLength(matrix.length);
+    // Completeness is each case's own assertion; this one only reports, so
+    // running it alone (or after a case that threw) says nothing false.
+    expect(matrix.length).toBeGreaterThan(0);
   });
 });

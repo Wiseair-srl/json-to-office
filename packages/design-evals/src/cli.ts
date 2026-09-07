@@ -90,6 +90,7 @@ export function parseArgs(argv: readonly string[]): CliOptions {
     ...(values.get('set') !== undefined && {
       set: values.get('set') as string,
     }),
+    ...(flags.has('set') && { set: '' }),
     model: values.get('model') ?? DEFAULT_MODEL,
     maxTurns: Number(values.get('max-turns') ?? DEFAULT_MAX_TURNS),
     maxRetries: Number(values.get('max-retries') ?? DEFAULT_MAX_RETRIES),
@@ -180,6 +181,10 @@ export async function main(argv: readonly string[]): Promise<number> {
     return 1;
   }
   let briefSet: BriefSet | undefined;
+  if (options.set === '') {
+    line('--set names a brief set: --set client-report-checkpoint.');
+    return 1;
+  }
   if (options.set !== undefined) {
     if (corpus.kind === 'sealed') {
       line('A sealed corpus has no brief sets; it is run whole.');

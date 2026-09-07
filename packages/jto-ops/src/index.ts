@@ -81,6 +81,7 @@ export {
   type BlockMatrixCase,
   type BlockMatrixDefinition,
   type BlockMatrixOptions,
+  type CaseConditions,
   type MatrixCanvas,
   type MatrixEdge,
   type MatrixFont,
