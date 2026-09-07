@@ -44,6 +44,11 @@ const report = (...children: unknown[]) => {
   doc.children = [section(...children)];
   return doc;
 };
+/** A two-column table whose cells may carry sizes of their own. */
+const table = (columns: unknown[]) => ({
+  name: 'table',
+  props: { columns },
+});
 
 describe('a size off the theme scale', () => {
   it('is off by default and a warning on client-report, with the nearest scale size as the fix', () => {
@@ -239,5 +244,145 @@ describe('one role at two sizes', () => {
       sized('Lead again.', 13)
     );
     expect(onReport(doc, QUALITY_CODES.TYPE_ROLE_DRIFT)).toEqual([]);
+  });
+});
+
+describe('the surfaces a size can be painted on', () => {
+  it('reads a sized cell as its role drifting from the size every other cell inherits', () => {
+    const doc = report(
+      table([
+        {
+          header: { content: 'Segment', font: { size: 14 } },
+          cells: [{ content: 'Enterprise', font: { size: 14 } }],
+        },
+        { header: { content: 'Revenue' }, cells: [{ content: '4.2' }] },
+      ])
+    );
+    expect(
+      onReport(doc, QUALITY_CODES.TYPE_ROLE_DRIFT).map((finding) => ({
+        path: finding.path,
+        expected: finding.evidence?.expected,
+      }))
+    ).toEqual([
+      {
+        path: '/children/0/children/0/props/columns/0/header/font/size',
+        expected: 9,
+      },
+      {
+        path: '/children/0/children/0/props/columns/0/cells/0/font/size',
+        expected: 9.5,
+      },
+    ]);
+  });
+
+  it('reads a size off a component nested in a cell, which lives outside the walk', () => {
+    const doc = report(
+      table([
+        {
+          header: { content: 'Segment' },
+          cells: [
+            {
+              content: {
+                name: 'paragraph',
+                props: { text: 'One', font: { size: 14 } },
+              },
+            },
+            {
+              content: {
+                name: 'paragraph',
+                props: { text: 'Two', font: { size: 14 } },
+              },
+            },
+          ],
+        },
+      ])
+    );
+    expect(
+      onReport(doc, QUALITY_CODES.TYPE_ROLE_DRIFT).map(
+        (finding) => finding.path
+      )
+    ).toEqual([
+      '/children/0/children/0/props/columns/0/cells/0/content/props/font/size',
+      '/children/0/children/0/props/columns/0/cells/1/content/props/font/size',
+    ]);
+  });
+
+  it('reads a whole table sized at once as one size off the scale', () => {
+    const doc = report({
+      name: 'table',
+      props: {
+        cellDefaults: { font: { size: 14 } },
+        columns: [
+          { header: { content: 'Segment' }, cells: [{ content: 'One' }] },
+        ],
+      },
+    });
+    const [finding] = onReport(doc, QUALITY_CODES.TYPE_OFF_SCALE);
+    expect(finding).toMatchObject({
+      path: '/children/0/children/0/props/cellDefaults/font/size',
+      evidence: { actual: 14, expected: 13, unit: 'pt' },
+      fixes: [
+        {
+          op: 'replace',
+          path: '/children/0/children/0/props/cellDefaults/font/size',
+          value: 13,
+        },
+      ],
+    });
+  });
+
+  it('counts the sizes a table paints even where nothing authored one', () => {
+    const doc = report(
+      table([{ header: { content: 'Segment' }, cells: [{ content: 'One' }] }])
+    );
+    const [count] = findings(doc, QUALITY_CODES.TYPE_SIZE_COUNT, {
+      profile: { ...profile('client-report'), parameters: {} },
+      policy: {
+        rules: { 'docx/size-count': { parameters: { maximumSizes: 1 } } },
+      },
+    });
+    // tableHeader 9pt and tableCell 9.5pt, off the theme, with no author to ask.
+    expect(count.context?.sizes).toEqual([9, 9.5]);
+  });
+
+  it('reads authored sizes off a section header and footer', () => {
+    const doc = report(para('Body.'));
+    doc.children[0].props = {
+      header: [sized('Running head.', 14)],
+      footer: [sized('Confidential.', 14)],
+    };
+    expect(
+      onReport(doc, QUALITY_CODES.TYPE_OFF_SCALE).flatMap(
+        (finding) => finding.fixes ?? []
+      )
+    ).toEqual([
+      {
+        op: 'replace',
+        path: '/children/0/props/header/0/props/font/size',
+        value: 13,
+      },
+      {
+        op: 'replace',
+        path: '/children/0/props/footer/0/props/font/size',
+        value: 13,
+      },
+    ]);
+  });
+
+  it('says nothing about chrome a block drew, on a theme whose scale never names its sizes', () => {
+    // The running head paints 8pt from the theme's tracker role. On `minimal`
+    // there is no such role and no scale, so an authored 8pt would be off
+    // scale — but the author never wrote it and has no pointer to patch.
+    const doc = report(
+      block('running-head', { title: 'Report' }),
+      para('Body.')
+    );
+    doc.props.theme = 'minimal';
+    for (const code of [
+      QUALITY_CODES.TYPE_OFF_SCALE,
+      QUALITY_CODES.TYPE_ROLE_DRIFT,
+    ]) {
+      expect(onReport(doc, code)).toEqual([]);
+    }
   });
 });

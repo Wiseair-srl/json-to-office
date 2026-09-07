@@ -230,7 +230,7 @@ export const QUALITY_RULES: Record<FormatName, readonly QualityRuleInfo[]> = {
       category: 'consistency',
       defaultSeverity: 'warning',
       description:
-        'A block slot with a role the profile requires — a takeaway, a source — left empty. Off unless a profile names roles.',
+        'A block slot with a role a profile or policy requires — a takeaway, a source — left empty. Off until one names roles.',
       parameters: [
         {
           name: 'required',
@@ -247,7 +247,7 @@ export const QUALITY_RULES: Record<FormatName, readonly QualityRuleInfo[]> = {
       category: 'consistency',
       defaultSeverity: 'warning',
       description:
-        'A body section without the running head the profile expects. Off unless a profile names parts.',
+        'A body section without the running head a profile or policy expects. Off until one names parts.',
       parameters: [
         {
           name: 'required',
@@ -271,7 +271,7 @@ export const QUALITY_RULES: Record<FormatName, readonly QualityRuleInfo[]> = {
       category: 'consistency',
       defaultSeverity: 'warning',
       description:
-        'An authored size the theme never paints: not a style, not a font role, not a step of its scale. Off unless a profile enables it.',
+        'An authored size the theme never paints: not a style, not a font role, not a step of its scale. Off until a profile or policy enables it.',
       parameters: [],
     },
     {
@@ -280,7 +280,7 @@ export const QUALITY_RULES: Record<FormatName, readonly QualityRuleInfo[]> = {
       category: 'consistency',
       defaultSeverity: 'warning',
       description:
-        'More distinct text sizes on the page than the profile allows, blocks included. Off unless a profile enables it.',
+        'More distinct text sizes than maximumSizes allows, blocks included. Off until a profile or policy enables it.',
       parameters: [
         {
           name: 'maximumSizes',
@@ -297,7 +297,7 @@ export const QUALITY_RULES: Record<FormatName, readonly QualityRuleInfo[]> = {
       category: 'consistency',
       defaultSeverity: 'warning',
       description:
-        'One heading level or paragraph style painted at two sizes; the theme size is the fix. Off unless a profile enables it.',
+        'One heading level, table role or paragraph style painted at two sizes; the theme size is the fix. Off until a profile or policy enables it.',
       parameters: [],
     },
   ],
@@ -308,7 +308,7 @@ export const QUALITY_RULES: Record<FormatName, readonly QualityRuleInfo[]> = {
       category: 'composition',
       defaultSeverity: 'info',
       description:
-        'Slide dimensions: legacy 4:3, or a partially declared size.',
+        'Slide dimensions: partially declared, legacy 4:3, or a size matching no known preset.',
       parameters: [],
     },
     {
@@ -533,7 +533,7 @@ export const QUALITY_RULES: Record<FormatName, readonly QualityRuleInfo[]> = {
       category: 'consistency',
       defaultSeverity: 'warning',
       description:
-        'A block slot with a role the profile requires — a takeaway, a source — left empty. Off unless a profile names roles.',
+        'A block slot with a role a profile or policy requires — a takeaway, a source — left empty. Off until one names roles.',
       parameters: [
         {
           name: 'required',
@@ -550,7 +550,7 @@ export const QUALITY_RULES: Record<FormatName, readonly QualityRuleInfo[]> = {
       category: 'hierarchy',
       defaultSeverity: 'warning',
       description:
-        'An action-title slot that wraps past the lines the profile allows. Off at 0.',
+        'An action-title slot that wraps past the lines a profile or policy allows. Off at 0.',
       parameters: [
         {
           name: 'maxLines',

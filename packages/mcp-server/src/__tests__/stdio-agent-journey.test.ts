@@ -51,7 +51,7 @@ interface CatalogFormat {
   defaultRenderer: string;
   renderers: Array<{ id: string; default: boolean; components: string[] }>;
   components: Array<{ name: string; hasChildren: boolean; root: boolean }>;
-  themes: string[];
+  themes: Array<{ name: string; whenToUse: string; extended: boolean }>;
   starters: Starter[];
 }
 

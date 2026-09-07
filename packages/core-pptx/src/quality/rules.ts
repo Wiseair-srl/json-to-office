@@ -107,7 +107,8 @@ function estimateTextHeightPt(
 
 export const pptxCanvasRule: QualityRule<PptxQualityModel, PptxQualityFact> = {
   id: 'pptx/canvas',
-  description: 'Slide dimensions: legacy 4:3, or a partially declared size.',
+  description:
+    'Slide dimensions: partially declared, legacy 4:3, or a size matching no known preset.',
   code: QUALITY_CODES.CANVAS_UNSPECIFIED,
   category: 'composition',
   defaultSeverity: 'info',
@@ -1086,7 +1087,7 @@ export const pptxRequiredChromeRule: QualityRule<
 > = {
   id: 'pptx/required-chrome',
   description:
-    'A block slot with a role the profile requires — a takeaway, a source — left empty. Off unless a profile names roles.',
+    'A block slot with a role a profile or policy requires — a takeaway, a source — left empty. Off until one names roles.',
   code: QUALITY_CODES.CHROME_MISSING,
   category: 'consistency',
   defaultSeverity: 'warning',
@@ -1125,7 +1126,7 @@ export const pptxActionTitleRule: QualityRule<
 > = {
   id: 'pptx/action-title',
   description:
-    'An action-title slot that wraps past the lines the profile allows. Off at 0.',
+    'An action-title slot that wraps past the lines a profile or policy allows. Off at 0.',
   code: QUALITY_CODES.ACTION_TITLE_LENGTH,
   category: 'hierarchy',
   defaultSeverity: 'warning',

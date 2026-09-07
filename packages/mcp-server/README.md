@@ -262,7 +262,7 @@ The same catalogues, for clients that read resources. URIs are stable.
 | `jto://guide/design/pptx`    | The same for PPTX.                                                                                                    |
 | `jto://blocks`               | JSON block authoring references derived from playground templates; copy definitions into the document before use.     |
 | `jto://blueprints`           | Every blueprint in full — theme, profile, definitions and each variant's plan; `jto_discover` carries the summaries.  |
-| `jto://templates`            | Every starter document.                                                                                               |
+| `jto://templates`            | Every starter document, plus the manifest of every bundled gallery template.                                          |
 | `jto://schema/docx/document` | Generated JSON Schema for a complete `.docx` document, by renderer.                                                   |
 | `jto://schema/pptx/document` | The same for `.pptx`.                                                                                                 |
 | `jto://schema/docx/theme`    | Generated JSON Schema for a `.docx` theme file, as passed to `themePath`.                                             |

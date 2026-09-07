@@ -242,8 +242,10 @@ The gallery templates are demonstration documents whose copy is lorem ipsum,
 so they carry this finding by design; the calibration suite records the count
 per template rather than suppressing the rule.
 
-Every rule carries a one-sentence `description`, and the MCP server renders
-the whole pack — with each rule's code, category, default severity, certainty,
+Every built-in rule carries a one-sentence `description` — the field is
+optional on the `QualityRule` contract, so a rule pack of your own may omit it
+and the guide prints nothing in its place. The MCP server renders the whole
+pack — with each rule's code, category, default severity, certainty,
 parameters and whether a profile has to switch it on — into
 `jto://guide/design/<format>` beside the themes, profiles, blocks and
 blueprints, so the guidance an agent reads is generated from the data the
@@ -275,17 +277,30 @@ does: the theme supplies the values and the profile supplies the requirement.
 styles, its font roles, every step of its declared type scale — so a custom
 theme is judged by its own list and a block's compiled paragraphs, whose sizes
 bind to those styles, are never reported. `docx/size-count` counts what
-reaches the page, blocks included, against a ceiling only a profile sets; it
-counts per document, because static analysis has no page model for flowed
-text, and it offers no fix, because which size to drop is a judgement.
+reaches the page, blocks included, against a ceiling of eight that a profile
+or a policy can move through `maximumSizes`; it counts per document, because
+static analysis has no page model for flowed text, and it offers no fix,
+because which size to drop is a judgement.
 `docx/type-scale` yields to `docx/role-drift` on any pointer the latter
 reports, so one size never receives two different fixes, and it reports one
 finding per role and size whose patch snaps every place together, so a repair
 never leaves the role at two sizes.
-`docx/role-drift` groups paragraphs by the style they inherit — `heading2`,
-`normal`, a `themeStyle` — and reports an authored size that departs from the
-theme's size for that role while the role is painted at more than one size; a
-role overridden the same way everywhere is a choice, not drift. Each finding's
+`docx/role-drift` groups text by the style it inherits — `heading2`, `normal`,
+a `themeStyle` — and reports an authored size that departs from the theme's
+size for that role while the role is painted at more than one size; a role
+overridden the same way everywhere is a choice, not drift.
+
+All three read every surface that paints text, not only body paragraphs:
+headings and paragraphs, table cells and header cells — including a component
+nested in a cell, which lives outside the component tree the walk reaches — as
+the `tableCell` and `tableHeader` roles, counted against the size every
+untouched cell inherits,
+and the paragraphs of a section's running head and footer (as the `header` and
+`footer` roles, which the theme gives no size of their own, so they are checked
+against the scale and never for drift). Each finding points at the pointer that
+wrote the size — `…/props/font/size` on a node, `…/props/columns/0/cells/2/font/size`
+on a cell — and a size a block compiled from its own definition is never
+reported, because the author has nothing there to patch. Each finding's
 `evidence.values.source` names `theme` or `profile`. All three are off on the
 default profile: an editorial layout sets display sizes by hand, and only an
 archetype decides that a document must keep to the scale.
