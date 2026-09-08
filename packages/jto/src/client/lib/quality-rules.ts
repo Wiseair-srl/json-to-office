@@ -266,6 +266,23 @@ export const QUALITY_RULES: Record<FormatName, readonly QualityRuleInfo[]> = {
       ],
     },
     {
+      id: 'docx/exhibit-required',
+      label: 'Exhibit required',
+      category: 'composition',
+      defaultSeverity: 'warning',
+      description:
+        'Fewer data exhibits — charts, or tables of two or more columns — than a profile or policy expects. Off until one sets a minimum.',
+      parameters: [
+        {
+          name: 'minimumExhibits',
+          type: 'number',
+          default: 1,
+          description:
+            'Charts plus tables of two or more columns the document must carry; a kpi-row does not count.',
+        },
+      ],
+    },
+    {
       id: 'docx/type-scale',
       label: 'Type scale',
       category: 'consistency',

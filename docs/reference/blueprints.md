@@ -23,10 +23,10 @@ Blueprints live as JSON files under `packages/core-docx/src/templates/blueprints
 
 A report for a client or a public administration, on the `consulting` theme and judged by the `client-report` profile: a cover in its own section, then sections under one running head that tracks the section and numbers the pages, key takeaways first, a takeaway and a source under every figure, notes and sources last.
 
-| Variant      | Structure                                                                                                                              | Pages |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------- | ----- |
-| `data-heavy` | Cover; takeaways, a KPI row and body; a chart with its takeaway; a data table with a note; next steps and the notes and sources        | 4–8   |
-| `narrative`  | Cover; takeaways and two paragraphs; a section with a note; a section with a KPI row as evidence; next steps and the notes and sources | 3–6   |
+| Variant      | Structure                                                                                                                                               | Pages |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| `data-heavy` | Cover; takeaways, a KPI row and body; a chart with its takeaway; a data table with a note; next steps and the notes and sources                         | 4–8   |
+| `narrative`  | Cover; takeaways and two paragraphs; a section with a note; a section with a data table and a KPI row as evidence; next steps and the notes and sources | 3–6   |
 
 Both variants invoke `cover`, `running-head`, `section-opener`, `key-takeaways`, `kpi-row`, `callout`, `footnotes` and, through them, `source-line`; the data-heavy one adds `chart-figure` and `data-table`. The chart slot holds a `highcharts` component whose categories, series name and axis title are markers, so the export server draws a placeholder chart until the data arrives and generation refuses the document until every marker is gone.
 
