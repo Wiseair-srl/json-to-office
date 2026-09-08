@@ -18,6 +18,7 @@ function run(overrides: Partial<RunMetrics> = {}): RunMetrics {
     iterations: 2,
     turns: 14,
     foreignTools: [],
+    environmentFailures: [],
     toolCalls: 9,
     cost: { inputTokens: 100, outputTokens: 50, usd: 0.01 },
     wallMs: 1000,

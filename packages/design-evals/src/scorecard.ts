@@ -33,6 +33,8 @@ export interface ScorecardTotals {
   renderedFindingsUnmapped: number;
   /** Runs that reached for a tool outside the server. Should be 0 in a cold set. */
   contaminated: number;
+  /** Runs that met a render-environment failure (see `RunRecord.environmentFailures`). */
+  environmentFailures: number;
   medianIterations: number;
   medianTurns: number;
   medianPages: number;
@@ -186,6 +188,9 @@ export function totals(runs: readonly RunMetrics[]): ScorecardTotals {
     ),
     withPlaceholderLeak: runs.filter((run) => run.placeholderLeaks > 0).length,
     contaminated: runs.filter((run) => run.foreignTools.length > 0).length,
+    environmentFailures: runs.filter(
+      (run) => (run.environmentFailures ?? []).length > 0
+    ).length,
     // Over completed runs: the median number of edits a run that produced
     // nothing took is not a number about iteration.
     medianIterations: median(completed.map((run) => run.iterations)),

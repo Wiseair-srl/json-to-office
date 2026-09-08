@@ -362,6 +362,12 @@ export async function main(argv: readonly string[]): Promise<number> {
         'this set does not measure the product alone'
     );
   }
+  if (totals.environmentFailures > 0) {
+    line(
+      `WARNING: ${totals.environmentFailures}/${totals.runs} run(s) met a render-environment failure (export server) — ` +
+        'their documents are not what a healthy host would have produced; check the server and rerun'
+    );
+  }
   if (!scorecard.judge) {
     // "Builds clean" is a floor, and without this line a reader takes it for
     // the programme's shipping metric — which is the judge's, and unasked.

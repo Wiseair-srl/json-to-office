@@ -89,6 +89,12 @@ export interface RunMetrics extends DocumentMetrics {
    * and the run is not comparable to one that is not.
    */
   foreignTools: string[];
+  /**
+   * Distinct render-environment failures the agent met (an export server
+   * refusing or unreachable). The run may still have delivered, with the
+   * chart dropped; it is not comparable to a run on a healthy host.
+   */
+  environmentFailures: string[];
   toolCalls: number;
   cost: RunCost;
   wallMs: number;
@@ -124,6 +130,7 @@ export function failedRun(
     iterations: 0,
     turns: 0,
     foreignTools: [],
+    environmentFailures: [],
     toolCalls: 0,
     cost: { inputTokens: 0, outputTokens: 0 },
     wallMs: 0,
