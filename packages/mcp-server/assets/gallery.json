@@ -30,11 +30,11 @@
       },
       "externalAssets": ["media/client-report-blocks/delivery-model.png"],
       "externalFonts": [],
-      "hash": "f604315829301428f1aed51a0ddd6e281c77466a2b00ca229cbf9cde696aa97e",
+      "hash": "7184eb5a21e84bca74a42f3e9cbaafd87089e442381026a3c89e923d6be0fe54",
       "bytes": {
-        "document": 46793,
-        "gzipped": 5988,
-        "thumbnail": 32515
+        "document": 46284,
+        "gzipped": 5902,
+        "thumbnail": 32202
       }
     },
     {
