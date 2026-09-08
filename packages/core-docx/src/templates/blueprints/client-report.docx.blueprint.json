@@ -264,7 +264,7 @@
       ]
     },
     "narrative": {
-      "description": "Argument-led: takeaways, then three sections of prose with one KPI row and one note as evidence, next steps last.",
+      "description": "Argument-led: takeaways, then three sections of prose with one KPI row and one note as evidence, next steps last; one data table in the analysis section carries the numbers the argument leans on.",
       "whenToUse": "The brief is a position, an assessment or a recommendation with few numbers; the reader follows an argument.",
       "pages": {
         "min": 3,
@@ -399,6 +399,28 @@
               "name": "paragraph",
               "props": {
                 "text": "{{Body: two or three short paragraphs of evidence for the section title, each opening with its claim}}"
+              }
+            },
+            {
+              "name": "block",
+              "props": {
+                "ref": "data-table",
+                "slots": {
+                  "title": "{{Table title: what it compares, and the period}}",
+                  "labelHeader": "{{Row label}}",
+                  "labels": ["{{Row 1}}", "{{Row 2}}", "{{Row 3}}"],
+                  "columns": [
+                    {
+                      "header": "{{Measure (unit)}}",
+                      "cells": ["{{0.0}}", "{{0.0}}", "{{0.0}}"]
+                    },
+                    {
+                      "header": "{{Change}}",
+                      "cells": ["{{0.0}}", "{{0.0}}", "{{0.0}}"]
+                    }
+                  ],
+                  "source": "{{Source: system or document, date}}"
+                }
               }
             },
             {

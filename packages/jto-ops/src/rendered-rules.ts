@@ -110,7 +110,7 @@ export const RENDERED_QUALITY_RULES: QualityRulePack = {
       id: 'rendered/page-underfilled',
       code: QUALITY_CODES.RENDERED_PAGE_UNDERFILLED,
       description:
-        'A docx page, other than the first and the last, whose ink stops less than halfway down the body area before the next page begins (`context.fill` is the share used): a section that ends early on its own page, argued in a paragraph where a table or chart was owed.',
+        'A docx page whose ink stops well above the footer: a middle page less than half filled before the next page begins (`kind: middle-page`), or a last page less than a quarter filled that holds only the tail of the document (`kind: last-page`); `context.fill` is the share used. The first page is never judged.',
       category: 'composition',
       defaultSeverity: 'info',
       formats: ['docx'],

@@ -396,7 +396,7 @@ describe('analyzeRenderedDocument', () => {
           },
           {
             ...dressed([word('End', 10, 100)]),
-            ink: ink([3, ...range(5, 40), 277]),
+            ink: ink([3, ...range(5, 120), 277]),
           },
         ],
         inventory: [
@@ -412,7 +412,12 @@ describe('analyzeRenderedDocument', () => {
           severity: 'info',
           path: '/children/1',
           message: expect.stringMatching(/Page 2 .*19%/),
-          context: { mapping: 'mapped', page: 2, fill: 0.19 },
+          context: {
+            mapping: 'mapped',
+            page: 2,
+            fill: 0.19,
+            kind: 'middle-page',
+          },
         }),
       ]);
     });
@@ -430,7 +435,7 @@ describe('analyzeRenderedDocument', () => {
           },
           {
             ...dressed([word('twelve', 10, 100), word('percent', 50, 100)]),
-            ink: ink([3, ...range(30, 40), 277]),
+            ink: ink([3, ...range(30, 120), 277]),
           },
         ],
         inventory: [
@@ -465,7 +470,7 @@ describe('analyzeRenderedDocument', () => {
           },
           {
             ...dressed([word('End', 10, 100)]),
-            ink: ink([3, ...range(5, 20), 277]),
+            ink: ink([3, ...range(5, 95), 277]),
           },
         ],
         inventory: [
@@ -476,6 +481,37 @@ describe('analyzeRenderedDocument', () => {
         ],
       });
       expect(codes(result.findings)).toEqual([]);
+    });
+
+    it('reports a stub last page that holds only the tail of the document', () => {
+      const result = analyzeRenderedDocument({
+        format: 'docx',
+        pages: [
+          { ...dressed([word('Cover', 10, 300)]), ink: ink([3, 100, 277]) },
+          {
+            ...dressed([word('Full', 10, 100)]),
+            ink: ink([3, ...range(5, 250), 277]),
+          },
+          {
+            ...dressed([word('Notes', 10, 100)]),
+            ink: ink([3, ...range(5, 20), 277]),
+          },
+        ],
+        inventory: [
+          ...chrome,
+          entry('/children/1/children/0/props/text', 'Full'),
+          entry('/children/2/children/0/props/text', 'Notes'),
+        ],
+      });
+      expect(result.findings).toEqual([
+        expect.objectContaining({
+          code: QUALITY_CODES.RENDERED_PAGE_UNDERFILLED,
+          path: '/children/2',
+          message: expect.stringMatching(/Page 3, the last, is \d+% filled/),
+          suggestion: expect.stringMatching(/notes and sources/),
+          context: expect.objectContaining({ page: 3, kind: 'last-page' }),
+        }),
+      ]);
     });
 
     it('stays silent without an ink profile, and on a deck', () => {

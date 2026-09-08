@@ -97,6 +97,13 @@ export interface RenderedAnalysisInput {
  */
 export const MINIMUM_PAGE_FILL = 0.5;
 
+/**
+ * The last page may end wherever the text ends; but a last page that holds
+ * only the tail — the notes, a source line, one orphaned paragraph — is a
+ * stub, and the judge names it as one. Below this share it is reported.
+ */
+export const MINIMUM_LAST_PAGE_FILL = 0.25;
+
 /** How a finding reached its pointer — always on `context.mapping`. */
 export type RenderedMapping = 'mapped' | 'ambiguous' | 'unmapped';
 
@@ -553,9 +560,8 @@ function draftRenderedFindings(input: RenderedAnalysisInput): RenderedDraft {
   // table fills a page without a word the geometry can see.
   if (format === 'docx') {
     pages.forEach((page, pageIndex) => {
-      if (!page.ink || pageIndex === 0 || pageIndex === pages.length - 1) {
-        return;
-      }
+      if (!page.ink || pageIndex === 0) return;
+      const last = pageIndex === pages.length - 1;
       const rowPt = page.heightPt / page.ink.rows;
       let headerBottom = 0;
       let footerTop = page.heightPt;
@@ -576,7 +582,7 @@ function draftRenderedFindings(input: RenderedAnalysisInput): RenderedDraft {
       const top = body[0] * rowPt;
       const bottom = (body[body.length - 1] + 1) * rowPt;
       const fill = Math.round(((bottom - top) / (footerTop - top)) * 100) / 100;
-      if (fill >= MINIMUM_PAGE_FILL) return;
+      if (fill >= (last ? MINIMUM_LAST_PAGE_FILL : MINIMUM_PAGE_FILL)) return;
       // The section owning the page: the top-level child of the last body
       // text mapped onto it.
       let owner: { path: string; yMax: number } | undefined;
@@ -602,15 +608,18 @@ function draftRenderedFindings(input: RenderedAnalysisInput): RenderedDraft {
           mapping: section ? 'mapped' : 'unmapped',
           page: pageIndex + 1,
           path: section ?? '',
-          message: `Page ${pageIndex + 1} is ${Math.round(fill * 100)}% filled: its content stops ${Math.round(footerTop - bottom)}pt above the footer and the next page begins anyway.`,
-          suggestion:
-            'Merge this section into its neighbour, or give the page the table or chart its argument owes. Do not pad it with prose: a short section on its own page reads as unfinished, a padded one reads as filler.',
+          message: last
+            ? `Page ${pageIndex + 1}, the last, is ${Math.round(fill * 100)}% filled: only the tail of the document reached it.`
+            : `Page ${pageIndex + 1} is ${Math.round(fill * 100)}% filled: its content stops ${Math.round(footerTop - bottom)}pt above the footer and the next page begins anyway.`,
+          suggestion: last
+            ? 'Keep the notes and sources with the paragraph before them, or tighten the page before so the document closes on a designed page rather than a stub.'
+            : 'Merge this section into its neighbour, or give the page the table or chart its argument owes. Do not pad it with prose: a short section on its own page reads as unfinished, a padded one reads as filler.',
           evidence: {
             summary: 'Share of the body area the page paints, header to footer',
-            expected: `≥ ${Math.round(MINIMUM_PAGE_FILL * 100)}%`,
+            expected: `≥ ${Math.round((last ? MINIMUM_LAST_PAGE_FILL : MINIMUM_PAGE_FILL) * 100)}%`,
             actual: fill,
           },
-          context: { fill },
+          context: { fill, kind: last ? 'last-page' : 'middle-page' },
         })
       );
     });

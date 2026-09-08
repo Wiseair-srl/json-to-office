@@ -897,6 +897,55 @@ export const docxRequiredChromeRule: QualityRule<
   },
 };
 
+/**
+ * A report that argues its numbers in prose. A data exhibit is a chart, or a
+ * table with at least two columns — a stat row is a summary, not an exhibit.
+ * Off by default; the client-report profile asks for one, because every
+ * brief in that archetype comes with numbers the reader will check.
+ */
+export const docxExhibitRequiredRule: QualityRule<
+  DocxQualityModel,
+  DocxQualityFact
+> = {
+  id: 'docx/exhibit-required',
+  description:
+    'Fewer data exhibits — charts, or tables of two or more columns — than a profile or policy expects. Off until one sets a minimum.',
+  code: QUALITY_CODES.EXHIBIT_MISSING,
+  category: 'composition',
+  defaultSeverity: 'warning',
+  defaultCertainty: 'deterministic',
+  formats: ['docx'],
+  defaultEnabled: false,
+  defaultParameters: { minimumExhibits: 1 },
+  evaluate: ({ facts, configuration, profile }) => {
+    const minimum = numberParameter(
+      configuration.parameters,
+      'minimumExhibits',
+      1
+    );
+    if (minimum <= 0) return [];
+    const charts = facts.filter((fact) => fact.kind === 'docx/chart').length;
+    const tables = facts.filter(
+      (fact): fact is DocxTableFact =>
+        fact.kind === 'docx/table' && fact.columns.length >= 2
+    ).length;
+    const exhibits = charts + tables;
+    if (exhibits >= minimum) return [];
+    return [
+      {
+        path: themeFact(facts)?.path ?? '/props',
+        message:
+          exhibits === 0
+            ? `The document carries no data exhibit — no chart, no table of two or more columns; the ${profile?.id ?? 'selected'} profile expects at least ${minimum}.`
+            : `The document carries ${exhibits} data exhibit(s); the ${profile?.id ?? 'selected'} profile expects at least ${minimum}.`,
+        suggestion:
+          'Put the numbers the argument leans on into a chart-figure or a data-table block, with a takeaway and a source, where the text discusses them. A kpi-row summarises; it does not count.',
+        context: { charts, tables, minimum },
+      },
+    ];
+  },
+};
+
 const SECTION_CHROME_PARTS = ['header', 'footer', 'pageNumber'] as const;
 
 /**
@@ -1221,6 +1270,7 @@ export const DOCX_QUALITY_RULES: QualityRulePack<
     docxPaletteRule,
     docxRequiredChromeRule,
     docxRunningHeadRule,
+    docxExhibitRequiredRule,
     docxTypeScaleRule,
     docxSizeCountRule,
     docxRoleDriftRule,
@@ -1232,7 +1282,7 @@ export const DOCX_QUALITY_PROFILES = {
     id: 'client-report',
     formats: ['docx'],
     description:
-      'Client or public-administration report: a running head with page numbers on every section after the cover, a takeaway and a source wherever a block declares them, no heading skipped, every size on the theme scale with at most eight in play, and no page rendered empty or left half blank under the running head.',
+      'Client or public-administration report: a running head with page numbers on every section after the cover, a takeaway and a source wherever a block declares them, no heading skipped, every size on the theme scale with at most eight in play, no page rendered empty or left half blank under the running head, and at least one chart or table.',
     rules: {
       'docx/required-chrome': {
         parameters: { required: ['takeaway', 'source'] },
@@ -1255,6 +1305,8 @@ export const DOCX_QUALITY_PROFILES = {
       // A section that ends early on its own page reads as unfinished; the
       // judge calls a page two-thirds blank a defect.
       'rendered/page-underfilled': { severity: 'warning' },
+      // A client report argues numbers: at least one chart or real table.
+      'docx/exhibit-required': { enabled: true },
     },
   },
   'executive-report': {
