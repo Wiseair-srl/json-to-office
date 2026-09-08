@@ -1487,7 +1487,7 @@
         {
           "name": "paragraph",
           "props": {
-            "text": "The inherited running header uses this section’s tracker and page width. Page numbers are native Word fields."
+            "text": "The inherited running header carries the document title and this section’s page width; the section continues on the page. Page numbers are native Word fields."
           }
         },
         {
