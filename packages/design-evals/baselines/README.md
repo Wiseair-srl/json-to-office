@@ -13,6 +13,9 @@ numbers; use fresh matched runs with the guards before making acceptance claims.
 | ----------------------------------------------------- | ---- | ------ | --------------- | ------------------------------------------ | ------------------- |
 | `2026-09-04-cold-server-2.0.0.json`                   | cold | 2.0.0  | claude-sonnet-5 | 40                                         | yes                 |
 | `2026-09-07-checkpoint-before-cold-server-4.4.0.json` | cold | 4.4.0  | claude-sonnet-5 | 24 (set `client-report-checkpoint`, 8 × 3) | yes (claude-opus-5) |
+| `2026-09-08-checkpoint-after-cold-server-4.4.2.json`  | cold | 4.4.2  | claude-sonnet-5 | 24 (set `client-report-checkpoint`, 8 × 3) | yes (claude-opus-5) |
+| `2026-09-08-rejudge-checkpoint-before.json`           | —    | —      | —               | 24 rejudged, same session as the next row  | claude-opus-5       |
+| `2026-09-08-rejudge-checkpoint-after.json`            | —    | —      | —               | 24 rejudged, same session as the row above | claude-opus-5       |
 
 ## The client-report checkpoint "before" set
 
@@ -43,6 +46,49 @@ head and footer as empty (`W_QUALITY_RENDERED_EMPTY_PAGE`, `kind: chrome-only`),
 and the client-report profile reports it at `warning`. The 0 rendered findings
 here were recorded under the older rule, so a non-zero count in the "after" set
 is partly the rule seeing more, not only the documents changing.
+
+## The client-report checkpoint "after" set
+
+`2026-09-08-checkpoint-after-cold-server-4.4.2.json` repeats the before set under
+matched conditions on main at `f0dd20e` (jto-ops and core-docx 4.4.2, mcp-server
+4.4.0): same eight briefs, three passes, cold, claude-sonnet-5, judged once by
+claude-opus-5, local Highcharts export server, delivery and retry guards on.
+24/24 delivered, 0 failed, 0 retries, 0 contaminated. The revision carries the
+two fixes the before set asked for: the chart credit is off, and the rendered
+pass sees a page that holds only its running head and footer.
+
+Read the headline with the judge drift beside it, or it reads backwards:
+
+|                            | before, judged 09-07 | after, judged 09-08 | before, rejudged 09-08 | after, rejudged 09-08 |
+| -------------------------- | -------------------- | ------------------- | ---------------------- | --------------------- |
+| would ship                 | 3/24                 | 2/24                | 2/24                   | 3/24                  |
+| level ≥4                   | 13/24                | 6/24                | 9/24                   | 5/24                  |
+| median level / genericness | 4 / 2                | 3 / 3               | 3 / 3                  | 3 / 2                 |
+
+The two rejudge files were produced in one sitting, before set first, so they
+share a zero. On that shared zero the sets are level for level equal in sum (76
+against 76 over 24 runs) and the whole gain sits in one brief:
+`cr-workforce-planning` goes 4, 1, 1 → 4 (ship), 4, 3. Those were the two runs
+the before set sank on empty pages under a running head. Every other brief moves
+by a step or nothing, in both directions. The before set's own two judgements
+(09-07 against 09-08) agree on shipping with kappa 0.33 and on level with 0.52;
+the after set's with 0.33 and 0.25. That drift is larger than any delta here
+except workforce's, which is why this set is a checkpoint and not acceptance.
+
+What the judge now says, in 24 rationales: the `highcharts.com` credit is gone
+(13 → 0 mentions); under-filled section pages — one heading and a paragraph,
+two-thirds of the sheet blank — in 18 of 24; the argument carried in prose
+where a table or chart was owed in 19 of 24. Both are the product's next
+lever, not the agent's: the blueprint gives every section its own page under
+the running head, and nothing measures page fill.
+
+Two runs carry a rendered integrity defect. Both are matcher false positives,
+recorded here so they are not counted as document defects:
+`cr-post-merger-integration#2` has a plain table whose wrapped cells pdftotext
+joined across columns on one row (clip at 47%, three cells "missing"; the sheet
+shows them complete), and `cr-workforce-planning#3` has a numeric cell `1.05`
+that lost its occurrence to `£1.05m` in the body. Column-aware line splitting
+in the rendered pass is the fix (#344).
 
 ## Reading one
 
