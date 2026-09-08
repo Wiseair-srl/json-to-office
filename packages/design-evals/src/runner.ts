@@ -113,6 +113,37 @@ export function countForeignTools(events: readonly AgentEvent[]): string[] {
   ].sort();
 }
 
+/**
+ * Tool responses that name a failure of the render environment rather than of
+ * the document: the Highcharts export server refusing or unreachable. A run
+ * that met one may still have delivered — the agent drops the chart and
+ * carries on — but what it delivered is not what the product would have
+ * made, so the run is not comparable to one on a healthy host.
+ */
+const ENVIRONMENT_FAILURE = [
+  /Highcharts export server returned \d+[^"\\]*/,
+  /Highcharts export server [^"\\]*(unreachable|not reachable|refused|timed out)[^"\\]*/i,
+  /export server[^"\\]*ECONNREFUSED[^"\\]*/,
+];
+
+export function countEnvironmentFailures(
+  events: readonly AgentEvent[]
+): string[] {
+  const seen = new Set<string>();
+  for (const event of events) {
+    if (event.type !== 'tool_result') continue;
+    const text =
+      typeof event.content === 'string'
+        ? event.content
+        : JSON.stringify(event.content ?? '');
+    for (const pattern of ENVIRONMENT_FAILURE) {
+      const match = pattern.exec(text);
+      if (match) seen.add(match[0].trim().slice(0, 120));
+    }
+  }
+  return [...seen].sort();
+}
+
 export function countIterations(events: readonly AgentEvent[]): number {
   const tools = events.filter(
     (event): event is Extract<AgentEvent, { type: 'tool_use' }> =>
@@ -332,6 +363,7 @@ export async function runBrief(options: RunBriefOptions): Promise<RunMetrics> {
     retries: attempts.length - 1,
     toolCalls: events.filter((event) => event.type === 'tool_use').length,
     foreignTools: countForeignTools(events),
+    environmentFailures: countEnvironmentFailures(events),
     iterations: attempts.reduce(
       (sum, entry) => sum + countIterations(entry.events),
       0

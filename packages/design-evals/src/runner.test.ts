@@ -15,7 +15,12 @@ import path from 'node:path';
 
 import type { AgentDriver, AgentEvent } from './agent.js';
 import type { Brief } from './corpus.js';
-import { briefPrompt, finalDocument, runBrief } from './runner.js';
+import {
+  briefPrompt,
+  countEnvironmentFailures,
+  finalDocument,
+  runBrief,
+} from './runner.js';
 
 const BRIEF: Brief = {
   id: 'sample-brief',
@@ -562,5 +567,36 @@ describe('runBrief', () => {
     expect(written).not.toContain(BRIEF.text);
     // Still fully identified — the hash says which brief this was.
     expect(written).toContain(BRIEF.hash);
+  });
+});
+
+describe('countEnvironmentFailures', () => {
+  it('names an export-server refusal found in a tool response, once', () => {
+    const failure = JSON.stringify({
+      ok: false,
+      diagnostics: [
+        {
+          code: 'E_PREVIEW_RENDER_FAILED',
+          message:
+            'Preview failed at the build stage: Highcharts export server returned 400: Bad Request',
+        },
+      ],
+    });
+    const events: AgentEvent[] = [
+      { type: 'tool_use', id: 'a', name: GENERATE, input: {} },
+      { type: 'tool_result', toolUseId: 'a', isError: false, content: failure },
+      { type: 'tool_use', id: 'b', name: GENERATE, input: {} },
+      { type: 'tool_result', toolUseId: 'b', isError: false, content: failure },
+      {
+        type: 'tool_result',
+        toolUseId: 'c',
+        isError: false,
+        content: '{"ok":true}',
+      },
+    ];
+    expect(countEnvironmentFailures(events)).toEqual([
+      'Highcharts export server returned 400: Bad Request',
+    ]);
+    expect(countEnvironmentFailures(events.slice(4))).toEqual([]);
   });
 });
