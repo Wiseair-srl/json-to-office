@@ -16,6 +16,7 @@ numbers; use fresh matched runs with the guards before making acceptance claims.
 | `2026-09-08-checkpoint-after-cold-server-4.4.2.json`  | cold | 4.4.2  | claude-sonnet-5 | 24 (set `client-report-checkpoint`, 8 × 3) | yes (claude-opus-5) |
 | `2026-09-08-rejudge-checkpoint-before.json`           | —    | —      | —               | 24 rejudged, same session as the next row  | claude-opus-5       |
 | `2026-09-08-rejudge-checkpoint-after.json`            | —    | —      | —               | 24 rejudged, same session as the row above | claude-opus-5       |
+| `2026-09-08-human-checkpoint-verdicts.json`           | —    | —      | —               | 48 absolute + 24 pairwise, Paolo, blind    | human               |
 
 ## The client-report checkpoint "before" set
 
@@ -93,6 +94,35 @@ one `W_QUALITY_RENDERED_FONT_SUBSTITUTED`, at `info`: the consulting theme's
 body face is Calibri, which this host does not have, so LibreOffice previewed
 it in Carlito. That is a fact about the render host, declared as such by the
 finding (`declared: false`), not a defect in the document.
+
+## Human calibration on the checkpoint sets
+
+`2026-09-08-human-checkpoint-verdicts.json` is Paolo's blind review of the same
+48 contact sheets the judge saw, in a guided page: one sheet at a time,
+shuffled across both sets, "would you send this to the client unchanged", then
+the 24 before/after pairs of the same brief and pass with sides randomised,
+"which would you rather send". This is the calibration #360 asked for.
+
+|                         | before | after |
+| ----------------------- | ------ | ----- |
+| Paolo would send        | 10/24  | 8/24  |
+| judge, original session | 3/24   | 2/24  |
+| judge, 09-08 session    | 2/24   | 3/24  |
+
+Pairwise, Paolo prefers the before document 12 times, the after document 6,
+and calls 6 ties; the rejudge levels imply 6, 3 and 15. Both readers agree the
+after set is not better. Every one of Paolo's 30 rejections names the same
+reason, empty or half-blank pages — the defect `rendered/page-underfilled`
+now reports.
+
+**The judge's ship flag is not Paolo's.** Agreement on shipping is 69% with
+the original session (kappa 0.22) and 60% with the rejudge (kappa 0.01): the
+judge answers "ship" for 5 of 48 where Paolo answers it for 18, and the two
+sets of five overlap Paolo's only by 4 and 2. The judge's _level_ tracks him
+better: Paolo sends 10 of the 14 documents the rejudge put at level 4 and 7 of
+the 30 at level 3. So for now read "excellent" (level ≥ 4) as the judge's
+sendability estimate and treat its `wouldShip` as advisory, as #360 item 5
+already says; recalibrating the ship question in the rubric is the follow-up.
 
 ## Reading one
 
