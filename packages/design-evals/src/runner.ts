@@ -121,7 +121,8 @@ export function countForeignTools(events: readonly AgentEvent[]): string[] {
  * made, so the run is not comparable to one on a healthy host.
  */
 const ENVIRONMENT_FAILURE = [
-  /Highcharts export server returned \d+[^"\\]*/,
+  // 4xx and 5xx only: a 200 in a tool response is the server working.
+  /Highcharts export server returned [45]\d\d[^"\\]*/,
   /Highcharts export server [^"\\]*(unreachable|not reachable|refused|timed out)[^"\\]*/i,
   /export server[^"\\]*ECONNREFUSED[^"\\]*/,
 ];

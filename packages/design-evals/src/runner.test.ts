@@ -599,4 +599,21 @@ describe('countEnvironmentFailures', () => {
     ]);
     expect(countEnvironmentFailures(events.slice(4))).toEqual([]);
   });
+
+  it('counts a 500 and ignores a 200 mentioned in a tool response', () => {
+    const result = (status: number, id: string): AgentEvent => ({
+      type: 'tool_result',
+      toolUseId: id,
+      isError: false,
+      content: JSON.stringify({
+        diagnostics: [
+          { message: `Highcharts export server returned ${status}: see log` },
+        ],
+      }),
+    });
+    expect(countEnvironmentFailures([result(200, 'a')])).toEqual([]);
+    expect(countEnvironmentFailures([result(500, 'b')])).toEqual([
+      'Highcharts export server returned 500: see log',
+    ]);
+  });
 });

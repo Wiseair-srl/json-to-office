@@ -9,14 +9,26 @@ guards. Their transcripts did not record tool responses, so successful artifact
 delivery cannot be verified from the scorecards alone. Preserve the original
 numbers; use fresh matched runs with the guards before making acceptance claims.
 
-| File                                                  | Mode | Server | Model           | Runs                                       | Judge               |
-| ----------------------------------------------------- | ---- | ------ | --------------- | ------------------------------------------ | ------------------- |
-| `2026-09-04-cold-server-2.0.0.json`                   | cold | 2.0.0  | claude-sonnet-5 | 40                                         | yes                 |
-| `2026-09-07-checkpoint-before-cold-server-4.4.0.json` | cold | 4.4.0  | claude-sonnet-5 | 24 (set `client-report-checkpoint`, 8 × 3) | yes (claude-opus-5) |
-| `2026-09-08-checkpoint-after-cold-server-4.4.2.json`  | cold | 4.4.2  | claude-sonnet-5 | 24 (set `client-report-checkpoint`, 8 × 3) | yes (claude-opus-5) |
-| `2026-09-08-rejudge-checkpoint-before.json`           | —    | —      | —               | 24 rejudged, same session as the next row  | claude-opus-5       |
-| `2026-09-08-rejudge-checkpoint-after.json`            | —    | —      | —               | 24 rejudged, same session as the row above | claude-opus-5       |
-| `2026-09-08-human-checkpoint-verdicts.json`           | —    | —      | —               | 48 absolute + 24 pairwise, Paolo, blind    | human               |
+| File                                                      | Mode | Server                                 | Model           | Runs                                          | Judge               |
+| --------------------------------------------------------- | ---- | -------------------------------------- | --------------- | --------------------------------------------- | ------------------- |
+| `2026-09-04-cold-server-2.0.0.json`                       | cold | 2.0.0                                  | claude-sonnet-5 | 40                                            | yes                 |
+| `2026-09-07-checkpoint-before-cold-server-4.4.0.json`     | cold | 4.4.0                                  | claude-sonnet-5 | 24 (set `client-report-checkpoint`, 8 × 3)    | yes (claude-opus-5) |
+| `2026-09-08-checkpoint-after-cold-server-4.4.2.json`      | cold | 4.4.2                                  | claude-sonnet-5 | 24 (set `client-report-checkpoint`, 8 × 3)    | yes (claude-opus-5) |
+| `2026-09-08-rejudge-checkpoint-before.json`               | —    | —                                      | —               | 24 rejudged, same session as the next row     | claude-opus-5       |
+| `2026-09-08-rejudge-checkpoint-after.json`                | —    | —                                      | —               | 24 rejudged, same session as the row above    | claude-opus-5       |
+| `2026-09-08-human-checkpoint-verdicts.json`               | —    | —                                      | —               | 48 absolute + 24 pairwise, Paolo, blind       | human               |
+| File                                                      | Mode | Server                                 | Model           | Runs                                          | Judge               |
+| --------------------------------------------------------- | ---- | -------------------------------------- | --------------- | --------------------------------------------- | ------------------- |
+| `2026-09-04-cold-server-2.0.0.json`                       | cold | 2.0.0                                  | claude-sonnet-5 | 40                                            | yes                 |
+| `2026-09-07-checkpoint-before-cold-server-4.4.0.json`     | cold | 4.4.0                                  | claude-sonnet-5 | 24 (set `client-report-checkpoint`, 8 × 3)    | yes (claude-opus-5) |
+| `2026-09-08-checkpoint-after-cold-server-4.4.2.json`      | cold | 4.4.2                                  | claude-sonnet-5 | 24 (set `client-report-checkpoint`, 8 × 3)    | yes (claude-opus-5) |
+| `2026-09-08-rejudge-checkpoint-before.json`               | —    | —                                      | —               | 24 rejudged, same session as the next row     | claude-opus-5       |
+| `2026-09-08-rejudge-checkpoint-after.json`                | —    | —                                      | —               | 24 rejudged, same session as the row above    | claude-opus-5       |
+| `2026-09-08-human-checkpoint-verdicts.json`               | —    | —                                      | —               | 48 absolute + 24 pairwise, Paolo, blind       | human               |
+| `2026-09-08-checkpoint-after-fill-cold-server-4.4.0.json` | cold | 4.4.0 (jto-ops 4.4.2 + page-fill rule) | claude-sonnet-5 | 24 (set `client-report-checkpoint`, 8 × 3)    | yes (claude-opus-5) |
+| `2026-09-08-rejudge-checkpoint-before-2.json`             | —    | —                                      | —               | 24 rejudged, same session as the next row     | claude-opus-5       |
+| `2026-09-08-rejudge-checkpoint-after-fill.json`           | —    | —                                      | —               | 24 rejudged, same session as the row above    | claude-opus-5       |
+| `2026-09-08-page-fill-measure.json`                       | —    | —                                      | —               | page fill of every delivered document, 3 sets | rendered pass       |
 
 ## The client-report checkpoint "before" set
 
@@ -126,10 +138,13 @@ already says; recalibrating the ship question in the rubric is the follow-up.
 
 ## The checkpoint set with the page-fill rule
 
-`2026-09-08-checkpoint-after-fill-cold-server-4.4.2.json` repeats the set once
+`2026-09-08-checkpoint-after-fill-cold-server-4.4.0.json` repeats the set once
 more on main after PR #398 (`rendered/page-underfilled` at `warning` under
-`client-report`; server built from `a9e4e22`, the working tree during the run
-carrying only harness commits on top). Same eight briefs, three passes, cold,
+`client-report`). The name carries the `mcp-server` package version the manifest
+records, 4.4.0; the rule lives in jto-ops and core-docx at 4.4.2, and the server
+was built from `a9e4e22`, with the working tree during the run carrying only
+harness commits on top. (The earlier `…-after-cold-server-4.4.2.json` was named
+after the jto-ops version; its manifest also records mcp-server 4.4.0.) Same eight briefs, three passes, cold,
 claude-sonnet-5, judged by claude-opus-5, local Highcharts export server
 checked healthy before and every three minutes during the run. 24/24
 delivered, 0 failed, 0 export-server errors, 16 of 24 documents carry a chart.
