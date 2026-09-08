@@ -6,7 +6,7 @@
       "archetype": "client report with document-local JSON blocks",
       "whenToUse": "Learn, copy and customize JSON definitions for a client report: cover, section-opener, key-takeaways, kpi-row, callout, data-table, chart-figure, figure, footnotes and running-head. Definitions and invocations are embedded in the complete playground document; the chart draws through the Highcharts export server.",
       "theme": "consulting",
-      "pages": 4,
+      "pages": 3,
       "components": {
         "block": 17,
         "columns": 1,
@@ -30,11 +30,11 @@
       },
       "externalAssets": ["media/client-report-blocks/delivery-model.png"],
       "externalFonts": [],
-      "hash": "7184eb5a21e84bca74a42f3e9cbaafd87089e442381026a3c89e923d6be0fe54",
+      "hash": "34ae5fcb2828d33b4d0f607f2b4c28c1e46c1051c84f5005aa39cf1558e30c6c",
       "bytes": {
-        "document": 46284,
-        "gzipped": 5902,
-        "thumbnail": 32202
+        "document": 46333,
+        "gzipped": 5916,
+        "thumbnail": 30565
       }
     },
     {

@@ -1,5 +1,6 @@
 {
   "generatedAt": "2026-09-08T11:35:42.684Z",
+  "note": "The working tree moved during this run (gitShaAtStart e0de105 → gitSha 41139bd, treeStableDuringRun false) by two commits that touched only the harness and the jto-ops source (the page-fill advice text, not rebuilt): buildFingerprintAtStart and buildFingerprint are identical, so every run authored against the same server build. Comparable on that basis; the README section records the provenance.",
   "corpus": {
     "kind": "development",
     "hash": "f9403601fec311787c6cd4ecfa8085d827f312120983cf736dc3eafe700e2b98",
