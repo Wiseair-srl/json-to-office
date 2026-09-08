@@ -152,10 +152,10 @@ export const CASES: CorpusCase[] = [
   // --------------------------------------------------------------------------
   {
     // A cover in its own section, then two sections under one running head:
-    // the tracker follows each opener, the footer carries n / N and the date,
-    // and the cover section stays chrome-free. Every value is the house
-    // recipe's: display title over a 3pt accent rule, tracker role in the
-    // header, footer role in the footer, hairlines in `rule`.
+    // the title heads every page, the sections flow, the footer carries n / N
+    // and the date, and the cover section stays chrome-free. Every value is
+    // the house recipe's: display title over a 3pt accent rule, tracker role
+    // in the header, footer role in the footer, hairlines in `rule`.
     name: 'blocks/report-chrome-consulting',
     document: doc(
       [
@@ -210,7 +210,6 @@ export const CASES: CorpusCase[] = [
               slots: {
                 number: '02',
                 title: 'Results by region',
-                tracker: 'Results',
               },
             },
           },
@@ -271,7 +270,6 @@ export const CASES: CorpusCase[] = [
           props: {
             ref: 'running-head',
             slots: {
-              tracker: 'Appendix',
               pageNumbers: false,
               confidentiality: 'Internal',
             },

@@ -202,7 +202,10 @@
                     "default": "accent"
                   }
                 },
-                "spacing": { "before": 0, "after": 4 },
+                "spacing": {
+                  "before": 0,
+                  "after": 4
+                },
                 "keepNext": true
               }
             }
@@ -213,7 +216,10 @@
               "text": {
                 "$slot": "/title"
               },
-              "spacing": { "before": 0, "after": 10 },
+              "spacing": {
+                "before": 0,
+                "after": 10
+              },
               "font": {
                 "family": {
                   "$theme": "/fonts/body/family",
@@ -231,7 +237,10 @@
                   "$theme": "/styles/display/color",
                   "default": "textPrimary"
                 },
-                "lineSpacing": { "type": "multiple", "value": 1.1 }
+                "lineSpacing": {
+                  "type": "multiple",
+                  "value": 1.1
+                }
               },
               "keepNext": true
             }
@@ -261,9 +270,15 @@
                     "$theme": "/styles/subtitle/color",
                     "default": "textPrimary"
                   },
-                  "lineSpacing": { "type": "multiple", "value": 1.1 }
+                  "lineSpacing": {
+                    "type": "multiple",
+                    "value": 1.1
+                  }
                 },
-                "spacing": { "before": 0, "after": 6 },
+                "spacing": {
+                  "before": 0,
+                  "after": 6
+                },
                 "keepNext": true
               }
             }
@@ -294,7 +309,10 @@
                     "default": "textPrimary"
                   }
                 },
-                "spacing": { "before": 0, "after": 4 }
+                "spacing": {
+                  "before": 0,
+                  "after": 4
+                }
               }
             }
           },
@@ -324,14 +342,17 @@
                     "default": "textPrimary"
                   }
                 },
-                "spacing": { "before": 0, "after": 2 }
+                "spacing": {
+                  "before": 0,
+                  "after": 2
+                }
               }
             }
           }
         ]
       },
       "section-opener": {
-        "description": "A numbered section heading which sets the general section tracker.",
+        "description": "A numbered section heading.",
         "slots": {
           "number": {
             "type": "string",
@@ -344,20 +365,6 @@
             "oneLine": true,
             "maxWords": 12,
             "required": true
-          },
-          "tracker": {
-            "type": "string",
-            "oneLine": true,
-            "maxWords": 3,
-            "required": false
-          }
-        },
-        "section": {
-          "tracker": {
-            "$slot": "/tracker",
-            "default": {
-              "$slot": "/title"
-            }
           }
         },
         "body": [
@@ -403,18 +410,12 @@
         ]
       },
       "running-head": {
-        "description": "Document title/section tracker and page fields, inherited by subsequent sections.",
+        "description": "Document title in the header and confidentiality, page fields and date in the footer, inherited by every later section; those sections continue on the page.",
         "slots": {
           "title": {
             "type": "string",
             "oneLine": true,
             "maxWords": 6,
-            "required": false
-          },
-          "tracker": {
-            "type": "string",
-            "oneLine": true,
-            "maxWords": 3,
             "required": false
           },
           "confidentiality": {
@@ -443,24 +444,11 @@
               "name": "paragraph",
               "props": {
                 "text": {
-                  "$join": [
-                    {
-                      "$slot": "/title",
-                      "default": {
-                        "$context": "/document/title",
-                        "default": ""
-                      }
-                    },
-                    {
-                      "$context": "/section/tracker",
-                      "default": {
-                        "$slot": "/tracker",
-                        "default": ""
-                      }
-                    }
-                  ],
-                  "separator": "\t",
-                  "keepEmpty": true
+                  "$slot": "/title",
+                  "default": {
+                    "$context": "/document/title",
+                    "default": ""
+                  }
                 },
                 "font": {
                   "family": {
@@ -480,15 +468,6 @@
                     "default": "textMuted"
                   }
                 },
-                "tabStops": [
-                  {
-                    "type": "right",
-                    "position": {
-                      "$measure": "width",
-                      "unit": "twip"
-                    }
-                  }
-                ],
                 "spacing": {
                   "before": 0,
                   "after": 0
@@ -958,7 +937,9 @@
               "repeatHeaderOnPageBreak": true,
               "rows": {
                 "$each": "/labels",
-                "template": { "cantSplit": true }
+                "template": {
+                  "cantSplit": true
+                }
               },
               "columns": [
                 {
@@ -967,9 +948,17 @@
                     "content": {
                       "$slot": "/labelHeader"
                     },
-                    "padding": { "left": 0, "right": 6 }
+                    "padding": {
+                      "left": 0,
+                      "right": 6
+                    }
                   },
-                  "cellDefaults": { "padding": { "left": 0, "right": 6 } },
+                  "cellDefaults": {
+                    "padding": {
+                      "left": 0,
+                      "right": 6
+                    }
+                  },
                   "cells": {
                     "$each": "/labels",
                     "template": {
@@ -993,7 +982,10 @@
                         "then": "right",
                         "else": "left"
                       },
-                      "padding": { "left": 6, "right": 0 }
+                      "padding": {
+                        "left": 6,
+                        "right": 0
+                      }
                     },
                     "cellDefaults": {
                       "horizontalAlignment": {
@@ -1003,7 +995,10 @@
                         "then": "right",
                         "else": "left"
                       },
-                      "padding": { "left": 6, "right": 0 }
+                      "padding": {
+                        "left": 6,
+                        "right": 0
+                      }
                     },
                     "cells": {
                       "$each": {
@@ -1368,8 +1363,7 @@
             "ref": "section-opener",
             "slots": {
               "number": "01",
-              "title": "Delivery improvements supported growth",
-              "tracker": "Performance"
+              "title": "Delivery improvements supported growth"
             }
           }
         },
@@ -1454,8 +1448,7 @@
             "ref": "section-opener",
             "slots": {
               "number": "02",
-              "title": "Focus the next quarter on retention",
-              "tracker": "Recommendations"
+              "title": "Focus the next quarter on retention"
             }
           }
         },

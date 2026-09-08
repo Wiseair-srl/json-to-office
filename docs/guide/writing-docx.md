@@ -179,7 +179,7 @@ A later section can reuse the previous section's header or footer by passing the
 
 Open the **client-report-blocks.docx.json** playground template for a complete report with inline definitions for cover, takeaways, section openers, running heads and an adaptive metric row. Copy its `props.blocks` definitions along with the invocations you use. These names are template examples, not engine components.
 
-A running-head definition supplies general `section.header` / `section.footer` effects with `scope: "following"`. Each section-opener updates `section.tracker`; inherited chrome resolves the current tracker and section page width. An authored section header, footer or page-break setting takes precedence. Keep the cover in its own earlier section to omit the running head there.
+A running-head definition supplies general `section.header` / `section.footer` effects with `scope: "following"`. Inherited chrome resolves the receiving section's page width; the sections that inherit it continue on the page, only the declaring section starts a new one. An authored section header, footer or page-break setting takes precedence. Keep the cover in its own earlier section to omit the running head there.
 
 ```json
 {

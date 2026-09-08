@@ -256,6 +256,12 @@ function finishDocxBlocks<T>(
         ? { ...section.props }
         : {};
       if (chrome) {
+        // A following section inherits the header and footer, not the page
+        // break: the running head belongs to every page, the break only to
+        // the section that declared it (after a cover). Sections under one
+        // running head continue on the page unless the theme or the author
+        // breaks them.
+        const declaring = local.includes(chrome);
         const environment = {
           ...chrome.environment,
           context: {
@@ -278,7 +284,7 @@ function finishDocxBlocks<T>(
           );
           props[part] = evaluator.expand(compiled, `${path}/props/${part}`);
         }
-        if (props.pageBreak === undefined)
+        if (props.pageBreak === undefined && declaring)
           props.pageBreak = chrome.settings.pageBreak ?? true;
       }
       // A local explicit state-setting page break is useful without any chrome.

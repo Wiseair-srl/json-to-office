@@ -127,20 +127,18 @@ describe('JSON report blocks from playground templates', () => {
         .map((v: any) => v.props.text)
     ).toEqual(['', 'Only the title']);
   });
-  it('applies section trackers, inherited chrome and each section’s page width', () => {
+  it('inherits chrome and each section’s page width; only the declaring section breaks the page', () => {
     const expanded = expandBlocks(example(), consultingTheme);
     expect(expanded.document.children[0].props.header).toBeUndefined();
     const report = expanded.document.children[1];
     const letter = expanded.document.children[2];
-    expect(report.props.header[0].props.text).toBe(
-      'Client performance report\tPerformance'
-    );
-    expect(letter.props.header[0].props.text).toBe(
-      'Client performance report\tRecommendations'
-    );
-    expect(letter.props.header[0].props.tabStops[0].position).toBe(10800);
+    expect(report.props.header[0].props.text).toBe('Client performance report');
+    expect(letter.props.header[0].props.text).toBe('Client performance report');
     expect(letter.props.footer[1].props.tabStops[0].position).toBe(5400);
-    expect(letter.props.pageBreak).toBe(true);
+    // The running head starts its own section on a new page (after the
+    // cover); a section that merely inherits it continues on the page.
+    expect(report.props.pageBreak).toBe(true);
+    expect(letter.props.pageBreak).toBeUndefined();
   });
   it('honors authored section parts and page breaks', () => {
     const input = example();
@@ -188,7 +186,7 @@ describe('JSON report blocks from playground templates', () => {
       .join('');
     expect(main).toContain('Growth improved');
     expect(main).toContain('Heading1');
-    expect(headers).toContain('Recommendations');
+    expect(headers).toContain('Client performance report');
     expect(footers).toContain('PAGE');
     expect(footers).toContain('NUMPAGES');
   });

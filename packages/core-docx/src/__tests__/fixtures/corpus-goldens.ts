@@ -27,9 +27,9 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'blocks/report-data-fallback':
     '3e454135943d9cfa39831b79abd897c5214d90ba3223701aed076a3e169a9d98',
   'blocks/report-chrome-fallback':
-    '0ee039b7b3b347380e9727e86e6b050a2b944b1363d3d0ff0c8ebd501237349a',
+    '3d5a3f961bdafaa88e666f6cdf3a659062015051ed57a2302ce85689976c5fc1',
   'blocks/report-chrome-consulting':
-    '9f9c0bf58a67bdf7e020dec1a35783a31fe6864260ed0b64388789ef81455af9',
+    '44f2d26b9b8a3808ed039684171b65fb851838d97f061f040b5ed9f15902da91',
   'blocks/key-takeaways-fallback':
     '1abd37c335d7e73ff5461dbc08bd73fc11049aa8c11dfc4e5df210d7db94d6d4',
   'blocks/key-takeaways-consulting':

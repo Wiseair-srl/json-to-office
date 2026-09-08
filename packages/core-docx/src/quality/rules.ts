@@ -946,7 +946,7 @@ export const docxRunningHeadRule: QualityRule<
               `${profile?.id ?? 'selected'} profile expects a running head ` +
               `on every section after the cover.`,
             suggestion:
-              'Invoke a running-head block at the top of the first body section: its section effect fills every later section with the tracker and n / N.',
+              'Invoke a running-head block at the top of the first body section: its section effect fills every later section with the title and n / N.',
             context: { section: fact.index, missing },
           },
         ];
