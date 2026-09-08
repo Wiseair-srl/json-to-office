@@ -88,7 +88,11 @@ recorded here so they are not counted as document defects:
 joined across columns on one row (clip at 47%, three cells "missing"; the sheet
 shows them complete), and `cr-workforce-planning#3` has a numeric cell `1.05`
 that lost its occurrence to `£1.05m` in the body. Column-aware line splitting
-in the rendered pass is the fix (#344).
+in the rendered pass is the fix (#344). The same post-merger run also records
+one `W_QUALITY_RENDERED_FONT_SUBSTITUTED`, at `info`: the consulting theme's
+body face is Calibri, which this host does not have, so LibreOffice previewed
+it in Carlito. That is a fact about the render host, declared as such by the
+finding (`declared: false`), not a defect in the document.
 
 ## Reading one
 

@@ -148,24 +148,23 @@ export function comparableRuns(
 }
 
 /**
- * Where the runner left this run's sheet. A repeated set writes
- * `runs/<brief>#<pass>`; an older single-run set wrote `runs/<brief>`, which
- * only a first pass may fall back to — a later pass must not be judged
- * against the first pass's sheet.
+ * Where the runner left this run's sheet: `runs/<label>`, and nowhere else.
+ * The label already spells both layouts — `<brief>#<pass>` for a repeated
+ * set, the bare brief id for a single run — so there is no fallback: a
+ * missing `a#1` must report "no contact sheet", not be judged against a
+ * historical `runs/a` from another set.
  */
-async function sheetFor(
+export async function sheetFor(
   runsDir: string,
-  run: ComparableRun
+  run: Pick<ComparableRun, 'label'>
 ): Promise<Buffer | undefined> {
-  const candidates = run.pass === 1 ? [run.label, run.briefId] : [run.label];
-  for (const dir of new Set(candidates)) {
-    try {
-      return await fs.readFile(path.join(runsDir, dir, 'contact-sheet.png'));
-    } catch {
-      // try the next layout
-    }
+  try {
+    return await fs.readFile(
+      path.join(runsDir, run.label, 'contact-sheet.png')
+    );
+  } catch {
+    return undefined;
   }
-  return undefined;
 }
 
 export interface RejudgeOptions {
