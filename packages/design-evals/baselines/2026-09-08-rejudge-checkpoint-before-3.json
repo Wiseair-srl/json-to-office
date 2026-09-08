@@ -1,0 +1,407 @@
+{
+  "source": "evals-out/checkpoint-before/scorecard.json",
+  "note": "The 24 checkpoint-before documents judged again on 2026-09-08 (third sitting), immediately before the after-flow set was judged the same way; compare the `now` fields with 2026-09-08-rejudge-checkpoint-after-flow.json.",
+  "judgeModel": "claude-opus-5",
+  "judgedAt": "2026-09-08T18:42:37.344Z",
+  "runs": [
+    {
+      "briefId": "cr-brand-repositioning",
+      "run": "cr-brand-repositioning#1",
+      "then": {
+        "level": 4,
+        "wouldShip": false,
+        "genericness": 2,
+        "rationale": "Integrity holds: five pages, no clipping, no placeholder text, no overlap; every page's text block ends cleanly above the footer rule and page 5's footnote list is complete. Legibility is fine for a print/PDF read — the body on pages 2–5 is a comfortable measure at roughly two-thirds column width, the eyebrow marks ('Situation', 'Options', 'Recommendation', 'Conditions' in the running header) and the accent-rule under each H1 make reading order obvious, though the tiny grey subheads ('On the price gap' on page 3) and the metric captions on page 4 ('Share point loss, 3 yrs', 'Price gap to private label', 'Category growth from under-40s') are near the floor of comfortable size. Coherence is strong and clearly systematic: same left-aligned title zone, same rule weight and colour, same header/footer triple (title left, 'Client Confidential', page x/5, date) on pages 2–5, consistent H1 size and paragraph rhythm. Communicative effectiveness is where it earns level 4 — titles are conclusions, not labels ('A widening price gap does not explain the share loss', 'Premiumise: price cannot fix a relevance problem', 'Evidence that would overturn this recommendation'), page 2 opens with a boxed 'Key takeaways' list, page 4 carries three big-figure stats with units (-4 ▾, 38%, 61%) plus a source line ('Nielsen retail audit and Kantar shopper panel, FY23–FY26'), and page 5 does the falsification work the brief asked for. It stops short of level 5 on craft and on evidence density: the deck is entirely running prose with a single stat strip — a 38% gap trend, the under-40 cohort split, or a two-column options comparison on page 3 are all begging to be a table or chart and are instead argued in paragraphs, so page 3 in particular is a wall of five near-identical text blocks with no visual differentiation between the two options it is contrasting. Page 1 is also very empty: a title, subtitle, date and 'Client Confidential' in the upper third with roughly two-thirds of the page blank, which reads as restraint on a screen but as an unfinished cover in a client's hands. Vertical rhythm is inconsistent too — pages 2 and 4 use ~55% of the text column height, page 5 barely 45%, so the set feels under-filled rather than composed. Not shippable unchanged: I would want the options comparison on page 3 rendered as a structured comparison and at least one chart of the gap-versus-share trend before my name went on it. On genericness: the title, the eyebrow narrative arc, and the specific stats are unmistakably this brief, and the falsification page is a real point of view rather than boilerplate — but the visual system (blue accent rule, left-rag serif-free body, three-stat strip) is a neutral consultancy shell that would look identical for a telecoms or insurance assessment; nothing in the typography or colour says heritage food brand."
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "cr-brand-repositioning",
+      "run": "cr-brand-repositioning#2",
+      "then": {
+        "level": 4,
+        "wouldShip": false,
+        "genericness": 3,
+        "rationale": "Integrity holds: no clipping, overflow, or placeholder text on any of the five pages; the running header/footer pair (section label left, 'Confidential / Client Use Only' + page-of + September 2026) repeats consistently on pages 2–5 and is correctly suppressed on the cover. Legibility is adequate for A4 body text, though the page 4 kicker under the big numbers ('Client sales and share tracking, 2023–2026...') and the page 5 numbered source line sit near the bottom of comfortable size for a printed client read. Coherence is solid: a single navy accent (cover rule, 'Marketing Director' eyebrow, title rules on 2–5, big stat figures on 4), consistent left-aligned single-column measure, consistent heading weight. Communicative effectiveness is genuinely met: every page title is a conclusion, not a label — 'Four Share Points Lost to Private Label in Three Years', 'Two Strategies Diverge: Defend Volume or Premiumise', 'Premiumise Deliberately: A Smaller, Better Business Built on Trust', 'What Would Change This Recommendation' — the brief's 'what would change the recommendation' is answered on its own page, and the page 4 stat trio carries units and labels (-4 '3-year share loss', 38 'Price gap vs private label', 61 'Category growth from under-40s') with a source line beneath. Level 5 fails on two visible counts. First, the page balance is badly uneven: pages 2, 3 and 5 fill only the top 30–45% of the sheet, leaving half-page voids below the text on every interior page — nothing is composed to occupy or acknowledge that space, so the document reads as prose poured into a frame rather than laid out. Second, the document is entirely undifferentiated typographically: five pages, one column, one text size, one heading style, one shaded callout ('Why not split the difference' on page 3), one stat row. The one comparison the brief hinges on — narrow the gap versus premiumise, on page 3 — is written as two consecutive paragraphs ('Option one...', 'Option two...') where a two-column or two-panel treatment would have made the divergence visible; the reader must reconstruct the comparison from running text. That is the biggest missed opportunity in the document. Would not ship with my name on it unchanged: page 3's option comparison needs real structure and the half-empty interior pages need either consolidation or content. On genericness, the copy is specific and well-argued (the 10-year-old-brand-with-universal-trust framing, the 'perception fix, not a price problem' pivot), but the visual system — navy rule, eyebrow label, stat trio, grey callout box — is the default corporate-memo kit and would look identical for a fintech or a logistics assessment; nothing about a 90-year-old food brand is present in the design."
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cr-brand-repositioning",
+      "run": "cr-brand-repositioning#3",
+      "then": {
+        "level": 3,
+        "wouldShip": false,
+        "genericness": 3,
+        "rationale": "Integrity and legibility hold: no clipped text, no overlaps, no placeholder strings, and the running header (Situation / Options / Recommendation / Evidence), footer (Confidential — internal, x/5, 7 September 2026) and section markers ('01', '02'…) repeat identically on pages 2–5, with a consistent single accent rule under each page title. That earns level 3. Level 4 fails on density and structure. Every content page stops in the top third to top half of the sheet: page 2's text ends just below the mid-line, page 3 ends around 40% down, page 4's stat row and closing paragraph end at roughly 45%, and page 5 is the worst — one paragraph plus a two-line 'Notes and sources' block over roughly three-quarters empty page. The document is padded across five pages to carry about two pages of argument, and the blank lower halves read as unfinished rather than as deliberate air. Page 5 also breaks its own promise: the title says 'Three findings would reverse this recommendation' but the body is a single run-on paragraph with the three conditions buried in prose, not three enumerated findings — the one place the reader most needs scannable structure. And a brief built on a three-year share trend and a widening price gap contains no chart or table anywhere; the 4pts/38%/61% row on page 4 is the only quantitative exhibit, and it is a static number trio, not evidence of the trend. Credit where due: the page titles are genuinely conclusive ('Trust survives; relevance among growth shoppers does not', 'Premiumise: defend equity, not volume, and grow with the category'), the stat row carries units and a 'Client shopper panel and category tracking, 2023–2026' source line, and page 2's 'Key takeaways' box is a useful entry point. On genericness: the words are unmistakably about this brand, but the container — thin blue rule, small caps header, centred page number, one callout box — is a stock consulting memo shell that would look identical for a logistics or insurance client; nothing in the typography or composition reflects a 90-year-old food brand or the equity-versus-price tension the text argues about."
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cr-cost-programme-review",
+      "run": "cr-cost-programme-review#1",
+      "then": {
+        "level": 4,
+        "wouldShip": false,
+        "genericness": 2,
+        "rationale": "Integrity holds: no clipping, overlap or placeholder text on any of the seven pages; the page 3 column chart, the page 4 workstream table and the KPI rows on pages 2 and 7 all render fully. Legibility is fine for A4 print — body copy is comfortably sized, the navy-on-white contrast is strong, and reading order is single-column and obvious. Coherence is genuinely good: the same rule-under-heading treatment, the same footer triplet (Confidential — Internal Distribution / page x of 7 / 7 September 2026), and a consistent section rail in the top-right (Status, Evidence, Constraints, Decision, Action, Outlook) repeat on every interior page. Communicatively it does the brief's work: titles are conclusions, not labels — 'One workstream is over-delivering; two are stalled' (p3), 'The block is accountability, not feasibility' (p4), 'What this lands at if nothing changes' (p7); the p3 chart carries a numbered figure caption with a takeaway plus a 'Programme finance tracker, month 14' source; the p4 table adds a method note defining delivered percentage; every KPI on p2 and p7 carries a €m unit and a qualifier ('Banked at month 14', 'Shortfall if unchanged'); p6 names each of the three decisions with an owner and a decision date. Level 5 fails on two visible craft defects. First, the p3 chart still carries the 'Highcharts.com' credit sitting under the plot area — a rendering-tool watermark that has no business in a client deliverable and is the single reason I would not put my name on this unchanged. Second, the vertical rhythm is badly unbalanced: p5 ('The recovery available this quarter') is a heading and one four-line paragraph followed by roughly three-quarters of an empty page, p6 ends after three bullets at a third of the page, and the p1 cover leaves the entire lower two-thirds blank with no supporting mark. The p5 page is also a missed opportunity — the three decisions it announces are then listed as plain bullets on p6 rather than as an owner/date table, which is the one artefact a transformation office would actually act from. Not generic in content — the headings, the section rail and the shortfall arithmetic are specific to this programme — but the visual language (blue rule, plain KPI numerals, default Highcharts blue columns) is a competent house style that would look identical for any other review."
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "cr-cost-programme-review",
+      "run": "cr-cost-programme-review#2",
+      "then": {
+        "level": 3,
+        "wouldShip": false,
+        "genericness": 2,
+        "rationale": "Integrity holds: no clipping, no placeholder text, no overlap on any of the six pages; the cover (p1) and the five body pages all render what was intended. Legibility is fine — the running header (\"Cost Programme Review — Month 14\" with a right-hand section tag) and the footer triad repeat identically on pp2-6, body copy is a readable size for A4, and the single-column reading order is unambiguous. Visual coherence is met: the blue rule under the title block on p1 mirrors the hairline rules under the headers on pp2-6, headings sit at a consistent size and position, and the numeric row on p4 shares the same left grid edge as the body text. Where it stops is level 4. Density is badly off for an executive review: p2 ends around 40% of the page, p3 around 45%, p5 uses barely a third, and p6 stops after the notes line — five pages of prose each with half a page of trailing white, which reads as an unfinished document rather than a designed one. The brief's central comparison (Procurement 118%, Property 41%, IT 33% against a EUR 28m plan and EUR 19m banked) is delivered only as sentences on p3; there is no table or chart anywhere, so the reader has to reconstruct the workstream picture from prose. The one quantified display, the three figures on p4, mis-sets the unit as \"4.5€m\" with the symbol trailing the number, and \"3\" and \"0\" carry labels but no denominators. The callout on p3 (\"How to read these numbers\") is the only non-prose device in the document and it appears once, so it reads as an exception rather than a system. Genericness is moderate rather than high — the headings are specific and declarative (\"The three decisions this quarter\", \"What the programme will land at if nothing changes\") and the p4 source line names the PMO tracker — but the visual dress (blue accent rule, plain serif-free body, footer triad) would be identical for any other memo.\n"
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "cr-cost-programme-review",
+      "run": "cr-cost-programme-review#3",
+      "then": {
+        "level": 4,
+        "wouldShip": false,
+        "genericness": 2,
+        "rationale": "Integrity holds: no clipped text, no overflow, no lorem — the page 4 decision table wraps its first column cleanly across three rows and the page 3 chart sits inside its column. Legibility is fine for a printed A4 briefing; the running head (\"Cost Programme Review — Month 14 of 24\") and footer (\"Confidential — internal only\" / page number / date) repeat identically on pages 2–5, and the blue accent rule under each H1 is consistent. Communicatively it does the job the brief asked for: titles state conclusions rather than topics (\"One workstream is ahead; two are blocked on the same fault\", \"Half the shortfall is recoverable this quarter\"), the page 2 stat row (19 banked / 68% of phased plan / 4.5 recoverable) carries units and labels, the page 3 bar chart has a Figure 1 caption with a takeaway and a \"Programme PMO cost tracker, month 14\" source, and page 4 names each decision with an owner (COO, CIO, CIO/CFO) and a 30 Sep date. Two things stop it at 4 and stop me signing it: the page 3 chart carries a visible \"highcharts.com\" attribution in its lower right — a rendering artefact no client chart should ship with — and every body page (2–5) has a small unexplained dark glyph immediately below the header rule at the left margin, which reads as a stray or mis-rendered kicker. The page 1 cover is also very thin for the level of authorship elsewhere: a rule, title, subtitle, date and confidentiality line floating in an otherwise empty page, with no reference to the 46m/28m/19m frame that drives the document. Not generic in substance — the headings, the stat trio and the decision table are clearly written for this programme — but the shell (single column, rule-under-heading, three-column stat band, bordered callout on page 4) is a conventional briefing skeleton that would look the same for any other engagement."
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 4,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cr-esg-reporting-readiness",
+      "run": "cr-esg-reporting-readiness#1",
+      "then": {
+        "level": 4,
+        "wouldShip": false,
+        "genericness": 2,
+        "rationale": "Integrity holds: no clipped text, no overflow, no placeholder strings on any of the five pages; the page 3 bar chart, the page 4 two-column table and the page 2 stat row all render fully inside the measure. Legibility is fine — single measure, obvious top-to-bottom order, dark text on white, footer rule consistent. Coherence is genuinely good: the navy accent rule under the page-1 title repeats under every section heading on pages 2–5, the running header (document title left / section name right) and the three-part footer (confidentiality / page / date) are identical on pages 2–5, and the chart's single navy series matches the accent. Communication is the strength: every heading is a conclusion, not a label ('Two-thirds of required datapoints are already in reach', 'The first report cannot state a verified Scope 3 figure'); the page 3 figure carries a numbered caption with a takeaway sentence and an 'Internal ESRS datapoint mapping, Aug 2026' source; the page 4 table has a source line plus a 'Definition' callout defining 'estimated'; the 34/29/19 stat row is unit-labelled ('Already collected', 'Collectable this year', 'No measurement today'). Where it stops short of level 5 is craft. The page 3 chart carries a visible 'Highcharts.com' vendor credit in the plot's bottom-right corner — a tooling watermark that has no business in an audit-committee deliverable and is the single clearest reason not to send it unchanged. Page 5 is roughly four-fifths empty: one short heading, one paragraph, and a 'Notes and sources' list with a single entry, leaving the document to trail off rather than close. Page 1 is similarly under-composed — a title block in the upper third with the lower two-thirds blank and no visual device carrying the argument. There is also a small stray dark mark directly under the header rule at the top-left of pages 2–5 that reads as an artifact rather than an intentional element. On genericness: the content is unmistakably built for this brief (82/34/29/19 split, ESRS E1–E5 / S1–S4 / G1 breakdown, Scope 3 as the named critical path, the estimate-and-label doctrine), but the visual system — navy rule, one accent colour, default sans, header/footer bar — would look identical on any corporate memo; the specificity lives entirely in the words, not the design."
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 4,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "cr-esg-reporting-readiness",
+      "run": "cr-esg-reporting-readiness#2",
+      "then": {
+        "level": 4,
+        "wouldShip": false,
+        "genericness": 2,
+        "rationale": "Integrity holds: no clipped text, no overflow, no placeholder strings, and the running header (\"CSRD Readiness Assessment\" + section word) and footer (\"Confidential — Audit Committee\" / page x of 7 / 7 September 2026) repeat identically on pages 2–7. Legibility is fine for A4 print — body text is generous, the single navy accent is used only on the eyebrow rule, section rules, stat numbers and chart bars, and reading order is unambiguous single-column. Coherence is solid: every section page uses the same pattern (title, hairline rule, lead paragraph), and the accent rule sits at the same left margin and length throughout. Communicatively it does real work: the 34 / 29 / 19 stat trio on page 2 carries labels and a source line (\"Internal ESRS gap assessment, Sept 2026\"); the page 3 chart has a numbered figure caption that states a conclusion (\"Scope 3 emissions sit entirely inside the 19-datapoint capability gap\") plus its own source; the page 4 table pairs datapoint groups with target quarters and is followed by a definition callout for \"collectable\"; page 6's title (\"What the first report will honestly not be able to say\") states a conclusion rather than a topic. Level 5 fails on visible craft defects: the page 3 chart carries a \"Highcharts.com\" attribution credit at its lower right — a third-party watermark in an audit-committee deliverable — and that chart is small relative to the page while three-quarters of page 3 below the caption is empty. Pages 5, 6 and 7 all stop at roughly 40–55% of the page height with no compositional device to close them, so the back half of the document reads as short pages rather than deliberate air, and page 1 places the title block high-left with the entire lower two-thirds blank. That is why I would not send it unchanged: the Highcharts credit has to come off and the trailing white on pages 5–7 needs resolving. Not generic in substance — the stat trio, the readiness-group table with target quarters, the \"Definition\" callout and the \"Why say this now\" aside on page 6 are built for this brief — but the visual language (hairline-ruled headings, navy-on-white, plain single column) is a standard corporate-report dress that would transfer unchanged to any other assessment."
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "cr-esg-reporting-readiness",
+      "run": "cr-esg-reporting-readiness#3",
+      "then": {
+        "level": 3,
+        "wouldShip": false,
+        "genericness": 3,
+        "rationale": "Integrity holds: no clipping, no overlap, no placeholder text; the header/footer pair (\"CSRD Readiness Assessment\" left, section name right; \"Confidential — Committee Use\", page x/9, 7 September 2026) repeats correctly on pages 2-9 and the blue rule under each section title is consistent. Legibility is fine at print size except the stat-trio captions on page 4 (\"Already collected\", \"Collectable this year\", \"Needs new capability\" and the source line under them) which are set very small relative to the 34/29/19 figures. Coherence is met — one grid, one type scale, one accent colour, section openers all at the same vertical position. It fails level 4 on density and evidence: pages 5, 6, 7, 8 and 9 each carry a single short section and leave roughly 55-70% of the page empty (page 5 'Scope 3: The Central Gap' is barely a quarter full, page 7 'What to Estimate, and How to Disclose It' ends mid-page), so the document reads as one section per sheet rather than a composed report. The 82-datapoint split is shown only once, in the page 4 table, and the central argument of the brief — Scope 3 unmeasured, page 5 — gets no table, no figure and no numbers at all, just prose; there is not a single chart in nine pages and no visual of the build sequence on page 6. Titles are genuinely conclusive (\"What the First Report Will Not Be Able to Say\") and the page 4 table carries counts, % of 82 and a recommended action per bucket, which is the strongest page. Genericness: the copy is clearly written for this brief, but the shell — cover with rule and three grey metadata lines, blue-rule section heads, one bordered table — is the default corporate-report chassis and would look identical for any other audit-committee memo."
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "cr-market-entry-nordics",
+      "run": "cr-market-entry-nordics#1",
+      "then": {
+        "level": 3,
+        "wouldShip": false,
+        "genericness": 3,
+        "rationale": "Integrity holds: no clipped, overlapping or placeholder text on any of the five pages, and the running header/footer (short title left, section name right; 'Confidential – Board' and page x/5 in the footer) renders on pages 2–5. Legibility is acceptable for a printed board paper: heading sizes step down clearly from the page 1 title through the section heads to body, and the navy-on-white contrast holds. Coherence is also sound — the blue rule under the section head, the left-aligned single measure, the footer rules and the eyebrow/heading pairing repeat identically on pages 2, 3, 4 and 5, and page 4's stat trio (2.1 €m / 26 mo / 34 mo) is the only deliberate deviation, correctly labelled with units and a source line ('Company financial model, September 2026').\n\nIt stops at level 3 on communicative effectiveness. First, the brief asks to show payback under both cases and the document shows it only as two bare figures on page 4 — there is no chart, no timeline, no base-vs-pessimistic comparison anywhere in the five pages, so the reader cannot see the eighteen-month spend curve or when each case crosses. Second, there is no table or exhibit for the market itself: the EUR 340m, the 9% growth, the 61% incumbent share and the four-country split are all carried in prose on pages 2 and 3, where a four-row country table is the obvious artefact. Third, the section titles are labels, not conclusions — 'Market Opportunity' (p3), 'Entry Economics and Payback' (p4), 'Conditions for Success' (p5) tell the board nothing before they read; only the page 1 subtitle states a position. Fourth, page 5's three conditions — the load-bearing ask of the brief — are buried inside one running paragraph as 'First… Second… Third…' rather than enumerated, while page 2 does use a bulleted 'Key takeaways' list, so the more important list is the less scannable one.\n\nDensity is the other problem: pages 3, 4 and 5 fill only the top third to top half of the sheet, and page 5 in particular ends after one paragraph and a single numbered source, leaving roughly two thirds of the page blank. Across a five-page board pack that reads as material stretched to fill sections rather than composed.\n\nGenericness: the content is clearly written for this brief (Finnish-language gap, Stockholm office, month-26/34 payback), but the container is not — strip the words and pages 2, 3 and 5 are an unadorned single-column Word report that would serve any topic. Only the page 4 stat row shows any layout decision."
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cr-market-entry-nordics",
+      "run": "cr-market-entry-nordics#2",
+      "then": {
+        "type": "object",
+        "level": 3,
+        "wouldShip": false,
+        "genericness": 2,
+        "rationale": "Integrity holds: no clipping, overflow or visible placeholder copy; the page-4 KPI row (2.1€m / 26mo / 34mo), the payback table and the page-3 'Note on scope' callout all render fully. One recurring oddity: a small stray glyph sits directly under the header rule at the top-left of the body area on pages 2, 3, 4 and 5, above the first heading — it repeats identically so it reads as a leftover marker rather than content. Legibility is fine at print size: single measure, dark text on white, header/footer clearly subordinate, obvious top-to-bottom reading order. Coherence is the document's strength — the blue rule under each H1, the running header (document title left / section right), the footer triad (author / page x of 5 / 7 September 2026), and the 'Company financial model, FY27 planning case' source line under both the stat row and the table all repeat consistently. Where it fails level 4 is density and titling. Pages 2, 3 and 5 use only the top 35–45% of the sheet: page 3 'Market Opportunity' carries two short paragraphs and one callout over half a blank page, and page 5 'Conditions the Recommendation Depends On' ends its three numbered conditions and the single-item 'Notes and sources' list at roughly 40% height. The market case — EUR 340m, 9% growth, 61% combined incumbent share, four countries — is delivered entirely as running prose on page 3 with no table or chart, so the single most quantitative section of a board assessment has no visual at all, while the far simpler payback comparison gets both a stat row and a table. Section titles are labels, not conclusions: 'Recommendation' and 'Market Opportunity' state the topic rather than the finding; only page 5's title does the work. The page-2 'Key takeaways' bullets are the sharpest content in the deck and are stranded above two thirds of empty page."
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cr-market-entry-nordics",
+      "run": "cr-market-entry-nordics#3",
+      "then": {
+        "level": 3,
+        "wouldShip": false,
+        "genericness": 3,
+        "rationale": "Integrity holds: no clipped or placeholder text visible, every page carries real content, and the eight pages all have the running header (\"Nordic Market Entry Assessment\" left, section slug right) and footer (\"Board Confidential\", page x/8, 7 September 2026). Legibility is acceptable for A4 print — body copy is small but plausibly 9–10pt, and the blue rules under headings give an obvious entry point. Coherence is strong: the same rule-under-heading pattern, the same left-aligned single measure, the same page furniture repeat on pages 2–8, and the KPI row on page 4 (61% / 0 of 2 / EUR 133m, each with a caption under it) is the one moment of designed rhythm.\n\nWhere it stops short of level 4 is communicative effectiveness. Seven of eight pages are undifferentiated single-column prose in a narrow left column with the entire right half of the page empty — pages 3, 5 and 6 in particular are three or four paragraphs floating in a full A4 sheet with no figure, no callout, no use of the empty right field. The brief asks to \"show the payback under both scenarios\" and page 7 answers it with a four-column table of six data cells (base 2.1 / 26, pessimistic 2.1 / 34) — no timeline, no cumulative cash-flow curve, no visual of the eighteen-month spend against the month-26/34 crossover. That is the single most decision-relevant fact in the document and it is the least visualised. Similarly page 3, \"Market opportunity\", states EUR 340m across four countries growing 9% and shows no country split and no growth curve; the numbers are asserted in a paragraph. Titles are also mostly section labels (\"Market opportunity\", \"Conditions for entry\", \"Conclusion\") rather than conclusions, though page 7's \"Payback under both scenarios\" and page 2's recommendation bullets do carry the argument.\n\nCraft: the cover on page 1 is very thin — an eyebrow, title, subtitle and three small lines of metadata sitting in the top third, with roughly two-thirds of the page blank and no device tying it to the rest. Pages 5 and 6 end mid-page leaving half a sheet of white. The colour system is a single blue accent on black-on-white text.\n\nGenericness: the content is unmistakably about this brief — Finnish-language gap, Stockholm office, month 26/34, EUR 2.1m — but the container is not. Strip the words and this is a generic serif-free corporate report shell: same rule, same column, same footer. Nothing about the layout reflects a market-entry decision (no geography, no scenario comparison, no phasing) that would not read identically for a supply-chain review or an HR policy paper. I would not send it with my name on it without at least a payback chart and a market split figure."
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cr-post-merger-integration",
+      "run": "cr-post-merger-integration#1",
+      "then": {
+        "level": 3,
+        "wouldShip": false,
+        "genericness": 2,
+        "rationale": "Integrity holds: no clipping, overflow or placeholder text; headers ('Post-Acquisition Integration Assessment' + section eyebrow) and the footer triad (Confidential — Restricted / x of 7 / 7 September 2026) repeat cleanly on pages 2-7. The only blemish is the small dark glyph sitting under the header rule at the top-left of every content page (pages 2-7), which reads as a stray anchor/artifact rather than an intended element. Legibility is fine for a print/PDF committee read, and the reading order is unambiguous. Coherence is the document's strength: identical heading size and hairline rule under 'Executive summary', 'Overlap and synergy baseline', 'Recommended integration sequence', 'Six-month milestones', 'Cost of deferring the migration by a year' and 'Recommendation'; the ruled bullet block on page 2 and the tinted 'Synergy split method' callout on page 3 are the only two variant treatments and both are deliberate. Communicative effectiveness is where it fails the bar. Page 5, titled 'Six-month milestones', delivers the milestones as one undifferentiated prose paragraph — 'By month 6... By month 12... By month 18... By month 24...' — with no table, no timeline, no month column, and then roughly 60% of the page left blank; a steering committee cannot scan or assign owners from that. Page 6 repeats the pattern: two prose paragraphs on the deferral cost, half a page empty, when the EUR 3.28m at risk is a phased-value argument that wants a table or a two-line chart. The document contains no chart or table anywhere, despite a 60/40 synergy split, 12 of 41 depots and a month-by-month sequence. The one genuinely composed element is the stat trio on page 4 (31% customer overlap / 12/41 overlapping depots / EUR 8.2m annual synergy potential) with a source line beneath it — that is the standard the rest of the pages do not meet. Headings are mostly labels rather than conclusions ('Overlap and synergy baseline' says nothing; 'Cost of deferring the migration by a year' is the only one that carries an argument), and the title page is very thin — a rule, title, subtitle, date, confidentiality line, and an otherwise empty sheet. Genericness: the prose is unmistakably about this deal — depot counts, the dispatch-system dependency, the EUR 3.28m conditional tranche — but the shell (thin blue accent rule, small-caps eyebrow, plain Word body text, no table or chart language) would look identical on any other assessment; only the page-4 stat row shows any design intent."
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "cr-post-merger-integration",
+      "run": "cr-post-merger-integration#2",
+      "then": {
+        "level": 4,
+        "wouldShip": false,
+        "genericness": 2,
+        "rationale": "Integrity holds across all five pages: no clipped text, no empty frames, no lorem placeholders; the running header (\"Integration Assessment: Sequencing the Path to EUR 8.2m Synergy\" with a right-side section tag — Baseline / Sequence / Milestones / Risk) and the footer triplet (Confidential — Committee Only / n/5 / 7 September 2026) repeat identically on pages 2–5, and the cover correctly suppresses both. Type sizes, the single blue accent (cover rule, page-2 rule under 'Key takeaways', chart bars, callout bar on page 4) and the sans hierarchy agree page to page. Communicatively it is strong: every page title states a conclusion rather than a topic ('A Phased Sequence Captures Most Synergy Before the System Migrates', 'Deferring the Migration a Year Forfeits About €3.3m and Raises Execution Risk'); the page-2 KPI trio (31% / 12 of 41 / €8.2m) all carry units and labels; the page-3 bar chart and page-4 milestone table each have a numbered/named title, a takeaway sentence beneath, and an explicit source line ('Integration Management Office synergy model, Sept 2026'); page 5 closes with a numbered sources list. What stops it at level 4 and off my letterhead unchanged: the page-3 chart carries a visible 'Highcharts.com' credit under the plot — a rendering artifact no client deliverable should ship with — and that same chart wastes a legend on a single series while the €4.9m/€8.2m endpoint the caption argues is only readable by inference from an unlabelled bar. Fill is also uneven: page 3 stops around 60% of the text block, page 4 ends just below the funding-gap callout, and page 5 leaves roughly the bottom 40% blank after the sources, so the document reads as one idea per page without the composition being tuned to that choice. Genericness is moderate rather than high — the KPI band, chart-with-takeaway and milestone table are the standard consulting-brief kit and would look identical for any other engagement, but the conclusion-first titles, the depot/dispatch-specific milestone columns (Month 6/12/18) and the funding-gap callout are visibly written for this brief, not slotted into blanks."
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "cr-post-merger-integration",
+      "run": "cr-post-merger-integration#3",
+      "then": {
+        "type": "object",
+        "level": 3,
+        "wouldShip": false,
+        "genericness": 2,
+        "rationale": "Integrity holds: no clipped, overlapping or placeholder content across the eight pages; the chart on p3 and the table on p4 both render fully. Legibility is the first real problem — body copy on pages 2–8 sits at a very small size relative to the generous white space, and the p2 pull-stats (8.2€m / 31% / 29%) use a mixed glyph order ('8.2' with a subscript-looking '€m') that fights readability. Coherence is broadly met: the blue rule under each H1, the running header (document title left / section right) and the footer triad (Confidential — Committee Only / x / 8 / 7 September 2026) repeat identically on every interior page, and the p1 cover with its blue eyebrow 'Steering Committee' matches the accent used elsewhere. Where it fails is level 4. Pages 5, 6, 7 and 8 — Recommended Integration Sequence, Six-Month Milestones, Cost of Deferral, Risks and Governance — are the four things the brief explicitly asked for, and each is a single short prose paragraph occupying roughly the top third of the page with two-thirds empty below. The sequence page describes three tracks in running text instead of a sequence table or Gantt; the milestones page names 'by month two / by month six' inside a paragraph rather than a dated milestone list; the deferral page states EUR 3.3m at risk in prose and never quantifies it against the EUR 8.2m total in a visual. The single chart (p3, Figure 1) is well-titled with a takeaway caption and a source line, but it is the only exhibit in the document, so the analysis carries almost no comparative structure. The p4 table is only three rows and the p8 'Notes and sources' block contains one item — both read as stubs. Craft: proportionally the document is mostly white paper; nothing is hand-placed, but four consecutive near-empty pages betray content that was not written to fill the container it was given."
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 2,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "cr-pricing-review-logistics",
+      "run": "cr-pricing-review-logistics#1",
+      "then": {
+        "level": 3,
+        "wouldShip": false,
+        "genericness": 2,
+        "rationale": "Integrity and legibility hold: no clipped or placeholder text, the running head/footer pair (\"Pricing Review: Restoring Margin Discipline\" / \"Confidential — internal client use only / 7 September 2026\") repeats on pages 2-7, and the section markers plus thin rules give a consistent typographic voice. Coherence is largely intact — the KPI trio on page 2 (19%, 22%, 12%), the tier table on page 4 and the callout boxes on pages 4 and 6 all share the same rule weight and colour. But the document fails at communicative effectiveness in three specific ways. First, pages 5, 6 and 7 each carry one short block and then roughly three quarters of blank page: 'Expected churn is manageable and front-loaded' is four lines, 'If the two largest accounts refuse' is one paragraph plus a fallback box, and 'Recommendation' is one paragraph plus a two-item source list — the forced one-block-per-page pacing leaves the back half of the document visually hollow and breaks the vertical rhythm established on pages 2-4. Second, the brief asked for churn quantified at each tier; page 5 answers in adjectives ('modest', 'should be negligible') with no percentages, so the one page that most needed numbers has none, while the tier table on page 4 does the quantifying work. Third, the chart on page 3 renders a 'Highcharts.com' credit line at the lower right of the plot area — a third-party attribution artefact that should never appear in a client deliverable, and the y-axis has an unlabelled negative segment for the below-cost bar that is easy to misread. Genericness is moderate: the content is clearly written for this brief (segment names, nine-month runway, fallback terms), but the page architecture — cover with rule, KPI strip, one chart, one table, callouts — would look identical for any other advisory report."
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "cr-pricing-review-logistics",
+      "run": "cr-pricing-review-logistics#2",
+      "then": {
+        "level": 4,
+        "wouldShip": true,
+        "genericness": 2,
+        "rationale": "Integrity holds: no clipping, overlap or placeholder text anywhere — the page 4 tier table (Tier 1/2/3 × Segment, Action, Target & timing, Expected churn) fits its columns, and the page 3 segment table (Below cost 12% / Near cost 40% / Top 15% 34%) is complete. Legibility is fine for a printed memo, with dark text on white and an unambiguous single-column reading order. Coherence is real: the running head ('Pricing Review: Restoring Margin on the Commercial Book' left, section word right), the 'Confidential — Leadership Only / p / 7 September 2026' footer, the small section numeral at top-left, and the blue rule under each H1 repeat identically on pages 2–5; the cover's blue eyebrow rule ties in. Communicatively it is strong: every headline states a conclusion rather than a topic ('Margin Fell From 31% to 19% as Costs Rose and Prices Didn't', 'Twelve Percent of Accounts Are Priced Below Cost Today', 'If a Top Account Refuses, Hold the Floor, Not the Discount'), the page 4 KPI trio (19% ▼ -12 pts current gross margin, 26% ▲ +7 pts target, 9 mo runway) carries units and direction, churn is quantified per tier (15–20% / 8–10% / <3%), and page 4 carries a source line plus page 5 a 'Notes and sources' entry. What stops it short of level 5 is composition rather than error: pages 2, 3 and 5 stop between the top third and half of the sheet, leaving large unexplained voids below the last line (page 5's five-step refusal protocol ends around mid-page with the notes block floating above a blank lower half), and the text measure is narrow while the right-hand margin sits idle, so the whitespace reads as under-filled rather than composed. The margin story — 31% to 19% over three years on flat volume — is told only in prose and a stat block; there is no trend visual anywhere in the document, which is the one place the argument would have landed harder. Not generic in language, but the visual system is a plain single-column memo with one blue accent that would carry any consulting deliverable unchanged."
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "cr-pricing-review-logistics",
+      "run": "cr-pricing-review-logistics#3",
+      "then": {
+        "level": 4,
+        "wouldShip": false,
+        "genericness": 3,
+        "rationale": "Integrity holds: no clipping, overlap, or placeholder text across the seven pages, and headers/footers ('Confidential — Commercial Director', page x/7, September 2026) repeat correctly. Legibility is fine for a print-length report, and reading order is unambiguous. Coherence is genuinely consistent — the same blue rule under the H1, the same small section marker above each title, the same caption-plus-source pattern under the chart (p3) and both tables (p4, p6). Communicatively it answers the brief in full: the p2 KPI trio (19% / 22% / 12%) states the problem in units, p3 segments the book with a chart whose caption carries the takeaway ('The top 15% of accounts fund the margin the rest of the book is giving away'), p4 tables the three tiers with increase and timing columns, p6 tables churn ranges per tier, and p7 answers the two-largest-accounts question with an operator playbook callout and a numbered sources list. Titles mostly conclude rather than label. It stops short of level 5 on craft: the p3 chart carries a visible 'highcharts.com' rendering-library credit in the lower right — a leftover artefact no client deliverable should ship with; the chart itself is small relative to its page and its category labels ('Below cost (12%)', 'Near cost (40%)', 'Healthy (top 15%)') sit under a legend for a single series, which is redundant. Page density is uneven in a way that reads as flow rather than composition: p5 (Nine-Month Runway) is a single paragraph with roughly half the text block empty, and p7 ends high on the page, while p3 runs nearly full. In the p6 churn table the 'Tier 3: Healthy accounts' label wraps to two lines while its '<3%' value stays on the first, breaking the row's optical alignment. On genericness: the content is unmistakably this brief, but the shell — one accent blue, a hairline under the title, running head, three-up stat band, one bar chart, two plain tables — is the stock business-report kit and would look identical for a supply-chain or SaaS review with the words swapped."
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cr-service-model-redesign",
+      "run": "cr-service-model-redesign#1",
+      "then": {
+        "level": 4,
+        "wouldShip": true,
+        "genericness": 2,
+        "rationale": "Integrity holds: no clipped text, no empty frames, no placeholder strings across all 8 pages; the p3 chart, p4 and p6 tables and the p7 bullet list all render fully inside their columns. Legibility is adequate for an A4 executive read, though the p4 channel table and the p6 'Estimated programme savings and cost' table run at a noticeably smaller size than body copy, and the p3 chart's axis labels and the 'Highcharts.com' credit are near the floor. Coherence is strong and clearly systematic: identical running header (document title left, section word right), identical footer triple (Internal – Executive Board / page x of 8 / 7 September 2026), a repeated blue accent mark above every section title, and a consistent big-number band (1.34€m/44%/490€k on p2, 409€k/84€k/460€k on p6) that reuses the same numeral treatment. Communicative work is done properly: p3's chart carries a numbered figure caption with a takeaway ('Counters cost about five times as much per contact as phone or email'), a source line, and units on every figure; p4 states the assumption behind the 42/58 split in a boxed note; p6 boxes the EUR 0.50 unit-cost and 75% adoption assumption; p7 devotes a full page to the passengers who lose counter access, with a commitment paragraph; p8 closes with a numbered roadmap plus a numbered source list. Titles conclude rather than label ('Where the cost concentrates', 'Passengers who need protecting'). It falls short of level 5 on craft: only one chart in eight pages, and it is a plain two-series bar with a default Highcharts credit line, so p3 does the least visual work of any page; p5 is a single unbroken paragraph block on an otherwise empty page, breaking the rhythm the other body pages establish; and the cover is a bare rule-and-title arrangement with a large empty lower two-thirds. On genericness, the numbers, the counter-access section and the two-year phasing are specific to this brief, but the shell — thin blue rule, sans body, three-figure stat band, one bar chart — is a competent house style that would transfer unchanged to any cost-reduction assessment."
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cr-service-model-redesign",
+      "run": "cr-service-model-redesign#2",
+      "then": {
+        "type": "object",
+        "level": 4,
+        "wouldShip": false,
+        "genericness": 2,
+        "rationale": "Integrity holds: no clipped text, no overlaps, no placeholders on any of the five pages; the cover, the three body pages and the recommendation page all render fully. Legibility is acceptable for a printed executive report — the running header/footer on pages 2–5, the KPI row on page 2 (210,000 / €1.34m / 44%) and the table on page 4 all read cleanly, though the tiny eyebrow glyph sitting under the header rule at the top-left of pages 2–5 is rendered so small it is effectively illegible and reads as an artifact rather than a section marker. Coherence is good: the blue accent rule, the header/footer pattern, the heading scale and the single blue used in the page 3 chart and page 4 table header all repeat consistently. Communicative work is genuinely strong — page 2's title states the conclusion ('The current contact model costs €1.34 million a year'), page 4's title does the causal work ('Counters cost five times more per contact than phone or email'), the page 3 column chart carries a numbered figure caption, an explicit takeaway line ('Savings build as self-service adoption ramps...') and a source line, the page 4 table gives Contacts, Cost (€) and €/contact with a source underneath, and the 'Who loses access if counters close' callout on page 4 answers the brief's explicit requirement. What stops it at 4 and stops me shipping it: the page 3 chart carries a visible 'Highcharts.com' credit at the plot's lower right — a rendering-library watermark I would not put in front of a client authority under my name. Second, page 5, the recommendation — the single most decision-relevant page — collapses the three-tier model, the €470,000 transition cost, the €355,000–€440,000 saving and the 14-month payback into one undifferentiated ~15-line paragraph, with no tier breakout, no phasing, and no cost/saving table, then leaves roughly 60% of the page blank; page 4 similarly stops around half height. That trailing whitespace plus the prose dump is a density-and-structure mismatch at exactly the point where the executive needs scannable structure. On genericness: the numbers, the counter-access argument and the conclusion-first titles are unmistakably written for this brief, but the shell — cover with thin rule and subtitle, running header, three-KPI band, one column chart, one channel table, 'Notes and sources' — is the default consulting-report chassis and would look identical for a hospital or a utility with the words swapped."
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "cr-service-model-redesign",
+      "run": "cr-service-model-redesign#3",
+      "then": {
+        "level": 4,
+        "wouldShip": true,
+        "genericness": 1,
+        "rationale": "Integrity holds: no clipping, no placeholder text, no overlap on any of the five pages; page 3's chart sits inside the column and the page 4 table fits the measure. Legibility is fine for an A4 executive read — dark navy on white, one accent rule, obvious single-column reading order, though the page 2 caption line under the KPI band ('Contact centre and counter operations data, FY2025') and the page 4 'Basis for estimates' box run small and light and are near the floor of comfortable print size. Coherence is consistent: the same hairline-under-header, the same left-aligned navy heading, the same footer triplet (classification / page / date) and the same section word top-right on pages 2-5; the navy is used only for the title rule, the heading colour, the KPI rule and the single chart series, so nothing looks hand-placed. Communicatively it does the brief's work: titles are conclusions, not labels ('Self-service could resolve 44% of contacts; counters cost far more', 'Counters cost far more per contact than remote channels', 'Redesigned service model rebalances the network without closing access', 'Protect counter access for passengers who depend on it'); the KPI band carries 210,000 / 44% / EUR 24.80 with units and a source line; the chart on page 3 has a numbered figure caption with a takeaway and a source; the page 4 savings table names annual saving and one-off cost per initiative with a total row; and page 5 is a dedicated access-loss argument naming older residents, disabled passengers, concession applicants, the unbanked and tourists, ending with a stated recommendation and a numbered sources list. It stops short of level 5 on craft: page 1 is a near-empty cover with a single small title block floating high on an otherwise blank A4, pages 2-5 are all the same one-column stack of heading, paragraphs and one artefact, and the page 3 chart is a bare three-bar column with a visible 'highcharts.com' credit sitting under the plot — a rendering artefact no client deck should carry. Page 5's lower half is left empty, so the document ends on a half page. Not generic, though: the counter-vs-channel unit-cost comparison, the three-tier model, the transition-cost table and the whole access-protection page are shaped to this brief and could not be swapped into another one."
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 4,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "cr-workforce-planning",
+      "run": "cr-workforce-planning#1",
+      "then": {
+        "level": 4,
+        "wouldShip": false,
+        "genericness": 2,
+        "rationale": "Integrity holds: no clipped tables, no placeholder strings, the six pages each carry real content. Type is legible at print size and the reading order is unambiguous — page 2's key-takeaways bullets then the 240 / 400 / 26% stat trio then the paragraph, page 6's table then callout then notes. Coherence is genuinely good: the same thin blue rule under the running header, the same right-aligned section label (Overview / Bridge / Gap / Plan / Cost), the same three-part footer (Confidential — Partners Only / page x of 6 / September 2026), and the same caption-plus-source pattern under Figure 1 on page 3 and under each table. Communicatively it does the job the brief asked: titles are conclusions, not labels (\"Hiring must outrun attrition to reach 400\", \"Current hiring closes 62% of the gap, no more\", \"The plan costs about $2 million against $23 million of payroll growth\"), the page 3 bridge table carries Opening / Leavers / Hires / Net chg / Closing year by year, the page 4 table names the shortfall in heads, and the page 6 table is scoped \"$m\" so every number has a unit.\n\nIt stops short of level 5 on craft. The page 3 chart carries a \"highcharts.com\" credit in the plot's bottom-right — a rendering-tool watermark on a partner-facing deliverable, and the single thing I would not put my name on unchanged. The same chart is thin on its own terms: three bars of closing headcount with a one-item legend, when the story on that page is the gap between hires and leavers. Page 4 is close to two-thirds empty below the \"How the shortfall closes\" callout, and page 1 leaves the whole upper half blank above the rule, so the vertical rhythm is inconsistent against dense pages 3 and 5. The stat trio on page 2 is also unbalanced — \"26%\" sits under a two-line caption while \"240\" and \"400\" sit under one-liners, so the baselines under the numbers do not align.\n\nOn genericness: the frame is a competent, brand-neutral consulting report template — blue rule, running header, footer triplet — that would read identically for a cost-reduction or a market-entry brief. What lifts it is that the content is unmistakably this brief: the 3-5 year tenure cohort at 26%, the 62% ceiling stated in the page 4 heading, the junior/senior mix shift named in the page 5 hiring plan, and the run-rate-versus-program cost split on page 6."
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cr-workforce-planning",
+      "run": "cr-workforce-planning#2",
+      "then": {
+        "level": 1,
+        "wouldShip": false,
+        "genericness": 2,
+        "rationale": "Integrity fails on page 6: the page carries the running header (\"Workforce Plan: Scaling from 240 to 400\" / \"Cost\") and the footer (\"Confidential — Partners Only\", page number, date) but has no body content at all — a trailing empty page that the reader will open expecting a continuation of the cost section. That alone caps the document at the first rubric level regardless of what sits above it. Second, the chart on page 3 renders a third-party attribution mark, \"highcharts.com\", in the lower-right of the plot area — an un-suppressed library credit that no client deliverable should carry. Everything else is broadly sound: the assertion titles do real work (page 2 \"Hiring at today's pace closes only 62% of the gap to 400\", page 4 \"The three-year bridge needs 296 hires to reach 400\", page 5 \"Closing the gap costs roughly £12m above today's run rate\"), the KPI triplets on pages 2 and 5 repeat with identical typography and captions carrying units (£m, %), the page-4 bridge table gives Opening/Leavers/Hires/Net chg/Closing per year and ties to 400, and the page-3 figure has a numbered caption, a stated takeaway, and a source line. Weaknesses short of a blocker: pages 3 and 4 end roughly 55% down the page with large unused columns while page 5 is packed to the footer, so vertical rhythm across the spread is uneven; the page-3 chart is a two-series line over only three x-points, which is thin evidence for the central attrition claim and would read better as a small table or a tenure-band bar; and the cover on page 1 is a bare title block with a thin rule, giving no visual signal of the document's subject. Genericness is middling — the prose, tables and titles are unmistakably about this hiring bridge, but the visual system (single measure column, blue hairline accents, default table striping, blue-on-white chart) would be indistinguishable if the numbers were swapped for any other consulting deliverable."
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 1,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "cr-workforce-planning",
+      "run": "cr-workforce-planning#3",
+      "then": {
+        "level": 1,
+        "wouldShip": false,
+        "genericness": 2,
+        "rationale": "Integrity fails on page 4: the page is empty apart from two orphaned continuation lines at the top ('...lower the backfill requirement itself, through retention...'), leaving roughly 90% of the page blank in the middle of the argument. Pages 5, 6 and 7 also break early, leaving half to two-thirds of each page white below a single paragraph or a stat row, so the flow reads as forced section breaks rather than a considered pagination. The chart on page 3 still carries the 'highcharts.com' credit stamp in the plot area, an artifact that should never leave the studio on a partner-facing deliverable. Below that, the work is actually competent: the header rule and 'Confidential — Partners Only / n of 9 / 7 September 2026' footer repeat cleanly, the blue rule under section headings is consistent, the three-up KPI rows on pages 2 and 7 share one style, the headcount bridge table on page 5 (Opening / Attrition / Rate / Hires / Closing) and the cost table on page 8 both carry sources and a rounding note, and the argumentative titles ('The hiring requirement is larger than the net growth number suggests', 'The plan costs roughly three times the current run rate') say what the page concludes rather than naming a topic. That level 4 writing is undermined by the level 1 pagination faults. Not generic in substance — the numbers, the 118-hire shortfall, the 60/40 mix shift and the notes-and-sources list are specific to this brief — but the visual language (thin blue rule, serif-free heading, big-number stat trio) is the standard consulting-report shell."
+      },
+      "now": {
+        "wouldShip": false,
+        "level": 1,
+        "genericness": 2
+      }
+    }
+  ],
+  "agreement": {
+    "wouldShip": {
+      "n": 24,
+      "rawAgreement": 0.875,
+      "kappa": 0,
+      "interval": {
+        "low": 0,
+        "high": 0,
+        "confidence": 0.95,
+        "resamples": 1922
+      }
+    },
+    "level": {
+      "n": 24,
+      "rawAgreement": 0.5416666666666666,
+      "kappa": 0.2884097035040431,
+      "interval": {
+        "low": 0.04255319148936172,
+        "high": 0.5428571428571429,
+        "confidence": 0.95,
+        "resamples": 2000
+      }
+    },
+    "genericness": {
+      "n": 24,
+      "rawAgreement": 0.75,
+      "kappa": 0.46067415730337075,
+      "interval": {
+        "low": 0.09278350515463916,
+        "high": 0.7847533632286995,
+        "confidence": 0.95,
+        "resamples": 2000
+      }
+    },
+    "levelMovedMoreThanOne": 0
+  }
+}
