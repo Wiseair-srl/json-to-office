@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import { promises as fs } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
 import {
   comparableRuns,
   pairs,
+  sheetFor,
   summarise,
   type RejudgedRun,
 } from './rejudge.js';
@@ -176,5 +180,24 @@ describe('comparableRuns', () => {
     expect(
       comparableRuns([{ briefId: 'a', foreignTools: [] }]).map((r) => r.label)
     ).toEqual(['a']);
+  });
+});
+
+describe('sheetFor', () => {
+  it('never judges a repeated first pass against a historical single-run sheet', async () => {
+    // `runs/a` from an older single-run set is not `runs/a#1` of this one.
+    const runsDir = await fs.mkdtemp(path.join(os.tmpdir(), 'rejudge-'));
+    try {
+      await fs.mkdir(path.join(runsDir, 'a'));
+      await fs.writeFile(path.join(runsDir, 'a', 'contact-sheet.png'), 'old');
+      await expect(
+        sheetFor(runsDir, { label: 'a#1' })
+      ).resolves.toBeUndefined();
+      await expect(sheetFor(runsDir, { label: 'a' })).resolves.toEqual(
+        Buffer.from('old')
+      );
+    } finally {
+      await fs.rm(runsDir, { recursive: true, force: true });
+    }
   });
 });
