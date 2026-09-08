@@ -604,7 +604,7 @@ function draftRenderedFindings(input: RenderedAnalysisInput): RenderedDraft {
           path: section ?? '',
           message: `Page ${pageIndex + 1} is ${Math.round(fill * 100)}% filled: its content stops ${Math.round(footerTop - bottom)}pt above the footer and the next page begins anyway.`,
           suggestion:
-            'Let the next section continue on this page, or give the page the table or chart its argument owes; a short section on its own page reads as unfinished.',
+            'Merge this section into its neighbour, or give the page the table or chart its argument owes. Do not pad it with prose: a short section on its own page reads as unfinished, a padded one reads as filler.',
           evidence: {
             summary: 'Share of the body area the page paints, header to footer',
             expected: `≥ ${Math.round(MINIMUM_PAGE_FILL * 100)}%`,
