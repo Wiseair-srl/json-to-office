@@ -1,0 +1,507 @@
+{
+  "note": "Paolo, 2026-09-08, blind guided review of the 48 checkpoint contact sheets (before and after sets, shuffled) then 24 before/after pairs of the same brief and pass, sides randomised. Absolute question: would you send this to the client unchanged; reasons are one-tap chips (pages = empty or half-blank pages, prose = prose where a table or chart was owed, generic, data = chart or table wrong, other). Pairwise question: which would you rather send.",
+  "reviewer": "paolo",
+  "sets": {
+    "before": "2026-09-07-checkpoint-before-cold-server-4.4.0.json",
+    "after": "2026-09-08-checkpoint-after-cold-server-4.4.2.json"
+  },
+  "summary": {
+    "wouldShip": {
+      "before": 10,
+      "after": 8,
+      "of": 24
+    },
+    "pairs": {
+      "before": 12,
+      "tie": 6,
+      "after": 6
+    },
+    "reasons": {
+      "pages": 30
+    }
+  },
+  "verdicts": [
+    {
+      "set": "after",
+      "run": "cr-brand-repositioning#1",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-08T07:29:15.461Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-brand-repositioning#1",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-08T07:30:25.358Z"
+    },
+    {
+      "set": "after",
+      "run": "cr-brand-repositioning#2",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-08T07:28:42.176Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-brand-repositioning#2",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-08T07:28:32.138Z"
+    },
+    {
+      "set": "after",
+      "run": "cr-brand-repositioning#3",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-08T07:30:06.474Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-brand-repositioning#3",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-08T07:28:33.599Z"
+    },
+    {
+      "set": "after",
+      "run": "cr-cost-programme-review#1",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-08T07:29:32.482Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-cost-programme-review#1",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-08T07:27:17.004Z"
+    },
+    {
+      "set": "after",
+      "run": "cr-cost-programme-review#2",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-08T07:29:26.074Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-cost-programme-review#2",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-08T07:27:50.369Z"
+    },
+    {
+      "set": "after",
+      "run": "cr-cost-programme-review#3",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-08T07:31:04.010Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-cost-programme-review#3",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-08T07:26:46.033Z"
+    },
+    {
+      "set": "after",
+      "run": "cr-esg-reporting-readiness#1",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-08T07:30:17.324Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-esg-reporting-readiness#1",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-08T07:29:23.923Z"
+    },
+    {
+      "set": "after",
+      "run": "cr-esg-reporting-readiness#2",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-08T07:29:30.903Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-esg-reporting-readiness#2",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-08T07:30:16.094Z"
+    },
+    {
+      "set": "after",
+      "run": "cr-esg-reporting-readiness#3",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-08T07:30:13.880Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-esg-reporting-readiness#3",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-08T07:31:17.326Z"
+    },
+    {
+      "set": "after",
+      "run": "cr-market-entry-nordics#1",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-08T07:29:07.241Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-market-entry-nordics#1",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-08T07:27:26.961Z"
+    },
+    {
+      "set": "after",
+      "run": "cr-market-entry-nordics#2",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-08T07:28:05.631Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-market-entry-nordics#2",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-08T07:26:12.494Z"
+    },
+    {
+      "set": "after",
+      "run": "cr-market-entry-nordics#3",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-08T07:29:21.251Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-market-entry-nordics#3",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-08T07:30:18.471Z"
+    },
+    {
+      "set": "after",
+      "run": "cr-post-merger-integration#1",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-08T07:27:08.054Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-post-merger-integration#1",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-08T07:31:27.156Z"
+    },
+    {
+      "set": "after",
+      "run": "cr-post-merger-integration#2",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-08T07:26:32.961Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-post-merger-integration#2",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-08T07:30:11.405Z"
+    },
+    {
+      "set": "after",
+      "run": "cr-post-merger-integration#3",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-08T07:27:46.469Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-post-merger-integration#3",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-08T07:26:01.250Z"
+    },
+    {
+      "set": "after",
+      "run": "cr-pricing-review-logistics#1",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-08T07:28:00.048Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-pricing-review-logistics#1",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-08T07:31:28.890Z"
+    },
+    {
+      "set": "after",
+      "run": "cr-pricing-review-logistics#2",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-08T07:31:09.101Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-pricing-review-logistics#2",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-08T07:30:32.223Z"
+    },
+    {
+      "set": "after",
+      "run": "cr-pricing-review-logistics#3",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-08T07:28:14.998Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-pricing-review-logistics#3",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-08T07:26:56.560Z"
+    },
+    {
+      "set": "after",
+      "run": "cr-service-model-redesign#1",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-08T07:29:05.404Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-service-model-redesign#1",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-08T07:27:33.258Z"
+    },
+    {
+      "set": "after",
+      "run": "cr-service-model-redesign#2",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-08T07:28:35.129Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-service-model-redesign#2",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-08T07:29:27.049Z"
+    },
+    {
+      "set": "after",
+      "run": "cr-service-model-redesign#3",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-08T07:28:39.817Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-service-model-redesign#3",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-08T07:25:55.806Z"
+    },
+    {
+      "set": "after",
+      "run": "cr-workforce-planning#1",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-08T07:30:51.699Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-workforce-planning#1",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-08T07:28:12.384Z"
+    },
+    {
+      "set": "after",
+      "run": "cr-workforce-planning#2",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-08T07:31:12.961Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-workforce-planning#2",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-08T07:31:20.745Z"
+    },
+    {
+      "set": "after",
+      "run": "cr-workforce-planning#3",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-08T07:27:56.907Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-workforce-planning#3",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-08T07:28:26.938Z"
+    }
+  ],
+  "pairs": [
+    {
+      "pair": "cr-brand-repositioning#1",
+      "preferred": "before",
+      "leftWas": "after",
+      "at": "2026-09-08T07:32:17.623Z"
+    },
+    {
+      "pair": "cr-brand-repositioning#2",
+      "preferred": "tie",
+      "leftWas": "after",
+      "at": "2026-09-08T07:36:59.268Z"
+    },
+    {
+      "pair": "cr-brand-repositioning#3",
+      "preferred": "tie",
+      "leftWas": "after",
+      "at": "2026-09-08T07:35:08.184Z"
+    },
+    {
+      "pair": "cr-cost-programme-review#1",
+      "preferred": "before",
+      "leftWas": "before",
+      "at": "2026-09-08T07:36:33.902Z"
+    },
+    {
+      "pair": "cr-cost-programme-review#2",
+      "preferred": "after",
+      "leftWas": "after",
+      "at": "2026-09-08T07:35:22.517Z"
+    },
+    {
+      "pair": "cr-cost-programme-review#3",
+      "preferred": "before",
+      "leftWas": "before",
+      "at": "2026-09-08T07:37:02.401Z"
+    },
+    {
+      "pair": "cr-esg-reporting-readiness#1",
+      "preferred": "before",
+      "leftWas": "before",
+      "at": "2026-09-08T07:36:36.752Z"
+    },
+    {
+      "pair": "cr-esg-reporting-readiness#2",
+      "preferred": "tie",
+      "leftWas": "before",
+      "at": "2026-09-08T07:34:10.986Z"
+    },
+    {
+      "pair": "cr-esg-reporting-readiness#3",
+      "preferred": "tie",
+      "leftWas": "before",
+      "at": "2026-09-08T07:36:14.134Z"
+    },
+    {
+      "pair": "cr-market-entry-nordics#1",
+      "preferred": "tie",
+      "leftWas": "before",
+      "at": "2026-09-08T07:35:46.267Z"
+    },
+    {
+      "pair": "cr-market-entry-nordics#2",
+      "preferred": "tie",
+      "leftWas": "before",
+      "at": "2026-09-08T07:35:54.201Z"
+    },
+    {
+      "pair": "cr-market-entry-nordics#3",
+      "preferred": "after",
+      "leftWas": "before",
+      "at": "2026-09-08T07:36:26.417Z"
+    },
+    {
+      "pair": "cr-post-merger-integration#1",
+      "preferred": "after",
+      "leftWas": "after",
+      "at": "2026-09-08T07:36:10.384Z"
+    },
+    {
+      "pair": "cr-post-merger-integration#2",
+      "preferred": "before",
+      "leftWas": "before",
+      "at": "2026-09-08T07:36:23.950Z"
+    },
+    {
+      "pair": "cr-post-merger-integration#3",
+      "preferred": "after",
+      "leftWas": "before",
+      "at": "2026-09-08T07:32:26.372Z"
+    },
+    {
+      "pair": "cr-pricing-review-logistics#1",
+      "preferred": "after",
+      "leftWas": "after",
+      "at": "2026-09-08T07:36:40.484Z"
+    },
+    {
+      "pair": "cr-pricing-review-logistics#2",
+      "preferred": "before",
+      "leftWas": "after",
+      "at": "2026-09-08T07:32:05.489Z"
+    },
+    {
+      "pair": "cr-pricing-review-logistics#3",
+      "preferred": "before",
+      "leftWas": "after",
+      "at": "2026-09-08T07:35:49.817Z"
+    },
+    {
+      "pair": "cr-service-model-redesign#1",
+      "preferred": "before",
+      "leftWas": "after",
+      "at": "2026-09-08T07:35:39.901Z"
+    },
+    {
+      "pair": "cr-service-model-redesign#2",
+      "preferred": "before",
+      "leftWas": "after",
+      "at": "2026-09-08T07:32:14.106Z"
+    },
+    {
+      "pair": "cr-service-model-redesign#3",
+      "preferred": "before",
+      "leftWas": "after",
+      "at": "2026-09-08T07:31:44.916Z"
+    },
+    {
+      "pair": "cr-workforce-planning#1",
+      "preferred": "before",
+      "leftWas": "before",
+      "at": "2026-09-08T07:32:49.057Z"
+    },
+    {
+      "pair": "cr-workforce-planning#2",
+      "preferred": "before",
+      "leftWas": "before",
+      "at": "2026-09-08T07:36:05.685Z"
+    },
+    {
+      "pair": "cr-workforce-planning#3",
+      "preferred": "after",
+      "leftWas": "before",
+      "at": "2026-09-08T07:32:22.517Z"
+    }
+  ]
+}
