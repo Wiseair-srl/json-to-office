@@ -75,6 +75,10 @@ const QUALITY = {
         code: 'W_QUALITY_RENDERED_PAGE_UNDERFILLED',
         reason: 'boundary matrix, not a composed report',
       },
+      {
+        code: 'W_QUALITY_EXHIBIT_MISSING',
+        reason: 'boundary matrix, not a composed report',
+      },
     ],
   },
 };

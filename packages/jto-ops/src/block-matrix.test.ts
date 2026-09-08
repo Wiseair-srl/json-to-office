@@ -50,7 +50,20 @@ const TEMPLATE = JSON.parse(
   )
 );
 const PROFILE = {
-  quality: { profile: { id: 'client-report', formats: ['docx'] } },
+  quality: {
+    profile: { id: 'client-report', formats: ['docx'] },
+    // A block case is one block at its edge, not a composed report: whether
+    // the document carries a chart or a table is a property of the report,
+    // so the exhibit rule is suppressed here the way an author suppresses it.
+    policy: {
+      suppressions: [
+        {
+          code: 'W_QUALITY_EXHIBIT_MISSING',
+          reason: 'boundary matrix, not a composed report',
+        },
+      ],
+    },
+  },
 } as const;
 const THEMES = Object.keys(themes);
 /** The roles the profile requires present: what `min` may not leave out. */
