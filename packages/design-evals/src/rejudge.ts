@@ -32,6 +32,8 @@ import { bootstrapKappa, type Rating } from './statistics.js';
 /** One document, judged twice. */
 export interface RejudgedRun {
   briefId: string;
+  /** The run directory under `runs/`: the brief id, or `<brief>#<pass>` under --repeat. */
+  run?: string;
   then: { wouldShip?: boolean; level?: number; genericness?: number };
   now?: { wouldShip: boolean; level: number; genericness: number };
   /** Why this document could not be re-judged, when it could not be. */
@@ -116,16 +118,54 @@ export function summarise(
  * counts for the same forty runs, 9 against 8, because one of them still
  * carried a brief that had called into an unrelated MCP server.
  */
-export function comparableRuns(records: readonly RecordedRun[]): RecordedRun[] {
-  const seen = new Set<string>();
-  const kept: RecordedRun[] = [];
+export interface ComparableRun extends RecordedRun {
+  /** Directory name under `runs/`, as the runner wrote it: `<brief>#<pass>` under --repeat, else the brief id. */
+  label: string;
+  pass: number;
+}
+
+export function comparableRuns(
+  records: readonly RecordedRun[]
+): ComparableRun[] {
+  const passes = new Map<string, number>();
   for (const record of records) {
-    if (seen.has(record.briefId)) continue;
+    passes.set(record.briefId, (passes.get(record.briefId) ?? 0) + 1);
+  }
+  const seen = new Map<string, number>();
+  const kept: ComparableRun[] = [];
+  for (const record of records) {
+    const pass = (seen.get(record.briefId) ?? 0) + 1;
+    seen.set(record.briefId, pass);
     if (record.foreignTools && record.foreignTools.length > 0) continue;
-    seen.add(record.briefId);
-    kept.push(record);
+    const repeated = (passes.get(record.briefId) ?? 1) > 1;
+    kept.push({
+      ...record,
+      pass,
+      label: repeated ? `${record.briefId}#${pass}` : record.briefId,
+    });
   }
   return kept;
+}
+
+/**
+ * Where the runner left this run's sheet. A repeated set writes
+ * `runs/<brief>#<pass>`; an older single-run set wrote `runs/<brief>`, which
+ * only a first pass may fall back to — a later pass must not be judged
+ * against the first pass's sheet.
+ */
+async function sheetFor(
+  runsDir: string,
+  run: ComparableRun
+): Promise<Buffer | undefined> {
+  const candidates = run.pass === 1 ? [run.label, run.briefId] : [run.label];
+  for (const dir of new Set(candidates)) {
+    try {
+      return await fs.readFile(path.join(runsDir, dir, 'contact-sheet.png'));
+    } catch {
+      // try the next layout
+    }
+  }
+  return undefined;
 }
 
 export interface RejudgeOptions {
@@ -161,31 +201,30 @@ export async function rejudge(options: RejudgeOptions): Promise<RejudgeReport> {
     if (!brief) continue;
 
     const then = record.judge ?? {};
-    const sheetPath = path.join(
-      options.runsDir,
-      record.briefId,
-      'contact-sheet.png'
-    );
-    let png: Buffer;
-    try {
-      png = await fs.readFile(sheetPath);
-    } catch {
+    const png = await sheetFor(options.runsDir, record);
+    if (png === undefined) {
       // A run that failed never produced a sheet. Recorded, not silently
       // dropped: a re-judge over 34 of 40 documents is a different number
       // from one over 40.
-      runs.push({ briefId: record.briefId, then, error: 'no contact sheet' });
+      runs.push({
+        briefId: record.briefId,
+        run: record.label,
+        then,
+        error: 'no contact sheet',
+      });
       continue;
     }
 
-    options.onProgress?.(`${runs.length + 1} ${record.briefId}`);
+    options.onProgress?.(`${runs.length + 1} ${record.label}`);
     try {
       const judged = await judgeDocument({
         brief,
-        sheet: { png, label: record.briefId },
+        sheet: { png, label: record.label },
         call,
       });
       runs.push({
         briefId: record.briefId,
+        run: record.label,
         then,
         now: {
           wouldShip: judged.verdict.wouldShip,
@@ -196,6 +235,7 @@ export async function rejudge(options: RejudgeOptions): Promise<RejudgeReport> {
     } catch (error) {
       runs.push({
         briefId: record.briefId,
+        run: record.label,
         then,
         error: error instanceof Error ? error.message : String(error),
       });

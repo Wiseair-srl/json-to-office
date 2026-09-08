@@ -143,16 +143,19 @@ describe('summarise with a field nothing can be compared on', () => {
 });
 
 describe('comparableRuns', () => {
-  it('keeps the first pass of a repeated brief and drops the rest', () => {
-    // Under --repeat the set holds three verdicts for one brief; a committed
-    // baseline reports the first, so that is the one a re-judge must match.
+  it('keeps every pass of a repeated brief, labelled the way the runner names its directory', () => {
+    // Under --repeat the set holds three verdicts for one brief and three
+    // sheets on disk, under `runs/<brief>#<pass>`; each is its own document
+    // to re-judge. A brief run once keeps its bare name.
     const kept = comparableRuns([
       { briefId: 'a', judge: { wouldShip: true } },
       { briefId: 'a', judge: { wouldShip: false } },
       { briefId: 'b', judge: { wouldShip: false } },
     ]);
-    expect(kept.map((run) => run.briefId)).toEqual(['a', 'b']);
+    expect(kept.map((run) => run.label)).toEqual(['a#1', 'a#2', 'b']);
+    expect(kept.map((run) => run.briefId)).toEqual(['a', 'a', 'b']);
     expect(kept[0].judge?.wouldShip).toBe(true);
+    expect(kept[1].judge?.wouldShip).toBe(false);
   });
 
   it('drops a contaminated run, because no baseline published its verdict', () => {
@@ -171,7 +174,7 @@ describe('comparableRuns', () => {
 
   it('keeps a run whose foreignTools list is present but empty', () => {
     expect(
-      comparableRuns([{ briefId: 'a', foreignTools: [] }]).map((r) => r.briefId)
+      comparableRuns([{ briefId: 'a', foreignTools: [] }]).map((r) => r.label)
     ).toEqual(['a']);
   });
 });
