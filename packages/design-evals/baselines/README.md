@@ -17,14 +17,6 @@ numbers; use fresh matched runs with the guards before making acceptance claims.
 | `2026-09-08-rejudge-checkpoint-before.json`               | —    | —                                      | —               | 24 rejudged, same session as the next row     | claude-opus-5       |
 | `2026-09-08-rejudge-checkpoint-after.json`                | —    | —                                      | —               | 24 rejudged, same session as the row above    | claude-opus-5       |
 | `2026-09-08-human-checkpoint-verdicts.json`               | —    | —                                      | —               | 48 absolute + 24 pairwise, Paolo, blind       | human               |
-| File                                                      | Mode | Server                                 | Model           | Runs                                          | Judge               |
-| --------------------------------------------------------- | ---- | -------------------------------------- | --------------- | --------------------------------------------- | ------------------- |
-| `2026-09-04-cold-server-2.0.0.json`                       | cold | 2.0.0                                  | claude-sonnet-5 | 40                                            | yes                 |
-| `2026-09-07-checkpoint-before-cold-server-4.4.0.json`     | cold | 4.4.0                                  | claude-sonnet-5 | 24 (set `client-report-checkpoint`, 8 × 3)    | yes (claude-opus-5) |
-| `2026-09-08-checkpoint-after-cold-server-4.4.2.json`      | cold | 4.4.2                                  | claude-sonnet-5 | 24 (set `client-report-checkpoint`, 8 × 3)    | yes (claude-opus-5) |
-| `2026-09-08-rejudge-checkpoint-before.json`               | —    | —                                      | —               | 24 rejudged, same session as the next row     | claude-opus-5       |
-| `2026-09-08-rejudge-checkpoint-after.json`                | —    | —                                      | —               | 24 rejudged, same session as the row above    | claude-opus-5       |
-| `2026-09-08-human-checkpoint-verdicts.json`               | —    | —                                      | —               | 48 absolute + 24 pairwise, Paolo, blind       | human               |
 | `2026-09-08-checkpoint-after-fill-cold-server-4.4.0.json` | cold | 4.4.0 (jto-ops 4.4.2 + page-fill rule) | claude-sonnet-5 | 24 (set `client-report-checkpoint`, 8 × 3)    | yes (claude-opus-5) |
 | `2026-09-08-rejudge-checkpoint-before-2.json`             | —    | —                                      | —               | 24 rejudged, same session as the next row     | claude-opus-5       |
 | `2026-09-08-rejudge-checkpoint-after-fill.json`           | —    | —                                      | —               | 24 rejudged, same session as the row above    | claude-opus-5       |
