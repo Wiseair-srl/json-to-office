@@ -31,7 +31,7 @@ export const QUALITY_PROFILES: Record<
       id: 'client-report',
       label: 'Client report',
       description:
-        'Running head with page numbers after the cover; takeaway and source wherever a block declares them; every size on the theme scale, at most eight in play; no page rendered empty under the running head',
+        'Running head with page numbers after the cover; takeaway and source wherever a block declares them; every size on the theme scale, at most eight in play; no page rendered empty or half blank under the running head',
     },
     {
       id: 'executive-report',

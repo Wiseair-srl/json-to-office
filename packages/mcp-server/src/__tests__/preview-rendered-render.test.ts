@@ -167,6 +167,49 @@ describe.skipIf(!RUN)('rendered pass over a LibreOffice PDF', () => {
     expect(promoted.summary?.profileId).toBe('client-report');
   }, 120_000);
 
+  it('flags a short section left on its own page under a running head, at that section', async () => {
+    const chrome = {
+      header: [{ name: 'paragraph', props: { text: 'Client report' } }],
+      footer: [{ name: 'paragraph', props: { text: 'Page {PAGE}' } }],
+    };
+    const section = (children: unknown[]) => ({
+      name: 'section',
+      props: { ...chrome, pageBreak: true },
+      children,
+    });
+    const document = report([
+      section([{ name: 'heading', props: { text: 'Cover', level: 1 } }]),
+      section([
+        { name: 'heading', props: { text: 'A short section', level: 1 } },
+        {
+          name: 'paragraph',
+          props: { text: 'One paragraph, then a page break.' },
+        },
+      ]),
+      section([
+        { name: 'heading', props: { text: 'The end', level: 1 } },
+        { name: 'paragraph', props: { text: LONG } },
+      ]),
+    ]);
+    const { rendered, findings } = await renderWithFindings(document);
+    expect(rendered.totalPages).toBe(3);
+    expect(rendered.rendered?.pages.every((p) => p.ink !== undefined)).toBe(
+      true
+    );
+    const underfilled = findings.diagnostics.filter(
+      (d) => d.code === 'W_QUALITY_RENDERED_PAGE_UNDERFILLED'
+    );
+    expect(underfilled).toEqual([
+      expect.objectContaining({
+        severity: 'info',
+        path: '/children/1',
+        context: expect.objectContaining({ mapping: 'mapped', page: 2 }),
+      }),
+    ]);
+    expect(underfilled[0].context?.fill).toBeLessThan(0.5);
+    expect(findings.summary?.inventory.missing).toBe(0);
+  }, 120_000);
+
   it('reports nothing on a clean report, and reuses cached geometry on a re-preview', async () => {
     const document = report([
       { name: 'heading', props: { text: 'Executive summary', level: 1 } },

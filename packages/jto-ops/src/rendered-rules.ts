@@ -25,7 +25,8 @@ export type RenderedRuleId =
   | 'rendered/font-substituted'
   | 'rendered/empty-page'
   | 'rendered/heading-stranded'
-  | 'rendered/paragraph-split';
+  | 'rendered/paragraph-split'
+  | 'rendered/page-underfilled';
 
 interface RenderedRuleSpec {
   id: RenderedRuleId;
@@ -104,6 +105,15 @@ export const RENDERED_QUALITY_RULES: QualityRulePack = {
         'A wordless page (`kind: blank`), or in docx one whose only words are its running head or footer (`kind: chrome-only`): a full-page figure is fine, a blank page from a stray break or an empty section is not.',
       category: 'integrity',
       defaultSeverity: 'info',
+    }),
+    renderedRule({
+      id: 'rendered/page-underfilled',
+      code: QUALITY_CODES.RENDERED_PAGE_UNDERFILLED,
+      description:
+        'A docx page, other than the first and the last, whose ink stops less than halfway down the body area before the next page begins (`context.fill` is the share used): a section that ends early on its own page, argued in a paragraph where a table or chart was owed.',
+      category: 'composition',
+      defaultSeverity: 'info',
+      formats: ['docx'],
     }),
     renderedRule({
       id: 'rendered/heading-stranded',

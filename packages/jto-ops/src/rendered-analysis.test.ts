@@ -362,6 +362,109 @@ describe('analyzeRenderedDocument', () => {
     ]);
   });
 
+  describe('page fill', () => {
+    // A4 sampled into 281 rows (24 dpi); the running head sits at 10pt, the
+    // footer at 830pt, so the body spans roughly rows 8–276.
+    const chrome = [
+      entry('/c', 'Client report', 'chrome', { repeats: true }),
+      entry('/f', 'Page {PAGE}', 'chrome', { repeats: true }),
+    ];
+    const dressed = (bodyWords: PdfTextWord[]) =>
+      page([
+        word('Client', 10, 10),
+        word('report', 50, 10),
+        ...bodyWords,
+        word('Page', 10, 830),
+        word('1', 40, 830),
+      ]);
+    const ink = (inked: number[]) => ({ rows: 281, inked });
+    const range = (from: number, to: number) =>
+      Array.from({ length: to - from + 1 }, (_, i) => from + i);
+
+    it('flags a middle page whose ink stops well above the footer, at its section', () => {
+      const result = analyzeRenderedDocument({
+        format: 'docx',
+        pages: [
+          {
+            ...dressed([word('Cover', 10, 300)]),
+            ink: ink([3, ...range(100, 110), 277]),
+          },
+          // Body ink from the header rule (row 5) down to row 60 of ~270 available.
+          {
+            ...dressed([word('Short', 10, 100)]),
+            ink: ink([3, ...range(5, 60), 277]),
+          },
+          {
+            ...dressed([word('End', 10, 100)]),
+            ink: ink([3, ...range(5, 40), 277]),
+          },
+        ],
+        inventory: [
+          ...chrome,
+          entry('/children/0/children/0/props/text', 'Cover'),
+          entry('/children/1/children/0/props/text', 'Short'),
+          entry('/children/2/children/0/props/text', 'End'),
+        ],
+      });
+      expect(result.findings).toEqual([
+        expect.objectContaining({
+          code: QUALITY_CODES.RENDERED_PAGE_UNDERFILLED,
+          severity: 'info',
+          path: '/children/1',
+          message: expect.stringMatching(/Page 2 .*19%/),
+          context: { mapping: 'mapped', page: 2, fill: 0.19 },
+        }),
+      ]);
+    });
+
+    it('keeps a full page, the cover and the last page out of it', () => {
+      const result = analyzeRenderedDocument({
+        format: 'docx',
+        pages: [
+          { ...dressed([word('Title', 10, 420)]), ink: ink([3, 140, 277]) },
+          {
+            ...dressed([word('Full', 10, 100)]),
+            ink: ink([3, ...range(5, 250), 277]),
+          },
+          {
+            ...dressed([word('End', 10, 100)]),
+            ink: ink([3, ...range(5, 20), 277]),
+          },
+        ],
+        inventory: [
+          ...chrome,
+          entry('/children/0/children/0/props/text', 'Title'),
+          entry('/children/1/children/0/props/text', 'Full'),
+          entry('/children/2/children/0/props/text', 'End'),
+        ],
+      });
+      expect(codes(result.findings)).toEqual([]);
+    });
+
+    it('stays silent without an ink profile, and on a deck', () => {
+      const short = dressed([word('Short', 10, 100)]);
+      const docx = analyzeRenderedDocument({
+        format: 'docx',
+        pages: [short, short, short],
+        inventory: [
+          ...chrome,
+          entry('/children/1/children/0/props/text', 'Short'),
+        ],
+      });
+      expect(codes(docx.findings)).toEqual([]);
+      const slide = {
+        ...page([word('Title', 10, 40)], { widthPt: 960, heightPt: 540 }),
+        ink: ink([20, 21]),
+      };
+      const pptx = analyzeRenderedDocument({
+        format: 'pptx',
+        pages: [slide, slide, slide],
+        inventory: [entry('/t', 'Title', 'slide-text')],
+      });
+      expect(codes(pptx.findings)).toEqual([]);
+    });
+  });
+
   it('reports a heading stranded above the footer at a page foot', () => {
     const result = analyzeRenderedDocument({
       format: 'docx',

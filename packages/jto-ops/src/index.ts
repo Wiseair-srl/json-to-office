@@ -31,6 +31,17 @@ export {
   type PdfTextLine,
   type PdfTextPage,
 } from './pdf-text-geometry.js';
+export {
+  extractPdfPageInk,
+  inkedRows,
+  INK_DPI,
+  INK_THRESHOLD,
+  pageInkFromPgm,
+  parsePgm,
+  type ExtractPdfPageInkOptions,
+  type PdfPageInk,
+  type Pgm,
+} from './pdf-page-ink.js';
 
 // Rendered-certainty pass (#344) — findings from the preview PDF, mapped
 // back to authored pointers.

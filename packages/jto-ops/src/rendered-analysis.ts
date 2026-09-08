@@ -40,6 +40,7 @@ import type { PdfTextPage, PdfTextWord } from './pdf-text-geometry';
 import { RENDERED_QUALITY_RULES, type RenderedRuleId } from './rendered-rules';
 import {
   assignInventory,
+  CHROME_BAND,
   type InventoryEntry,
   type InventoryMatch,
   type MappingStatus,
@@ -87,6 +88,14 @@ export interface RenderedAnalysisInput {
   fonts?: readonly PdfFontInfo[];
   requestedFonts?: readonly RequestedFont[];
 }
+
+/**
+ * Below this share of the body area painted, a page that is neither the
+ * cover nor the last is under-filled. Judges called a page "two-thirds
+ * blank" a defect and a page that ends at its midpoint acceptable, so the
+ * line sits between.
+ */
+export const MINIMUM_PAGE_FILL = 0.5;
 
 /** How a finding reached its pointer — always on `context.mapping`. */
 export type RenderedMapping = 'mapped' | 'ambiguous' | 'unmapped';
@@ -537,6 +546,72 @@ function draftRenderedFindings(input: RenderedAnalysisInput): RenderedDraft {
       })
     );
   });
+
+  // -- Under-filled page (docx): the ink stops well above the footer on a
+  // page that is neither the cover nor the end, so a page break, not the
+  // content, decided where the page ended. Ink, not words: a chart or a
+  // table fills a page without a word the geometry can see.
+  if (format === 'docx') {
+    pages.forEach((page, pageIndex) => {
+      if (!page.ink || pageIndex === 0 || pageIndex === pages.length - 1) {
+        return;
+      }
+      const rowPt = page.heightPt / page.ink.rows;
+      let headerBottom = 0;
+      let footerTop = page.heightPt;
+      page.words.forEach((w, i) => {
+        if (!chromeWords.has(`${pageIndex}:${i}`)) return;
+        if (w.yMax <= page.heightPt * CHROME_BAND) {
+          headerBottom = Math.max(headerBottom, w.yMax);
+        } else if (w.yMin >= page.heightPt * (1 - CHROME_BAND)) {
+          footerTop = Math.min(footerTop, w.yMin);
+        }
+      });
+      // Skip the row under the header text too: its hairline is chrome.
+      const body = page.ink.inked.filter(
+        (row) =>
+          row * rowPt > headerBottom + rowPt && (row + 1) * rowPt < footerTop
+      );
+      if (body.length === 0) return; // the empty-page rule owns this page
+      const top = body[0] * rowPt;
+      const bottom = (body[body.length - 1] + 1) * rowPt;
+      const fill = Math.round(((bottom - top) / (footerTop - top)) * 100) / 100;
+      if (fill >= MINIMUM_PAGE_FILL) return;
+      // The section owning the page: the top-level child of the last body
+      // text mapped onto it.
+      let owner: { path: string; yMax: number } | undefined;
+      for (const match of matches) {
+        if (match.status !== 'mapped' || match.entry.repeats) continue;
+        for (const o of match.occurrences) {
+          const part = o.parts[o.parts.length - 1];
+          if (part.pageIndex !== pageIndex) continue;
+          if (!owner || part.yMax > owner.yMax) {
+            owner = { path: match.entry.path, yMax: part.yMax };
+          }
+        }
+      }
+      const section = owner
+        ? /^\/children\/\d+/.exec(owner.path)?.[0]
+        : undefined;
+      findings.push(
+        finding({
+          ruleId: 'rendered/page-underfilled',
+          mapping: section ? 'mapped' : 'unmapped',
+          page: pageIndex + 1,
+          path: section ?? '',
+          message: `Page ${pageIndex + 1} is ${Math.round(fill * 100)}% filled: its content stops ${Math.round(footerTop - bottom)}pt above the footer and the next page begins anyway.`,
+          suggestion:
+            'Let the next section continue on this page, or give the page the table or chart its argument owes; a short section on its own page reads as unfinished.',
+          evidence: {
+            summary: 'Share of the body area the page paints, header to footer',
+            expected: `≥ ${Math.round(MINIMUM_PAGE_FILL * 100)}%`,
+            actual: fill,
+          },
+          context: { fill },
+        })
+      );
+    });
+  }
 
   // -- Stranded heading (docx): the last body line on its page.
   if (format === 'docx') {

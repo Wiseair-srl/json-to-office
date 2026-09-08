@@ -110,6 +110,39 @@ describe('assignInventory', () => {
     ]),
   ];
 
+  it('does not let chrome claim a body row that merely repeats its words once, inside the band', () => {
+    // A three-page report whose running head reads "Report"; page 2 opens
+    // with a body line that also says "Report", 100pt down — inside the
+    // generous chrome band, but at a height no other page repeats.
+    const three = [
+      page([word('Report', 10, 10), word('Intro', 10, 300)]),
+      page([
+        word('Report', 10, 10),
+        word('Report', 10, 100),
+        word('summary', 50, 100),
+        word('More', 10, 300),
+      ]),
+      page([word('Report', 10, 10), word('End', 10, 300)]),
+    ];
+    const { matches, chromeWords } = assignInventory(three, [
+      { path: '/h', text: 'Report', repeats: true },
+      { path: '/i', text: 'Intro' },
+      { path: '/s', text: 'Report summary' },
+      { path: '/m', text: 'More' },
+      { path: '/e', text: 'End' },
+    ]);
+    expect(matches.map((m) => [m.entry.path, m.status])).toEqual([
+      ['/h', 'mapped'],
+      ['/i', 'mapped'],
+      ['/s', 'mapped'],
+      ['/m', 'mapped'],
+      ['/e', 'mapped'],
+    ]);
+    expect(matches[0].occurrences.map((o) => o.pageIndex)).toEqual([0, 1, 2]);
+    expect(chromeWords.has('1:1')).toBe(false);
+    expect(chromeWords.has('1:0')).toBe(true);
+  });
+
   it('claims duplicates in reading order and lets chrome claim every page', () => {
     const { matches } = assignInventory(pages, [
       { path: '/h', text: 'Client report', repeats: true },
