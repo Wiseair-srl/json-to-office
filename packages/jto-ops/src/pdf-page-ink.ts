@@ -87,12 +87,22 @@ function pdftoppmCandidates(): string[] {
   return [...new Set([...(configured ? [configured] : []), 'pdftoppm'])];
 }
 
-async function run(binary: string, args: string[], timeoutMs: number) {
+async function run(
+  binary: string,
+  args: string[],
+  timeoutMs: number,
+  signal?: AbortSignal
+) {
   return new Promise<void>((resolve, reject) => {
     execFile(
       binary,
       args,
-      { timeout: timeoutMs, maxBuffer: 16 * 1024 * 1024, windowsHide: true },
+      {
+        timeout: timeoutMs,
+        maxBuffer: 16 * 1024 * 1024,
+        windowsHide: true,
+        ...(signal && { signal }),
+      },
       (error) => (error ? reject(error) : resolve())
     );
   });
@@ -133,6 +143,8 @@ export interface ExtractPdfPageInkOptions {
   /** A resolved pdftoppm path, when the caller already found one. */
   binary?: string;
   timeoutMs?: number;
+  /** Aborting kills the pdftoppm process and rejects. */
+  signal?: AbortSignal;
 }
 
 /**
@@ -153,7 +165,8 @@ export async function extractPdfPageInk(
     await run(
       binary,
       ['-gray', '-r', String(dpi), pdfPath, prefix],
-      options.timeoutMs ?? 60_000
+      options.timeoutMs ?? 60_000,
+      options.signal
     );
     const files = (await fs.readdir(dir))
       .filter((name) => /^page-\d+\.pgm$/.test(name))
