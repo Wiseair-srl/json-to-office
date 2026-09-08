@@ -124,6 +124,50 @@ the 30 at level 3. So for now read "excellent" (level ≥ 4) as the judge's
 sendability estimate and treat its `wouldShip` as advisory, as #360 item 5
 already says; recalibrating the ship question in the rubric is the follow-up.
 
+## The checkpoint set with the page-fill rule
+
+`2026-09-08-checkpoint-after-fill-cold-server-4.4.2.json` repeats the set once
+more on main after PR #398 (`rendered/page-underfilled` at `warning` under
+`client-report`; server built from `a9e4e22`, the working tree during the run
+carrying only harness commits on top). Same eight briefs, three passes, cold,
+claude-sonnet-5, judged by claude-opus-5, local Highcharts export server
+checked healthy before and every three minutes during the run. 24/24
+delivered, 0 failed, 0 export-server errors, 16 of 24 documents carry a chart.
+
+A first attempt at this run is not recorded as a baseline: the export server's
+worker pool had died beforehand (`pool.all` 0, every export answered 400),
+15 of 24 transcripts met the error and all 24 delivered documents lost their
+charts; the judge shipped 0 and the agent spent a median of 5 iterations. The
+harness now records such runs as `environmentFailures` and warns above the
+judge line; the health check is part of the run recipe.
+
+Judged in one sitting against the before sheets
+(`2026-09-08-rejudge-checkpoint-before-2.json` and `…-after-fill.json`):
+
+| today's judge           | before  | after-fill |
+| ----------------------- | ------- | ---------- |
+| would ship              | 4/24    | 5/24       |
+| level ≥4                | 6/24    | 11/24      |
+| level sum over 24       | 73      | 83         |
+| `cr-workforce-planning` | 3, 1, 1 | 4, 4, 3    |
+
+Two rejudges of the unchanged before set a day apart sum to 76 and 73, so
++10 is above the session noise seen so far, and it comes from several briefs,
+not one. Measured directly rather than through the judge
+(`2026-09-08-page-fill-measure.json`), under-filled pages go from 39% of all
+pages in both earlier sets to 28%, and documents with any such page from 21
+to 17 of 24; the median page count falls from 5.5 to 5.
+
+What the rule cannot do: the delivered documents still carry 41 under-filled
+pages, and 17 of 24 rationales still name them. The agent cannot merge a short
+section into its neighbour, because the running head's section tracker gives
+every section its own page, so it either pads (seen in the confounded run:
+24% → 41% → 49% by adding prose) or ships with the warning. The advice now
+says merge, not pad. The remaining lever is structural: take the tracker out
+of the running head, or let sections continue on the page; a manual test on
+one document (later sections `pageBreak: false`) went from 7 pages to 5 with
+no under-filled page, at the cost of the per-section header text.
+
 ## Reading one
 
 `totals` are mechanical and `judge` is an opinion; they are separate objects on
