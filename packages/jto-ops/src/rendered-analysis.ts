@@ -583,10 +583,13 @@ function draftRenderedFindings(input: RenderedAnalysisInput): RenderedDraft {
       for (const match of matches) {
         if (match.status !== 'mapped' || match.entry.repeats) continue;
         for (const o of match.occurrences) {
-          const part = o.parts[o.parts.length - 1];
-          if (part.pageIndex !== pageIndex) continue;
-          if (!owner || part.yMax > owner.yMax) {
-            owner = { path: match.entry.path, yMax: part.yMax };
+          // Every part on this page: a paragraph that starts here and runs
+          // on still owns this page through the part it left behind.
+          for (const part of o.parts) {
+            if (part.pageIndex !== pageIndex) continue;
+            if (!owner || part.yMax > owner.yMax) {
+              owner = { path: match.entry.path, yMax: part.yMax };
+            }
           }
         }
       }

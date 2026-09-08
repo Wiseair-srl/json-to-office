@@ -962,6 +962,7 @@ export async function renderPreview(
       const read = await readRenderedGeometry(
         pdfPath,
         pdftoppm,
+        signal,
         resolvedFonts.map((font) => ({
           family: font.family,
           // A source that was declared but failed still counts as declared:
@@ -1096,6 +1097,7 @@ function pdffontsMissing(): Diagnostic {
 async function readRenderedGeometry(
   pdfPath: string,
   pdftoppm: string,
+  signal: AbortSignal | undefined,
   resolvedFonts: RenderedGeometry['resolvedFonts']
 ): Promise<{ geometry?: RenderedGeometry; diagnostics: Diagnostic[] }> {
   if (!(await pdftotextAvailable())) {
@@ -1111,7 +1113,9 @@ async function readRenderedGeometry(
     pdffontsAvailable().then((available) =>
       available ? extractPdfFonts(pdfPath).catch(() => undefined) : undefined
     ),
-    extractPdfPageInk(pdfPath, { binary: pdftoppm }).catch(() => undefined),
+    extractPdfPageInk(pdfPath, { binary: pdftoppm, signal }).catch(
+      () => undefined
+    ),
   ]);
   if (!('error' in geometry) && ink && ink.length === geometry.pages.length) {
     geometry.pages.forEach((page, index) => {

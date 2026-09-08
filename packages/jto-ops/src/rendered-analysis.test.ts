@@ -417,6 +417,43 @@ describe('analyzeRenderedDocument', () => {
       ]);
     });
 
+    it('maps the page to a paragraph that starts on it and runs onto the next', () => {
+      // The only body text on page 2 is the head of a paragraph whose tail
+      // sits on page 3; the part left on page 2 still names the owner.
+      const result = analyzeRenderedDocument({
+        format: 'docx',
+        pages: [
+          { ...dressed([word('Cover', 10, 300)]), ink: ink([3, 100, 277]) },
+          {
+            ...dressed([word('Revenue', 10, 100), word('grew', 50, 100)]),
+            ink: ink([3, ...range(30, 40), 277]),
+          },
+          {
+            ...dressed([word('twelve', 10, 100), word('percent', 50, 100)]),
+            ink: ink([3, ...range(30, 40), 277]),
+          },
+        ],
+        inventory: [
+          ...chrome,
+          entry('/children/0/children/0/props/text', 'Cover'),
+          entry(
+            '/children/1/children/0/props/text',
+            'Revenue grew twelve percent'
+          ),
+        ],
+      });
+      expect(
+        result.findings.filter(
+          (f) => f.code === QUALITY_CODES.RENDERED_PAGE_UNDERFILLED
+        )
+      ).toEqual([
+        expect.objectContaining({
+          path: '/children/1',
+          context: expect.objectContaining({ mapping: 'mapped', page: 2 }),
+        }),
+      ]);
+    });
+
     it('keeps a full page, the cover and the last page out of it', () => {
       const result = analyzeRenderedDocument({
         format: 'docx',
