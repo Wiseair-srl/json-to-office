@@ -21,6 +21,9 @@ numbers; use fresh matched runs with the guards before making acceptance claims.
 | `2026-09-08-rejudge-checkpoint-before-2.json`             | —    | —                                      | —               | 24 rejudged, same session as the next row     | claude-opus-5       |
 | `2026-09-08-rejudge-checkpoint-after-fill.json`           | —    | —                                      | —               | 24 rejudged, same session as the row above    | claude-opus-5       |
 | `2026-09-08-page-fill-measure.json`                       | —    | —                                      | —               | page fill of every delivered document, 3 sets | rendered pass       |
+| `2026-09-08-checkpoint-after-flow-cold-server-4.4.4.json` | cold | 4.4.4 + sections flow (PR #402 build)  | claude-sonnet-5 | 24 (set `client-report-checkpoint`, 8 × 3)    | yes (claude-opus-5) |
+| `2026-09-08-rejudge-checkpoint-before-3.json`             | —    | —                                      | —               | 24 rejudged, same session as the next row     | claude-opus-5       |
+| `2026-09-08-rejudge-checkpoint-after-flow.json`           | —    | —                                      | —               | 24 rejudged, same session as the row above    | claude-opus-5       |
 
 ## The client-report checkpoint "before" set
 
@@ -174,6 +177,44 @@ says merge, not pad. The remaining lever is structural: take the tracker out
 of the running head, or let sections continue on the page; a manual test on
 one document (later sections `pageBreak: false`) went from 7 pages to 5 with
 no under-filled page, at the cost of the per-section header text.
+
+## The checkpoint set with sections flowing
+
+`2026-09-08-checkpoint-after-flow-cold-server-4.4.4.json` repeats the set on
+the PR #402 build (`4b74854`, a development build, not a release): a section
+that inherits the running head no longer inherits its page break, and the
+running head carries the document title alone. Same eight briefs, three
+passes, cold, claude-sonnet-5, judged by claude-opus-5, export server verified
+healthy before and every three minutes during the run. 24/24 delivered, 0
+failed, 0 export errors, 13 of 24 documents carry a chart, median 2 iterations.
+
+Judged in one sitting against the before sheets
+(`2026-09-08-rejudge-checkpoint-before-3.json` and `…-after-flow.json`):
+
+| today's judge                         | before | after-flow |
+| ------------------------------------- | ------ | ---------- |
+| would ship                            | 0/24   | 3/24       |
+| level ≥4                              | 3/24   | 12/24      |
+| median level                          | 3      | 3.5        |
+| level sum over 24                     | 70     | 84         |
+| under-filled pages, measured directly | 39%    | 0%         |
+| pages, all 24 documents               | 148    | 104        |
+
+The before set's three sittings sum to 76, 73 and 70 — the judge has grown
+harsher through the day — and on this shared zero the flowing set is +14,
+the largest move of the checkpoint, spread over six of the eight briefs
+(`cr-workforce-planning` 3, 1, 1 → 3, 4, 4; `cr-post-merger-integration`
+3, 3, 2 → 4, 3, 4; `cr-market-entry-nordics` 3, 3, 3 → 4, 3, 4). No delivered
+document carries an under-filled page any more; the page-fill rule found
+nothing to say on 24 documents where it had found 41 the run before.
+
+What the rationales name now: the cover, two-thirds empty (a design question
+for the cover block); a stub last page holding only the notes and sources
+(the page-fill rule exempts the last page; a lower threshold there, with
+keep-with-previous advice, is the obvious next rule); and, as before, the
+argument in prose where a table or chart was owed, in 15 of 24. The two
+integrity defects are the wrapped-table-cell matcher gap (#344) again, not
+document defects.
 
 ## Reading one
 
