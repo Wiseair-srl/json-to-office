@@ -39,6 +39,7 @@ import {
 } from '@json-to-office/shared';
 import {
   extractPdfFonts,
+  extractPdfPageInk,
   extractPdfTextGeometry,
   getFontStager,
   pdffontsAvailable,
@@ -960,6 +961,7 @@ export async function renderPreview(
     if (options.rendered) {
       const read = await readRenderedGeometry(
         pdfPath,
+        pdftoppm,
         resolvedFonts.map((font) => ({
           family: font.family,
           // A source that was declared but failed still counts as declared:
@@ -1093,13 +1095,15 @@ function pdffontsMissing(): Diagnostic {
  */
 async function readRenderedGeometry(
   pdfPath: string,
+  pdftoppm: string,
   resolvedFonts: RenderedGeometry['resolvedFonts']
 ): Promise<{ geometry?: RenderedGeometry; diagnostics: Diagnostic[] }> {
   if (!(await pdftotextAvailable())) {
     return { diagnostics: [pdftotextMissing()] };
   }
-  // Two independent poppler spawns over the same file.
-  const [geometry, fonts] = await Promise.all([
+  // Three independent poppler spawns over the same file. The ink profile is
+  // best effort: without it the page-fill rule stays silent, nothing else.
+  const [geometry, fonts, ink] = await Promise.all([
     extractPdfTextGeometry(pdfPath, { layout: true }).then(
       (pages) => ({ pages }),
       (error: unknown) => ({ error })
@@ -1107,7 +1111,13 @@ async function readRenderedGeometry(
     pdffontsAvailable().then((available) =>
       available ? extractPdfFonts(pdfPath).catch(() => undefined) : undefined
     ),
+    extractPdfPageInk(pdfPath, { binary: pdftoppm }).catch(() => undefined),
   ]);
+  if (!('error' in geometry) && ink && ink.length === geometry.pages.length) {
+    geometry.pages.forEach((page, index) => {
+      page.ink = ink[index];
+    });
+  }
   if ('error' in geometry) {
     return {
       diagnostics: [

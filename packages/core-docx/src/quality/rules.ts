@@ -1232,7 +1232,7 @@ export const DOCX_QUALITY_PROFILES = {
     id: 'client-report',
     formats: ['docx'],
     description:
-      'Client or public-administration report: a running head with page numbers on every section after the cover, a takeaway and a source wherever a block declares them, no heading skipped, every size on the theme scale with at most eight in play, and no page rendered empty under the running head.',
+      'Client or public-administration report: a running head with page numbers on every section after the cover, a takeaway and a source wherever a block declares them, no heading skipped, every size on the theme scale with at most eight in play, and no page rendered empty or left half blank under the running head.',
     rules: {
       'docx/required-chrome': {
         parameters: { required: ['takeaway', 'source'] },
@@ -1252,6 +1252,9 @@ export const DOCX_QUALITY_PROFILES = {
       // section, not a plate. A genuine full-page figure suppresses this at
       // its page through the policy.
       'rendered/empty-page': { severity: 'warning' },
+      // A section that ends early on its own page reads as unfinished; the
+      // judge calls a page two-thirds blank a defect.
+      'rendered/page-underfilled': { severity: 'warning' },
     },
   },
   'executive-report': {

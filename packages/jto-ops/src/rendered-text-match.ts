@@ -489,6 +489,44 @@ function inChromeBand(
 
 const PAGE_NUMBER_ROW = /^[0-9\s./|-]*$/;
 
+/** Rows this close in `yMin` are the same chrome position on different pages. */
+const CHROME_ROW_TOLERANCE_PT = 6;
+
+/**
+ * Which of a repeating entry's in-band occurrences are its chrome.
+ *
+ * Chrome sits nearest the page edge and repeats at the same height. So on
+ * each page only the occurrence closest to the top or bottom edge stands —
+ * a body line near the top of a page that happens to say the same words is
+ * further in than the running head above it — and, when the entry shows on
+ * more than one page, only heights that recur on another page count. A
+ * header that exists on a single page (a two-page report whose cover has
+ * none) has nothing to recur against and is kept as it is.
+ */
+function chromeOccurrences<
+  T extends { pageIndex: number; parts: { yMin: number; yMax: number }[] },
+>(occurrences: readonly T[], pages: readonly PdfTextPage[]): T[] {
+  const nearestPerPage = new Map<number, T>();
+  const edgeDistance = (o: T) =>
+    Math.min(o.parts[0].yMin, pages[o.pageIndex].heightPt - o.parts[0].yMax);
+  for (const o of occurrences) {
+    const held = nearestPerPage.get(o.pageIndex);
+    if (!held || edgeDistance(o) < edgeDistance(held)) {
+      nearestPerPage.set(o.pageIndex, o);
+    }
+  }
+  const nearest = [...nearestPerPage.values()];
+  if (nearest.length < 2) return nearest;
+  return nearest.filter((o) =>
+    nearest.some(
+      (other) =>
+        other.pageIndex !== o.pageIndex &&
+        Math.abs(other.parts[0].yMin - o.parts[0].yMin) <=
+          CHROME_ROW_TOLERANCE_PT
+    )
+  );
+}
+
 export interface InventoryAssignment<T extends InventoryEntry> {
   matches: InventoryMatch<T>[];
   /** `pageIndex:word` keys of every word chrome claimed — whole rows. */
@@ -537,11 +575,12 @@ export function assignInventory<T extends InventoryEntry>(
         });
         continue;
       }
-      const occurrences = findOccurrences(full, segments).filter(
+      const inBand = findOccurrences(full, segments).filter(
         (o) =>
           o.pageIndex === o.endPageIndex &&
           inChromeBand(pages[o.pageIndex], o.parts[0])
       );
+      const occurrences = chromeOccurrences(inBand, pages);
       for (const o of occurrences) claimRow(o.pageIndex, o.parts[0]);
       results.set(entry, {
         entry,

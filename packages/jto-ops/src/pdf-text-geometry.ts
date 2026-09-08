@@ -20,6 +20,7 @@
  */
 
 import { execFile } from 'child_process';
+import type { PdfPageInk } from './pdf-page-ink.js';
 import * as path from 'path';
 
 /** One word as laid out on the page, in PDF points, top-left origin. */
@@ -51,6 +52,11 @@ export interface PdfTextPage {
   words: PdfTextWord[];
   /** Line grouping; empty for plain `-bbox` output, which groups nothing. */
   lines: PdfTextLine[];
+  /**
+   * Which raster rows carry ink, when the host sampled the page (see
+   * `pdf-page-ink.ts`). Absent, the rules that need it stay silent.
+   */
+  ink?: PdfPageInk;
 }
 
 const ENTITIES: Readonly<Record<string, string>> = {

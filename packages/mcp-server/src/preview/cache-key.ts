@@ -35,7 +35,7 @@ import type { RenderOptionsInput } from '../lib/schema.js';
  * differently — new soffice flags, a different filter, another pdftoppm
  * option. Cached PNGs from older pipelines then simply stop matching.
  */
-export const PREVIEW_CACHE_VERSION = 1;
+export const PREVIEW_CACHE_VERSION = 2;
 
 /**
  * Stable JSON: object keys sorted at every depth.

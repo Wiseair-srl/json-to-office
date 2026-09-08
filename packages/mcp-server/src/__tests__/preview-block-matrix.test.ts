@@ -65,6 +65,18 @@ const THEMES = ['consulting', 'minimal', 'vermilion', 'devportal'];
 const REQUIRED_ROLES = ['takeaway', 'source'];
 const QUALITY = {
   profile: { id: 'client-report', formats: ['docx' as const] },
+  // The matrix is a boundary document, blocks at their edges one after the
+  // other; how full each page ends up is a property of a composed report,
+  // not of any block, so the page-fill rule is suppressed here the way an
+  // author suppresses it. Its own coverage is in preview-rendered-render.
+  policy: {
+    suppressions: [
+      {
+        code: 'W_QUALITY_RENDERED_PAGE_UNDERFILLED',
+        reason: 'boundary matrix, not a composed report',
+      },
+    ],
+  },
 };
 
 function cases(): BlockMatrixCase[] {
