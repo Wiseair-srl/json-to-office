@@ -1,5 +1,5 @@
 {
-  "note": "Page fill measured directly on every delivered document of each set with the released rendered pass (rendered/page-underfilled under the client-report profile, LibreOffice preview, local Highcharts export server healthy), independent of the judge. after-2 is the confounded rerun kept here only as evidence of the export-server failure; it is not a baseline. checkpoint-after-flow is the set built with sections flowing (PR #402).",
+  "note": "Page fill measured directly on every delivered document of each set with the released rendered pass (rendered/page-underfilled under the client-report profile, LibreOffice preview, local Highcharts export server healthy), independent of the judge. after-2 is the confounded rerun kept here only as evidence of the export-server failure; it is not a baseline. checkpoint-after-flow is the set built with sections flowing (PR #402). checkpoint-after-exhibits is the set built with the exhibit rule and the last-page fill rule (PR #405); checkpoint-after-flow-last-page-rule re-measures the flowing set under that later rule, so the two stub-page counts compare like with like.",
   "sets": {
     "checkpoint-before": {
       "documents": 24,
@@ -648,6 +648,314 @@
           "pages": 4,
           "underfilled": 0,
           "fills": []
+        }
+      }
+    },
+    "checkpoint-after-exhibits": {
+      "documents": 24,
+      "pages": 106,
+      "underfilledPages": 4,
+      "underfilledShare": 0.038,
+      "documentsWithAny": 4,
+      "medianPages": 4.0,
+      "runs": {
+        "cr-brand-repositioning#1": {
+          "pages": 4,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-brand-repositioning#2": {
+          "pages": 4,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-brand-repositioning#3": {
+          "pages": 4,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-cost-programme-review#1": {
+          "pages": 4,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-cost-programme-review#2": {
+          "pages": 3,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-cost-programme-review#3": {
+          "pages": 4,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-esg-reporting-readiness#1": {
+          "pages": 4,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-esg-reporting-readiness#2": {
+          "pages": 4,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-esg-reporting-readiness#3": {
+          "pages": 4,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-market-entry-nordics#1": {
+          "pages": 5,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-market-entry-nordics#2": {
+          "pages": 3,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-market-entry-nordics#3": {
+          "pages": 4,
+          "underfilled": 1,
+          "fills": [0.1],
+          "kinds": ["last-page"]
+        },
+        "cr-post-merger-integration#1": {
+          "pages": 4,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-post-merger-integration#2": {
+          "pages": 5,
+          "underfilled": 1,
+          "fills": [0.21],
+          "kinds": ["last-page"]
+        },
+        "cr-post-merger-integration#3": {
+          "pages": 4,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-pricing-review-logistics#1": {
+          "pages": 5,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-pricing-review-logistics#2": {
+          "pages": 4,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-pricing-review-logistics#3": {
+          "pages": 4,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-service-model-redesign#1": {
+          "pages": 5,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-service-model-redesign#2": {
+          "pages": 5,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-service-model-redesign#3": {
+          "pages": 6,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-workforce-planning#1": {
+          "pages": 5,
+          "underfilled": 1,
+          "fills": [0.1],
+          "kinds": ["last-page"]
+        },
+        "cr-workforce-planning#2": {
+          "pages": 6,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-workforce-planning#3": {
+          "pages": 6,
+          "underfilled": 1,
+          "fills": [0.22],
+          "kinds": ["last-page"]
+        }
+      }
+    },
+    "checkpoint-after-flow-last-page-rule": {
+      "documents": 24,
+      "pages": 104,
+      "underfilledPages": 4,
+      "underfilledShare": 0.038,
+      "documentsWithAny": 4,
+      "medianPages": 4.0,
+      "runs": {
+        "cr-brand-repositioning#1": {
+          "pages": 4,
+          "underfilled": 1,
+          "fills": [0.08],
+          "kinds": ["last-page"]
+        },
+        "cr-brand-repositioning#2": {
+          "pages": 4,
+          "underfilled": 1,
+          "fills": [0.2],
+          "kinds": ["last-page"]
+        },
+        "cr-brand-repositioning#3": {
+          "pages": 4,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-cost-programme-review#1": {
+          "pages": 3,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-cost-programme-review#2": {
+          "pages": 4,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-cost-programme-review#3": {
+          "pages": 3,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-esg-reporting-readiness#1": {
+          "pages": 5,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-esg-reporting-readiness#2": {
+          "pages": 5,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-esg-reporting-readiness#3": {
+          "pages": 3,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-market-entry-nordics#1": {
+          "pages": 3,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-market-entry-nordics#2": {
+          "pages": 4,
+          "underfilled": 1,
+          "fills": [0.2],
+          "kinds": ["last-page"]
+        },
+        "cr-market-entry-nordics#3": {
+          "pages": 3,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-post-merger-integration#1": {
+          "pages": 4,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-post-merger-integration#2": {
+          "pages": 4,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-post-merger-integration#3": {
+          "pages": 5,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-pricing-review-logistics#1": {
+          "pages": 4,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-pricing-review-logistics#2": {
+          "pages": 6,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-pricing-review-logistics#3": {
+          "pages": 4,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-service-model-redesign#1": {
+          "pages": 6,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-service-model-redesign#2": {
+          "pages": 5,
+          "underfilled": 1,
+          "fills": [0.03],
+          "kinds": ["last-page"]
+        },
+        "cr-service-model-redesign#3": {
+          "pages": 4,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-workforce-planning#1": {
+          "pages": 6,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-workforce-planning#2": {
+          "pages": 7,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
+        },
+        "cr-workforce-planning#3": {
+          "pages": 4,
+          "underfilled": 0,
+          "fills": [],
+          "kinds": []
         }
       }
     }
