@@ -736,7 +736,7 @@
         ]
       },
       "two-column": {
-        "description": "An action title over a 1.1 : 1 split: prose or up to five bullets on the left, a chart, table or image on the right in the frame the definition owns; an optional source at the foot. Give `text` or `bullets`, not both. Copy and adapt this document-local example.",
+        "description": "An action title over a 1.1 : 1 split: prose or up to five bullets on the left, a chart, table or image on the right in the frame the definition owns; an optional source at the foot. Give `text` or `bullets`; with both, the prose wins. Copy and adapt this document-local example.",
         "slots": {
           "title": {
             "type": "string",
@@ -888,51 +888,51 @@
                               "shrink": [12, 11]
                             }
                           }
-                        }
-                      },
-                      {
-                        "$if": "/bullets",
-                        "then": {
-                          "name": "text",
-                          "props": {
-                            "text": {
-                              "$join": [
-                                {
-                                  "$slot": "/bullets/0",
-                                  "default": ""
-                                },
-                                {
-                                  "$slot": "/bullets/1",
-                                  "default": ""
-                                },
-                                {
-                                  "$slot": "/bullets/2",
-                                  "default": ""
-                                },
-                                {
-                                  "$slot": "/bullets/3",
-                                  "default": ""
-                                },
-                                {
-                                  "$slot": "/bullets/4",
-                                  "default": ""
-                                }
-                              ],
-                              "separator": "\n"
-                            },
-                            "style": "body",
-                            "bullet": true,
-                            "fontSize": {
-                              "$theme": "/styles/body/fontSize",
-                              "default": 14
-                            },
-                            "x": "0%",
-                            "y": "0%",
-                            "w": "100%",
-                            "h": "100%",
-                            "valign": "top",
-                            "fit": {
-                              "shrink": [12, 11]
+                        },
+                        "else": {
+                          "$if": "/bullets",
+                          "then": {
+                            "name": "text",
+                            "props": {
+                              "text": {
+                                "$join": [
+                                  {
+                                    "$slot": "/bullets/0",
+                                    "default": ""
+                                  },
+                                  {
+                                    "$slot": "/bullets/1",
+                                    "default": ""
+                                  },
+                                  {
+                                    "$slot": "/bullets/2",
+                                    "default": ""
+                                  },
+                                  {
+                                    "$slot": "/bullets/3",
+                                    "default": ""
+                                  },
+                                  {
+                                    "$slot": "/bullets/4",
+                                    "default": ""
+                                  }
+                                ],
+                                "separator": "\n"
+                              },
+                              "style": "body",
+                              "bullet": true,
+                              "fontSize": {
+                                "$theme": "/styles/body/fontSize",
+                                "default": 14
+                              },
+                              "x": "0%",
+                              "y": "0%",
+                              "w": "100%",
+                              "h": "100%",
+                              "valign": "top",
+                              "fit": {
+                                "shrink": [12, 11]
+                              }
                             }
                           }
                         }
@@ -1018,7 +1018,7 @@
             "required": true,
             "maxWords": 14,
             "role": "actionTitle",
-            "description": "The one sentence, at most fourteen words; steps down to 28 then 24pt."
+            "description": "The one sentence, at most fourteen words; steps down to 24 then 22pt."
           },
           "support": {
             "type": "string",

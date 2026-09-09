@@ -168,7 +168,8 @@ describe('the kpi-row block', () => {
     const doc = deck([
       ['kpi-row', { title: 'T', items, source: 'Source: s.' }],
     ]);
-    const expanded = expandPptxBlocks(doc as never).document as any;
+    const expanded = expandPptxBlocks(doc as never, pptxThemes.consulting)
+      .document as any;
     const frame = expanded.children[0].children[0].children[0];
     const row = frame.children.find(
       (child: any) => child.name === 'group' && child.props.direction === 'row'
@@ -239,7 +240,8 @@ describe('the two-column block', () => {
   it('takes prose on the left, or bullets as one bulleted paragraph list', () => {
     const left = (slots: Record<string, unknown>) => {
       const expanded = expandPptxBlocks(
-        deck([['two-column', { title: 'T', content, ...slots }]]) as never
+        deck([['two-column', { title: 'T', content, ...slots }]]) as never,
+        pptxThemes.consulting
       ).document as any;
       const frame = expanded.children[0].children[0].children[0];
       const row = frame.children.find(
@@ -255,6 +257,30 @@ describe('the two-column block', () => {
     expect(bullets).toHaveLength(1);
     expect(bullets[0].props.text).toBe('First\nSecond\nThird');
     expect(bullets[0].props.bullet).toBe(true);
+  });
+
+  it('draws one left column when both text and bullets are given: the prose wins', () => {
+    const expanded = expandPptxBlocks(
+      deck([
+        ['two-column', { title: 'T', content, text: 'Prose.', bullets: ['A'] }],
+      ]) as never,
+      pptxThemes.consulting
+    ).document as any;
+    const frame = expanded.children[0].children[0].children[0];
+    const row = frame.children.find(
+      (child: any) => child.props?.direction === 'row'
+    );
+    expect(row.children[0].children).toHaveLength(1);
+    expect(row.children[0].children[0].props.text).toBe('Prose.');
+    // Neither given: nothing is drawn on the left, no empty box.
+    const empty = expandPptxBlocks(
+      deck([['two-column', { title: 'T', content }]]) as never,
+      pptxThemes.consulting
+    ).document as any;
+    const emptyRow = empty.children[0].children[0].children[0].children.find(
+      (child: any) => child.props?.direction === 'row'
+    );
+    expect(emptyRow.children[0].children).toEqual([]);
   });
 
   it('rejects placement smuggled through the content slot', () => {
@@ -316,7 +342,8 @@ describe('the cover and statement blocks', () => {
   it('draws the eyebrow only with a client, and the logo only when given', () => {
     const cover = (slots: Record<string, unknown>) => {
       const expanded = expandPptxBlocks(
-        deck([['cover', { title: 'T', ...slots }]]) as never
+        deck([['cover', { title: 'T', ...slots }]]) as never,
+        pptxThemes.consulting
       ).document as any;
       return expanded.children[0].children[0].children[0].children as any[];
     };
