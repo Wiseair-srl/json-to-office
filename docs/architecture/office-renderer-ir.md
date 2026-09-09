@@ -997,3 +997,22 @@ beneath the author's Highcharts options in both formats, so the
 `highcharts.com` credit no longer lands in the plot area of a report chart
 (thirteen rationales). An authored `credits.enabled: true` still wins. No
 corpus golden carries a rendered chart, so no golden moves for it.
+
+### Alternate themes on the shared layers (#330)
+
+Seven DOCX corpus goldens move, every case set on `vermilion` or `devportal`
+(`theme/builtin-vermilion`, `theme/builtin-devportal`,
+`theme/example-field-review`, `theme/shared-foundation`,
+`theme/overrides-over-named-theme`, `structure/theme-page-source`,
+`structure/page-override-per-section`). Both themes now carry the shared
+visual layers `consulting` carried alone: `resolveDocxDesignSystem` writes a
+style per type role (`display`, `stat`, `eyebrow`, `label`, `tracker`,
+`source` and the rest) into `styles.xml`, sets `Normal`'s paragraph spacing to
+the theme's block gap, and writes the canvas safe area into the section
+margins — 0.8in all round on `vermilion` (was 0.94in top and bottom, 0.82in
+sides), 0.75in on `devportal` (was 1in top and bottom). The theme files state
+the same margins under `page`, so the two layers agree. A section that
+overrides its page keeps its override, which is why
+`page-override-per-section` moves only in the sections that inherit. Nothing
+about a document's content or its authored styles changes; a document that
+names neither theme is untouched.

@@ -55,6 +55,8 @@ export type { WarningCode } from './utils/warn';
 // Themes
 export {
   CONSULTING_PPTX_THEME,
+  DEVPORTAL_PPTX_THEME,
+  VERMILION_PPTX_THEME,
   DEFAULT_PPTX_THEME,
   getPptxTheme,
   hasPptxTheme,

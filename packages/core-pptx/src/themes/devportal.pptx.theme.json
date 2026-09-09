@@ -1,0 +1,268 @@
+{
+  "name": "devportal",
+  "displayName": "Field Editorial",
+  "description": "Compact editorial deck — Helvetica in near-black ink with a burnt-orange accent, tight titles, letterspaced labels, warm tinted fills and hairline rules; the twin of the DOCX devportal theme",
+  "whenToUse": "Product and engineering readouts, API and platform reviews: dense text, code and tables beside a devportal report. Not for a client's decision deck.",
+  "version": "1.0.0",
+  "colors": {
+    "primary": "#12191F",
+    "secondary": "#172028",
+    "accent": "#E35B3F",
+    "background": "#FFFFFF",
+    "text": "#232323",
+    "text2": "#46494C",
+    "background2": "#F7ECE7",
+    "accent4": "#46494C",
+    "accent5": "#8A9299",
+    "accent6": "#E8A18D"
+  },
+  "palette": {
+    "rule": "#D8D5D1",
+    "textMuted": "#737373",
+    "onPrimary": "#FFFFFF",
+    "surfaceInverse": "#12191F",
+    "positive": "#2E7D4F",
+    "negative": "#B42318",
+    "chart": ["accent", "primary", "accent4", "accent5", "accent6", "rule"]
+  },
+  "fonts": {
+    "heading": "Helvetica",
+    "body": "Helvetica",
+    "mono": "Courier New"
+  },
+  "defaults": {
+    "fontSize": 14,
+    "fontColor": "#232323"
+  },
+  "styles": {
+    "title": {
+      "fontSize": 30,
+      "bold": true,
+      "fontColor": "text",
+      "align": "left"
+    },
+    "subtitle": {
+      "fontSize": 16,
+      "fontColor": "text2",
+      "align": "left"
+    },
+    "heading1": {
+      "fontSize": 24,
+      "bold": true,
+      "fontColor": "primary"
+    },
+    "heading2": {
+      "fontSize": 18,
+      "bold": true,
+      "fontColor": "secondary"
+    },
+    "heading3": {
+      "fontSize": 14,
+      "bold": true,
+      "fontColor": "text2"
+    },
+    "body": {
+      "fontSize": 14,
+      "fontColor": "text"
+    },
+    "caption": {
+      "fontSize": 10,
+      "fontColor": "text2"
+    }
+  },
+  "typography": {
+    "roles": {
+      "eyebrow": {
+        "face": "heading",
+        "size": 10,
+        "weight": 700,
+        "case": "upper",
+        "tracking": 10,
+        "color": "accent"
+      },
+      "display": {
+        "face": "heading",
+        "size": 28,
+        "weight": 700,
+        "color": "primary",
+        "lineHeight": 1.1,
+        "tracking": -2
+      },
+      "stat": {
+        "face": "heading",
+        "size": 40,
+        "weight": 700,
+        "color": "accent",
+        "lineHeight": 1
+      },
+      "quote": {
+        "face": "body",
+        "size": 18,
+        "color": "text2",
+        "lineHeight": 1.3
+      },
+      "label": {
+        "face": "body",
+        "size": 12,
+        "weight": 700,
+        "color": "text2",
+        "case": "upper",
+        "tracking": 6
+      },
+      "footer": {
+        "face": "body",
+        "size": 9,
+        "color": "text2"
+      },
+      "tableHeader": {
+        "face": "body",
+        "size": 12,
+        "weight": 700,
+        "color": "secondary"
+      },
+      "tableCell": {
+        "face": "body",
+        "size": 12,
+        "color": "text"
+      },
+      "chartLabel": {
+        "face": "body",
+        "size": 11,
+        "weight": 400,
+        "color": "text2"
+      },
+      "tracker": {
+        "face": "body",
+        "size": 10,
+        "case": "upper",
+        "tracking": 6,
+        "color": "text2"
+      },
+      "source": {
+        "face": "body",
+        "size": 9,
+        "color": "text2"
+      }
+    },
+    "scale": {
+      "wide169": {
+        "base": 14,
+        "ratio": 1.2,
+        "baselinePt": 2
+      },
+      "standard43": {
+        "base": 14,
+        "ratio": 1.2,
+        "baselinePt": 2
+      }
+    }
+  },
+  "spacing": {
+    "basePt": 8,
+    "blockGap": {
+      "tight": 4,
+      "normal": 8,
+      "loose": 16
+    },
+    "canvas": {
+      "wide169": {
+        "safeAreaIn": 0.5,
+        "gutterIn": 0.2,
+        "columns": 12,
+        "rows": 8
+      },
+      "standard43": {
+        "safeAreaIn": 0.5,
+        "gutterIn": 0.2,
+        "columns": 12,
+        "rows": 8
+      }
+    }
+  },
+  "chrome": {
+    "runningHead": {
+      "type": "tracker",
+      "color": "text2",
+      "rule": {
+        "weightPt": 0.5,
+        "color": "rule"
+      },
+      "alignment": "right"
+    },
+    "tracker": {
+      "type": "tracker",
+      "color": "text2",
+      "alignment": "right"
+    },
+    "actionTitle": {
+      "type": "display",
+      "color": "primary"
+    },
+    "keyTakeaways": {
+      "type": "label",
+      "color": "primary",
+      "rule": {
+        "weightPt": 1,
+        "color": "accent"
+      },
+      "padPt": 8
+    },
+    "sourceLine": {
+      "type": "source",
+      "color": "text2"
+    },
+    "confidentialFooter": {
+      "type": "footer",
+      "color": "text2",
+      "rule": {
+        "weightPt": 0.5,
+        "color": "rule"
+      },
+      "alignment": "left"
+    },
+    "logoSlot": {
+      "alignment": "right"
+    },
+    "cover": {
+      "type": "display",
+      "color": "primary",
+      "rule": {
+        "weightPt": 3,
+        "color": "accent"
+      }
+    }
+  },
+  "motif": {
+    "kind": "rule",
+    "color": "accent",
+    "weightPt": 2,
+    "placement": "top"
+  },
+  "componentDefaults": {
+    "table": {
+      "border": {
+        "type": "solid",
+        "pt": 0.5,
+        "color": "#D8D5D1"
+      },
+      "headerRow": true,
+      "fontSize": 12
+    },
+    "chart": {
+      "showLegend": true,
+      "legendPos": "b",
+      "legendFontSize": 11,
+      "catAxisLabelFontSize": 11,
+      "valAxisLabelFontSize": 11,
+      "catGridLine": {
+        "style": "none"
+      },
+      "valGridLine": {
+        "style": "solid",
+        "size": 0.5,
+        "color": "#F2F3F3"
+      },
+      "valAxisLineShow": false
+    }
+  }
+}

@@ -116,32 +116,32 @@ Four themes are always registered (statically imported, so they exist independen
 
 Every bundled theme also states `whenToUse` beside its `description`: the voice says what it looks like, the use says which documents it suits, and `jto_discover`, `jto://themes` and the generated design guide quote both, so an agent chooses a look rather than inventing one.
 
-Every bundled theme defines the full `heading1`–`heading6` ladder, `title`/`subtitle`, and `componentDefaults` for tables, lists, images and statistics — so a document that uses any component gets the theme's treatment without stating anything. `consulting` is the first to carry the [shared visual layers](#shared-visual-roles) in full: every type role (`display` 22pt, `stat` 18pt, `chartLabel` 9pt, `source` 8pt and the rest, from a 10.5pt base at ratio 1.2), the `palette` roles with a blue-and-grey chart series, an 8pt spacing base, and the chrome recipes [blocks](/reference/blocks) paint from — the key-takeaways box, the cover, the running head and footer. Safe fonts only — Arial, Calibri, Consolas — so it needs no font setup anywhere, and the chart typography it injects draws with faces every export server host has. It requires nothing: a document on it gets the look, and only a blueprint or profile asks for trackers, sources or footers. `minimal` and `devportal` carry the palettes and type of the shipped `practice-note` and `field-review` examples, which state no `themeOverrides` at all; `vermilion`'s table default is the `vermilion-annual-report` recipe: gray hairline rows, open sides, red bold headers over a red hairline rule. `minimal` and `devportal` also define `TOC1`–`TOC3` entry styles.
+Every bundled theme defines the full `heading1`–`heading6` ladder, `title`/`subtitle`, and `componentDefaults` for tables, lists, images and statistics — so a document that uses any component gets the theme's treatment without stating anything. `consulting`, `vermilion` and `devportal` carry the [shared visual layers](#shared-visual-roles) in full; `consulting` was the first: every type role (`display` 22pt, `stat` 18pt, `chartLabel` 9pt, `source` 8pt and the rest, from a 10.5pt base at ratio 1.2), the `palette` roles with a blue-and-grey chart series, an 8pt spacing base, and the chrome recipes [blocks](/reference/blocks) paint from — the key-takeaways box, the cover, the running head and footer. Safe fonts only — Arial, Calibri, Consolas — so it needs no font setup anywhere, and the chart typography it injects draws with faces every export server host has. It requires nothing: a document on it gets the look, and only a blueprint or profile asks for trackers, sources or footers. `minimal` and `devportal` carry the palettes and type of the shipped `practice-note` and `field-review` examples, which state no `themeOverrides` at all; `vermilion`'s table default is the `vermilion-annual-report` recipe: gray hairline rows, open sides, red bold headers over a red hairline rule. `minimal` and `devportal` also define `TOC1`–`TOC3` entry styles. `vermilion` paints its display, stat and table-header roles in the vermilion, sets its scale at ratio 1.25 with a 0.8in safe area and rules the cover with a 4pt red line; `devportal` condenses the display role, letterspaces its labels, sets a 9.5pt base at ratio 1.2 with a 0.75in safe area and rules the cover at 3pt. Both keep the chart series ordered from their own accent; both are safe-font themes, so neither needs a registry.
 
 Every family the bundled themes name has a metric-compatible substitute in the hosted playground's LibreOffice preview image (Helvetica/Arial → Liberation Sans, Calibri → Carlito, Courier New → Liberation Mono), so the PDF preview breaks lines where Word does. When picking fonts for a custom theme, prefer those families — or Times New Roman and Cambria, which are covered too; Georgia, Verdana, Menlo, Monaco and Consolas fall back to DejaVu faces with different metrics, and Segoe UI to Carlito.
 
 ### PPTX themes
 
-Four built-in themes: **`default`**, **`dark`**, **`minimal`** and **`consulting`**. An unknown theme name silently falls back to `default`. `consulting` is the twin of the DOCX house theme: the same ink, greys, accent, `positive`/`negative`, ordered chart series, chrome recipes and motif, Arial over Calibri with Consolas for code — safe fonts only — so a deck and its report match without restyling. It is opt-in for now; it becomes the default in a later major release.
+Six built-in themes: **`default`**, **`dark`**, **`minimal`**, **`consulting`**, **`vermilion`** and **`devportal`**. An unknown theme name silently falls back to `default`. `consulting` is the twin of the DOCX house theme: the same ink, greys, accent, `positive`/`negative`, ordered chart series, chrome recipes and motif, Arial over Calibri with Consolas for code — safe fonts only — so a deck and its report match without restyling. It is opt-in for now; it becomes the default in a later major release. `vermilion` and `devportal` are twins of the DOCX alternates on the same terms: palette roles, chart series, chrome recipes, motif and font families shared with the report theme of the same name, and an agreement test holds each pair together.
 
-| Slot                   | `default`       | `dark`          | `minimal`             | `consulting`    |
-| ---------------------- | --------------- | --------------- | --------------------- | --------------- |
-| `primary`              | `#4472C4`       | `#5B9BD5`       | `#000000`             | `#1A1F26`       |
-| `secondary`            | `#ED7D31`       | `#FF6F61`       | `#666666`             | `#4B5563`       |
-| `accent`               | `#70AD47`       | `#6BCB77`       | `#999999`             | `#1B4F8A`       |
-| `background`           | `#FFFFFF`       | `#2D2D2D`       | `#FFFFFF`             | `#FFFFFF`       |
-| `text`                 | `#333333`       | `#FFFFFF`       | `#000000`             | `#1A1F26`       |
-| `text2`                | `#44546A`       | `#CCCCCC`       | `#444444`             | `#4B5563`       |
-| `background2`          | `#E7E6E6`       | `#3D3D3D`       | `#F5F5F5`             | `#F2F4F7`       |
-| `accent4`              | `#FFC000`       | `#FFB347`       | `#BBBBBB`             | `#5B8DC9`       |
-| `accent5`              | `#5B9BD5`       | `#77DD77`       | `#DDDDDD`             | `#A9C4E4`       |
-| `accent6`              | `#70AD47`       | `#AEC6CF`       | `#888888`             | `#7B8794`       |
-| Fonts (heading / body) | Arial / Arial   | Arial / Arial   | Helvetica / Helvetica | Arial / Calibri |
-| Defaults               | 18pt, `#333333` | 18pt, `#FFFFFF` | 18pt, `#000000`       | 14pt, `#1A1F26` |
+| Slot                   | `default`       | `dark`          | `minimal`             | `consulting`    | `vermilion`     | `devportal`           |
+| ---------------------- | --------------- | --------------- | --------------------- | --------------- | --------------- | --------------------- |
+| `primary`              | `#4472C4`       | `#5B9BD5`       | `#000000`             | `#1A1F26`       | `#282829`       | `#12191F`             |
+| `secondary`            | `#ED7D31`       | `#FF6F61`       | `#666666`             | `#4B5563`       | `#58595B`       | `#172028`             |
+| `accent`               | `#70AD47`       | `#6BCB77`       | `#999999`             | `#1B4F8A`       | `#EF4130`       | `#E35B3F`             |
+| `background`           | `#FFFFFF`       | `#2D2D2D`       | `#FFFFFF`             | `#FFFFFF`       | `#FFFFFF`       | `#FFFFFF`             |
+| `text`                 | `#333333`       | `#FFFFFF`       | `#000000`             | `#1A1F26`       | `#282829`       | `#232323`             |
+| `text2`                | `#44546A`       | `#CCCCCC`       | `#444444`             | `#4B5563`       | `#58595B`       | `#46494C`             |
+| `background2`          | `#E7E6E6`       | `#3D3D3D`       | `#F5F5F5`             | `#F2F4F7`       | `#FAF7F5`       | `#F7ECE7`             |
+| `accent4`              | `#FFC000`       | `#FFB347`       | `#BBBBBB`             | `#5B8DC9`       | `#F4857A`       | `#46494C`             |
+| `accent5`              | `#5B9BD5`       | `#77DD77`       | `#DDDDDD`             | `#A9C4E4`       | `#F9C4BE`       | `#8A9299`             |
+| `accent6`              | `#70AD47`       | `#AEC6CF`       | `#888888`             | `#7B8794`       | `#939598`       | `#E8A18D`             |
+| Fonts (heading / body) | Arial / Arial   | Arial / Arial   | Helvetica / Helvetica | Arial / Calibri | Arial / Calibri | Helvetica / Helvetica |
+| Defaults               | 18pt, `#333333` | 18pt, `#FFFFFF` | 18pt, `#000000`       | 14pt, `#1A1F26` | 14pt, `#282829` | 14pt, `#232323`       |
 
 `consulting` also carries the [shared visual layers](#shared-visual-roles): every type role (`display` 28pt, `stat` 40pt, `quote` 18pt, `eyebrow` 10pt tracked caps, `chartLabel` 11pt, `source` and `footer` 9pt), the `palette` roles with the same blue-and-grey chart series as the report, a 12 × 8 grid with a half-inch safe area on both 16:9 and 4:3, hairline table borders and gridline-light chart defaults, and the chrome recipes the `action-chart` block binds. One projection differs from the report on purpose: the small roles — `footer`, `tracker`, `source` — take `text2` rather than `textMuted`, because a 9pt run in the light grey sits under the 4.5 : 1 the contrast rule asks of projected text. A deck on `consulting` inherits the look and nothing else; only the `consulting-deck` quality profile asks a slide for a takeaway or a source.
 
-The first three share the same set of **style presets**; `consulting` sets its own, left-aligned and smaller (`title` 32pt bold, `subtitle` 16pt, `heading1` 24pt bold, `body` 14pt, `caption` 10pt):
+The first three share the same set of **style presets**; `consulting`, `vermilion` and `devportal` set their own, left-aligned and smaller (`title` 32pt bold — 30pt on `devportal` — `subtitle` 16pt, `heading1` 24pt bold, `body` 14pt, `caption` 10pt), `vermilion` painting `title` and `heading1` in the accent:
 
 | Preset     | Size | Weight/emphasis | Color token | Alignment |
 | ---------- | ---- | --------------- | ----------- | --------- |
@@ -153,13 +153,15 @@ The first three share the same set of **style presets**; `consulting` sets its o
 | `body`     | 14   | —               | —           | —         |
 | `caption`  | 10   | italic          | `text2`     | —         |
 
-## Gallery: the house theme in both formats
+## Gallery: the house theme and both alternates, in both formats
 
-Rendered through LibreOffice from the two playground templates that carry the house theme — the DOCX `client-report-blocks` report page and the PPTX `consulting-deck-blocks` action-chart slide. The same ink, greys, accent and chart series; the report's running head and the deck's tracker, source line and page number are painted from the same chrome recipes.
+Rendered through LibreOffice from the two playground templates that carry the house theme — the DOCX `client-report-blocks` report page and the PPTX `consulting-deck-blocks` action-chart slide — on each of the three extended themes; the alternates are the same two documents with only `props.theme` changed. In every pair the same ink, greys, accent and chart series; the report's running head and the deck's tracker, source line and page number are painted from the same chrome recipes.
 
-| DOCX report page, `consulting`                                | PPTX content slide, `consulting`                                      |
-| ------------------------------------------------------------- | --------------------------------------------------------------------- |
-| ![Consulting report page](/themes/consulting-report-page.png) | ![Consulting action-chart slide](/themes/consulting-action-chart.png) |
+| Theme        | DOCX report page                                              | PPTX content slide                                                    |
+| ------------ | ------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `consulting` | ![Consulting report page](/themes/consulting-report-page.png) | ![Consulting action-chart slide](/themes/consulting-action-chart.png) |
+| `vermilion`  | ![Vermilion report page](/themes/vermilion-report-page.png)   | ![Vermilion action-chart slide](/themes/vermilion-action-chart.png)   |
+| `devportal`  | ![Devportal report page](/themes/devportal-report-page.png)   | ![Devportal action-chart slide](/themes/devportal-action-chart.png)   |
 
 ## Applying a theme
 

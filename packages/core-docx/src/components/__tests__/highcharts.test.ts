@@ -10,7 +10,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { isValidThemeConfig } from '@json-to-office/shared-docx';
 import { createMockTheme } from './helpers';
-import { devportalTheme, vermilionTheme } from '../../templates/themes';
+import { minimalTheme, vermilionTheme } from '../../templates/themes';
 import { resolveDocxDesignSystem } from '../../themes/design-system';
 import type { ThemeConfig } from '../../styles';
 
@@ -717,7 +717,7 @@ describe('components/highcharts', { timeout: 30000 }, () => {
   describe('theme palette injection', () => {
     it('uses the ordered visual palette and preserves explicit chart colors', async () => {
       const theme = {
-        ...devportalTheme,
+        ...minimalTheme,
         palette: {
           positive: '#337755',
           rule: '#123456',
@@ -754,9 +754,9 @@ describe('components/highcharts', { timeout: 30000 }, () => {
       // Built on a bundled theme so the input is one an author could actually
       // load: accent4-6 are optional keys of the theme schema, not a cast.
       const theme: ThemeConfig = {
-        ...devportalTheme,
+        ...minimalTheme,
         colors: {
-          ...devportalTheme.colors,
+          ...minimalTheme.colors,
           accent4: '#AA1111',
           accent5: '#22BB22',
           accent6: '#3333CC',
@@ -769,9 +769,9 @@ describe('components/highcharts', { timeout: 30000 }, () => {
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
       // Same token order as PPTX: primary, secondary, accent, accent4-6.
       expect(body.infile.colors).toEqual([
-        '#12191F',
-        '#172028',
-        '#E35B3F',
+        minimalTheme.colors.primary,
+        minimalTheme.colors.secondary,
+        minimalTheme.colors.accent,
         '#AA1111',
         '#22BB22',
         '#3333CC',
@@ -866,28 +866,31 @@ describe('components/highcharts', { timeout: 30000 }, () => {
     });
 
     it('emits the full six-color palette for a bundled theme, which defines accent4-6', async () => {
+      // minimal: accent4-6 present, no palette.chart of its own, so the
+      // legacy slot order is the series; a theme with a palette (consulting,
+      // vermilion, devportal) orders the series itself.
       await renderChartToImageProps(
         chartComponent.props as never,
-        devportalTheme
+        minimalTheme
       );
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(body.infile.colors).toEqual([
-        devportalTheme.colors.primary,
-        devportalTheme.colors.secondary,
-        devportalTheme.colors.accent,
-        devportalTheme.colors.accent4,
-        devportalTheme.colors.accent5,
-        devportalTheme.colors.accent6,
+        minimalTheme.colors.primary,
+        minimalTheme.colors.secondary,
+        minimalTheme.colors.accent,
+        minimalTheme.colors.accent4,
+        minimalTheme.colors.accent5,
+        minimalTheme.colors.accent6,
       ]);
       // Pinned so a palette change in the theme JSON is a visible diff here.
       expect(body.infile.colors).toEqual([
-        '#12191F',
-        '#172028',
-        '#E35B3F',
-        '#46494C',
-        '#8A9299',
-        '#E8A18D',
+        '#2B302B',
+        '#4A5B4E',
+        '#6E7F71',
+        '#9AA69C',
+        '#C9CFC7',
+        '#B5AC9D',
       ]);
     });
 
@@ -983,13 +986,13 @@ describe('theme typography injection', () => {
   });
 
   it('scales the sizes by the width the chart is placed at', async () => {
-    // "100%" of the vermilion A4 measure: 11906 − 2 × 1180 twips = 477.3pt
-    // for 900 chart pixels, so a 9.5pt label is drawn at 17.9px.
+    // "100%" of the vermilion A4 measure: 11906 − 2 × 1152 twips = 480.1pt
+    // for 900 chart pixels, so a 9.5pt label is drawn at 17.8px.
     await renderChartToImageProps(
       { ...chart, width: '100%' } as never,
       vermilionTheme
     );
-    expect(request().infile.legend.itemStyle.fontSize).toBe('17.9px');
+    expect(request().infile.legend.itemStyle.fontSize).toBe('17.8px');
     // 600 image pixels = 450pt for the same 900 chart pixels: half a point each.
     await renderChartToImageProps(
       { ...chart, width: 600 } as never,

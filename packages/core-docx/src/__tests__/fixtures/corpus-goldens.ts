@@ -35,7 +35,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'blocks/key-takeaways-consulting':
     '6474a1342916b966c93160571dde3440c25f344566ab4dcfe915586bf886b072',
   'theme/shared-foundation':
-    '3c5cc7370e2d48b988ed70cbb20fb397d265629bc6e970f55c1c9ba3e6193129',
+    '65ff601111ac9002b9a34e17efad8efada373bdee737ffca6df272f8306aca32',
   'text/plain':
     '2ec3db8c354ac9d16590935cc7d4ea9b4573f32169155a4209571dc42cdd4301',
   'text/empty-and-whitespace':
@@ -107,7 +107,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'structure/metadata-empty':
     'edb9a8880f82d7823e682a1efd63c7f324331f22b833ee54255b4ab6705826d1',
   'structure/theme-page-source':
-    '20762a0344a84752f9056886677aad1a14e4956df6d94c24cb87b123fc36ddfb',
+    'fafd1dbfa2529427f0e144fa7926949b4cc21c29f58bc1f1a5cef46460843412',
   'structure/sections-multiple':
     'a1d544d17ff34b3061a88860fd3da7ee250f61f3641c9dd304b2724eb6231548',
   'structure/section-page-break-off':
@@ -131,7 +131,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'structure/page-margins-partial':
     'a96ac125d13d8008d636050850d9cb356a5439e4de77ec476568b8ba49c02094',
   'structure/page-override-per-section':
-    '99a1de092e56db6cdaca09d096e6647034d9de706e7efad69e675cddce101559',
+    '13c730754052680d858e9d5d77f35980485e35d6c334399dec2f5640daf65b70',
   'structure/header-and-footer':
     '5b7c13887135b95912c9c3ad5b71cf97d176a7cff0683d633e08d0ed4732ccc1',
   'structure/header-footer-empty':
@@ -533,9 +533,9 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'theme/builtin-minimal':
     'cefb0c9d628e9ac68d9db4e932f6f47ce9c88bc593b77c2c776f99d54b6e48ef',
   'theme/builtin-devportal':
-    '8676e62ff036deee65b18e1ace702fcb662e11b578328272dbab2ada689bd1fe',
+    '7de63130f469bfdedd48c65ea67753c3686bdabb94b49a94f140c6a5bfe0e9d9',
   'theme/builtin-vermilion':
-    '4a74e890963d23f505adf17eafda428b5a41ca30def6bb9a5550a2f161836776',
+    'bddc3cd92cde612dc1249f1e42936178a2d7c412e2040e3c69ef33309c0dfcf7',
   'theme/builtin-consulting':
     '0d53b391ed7fb2c88ea17a9b98c4824deb51f233cf4a0c07aeeaed11a5c872df',
   'theme/name-omitted':
@@ -555,7 +555,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'theme/overrides-empty':
     'cefb0c9d628e9ac68d9db4e932f6f47ce9c88bc593b77c2c776f99d54b6e48ef',
   'theme/overrides-over-named-theme':
-    '8669e903eb54b6cf05c249c2d2ffbbe26fd3eca582b40542c03d1e41afe4c49c',
+    '727744904e3de0d3c6105a830e7ee2b74dc3ab7ba869665f715e62518e5d1629',
   'theme/color-tokens-in-components':
     'e2bff6016c48e8abe26887ee1a5befe92b52b19656b582fff8c83041eefd60e5',
   'theme/color-hex-literals':
@@ -583,5 +583,5 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'theme/example-practice-note':
     '1e4c9b382bcf548171e917e6ec07024bd1ca9e0f22be4098e47131e62bb97815',
   'theme/example-field-review':
-    'd0866944eda993f5b7a96892cd46b213486e006bd351011bf32634864508ed17',
+    'e612ba26ca49b8ceddd3edd254b75ba4dde024ffb4e27fb5639affb18b362e1b',
 };
