@@ -21,7 +21,11 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { isSafeFont } from '@json-to-office/shared';
-import { validatePptxTheme } from '@json-to-office/shared-pptx';
+import {
+  BUILT_IN_PPTX_THEME_NAMES,
+  PresentationPropsSchema,
+  validatePptxTheme,
+} from '@json-to-office/shared-pptx';
 import {
   DEFAULT_PPTX_THEME,
   getPptxTheme,
@@ -38,16 +42,39 @@ function errorsFor(theme: unknown): string[] {
 
 const names = Object.keys(pptxThemes).sort();
 
+/**
+ * The `examples` of the string branch of `props.theme` — what the editor
+ * offers when the caller types `"theme": ""`.
+ */
+function schemaThemeExamples(): string[] {
+  const theme = (PresentationPropsSchema as any).properties.theme;
+  const stringBranch = theme.anyOf.find((b: any) => b.type === 'string');
+  return [...stringBranch.examples].sort();
+}
+
 describe('built-in pptx themes', () => {
-  it('registers the themes the docs and the schema enum promise', () => {
-    expect(names).toEqual([
-      'consulting',
-      'dark',
-      'default',
-      'devportal',
-      'minimal',
-      'vermilion',
-    ]);
+  it('registers exactly the themes the schema names', () => {
+    expect(names).toEqual([...BUILT_IN_PPTX_THEME_NAMES].sort());
+  });
+
+  /**
+   * This assertion is the point of the list existing in one place. The
+   * predecessor of this test hardcoded its own second copy of the names and
+   * called itself a check on "the schema enum", which is how `vermilion` and
+   * `devportal` reached the registry, and the renderer, while the schema went
+   * on offering only the four names it was born with — the editor completed
+   * `"theme": ""` to a set that had been wrong since they landed.
+   */
+  it('offers every registered theme for completion', () => {
+    expect(schemaThemeExamples()).toEqual(names);
+  });
+
+  it('names the built-ins in its own description', () => {
+    const theme = (PresentationPropsSchema as any).properties.theme;
+    const stringBranch = theme.anyOf.find((b: any) => b.type === 'string');
+    for (const name of names) {
+      expect(stringBranch.description).toContain(name);
+    }
   });
 
   it.each(names)('%s validates against the theme schema', (name) => {

@@ -113,6 +113,7 @@ export type {
 
 // Theme
 export {
+  BUILT_IN_PPTX_THEME_NAMES,
   ThemeConfigSchema,
   ColorValueSchema,
   SEMANTIC_COLOR_NAMES,

@@ -93,6 +93,7 @@ export type {
 // ============================================================================
 
 export {
+  BUILT_IN_DOCX_THEME_NAMES,
   ThemeConfigSchema,
   ThemeOverridesSchema,
   isValidThemeConfig,
