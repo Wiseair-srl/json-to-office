@@ -44,6 +44,17 @@ The report variants invoke `cover`, `running-head`, `section-opener`, `key-takea
 
 The `technical-report` profile differs from `client-report` in what it owes a figure: a `source` wherever a block declares one, never a `takeaway` — the caption is the block's own requirement — and one more text size, for the contents list and the sub-headings.
 
+## `consulting-deck`
+
+A decision deck for a client readout, on the `consulting` theme and judged by the `consulting-deck` profile: every slide invokes one of the five deck blocks of `consulting-deck-blocks.pptx.json`, so a scaffold has no coordinates of its own. A deck's metadata (`title`, `author`, `company`) sits under `props`, not `props.metadata`, and the scaffold is drawn for the wide 16:9 canvas the blocks were designed on; any canvas lays out.
+
+| Variant      | Structure                                                                                                                                         | Slides |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| `data-heavy` | Cover; a KPI row; three action-charts with their takeaway and source; a two-column slide with bullets beside a table; a closing statement         | 6–9    |
+| `narrative`  | Cover; the position as a statement; two two-column slides that argue it beside a chart; one action-chart; a two-column table; a closing statement | 6–8    |
+
+The chart slots hold a `chart` component whose series, labels and axis title are markers and whose `chartColors` name the theme's series; the table content right-aligns its numeric columns per cell, since a slot that may hold a table cannot carry chart props and a block cannot know which columns are numbers. The `consulting-deck` profile is what asks every action-chart for its takeaway and source and bounds the action titles at two lines; the theme only paints them.
+
 ## Instantiating one
 
 ```ts
@@ -51,6 +62,7 @@ import {
   docxBlueprint,
   instantiateDocxBlueprint,
 } from '@json-to-office/core-docx';
+// The PPTX core exports the same pair: pptxBlueprint, instantiatePptxBlueprint.
 import { readBlockDefinitions } from '@json-to-office/shared';
 
 const blueprint = docxBlueprint('client-report')!;
@@ -75,7 +87,7 @@ Patch every pointer with content and the document is generation-ready; leave one
 
 ## Scaffolding through MCP
 
-`jto_scaffold` wraps the same call in a workspace: it takes a blueprint id, an optional variant and theme, the facts of the brief and a markdown outline, and answers with a handle at revision 1, the fill map above with every pointer resolving at that revision, and how many markers the brief and outline already wrote. The agent fills the rest by pointer with `jto_workspace_patch` and never holds the document.
+`jto_scaffold` wraps the same call in a workspace, in either format: it takes a blueprint id, an optional variant and theme, the facts of the brief and a markdown outline, and answers with a handle at revision 1, the fill map above with every pointer resolving at that revision, and how many markers the brief and outline already wrote. The agent fills the rest by pointer with `jto_workspace_patch` and never holds the document.
 
 The brief and the outline are mapped by one rule each:
 
@@ -83,8 +95,8 @@ The brief and the outline are mapped by one rule each:
 | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `brief.<key>`           | `props.metadata.<key>` (`client` also fills `company`) and the `<key>` slot of the cover, the running head and the memo header (`title` also fills the memo's `subject`) — never a body block, where `title` means the section's |
 | `# Heading`             | The title, unless the brief gave one                                                                                                                                                                                             |
-| `## Heading`, in order  | The next section opener's `title`                                                                                                                                                                                                |
+| `## Heading`, in order  | The next section opener's `title`; on a deck, the next content slide's title — an action title, or a statement's assertion — never the cover's                                                                                   |
 | `### Heading`, in order | The next level-2 `heading` marker between that opener and the following one                                                                                                                                                      |
-| Paragraphs under a `##` | The body text markers between that opener and the following one, in order; a blank line separates paragraphs                                                                                                                     |
+| Paragraphs under a `##` | The body text markers between that opener and the following one, in order; on a deck, that slide's `text`, `support` or `takeaway` slots; a blank line separates paragraphs                                                      |
 
 A brief key that matches nothing comes back as `W_BRIEF_UNUSED`; a section, sub-heading or paragraph the variant has no room for, text before the first `##`, a second `#` and any heading deeper than `###` come back as `W_OUTLINE_UNMAPPED`. Nothing is dropped silently. `jto_validate` on the handle reports the markers as advisory findings with `generationReady: false` and, once they are gone, `generationReady: true`; `jto_generate` refuses in between, naming every remaining marker by pointer. `jto://blueprints` serves the plans in full and `jto_discover` their summaries.

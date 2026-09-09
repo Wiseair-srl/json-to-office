@@ -9,7 +9,7 @@
  * resource and the scaffold — without each of them repeating the dance.
  *
  * Everything is optional on the way out: a core that cannot be loaded, or a
- * PPTX core that exports no blueprints yet, answers `undefined` and the caller
+ * core that exports no blueprints, answers `undefined` and the caller
  * degrades to "none", never to a dead server.
  */
 
@@ -58,6 +58,8 @@ const CORE_EXPORTS: Record<
     themes: 'pptxThemes',
     profiles: 'PPTX_QUALITY_PROFILES',
     defaultProfile: 'PPTX_DEFAULT_QUALITY_PROFILE',
+    blueprints: 'PPTX_BLUEPRINTS',
+    instantiate: 'instantiatePptxBlueprint',
     rules: 'PPTX_QUALITY_RULES',
     resolveProfile: 'resolvePptxQualityProfile',
     declaredProfile: 'declaredPptxQualityProfile',

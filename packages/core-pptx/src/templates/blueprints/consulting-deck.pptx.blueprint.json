@@ -1,0 +1,560 @@
+{
+  "id": "consulting-deck",
+  "format": "pptx",
+  "title": "Consulting deck",
+  "description": "A decision deck for a client readout: a cover, the quarter in numbers, one action-chart per finding with its takeaway and source, a two-column slide for the evidence that is a table or a list, a closing statement; every slide invokes one of the five consulting blocks on the house theme.",
+  "whenToUse": "A client readout, a board update or a steering-committee deck: one message per slide, a chart or table that carries it, a source under it. Not for a talk track or a training deck.",
+  "theme": "consulting",
+  "profile": "consulting-deck",
+  "definitions": "consulting-deck-blocks.pptx.json",
+  "numbering": "none",
+  "toc": false,
+  "variants": {
+    "data-heavy": {
+      "description": "Evidence-led: cover, a KPI row, three action-charts, a two-column table slide, a closing statement.",
+      "whenToUse": "The brief comes with numbers the audience will check: performance, finance, operations.",
+      "pages": {
+        "min": 6,
+        "max": 9
+      },
+      "metadata": {
+        "title": "{{Title: as on the cover}}",
+        "author": "{{Author or team}}",
+        "company": "{{Client name}}"
+      },
+      "children": [
+        {
+          "name": "slide",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "cover",
+                "slots": {
+                  "title": "{{Title: the deck's conclusion in one sentence}}",
+                  "subtitle": "{{Subtitle: what the deck answers, for whom}}",
+                  "client": "{{Client name}}",
+                  "date": "{{Month YYYY}}",
+                  "confidentiality": "{{Confidentiality: Confidential, or For internal use}}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "slide",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "kpi-row",
+                "slots": {
+                  "title": "{{Action title: the claim this slide proves, with its number, two lines at most}}",
+                  "tracker": "{{Tracker: the section, one or two words}}",
+                  "items": [
+                    {
+                      "value": "{{0.0}}",
+                      "unit": "{{unit}}",
+                      "label": "{{What it measures}}",
+                      "delta": "{{+0.0}}"
+                    },
+                    {
+                      "value": "{{0.0}}",
+                      "unit": "{{unit}}",
+                      "label": "{{What it measures}}",
+                      "delta": "{{+0.0}}"
+                    },
+                    {
+                      "value": "{{0.0}}",
+                      "unit": "{{unit}}",
+                      "label": "{{What it measures}}",
+                      "delta": "{{+0.0}}"
+                    }
+                  ],
+                  "source": "{{Source: system or document, date}}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "slide",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "action-chart",
+                "slots": {
+                  "title": "{{Action title: the claim this slide proves, with its number, two lines at most}}",
+                  "tracker": "{{Tracker: the section, one or two words}}",
+                  "chart": {
+                    "name": "chart",
+                    "props": {
+                      "type": "bar",
+                      "valAxisTitle": "{{Measure (unit)}}",
+                      "data": [
+                        {
+                          "name": "{{Series name}}",
+                          "labels": [
+                            "{{Period 1}}",
+                            "{{Period 2}}",
+                            "{{Period 3}}"
+                          ],
+                          "values": [0, 0, 0]
+                        }
+                      ],
+                      "chartColors": [
+                        "accent",
+                        "secondary",
+                        "accent4",
+                        "accent6",
+                        "accent5"
+                      ]
+                    }
+                  },
+                  "takeaway": "{{Takeaway: what the reader should conclude, one or two sentences}}",
+                  "source": "{{Source: system or document, date}}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "slide",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "action-chart",
+                "slots": {
+                  "title": "{{Action title: the claim this slide proves, with its number, two lines at most}}",
+                  "tracker": "{{Tracker: the section, one or two words}}",
+                  "chart": {
+                    "name": "chart",
+                    "props": {
+                      "type": "bar",
+                      "valAxisTitle": "{{Measure (unit)}}",
+                      "data": [
+                        {
+                          "name": "{{Series name}}",
+                          "labels": [
+                            "{{Period 1}}",
+                            "{{Period 2}}",
+                            "{{Period 3}}"
+                          ],
+                          "values": [0, 0, 0]
+                        }
+                      ],
+                      "chartColors": [
+                        "accent",
+                        "secondary",
+                        "accent4",
+                        "accent6",
+                        "accent5"
+                      ]
+                    }
+                  },
+                  "takeaway": "{{Takeaway: what the reader should conclude, one or two sentences}}",
+                  "source": "{{Source: system or document, date}}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "slide",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "action-chart",
+                "slots": {
+                  "title": "{{Action title: the claim this slide proves, with its number, two lines at most}}",
+                  "tracker": "{{Tracker: the section, one or two words}}",
+                  "chart": {
+                    "name": "chart",
+                    "props": {
+                      "type": "bar",
+                      "valAxisTitle": "{{Measure (unit)}}",
+                      "data": [
+                        {
+                          "name": "{{Series name}}",
+                          "labels": [
+                            "{{Period 1}}",
+                            "{{Period 2}}",
+                            "{{Period 3}}"
+                          ],
+                          "values": [0, 0, 0]
+                        }
+                      ],
+                      "chartColors": [
+                        "accent",
+                        "secondary",
+                        "accent4",
+                        "accent6",
+                        "accent5"
+                      ]
+                    }
+                  },
+                  "takeaway": "{{Takeaway: what the reader should conclude, one or two sentences}}",
+                  "source": "{{Source: system or document, date}}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "slide",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "two-column",
+                "slots": {
+                  "title": "{{Action title: the claim this slide proves, with its number, two lines at most}}",
+                  "tracker": "{{Tracker: the section, one or two words}}",
+                  "bullets": [
+                    "{{Bullet 1: one claim, ten words}}",
+                    "{{Bullet 2: one claim, ten words}}",
+                    "{{Bullet 3: one claim, ten words}}"
+                  ],
+                  "content": {
+                    "name": "table",
+                    "props": {
+                      "rows": [
+                        [
+                          "{{Row label}}",
+                          {
+                            "text": "{{Column (unit)}}",
+                            "align": "right"
+                          },
+                          {
+                            "text": "{{Column (unit)}}",
+                            "align": "right"
+                          }
+                        ],
+                        [
+                          "{{Row 1}}",
+                          {
+                            "text": "{{0.0}}",
+                            "align": "right"
+                          },
+                          {
+                            "text": "{{0.0}}",
+                            "align": "right"
+                          }
+                        ],
+                        [
+                          "{{Row 2}}",
+                          {
+                            "text": "{{0.0}}",
+                            "align": "right"
+                          },
+                          {
+                            "text": "{{0.0}}",
+                            "align": "right"
+                          }
+                        ],
+                        [
+                          "{{Row 3}}",
+                          {
+                            "text": "{{0.0}}",
+                            "align": "right"
+                          },
+                          {
+                            "text": "{{0.0}}",
+                            "align": "right"
+                          }
+                        ]
+                      ]
+                    }
+                  },
+                  "source": "{{Source: system or document, date}}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "slide",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "statement",
+                "slots": {
+                  "tracker": "{{Tracker: the section, one or two words}}",
+                  "assertion": "{{Assertion: what to do next, in one sentence}}",
+                  "support": "{{Support: what backs the assertion, under thirty words}}"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "narrative": {
+      "description": "Argument-led: cover, the position as a statement, two two-column slides that argue it beside a chart, one action-chart, a two-column table, a closing statement.",
+      "whenToUse": "The brief is a position or a recommendation with few numbers; the audience follows an argument.",
+      "pages": {
+        "min": 6,
+        "max": 8
+      },
+      "metadata": {
+        "title": "{{Title: as on the cover}}",
+        "author": "{{Author or team}}",
+        "company": "{{Client name}}"
+      },
+      "children": [
+        {
+          "name": "slide",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "cover",
+                "slots": {
+                  "title": "{{Title: the deck's conclusion in one sentence}}",
+                  "subtitle": "{{Subtitle: what the deck answers, for whom}}",
+                  "client": "{{Client name}}",
+                  "date": "{{Month YYYY}}",
+                  "confidentiality": "{{Confidentiality: Confidential, or For internal use}}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "slide",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "statement",
+                "slots": {
+                  "tracker": "{{Tracker: the section, one or two words}}",
+                  "assertion": "{{Assertion: the position, in one sentence}}",
+                  "support": "{{Support: what backs the assertion, under thirty words}}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "slide",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "two-column",
+                "slots": {
+                  "title": "{{Action title: the claim this slide proves, with its number, two lines at most}}",
+                  "tracker": "{{Tracker: the section, one or two words}}",
+                  "text": "{{Body: the argument this slide makes, under fifty words}}",
+                  "content": {
+                    "name": "chart",
+                    "props": {
+                      "type": "bar",
+                      "valAxisTitle": "{{Measure (unit)}}",
+                      "data": [
+                        {
+                          "name": "{{Series name}}",
+                          "labels": [
+                            "{{Period 1}}",
+                            "{{Period 2}}",
+                            "{{Period 3}}"
+                          ],
+                          "values": [0, 0, 0]
+                        }
+                      ],
+                      "chartColors": [
+                        "accent",
+                        "secondary",
+                        "accent4",
+                        "accent6",
+                        "accent5"
+                      ]
+                    }
+                  },
+                  "source": "{{Source: system or document, date}}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "slide",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "two-column",
+                "slots": {
+                  "title": "{{Action title: the claim this slide proves, with its number, two lines at most}}",
+                  "tracker": "{{Tracker: the section, one or two words}}",
+                  "text": "{{Body: the argument this slide makes, under fifty words}}",
+                  "content": {
+                    "name": "chart",
+                    "props": {
+                      "type": "bar",
+                      "valAxisTitle": "{{Measure (unit)}}",
+                      "data": [
+                        {
+                          "name": "{{Series name}}",
+                          "labels": [
+                            "{{Period 1}}",
+                            "{{Period 2}}",
+                            "{{Period 3}}"
+                          ],
+                          "values": [0, 0, 0]
+                        }
+                      ],
+                      "chartColors": [
+                        "accent",
+                        "secondary",
+                        "accent4",
+                        "accent6",
+                        "accent5"
+                      ]
+                    }
+                  },
+                  "source": "{{Source: system or document, date}}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "slide",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "action-chart",
+                "slots": {
+                  "title": "{{Action title: the claim this slide proves, with its number, two lines at most}}",
+                  "tracker": "{{Tracker: the section, one or two words}}",
+                  "chart": {
+                    "name": "chart",
+                    "props": {
+                      "type": "bar",
+                      "valAxisTitle": "{{Measure (unit)}}",
+                      "data": [
+                        {
+                          "name": "{{Series name}}",
+                          "labels": [
+                            "{{Period 1}}",
+                            "{{Period 2}}",
+                            "{{Period 3}}"
+                          ],
+                          "values": [0, 0, 0]
+                        }
+                      ],
+                      "chartColors": [
+                        "accent",
+                        "secondary",
+                        "accent4",
+                        "accent6",
+                        "accent5"
+                      ]
+                    }
+                  },
+                  "takeaway": "{{Takeaway: what the reader should conclude, one or two sentences}}",
+                  "source": "{{Source: system or document, date}}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "slide",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "two-column",
+                "slots": {
+                  "title": "{{Action title: the claim this slide proves, with its number, two lines at most}}",
+                  "tracker": "{{Tracker: the section, one or two words}}",
+                  "bullets": [
+                    "{{Bullet 1: one claim, ten words}}",
+                    "{{Bullet 2: one claim, ten words}}",
+                    "{{Bullet 3: one claim, ten words}}"
+                  ],
+                  "content": {
+                    "name": "table",
+                    "props": {
+                      "rows": [
+                        [
+                          "{{Row label}}",
+                          {
+                            "text": "{{Column (unit)}}",
+                            "align": "right"
+                          },
+                          {
+                            "text": "{{Column (unit)}}",
+                            "align": "right"
+                          }
+                        ],
+                        [
+                          "{{Row 1}}",
+                          {
+                            "text": "{{0.0}}",
+                            "align": "right"
+                          },
+                          {
+                            "text": "{{0.0}}",
+                            "align": "right"
+                          }
+                        ],
+                        [
+                          "{{Row 2}}",
+                          {
+                            "text": "{{0.0}}",
+                            "align": "right"
+                          },
+                          {
+                            "text": "{{0.0}}",
+                            "align": "right"
+                          }
+                        ],
+                        [
+                          "{{Row 3}}",
+                          {
+                            "text": "{{0.0}}",
+                            "align": "right"
+                          },
+                          {
+                            "text": "{{0.0}}",
+                            "align": "right"
+                          }
+                        ]
+                      ]
+                    }
+                  },
+                  "source": "{{Source: system or document, date}}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "slide",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "statement",
+                "slots": {
+                  "tracker": "{{Tracker: the section, one or two words}}",
+                  "assertion": "{{Assertion: what to do next, in one sentence}}",
+                  "support": "{{Support: what backs the assertion, under thirty words}}"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -64,6 +64,23 @@ const CHROME_BLOCKS: ReadonlySet<string> = new Set([
   'memo-header',
 ]);
 
+/** Where a format keeps its metadata: a document under `props.metadata`, a deck under `props`. */
+const METADATA_POINTER: Record<FormatName, string> = {
+  docx: '/props/metadata',
+  pptx: '/props',
+};
+
+/**
+ * The slots an outline paragraph may fill on a slide, in the order a block
+ * declares them: prose, the support under a statement, the takeaway beside a
+ * chart. A document's paragraphs go to its `text` markers instead.
+ */
+const SLIDE_BODY_SLOTS: ReadonlySet<string> = new Set([
+  'text',
+  'support',
+  'takeaway',
+]);
+
 /** Brief keys that also fill a metadata field under another name. */
 const METADATA_ALIASES: Readonly<Record<string, string>> = {
   client: 'company',
@@ -208,7 +225,8 @@ export function applyFacts(
   document: Record<string, unknown>,
   fillMap: readonly BlueprintFillEntry[],
   brief: Readonly<Record<string, string>>,
-  outline: Outline | undefined
+  outline: Outline | undefined,
+  format: FormatName = 'docx'
 ): Fill {
   const done = new Set<string>();
   const diagnostics: Diagnostic[] = [];
@@ -226,7 +244,7 @@ export function applyFacts(
   for (const [key, value] of Object.entries(facts)) {
     const metadataPaths = [key, METADATA_ALIASES[key]]
       .filter((name): name is string => name !== undefined)
-      .map((name) => `/props/metadata/${name}`);
+      .map((name) => `${METADATA_POINTER[format]}/${name}`);
     const slotNames = [key, ...(SLOT_ALIASES[key] ?? [])];
     const targets = pending().filter(
       (entry) =>
@@ -260,8 +278,15 @@ export function applyFacts(
   }
 
   if (outline) {
-    const openers = pending().filter(
-      (entry) => entry.block === 'section-opener' && entry.slot === 'title'
+    // What a `##` fills: a section opener's title in a document; on a deck,
+    // the title of each content slide — the action title, or a statement's
+    // assertion — never the cover's.
+    const openers = pending().filter((entry) =>
+      format === 'docx'
+        ? entry.block === 'section-opener' && entry.slot === 'title'
+        : entry.kind === 'slot' &&
+          entry.block !== 'cover' &&
+          (entry.slot === 'title' || entry.slot === 'assertion')
     );
     // A section's markers are the ones between its opener and the next, in
     // fill-map (document) order — the same thing as "the same top-level
@@ -280,8 +305,12 @@ export function applyFacts(
       write(opener, section.heading);
       const own = under(index);
       const subheadings = own.filter((entry) => isHeadingText(document, entry));
-      const bodies = own.filter(
-        (entry) => entry.kind === 'text' && !subheadings.includes(entry)
+      const bodies = own.filter((entry) =>
+        format === 'docx'
+          ? entry.kind === 'text' && !subheadings.includes(entry)
+          : entry.kind === 'slot' &&
+            entry.slot !== undefined &&
+            SLIDE_BODY_SLOTS.has(entry.slot)
       );
       section.subheadings.forEach((text, i) => {
         if (subheadings[i]) write(subheadings[i], text);
@@ -374,7 +403,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
     {
       title: 'Scaffold a document from a blueprint',
       description:
-        'The first move for a report: pick a blueprint from jto_discover (or jto://blueprints), name the theme and what you know of the brief, and get back a draft workspace — a handle at revision 1 — plus a fill map listing every `{{…}}` marker still owed: its JSON pointer, kind, budget and the guidance for filling it. The scaffold is schema- and semantic-valid, carries the block definitions it invokes, and names its quality profile, so jto_validate judges it against the archetype from the first call and reports the markers as advisory draft findings with `generationReady: false`; jto_generate refuses until every marker is replaced. Fill slots by pointer with jto_workspace_patch. A brief fact fills props.metadata.<key> and the <key> slot of the cover, running head and memo header (`title` is a memo’s subject); a markdown outline fills the body — `#` is the title, each `##` in order the next section opener, each `###` beneath it the next sub-heading, the paragraphs that section’s body text. Whatever matches nothing is reported.',
+        'The first move for a report: pick a blueprint from jto_discover (or jto://blueprints), name the theme and what you know of the brief, and get back a draft workspace — a handle at revision 1 — plus a fill map listing every `{{…}}` marker still owed: its JSON pointer, kind, budget and the guidance for filling it. The scaffold is schema- and semantic-valid, carries the block definitions it invokes, and names its quality profile, so jto_validate judges it against the archetype from the first call and reports the markers as advisory draft findings with `generationReady: false`; jto_generate refuses until every marker is replaced. Fill slots by pointer with jto_workspace_patch. A brief fact fills props.metadata.<key> and the <key> slot of the cover, running head and memo header (`title` is a memo’s subject); a markdown outline fills the body — `#` is the title, each `##` in order the next section opener (on a deck, the next content slide’s title), each `###` beneath it the next sub-heading, the paragraphs that section’s body text (on a deck, the slide’s text, support or takeaway). Whatever matches nothing is reported.',
       annotations: {
         readOnlyHint: false,
         destructiveHint: false,
@@ -385,13 +414,13 @@ export function register(server: McpServer, deps: ToolDeps): void {
         properties: {
           format: {
             ...formatSchema,
-            description: 'Defaults to docx, the only format with blueprints.',
+            description: 'Defaults to docx.',
           },
           blueprint: {
             type: 'string',
             minLength: 1,
             description:
-              'A blueprint id from jto_discover, e.g. "client-report" or "technical-report".',
+              'A blueprint id from jto_discover, e.g. "client-report", "technical-report" or "consulting-deck".',
           },
           variant: {
             type: 'string',
@@ -537,7 +566,8 @@ export function register(server: McpServer, deps: ToolDeps): void {
             instantiated.document,
             instantiated.fillMap,
             args.brief ?? {},
-            outline
+            outline,
+            format
           );
 
           const title = args.title ?? args.brief?.title ?? outline?.title;

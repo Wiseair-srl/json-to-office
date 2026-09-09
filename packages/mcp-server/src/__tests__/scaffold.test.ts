@@ -178,7 +178,7 @@ describe('what a scaffold is', () => {
     });
   });
 
-  it('refuses an unknown blueprint, an unknown variant and a format without blueprints, naming what exists', async () => {
+  it('refuses an unknown blueprint, an unknown variant and a blueprint of the other format, naming what exists', async () => {
     const unknown = await call('jto_scaffold', { blueprint: 'memo' });
     expect(unknown.ok).toBe(false);
     expect(unknown.diagnostics[0]).toMatchObject({
@@ -202,7 +202,7 @@ describe('what a scaffold is', () => {
     });
     expect(pptx.diagnostics[0]).toMatchObject({
       code: 'E_BLUEPRINT_NOT_FOUND',
-      context: { format: 'pptx', blueprints: [] },
+      context: { format: 'pptx', blueprints: ['consulting-deck'] },
     });
   });
 });
@@ -566,6 +566,87 @@ describe('scaffolding a technical report', () => {
         .filter((entry) => entry.path.startsWith(`${results}/`))
         .map((entry) => entry.path)
     ).not.toContain(`${results}/3/props/text`);
+  });
+});
+
+describe('scaffolding a consulting deck', () => {
+  it('opens a deck whose metadata sits under props, fills the cover from the brief and the slide titles and bodies from the outline', async () => {
+    const out = await call('jto_scaffold', {
+      format: 'pptx',
+      blueprint: 'consulting-deck',
+      variant: 'narrative',
+      brief: {
+        title: 'Growth improved as delivery became more reliable',
+        client: 'Example client',
+        date: 'September 2026',
+        author: 'Consulting team',
+      },
+      outline: [
+        '## Reliability, not price, drove the gain',
+        'Retained clients expanded scope in every quarter after delivery stabilised.',
+        '## Churn fell to 6% once ownership was assigned',
+        'Named owners closed the gap between promise and delivery.',
+        '## Revenue grew 18%',
+        'Each quarter outgrew the last.',
+      ].join('\n'),
+    });
+    expect(out.ok).toBe(true);
+    expect(out.workspace).toMatchObject({ revision: 1, format: 'pptx' });
+    expect(out.blueprint).toMatchObject({
+      id: 'consulting-deck',
+      variant: 'narrative',
+      theme: 'consulting',
+      profile: 'consulting-deck',
+      definitions: 'consulting-deck-blocks.pptx.json',
+    });
+    expect(out.blueprint.blocks).toEqual(
+      expect.arrayContaining([
+        'cover',
+        'statement',
+        'two-column',
+        'action-chart',
+      ])
+    );
+    expect(codes(out)).not.toContain('W_BRIEF_UNUSED');
+    const { document } = (await call('jto_workspace_inspect', {
+      handle: out.workspace.handle,
+      includeDocument: true,
+    })) as { document: any };
+    expect(document.props).toMatchObject({
+      title: 'Growth improved as delivery became more reliable',
+      author: 'Consulting team',
+      company: 'Example client',
+      qualityProfile: 'consulting-deck',
+    });
+    expect(document.props.metadata).toBeUndefined();
+    const cover = document.children[0].children[0].props.slots;
+    expect(cover).toMatchObject({
+      title: 'Growth improved as delivery became more reliable',
+      client: 'Example client',
+      date: 'September 2026',
+    });
+    // `##` fills the content slides' titles in order — the statement's
+    // assertion, then the two-column titles — and the paragraphs their
+    // support and text; the cover is never an opener.
+    const slide = (i: number) => document.children[i].children[0].props.slots;
+    expect(slide(1).assertion).toBe('Reliability, not price, drove the gain');
+    expect(slide(1).support).toBe(
+      'Retained clients expanded scope in every quarter after delivery stabilised.'
+    );
+    expect(slide(2).title).toBe('Churn fell to 6% once ownership was assigned');
+    expect(slide(2).text).toBe(
+      'Named owners closed the gap between promise and delivery.'
+    );
+    expect(slide(3).title).toBe('Revenue grew 18%');
+    expect(slide(3).text).toBe('Each quarter outgrew the last.');
+    // The remaining markers are still owed, and validation says so.
+    expect(out.fillMap.length).toBeGreaterThan(10);
+    const validated = (await call('jto_validate', {
+      format: 'pptx',
+      handle: out.workspace.handle,
+    })) as any;
+    expect(validated.profileId).toBe('consulting-deck');
+    expect(validated.generationReady).toBe(false);
   });
 });
 

@@ -63,6 +63,18 @@ export {
   pptxThemes,
 } from './themes';
 
+// Blueprints: deck archetypes as data (#342)
+export {
+  PPTX_BLUEPRINTS,
+  pptxBlueprint,
+  instantiatePptxBlueprint,
+} from './blueprints';
+export type {
+  BlueprintFillEntry,
+  InstantiateBlueprintOptions,
+  InstantiatedBlueprint,
+} from './blueprints';
+
 // Design-quality analysis (#216)
 export { analyzePptxQuality } from './quality/preflight';
 export type {
