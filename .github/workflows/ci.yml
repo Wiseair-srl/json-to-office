@@ -265,7 +265,17 @@ jobs:
       # without Base, Draw, Math and their dependency trees.
       - name: Install LibreOffice and poppler
         run: |
-          sudo apt-get update
+          # The runner image ships third-party apt sources (Chrome, Edge) we
+          # never install from; when one of them serves a bad index,
+          # `apt-get update` exits 100 and the job dies before any code runs.
+          # Drop them, and retry the update against the Ubuntu mirrors.
+          sudo rm -f /etc/apt/sources.list.d/google-chrome*.list \
+            /etc/apt/sources.list.d/microsoft-edge*.list
+          for attempt in 1 2 3; do
+            sudo apt-get update && break
+            echo "apt-get update failed (attempt $attempt); retrying"
+            sleep 10
+          done
           # Liberation and Carlito are metric-compatible with Arial and
           # Calibri: with them the house theme renders at its design widths,
           # without them every "design font" case is a DejaVu case.
