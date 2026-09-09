@@ -9,7 +9,7 @@ import {
 } from '@json-to-office/shared';
 import { ComponentDefaultsSchema } from '../component-defaults';
 import { NoProofWordsSchema } from '../font';
-import { ThemeOverridesSchema } from '../theme';
+import { BUILT_IN_DOCX_THEME_NAMES, ThemeOverridesSchema } from '../theme';
 
 // Create a function to generate ReportPropsSchema with recursive component reference
 export const createReportPropsSchema = (_componentRef?: TSchema) =>
@@ -19,8 +19,10 @@ export const createReportPropsSchema = (_componentRef?: TSchema) =>
       theme: Type.Optional(
         Type.String({
           description:
-            'Theme name to apply (default: "minimal"). Built-ins: consulting (the house style), minimal, devportal, vermilion.',
-          examples: ['consulting', 'minimal', 'devportal', 'vermilion'],
+            'Theme name to apply (default: "minimal"). Built-ins: ' +
+            `${BUILT_IN_DOCX_THEME_NAMES.join(', ')} ` +
+            '(consulting is the house style).',
+          examples: [...BUILT_IN_DOCX_THEME_NAMES],
           default: 'minimal',
         })
       ),

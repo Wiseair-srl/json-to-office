@@ -267,7 +267,20 @@ function stripDiscriminator(obj: any): void {
  */
 function injectCustomThemeNames(schema: any, themeNames: string[]): void {
   function inject(themeProp: any): void {
-    if (!themeProp || themeProp.type !== 'string') return;
+    if (!themeProp) return;
+    // `theme` is a bare string on docx but `string | inline theme config` on
+    // pptx, and a TypeBox union compiles to a node carrying `anyOf` and no
+    // `type` of its own. Checking `type` first skipped every pptx document
+    // silently: the property was reached, the names were never added, and the
+    // editor offered only the built-ins the schema was born with. The string
+    // branch is the one that takes names; the object branch has no `type`
+    // 'string' and falls out below.
+    const branches = themeProp.anyOf ?? themeProp.oneOf;
+    if (Array.isArray(branches)) {
+      branches.forEach(inject);
+      return;
+    }
+    if (themeProp.type !== 'string') return;
     const existing = Array.isArray(themeProp.examples)
       ? themeProp.examples
       : [];

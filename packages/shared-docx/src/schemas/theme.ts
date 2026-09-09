@@ -19,6 +19,22 @@ import { IndentSchema } from './components/common';
 // Document Margins Schema
 // ============================================================================
 
+/**
+ * Built-in theme names, in the order the schema description and the editor's
+ * completion list offer them.
+ *
+ * The only place the set is written down: the `theme` property's description
+ * and `examples` are both built from it, and a guard test in `core-docx` pins
+ * the bundled theme registry to it. Its pptx twin is
+ * `BUILT_IN_PPTX_THEME_NAMES`, where the two drifted apart.
+ */
+export const BUILT_IN_DOCX_THEME_NAMES = [
+  'consulting',
+  'devportal',
+  'minimal',
+  'vermilion',
+] as const;
+
 export const DocumentMarginsSchema = Type.Object(
   {
     top: Type.Number({ minimum: 0 }),

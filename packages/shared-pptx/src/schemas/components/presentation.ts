@@ -7,7 +7,11 @@ import {
   BlockDefinitionsSchema,
   FontRegistrySchema,
 } from '@json-to-office/shared';
-import { GridConfigSchema, ThemeConfigSchema } from '../theme';
+import {
+  BUILT_IN_PPTX_THEME_NAMES,
+  GridConfigSchema,
+  ThemeConfigSchema,
+} from '../theme';
 import { PptxComponentDefaultsSchema } from '../component-defaults';
 
 export const PresentationPropsSchema = Type.Object(
@@ -29,8 +33,10 @@ export const PresentationPropsSchema = Type.Object(
         [
           Type.String({
             description:
-              'Theme name to apply (default: "default"). Built-ins: consulting (the house style), default, dark, minimal.',
-            examples: ['consulting', 'default', 'dark', 'minimal'],
+              'Theme name to apply (default: "default"). Built-ins: ' +
+              `${BUILT_IN_PPTX_THEME_NAMES.join(', ')} ` +
+              '(consulting is the house style).',
+            examples: [...BUILT_IN_PPTX_THEME_NAMES],
             default: 'default',
           }),
           ThemeConfigSchema,

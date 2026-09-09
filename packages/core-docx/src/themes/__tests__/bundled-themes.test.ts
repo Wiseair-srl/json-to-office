@@ -11,6 +11,10 @@ import { fileURLToPath } from 'url';
 import { validateThemeJson, formatValidationErrors } from '../json/validator';
 import { createMinimalTheme } from '../json';
 import { getTheme, getThemeNames } from '../../templates/themes';
+import {
+  BUILT_IN_DOCX_THEME_NAMES,
+  ReportPropsSchema,
+} from '@json-to-office/shared-docx';
 
 const themesDir = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -49,13 +53,25 @@ describe('built-in theme registry', () => {
 
   it('registers the statically imported themes', () => {
     expect(registeredNames).toEqual(
-      expect.arrayContaining([
-        'minimal',
-        'devportal',
-        'vermilion',
-        'consulting',
-      ])
+      expect.arrayContaining([...BUILT_IN_DOCX_THEME_NAMES])
     );
+  });
+
+  /**
+   * The editor completes `"theme": ""` from these `examples`, so a theme that
+   * reaches the registry without reaching the list is one the renderer accepts
+   * and the editor never suggests. That is exactly what happened on the pptx
+   * side, where the two lists were maintained by hand and drifted.
+   */
+  it('offers every registered theme for completion', () => {
+    const theme = (ReportPropsSchema as any).properties.theme;
+    expect([...theme.examples].sort()).toEqual(
+      [...BUILT_IN_DOCX_THEME_NAMES].sort()
+    );
+    for (const name of BUILT_IN_DOCX_THEME_NAMES) {
+      expect(registeredNames).toContain(name);
+      expect(theme.description).toContain(name);
+    }
   });
 
   it.each(registeredNames)('getTheme(%s) returns a valid theme', (name) => {

@@ -25,6 +25,26 @@ export {
 } from '@json-to-office/shared/schemas/slide-content';
 export type { StyleName } from '@json-to-office/shared/schemas/slide-content';
 
+/**
+ * Built-in theme names, in the order the schema description and the editor's
+ * completion list offer them.
+ *
+ * This is the only place the set is written down: the `theme` property's
+ * description and `examples` are both built from it, and a guard test in
+ * `core-pptx` pins the theme registry to it. Adding a theme to the registry
+ * without adding it here is what left `vermilion` and `devportal`
+ * uncompletable for as long as they shipped — the schema still offered the
+ * four names it was born with.
+ */
+export const BUILT_IN_PPTX_THEME_NAMES = [
+  'consulting',
+  'dark',
+  'default',
+  'devportal',
+  'minimal',
+  'vermilion',
+] as const;
+
 export const GridMarginSchema = Type.Union(
   [
     Type.Number({ description: 'Margin in inches (all sides)' }),
