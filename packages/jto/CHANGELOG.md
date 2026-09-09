@@ -1,5 +1,19 @@
 # @json-to-office/jto
 
+## 4.5.0
+
+### Minor Changes
+
+- 0ce7b12: Sections under one running head now continue on the page. A section that inherits a block's header and footer no longer inherits its page break; only the declaring section (the first body section, after the cover) starts a new page, and an authored `pageBreak: true` still breaks. The `running-head` block in `client-report-blocks.docx.json` heads every page with the document title alone and drops its `tracker` slot; `section-opener` drops its `tracker` slot and section effect (the tracker was only ever read by the header, which can change only at a page boundary and so forced one section per page). The `client-report` blueprint no longer scaffolds `{{Tracker}}` markers.
+
+### Patch Changes
+
+- e0b45f4: A new docx rule, `docx/exhibit-required` (`W_QUALITY_EXHIBIT_MISSING`, off by default), reports a document with fewer charts or tables of two or more columns than `minimumExhibits`; the `client-report` profile enables it at one, and the blueprint's narrative variant now scaffolds a data table in its analysis section so a fresh scaffold satisfies it. `rendered/page-underfilled` now also judges the last page, at a quarter instead of half, so a stub page holding only the notes and sources is reported (`context.kind` is `middle-page` or `last-page`).
+- Updated dependencies [e0b45f4]
+- Updated dependencies [0ce7b12]
+  - @json-to-office/quality@4.5.0
+  - @json-to-office/core-docx@4.5.0
+
 ## 4.4.0
 
 ### Patch Changes
