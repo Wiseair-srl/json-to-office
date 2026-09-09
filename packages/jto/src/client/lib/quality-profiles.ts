@@ -41,12 +41,19 @@ export const QUALITY_PROFILES: Record<
     {
       id: 'technical-report',
       label: 'Technical report',
-      description: 'Portable professional report defaults',
+      description:
+        'Running head with page numbers after the cover; a source wherever a block declares one; no heading skipped; every size on the theme scale, at most nine in play; no page rendered empty or half blank; at least one chart or table',
     },
     {
       id: 'legal-appendix',
       label: 'Legal appendix',
       description: 'Dense appendix: preserve integrity without editorial taste',
+    },
+    {
+      id: 'general',
+      label: 'General',
+      description:
+        'The format default: integrity and information-design rules, nothing required by structure',
     },
   ],
   pptx: [

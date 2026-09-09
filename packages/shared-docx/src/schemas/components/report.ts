@@ -28,12 +28,13 @@ export const createReportPropsSchema = (_componentRef?: TSchema) =>
       qualityProfile: Type.Optional(
         Type.String({
           description:
-            'The quality profile validation judges this document by when the caller names none — a blueprint scaffold writes its archetype’s profile here. A profile names required structure and content; the theme only paints. Built-ins: client-report, executive-report, technical-report, legal-appendix; an unknown name falls back to the format default.',
+            'The quality profile validation judges this document by when the caller names none — a blueprint scaffold writes its archetype’s profile here. A profile names required structure and content; the theme only paints. Built-ins: client-report, technical-report, executive-report, legal-appendix, general (the format default); an unknown name falls back to it.',
           examples: [
             'client-report',
-            'executive-report',
             'technical-report',
+            'executive-report',
             'legal-appendix',
+            'general',
           ],
         })
       ),

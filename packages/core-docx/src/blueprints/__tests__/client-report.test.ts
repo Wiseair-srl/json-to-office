@@ -202,10 +202,10 @@ describe('the client-report blueprint', () => {
       set(document, sourced.path, '');
       const props = document.props as Record<string, unknown>;
       expect(codes(document)).toContain(QUALITY_CODES.CHROME_MISSING);
-      const technical = codes(document, {
-        profile: { id: 'technical-report', formats: ['docx'] },
+      const general = codes(document, {
+        profile: { id: 'general', formats: ['docx'] },
       });
-      expect(technical).not.toContain(QUALITY_CODES.CHROME_MISSING);
+      expect(general).not.toContain(QUALITY_CODES.CHROME_MISSING);
       expect(props.theme).toBe('consulting');
       expect(props.themeOverrides).toBeUndefined();
     });

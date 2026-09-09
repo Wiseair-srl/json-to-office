@@ -280,7 +280,7 @@ describe('collectRenderedFindings', () => {
       rendered: { pages: [page], resolvedFonts: [] },
       adapter,
     });
-    expect(result.summary?.profileId).toBe('technical-report');
+    expect(result.summary?.profileId).toBe('general');
   });
 
   it('reports an unusable policy as an option defect, not a crash', async () => {

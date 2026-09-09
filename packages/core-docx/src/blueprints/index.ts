@@ -3,7 +3,7 @@
  * turns one into a document.
  *
  * The registry is the JSON files under `templates/blueprints`: the bundled
- * one is imported so a stale or missing `dist` cannot lose it, and the
+ * ones are imported so a stale or missing `dist` cannot lose them, and the
  * directory is scanned for any other `*.docx.blueprint.json` beside it, so
  * adding a blueprint is a file. Each is validated against the shared
  * blueprint schema when this module loads, so a malformed one fails at import
@@ -29,6 +29,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import clientReport from '../templates/blueprints/client-report.docx.blueprint.json';
+import technicalReport from '../templates/blueprints/technical-report.docx.blueprint.json';
 
 function register(...candidates: unknown[]): Record<string, Blueprint> {
   const registry: Record<string, Blueprint> = {};
@@ -78,7 +79,7 @@ function scanned(known: Readonly<Record<string, unknown>>): unknown[] {
     });
 }
 
-const bundled = register(clientReport);
+const bundled = register(clientReport, technicalReport);
 
 /** Every bundled DOCX blueprint, by id. */
 export const DOCX_BLUEPRINTS: Readonly<Record<string, Blueprint>> = {

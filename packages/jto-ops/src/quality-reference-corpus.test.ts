@@ -70,6 +70,7 @@ describe('maximum-quality reference corpus', () => {
       'consulting-deck',
       'executive-presentation',
       'executive-report',
+      'general',
       'legal-appendix',
       'technical-presentation',
       'technical-report',

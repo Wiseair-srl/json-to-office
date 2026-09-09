@@ -340,6 +340,39 @@
       }
     },
     {
+      "name": "technical-report-blocks.docx.json",
+      "format": "docx",
+      "archetype": "technical report with document-local JSON blocks",
+      "whenToUse": "Learn, copy and customize JSON definitions for a technical report or memo: cover, running-head, contents, section-opener, key-takeaways, callout, chart-figure, data-table, footnotes and memo-header. A load-test report on the house theme with numbered sections and sub-headings; the chart draws through the Highcharts export server. The technical-report blueprint scaffolds from these definitions.",
+      "theme": "consulting",
+      "pages": 4,
+      "components": {
+        "block": 16,
+        "divider": 8,
+        "docx": 1,
+        "heading": 3,
+        "highcharts": 1,
+        "list": 2,
+        "paragraph": 31,
+        "table": 1,
+        "text-box": 1,
+        "toc": 1
+      },
+      "slots": {
+        "caption": 1,
+        "text": 13,
+        "title": 11
+      },
+      "externalAssets": [],
+      "externalFonts": [],
+      "hash": "676a4acf538db454469c24bc6eb61cfc797480e4893ba603317b5f4bec0dbaf0",
+      "bytes": {
+        "document": 51250,
+        "gzipped": 6709,
+        "thumbnail": 63922
+      }
+    },
+    {
       "name": "vermilion-annual-report.docx.json",
       "format": "docx",
       "archetype": "annual-report",

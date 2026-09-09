@@ -56,8 +56,8 @@ async function readResource(uri: string) {
 describe('the bundle on disk', () => {
   const manifests = galleryManifests();
 
-  it('ships eleven designed templates across both formats', () => {
-    expect(manifests.length).toBe(11);
+  it('ships twelve designed templates across both formats', () => {
+    expect(manifests.length).toBe(12);
     expect(new Set(manifests.map((entry) => entry.format))).toEqual(
       new Set(['docx', 'pptx'])
     );
@@ -83,6 +83,32 @@ describe('the bundle on disk', () => {
         manifest.name
       ).toBeGreaterThan(0);
     }
+  });
+
+  it('carries one shape for a block definition shared by name across templates', () => {
+    // Definitions live inline in complete documents, so a block two templates
+    // both use is written twice; the blueprint that scaffolds from one must
+    // not drift from the catalogue entry the other shows.
+    const seen = new Map<string, { template: string; definition: unknown }>();
+    for (const manifest of manifests) {
+      const document = galleryDocument(manifest.name) as {
+        props?: { blocks?: Record<string, unknown> };
+      };
+      for (const [name, definition] of Object.entries(
+        document?.props?.blocks ?? {}
+      )) {
+        const key = `${manifest.format}/${name}`;
+        const first = seen.get(key);
+        if (first)
+          expect(
+            definition,
+            `${key}: ${manifest.name} vs ${first.template}`
+          ).toEqual(first.definition);
+        else seen.set(key, { template: manifest.name, definition });
+      }
+    }
+    expect(seen.has('docx/memo-header')).toBe(true);
+    expect(seen.has('docx/cover')).toBe(true);
   });
 
   it('decompresses to a document its own schema accepts', () => {

@@ -50,6 +50,7 @@ import {
 import { S, formatSchema, outputSchema } from '../lib/schema.js';
 import { galleryDocument } from '../templates/gallery.js';
 import {
+  isRecord,
   parsePointer,
   resolvePointer,
   setMember,
@@ -57,11 +58,21 @@ import {
 import { workspaceSchema } from './workspace.js';
 
 /** The blocks a brief fact may fill by slot name: document chrome, not body. */
-const CHROME_BLOCKS: ReadonlySet<string> = new Set(['cover', 'running-head']);
+const CHROME_BLOCKS: ReadonlySet<string> = new Set([
+  'cover',
+  'running-head',
+  'memo-header',
+]);
 
 /** Brief keys that also fill a metadata field under another name. */
 const METADATA_ALIASES: Readonly<Record<string, string>> = {
   client: 'company',
+};
+
+/** Brief keys that also fill a chrome slot under another name. */
+const SLOT_ALIASES: Readonly<Record<string, readonly string[]>> = {
+  // A memo has no title slot: its subject line is the title.
+  title: ['subject'],
 };
 
 export interface ScaffoldInput {
@@ -111,10 +122,18 @@ const fillEntrySchema = {
 /** A markdown outline, reduced to what the mapping reads. */
 export interface Outline {
   title?: string;
-  sections: Array<{ heading: string; paragraphs: string[] }>;
+  sections: Array<{
+    heading: string;
+    paragraphs: string[];
+    /** `###` headings under this `##`, in order: the section's sub-headings. */
+    subheadings: string[];
+  }>;
   /** Paragraphs before the first `##`: no section to put them in. */
   orphans: string[];
-  /** A second `#`, or any `###` and deeper: the mapping has no place for them. */
+  /**
+   * A second `#`, a `###` before the first `##`, or any `####` and deeper:
+   * the mapping has no place for them.
+   */
   skippedHeadings: string[];
 }
 
@@ -134,10 +153,12 @@ export function parseOutline(markdown: string): Outline {
       flush();
       const [, hashes, text] = heading;
       if (hashes.length === 2) {
-        current = { heading: text, paragraphs: [] };
+        current = { heading: text, paragraphs: [], subheadings: [] };
         outline.sections.push(current);
       } else if (hashes.length === 1 && outline.title === undefined) {
         outline.title = text;
+      } else if (hashes.length === 3 && current) {
+        current.subheadings.push(text);
       } else {
         outline.skippedHeadings.push(text);
       }
@@ -156,6 +177,18 @@ export function parseOutline(markdown: string): Outline {
 /** The `/children/N` a pointer sits under, for grouping markers by section. */
 function sectionOf(path: string): string | undefined {
   return path.match(/^\/children\/\d+/)?.[0];
+}
+
+/** Whether a text marker is the text of a `heading` component. */
+function isHeadingText(
+  document: Record<string, unknown>,
+  entry: BlueprintFillEntry
+): boolean {
+  if (entry.kind !== 'text') return false;
+  const parsed = parsePointer(entry.path.replace(/\/props\/text$/, ''));
+  if (!parsed.ok) return false;
+  const owner = resolvePointer(document, parsed.tokens);
+  return owner.found && isRecord(owner.value) && owner.value.name === 'heading';
 }
 
 interface Fill {
@@ -194,11 +227,13 @@ export function applyFacts(
     const metadataPaths = [key, METADATA_ALIASES[key]]
       .filter((name): name is string => name !== undefined)
       .map((name) => `/props/metadata/${name}`);
+    const slotNames = [key, ...(SLOT_ALIASES[key] ?? [])];
     const targets = pending().filter(
       (entry) =>
         (entry.kind === 'metadata' && metadataPaths.includes(entry.path)) ||
         (entry.kind === 'slot' &&
-          entry.slot === key &&
+          entry.slot !== undefined &&
+          slotNames.includes(entry.slot) &&
           entry.block !== undefined &&
           CHROME_BLOCKS.has(entry.block))
     );
@@ -211,7 +246,7 @@ export function applyFacts(
               {
                 severity: 'warning',
                 suggestion:
-                  'Brief keys fill props.metadata.<key> and the <key> slot of the cover and running head. Put body content in the outline or patch it by fill-map pointer.',
+                  'Brief keys fill props.metadata.<key> and the <key> slot of the cover, running head and memo header. Put body content in the outline or patch it by fill-map pointer.',
                 context: { key },
               }
             )
@@ -228,15 +263,39 @@ export function applyFacts(
     const openers = pending().filter(
       (entry) => entry.block === 'section-opener' && entry.slot === 'title'
     );
+    // A section's markers are the ones between its opener and the next, in
+    // fill-map (document) order — the same thing as "the same top-level
+    // section" when every opener starts one, and the only reading that works
+    // when a memo keeps three openers in one flowing section.
+    const position = new Map(fillMap.map((entry, i) => [entry.path, i]));
+    const at = (entry: BlueprintFillEntry) => position.get(entry.path) ?? -1;
+    const under = (index: number) => {
+      const from = at(openers[index]);
+      const to = openers[index + 1] ? at(openers[index + 1]) : Infinity;
+      return pending().filter((entry) => at(entry) > from && at(entry) < to);
+    };
     outline.sections.forEach((section, index) => {
       const opener = openers[index];
       if (!opener) return;
       write(opener, section.heading);
-      const bodies = pending().filter(
-        (entry) =>
-          entry.kind === 'text' &&
-          sectionOf(entry.path) === sectionOf(opener.path)
+      const own = under(index);
+      const subheadings = own.filter((entry) => isHeadingText(document, entry));
+      const bodies = own.filter(
+        (entry) => entry.kind === 'text' && !subheadings.includes(entry)
       );
+      section.subheadings.forEach((text, i) => {
+        if (subheadings[i]) write(subheadings[i], text);
+      });
+      const skipped = section.subheadings.slice(subheadings.length);
+      if (skipped.length > 0) {
+        diagnostics.push(
+          unmapped(
+            `"${section.heading}" has ${skipped.length} more sub-heading${skipped.length === 1 ? '' : 's'} than the variant's section has heading markers; ${skipped.map((s) => `"${s}"`).join(', ')} mapped to nothing.`,
+            { headings: skipped },
+            sectionOf(opener.path)
+          )
+        );
+      }
       section.paragraphs.forEach((text, i) => {
         if (bodies[i]) write(bodies[i], text);
       });
@@ -315,7 +374,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
     {
       title: 'Scaffold a document from a blueprint',
       description:
-        'The first move for a report: pick a blueprint from jto_discover (or jto://blueprints), name the theme and what you know of the brief, and get back a draft workspace — a handle at revision 1 — plus a fill map listing every `{{…}}` marker still owed: its JSON pointer, kind, budget and the guidance for filling it. The scaffold is schema- and semantic-valid, carries the block definitions it invokes, and names its quality profile, so jto_validate judges it against the archetype from the first call and reports the markers as advisory draft findings with `generationReady: false`; jto_generate refuses until every marker is replaced. Fill slots by pointer with jto_workspace_patch. A brief fact fills props.metadata.<key> and the <key> slot of the cover and running head; a markdown outline fills the body — `#` is the title, each `##` in order the next section opener, the paragraphs beneath it that section’s body text. Whatever matches nothing is reported.',
+        'The first move for a report: pick a blueprint from jto_discover (or jto://blueprints), name the theme and what you know of the brief, and get back a draft workspace — a handle at revision 1 — plus a fill map listing every `{{…}}` marker still owed: its JSON pointer, kind, budget and the guidance for filling it. The scaffold is schema- and semantic-valid, carries the block definitions it invokes, and names its quality profile, so jto_validate judges it against the archetype from the first call and reports the markers as advisory draft findings with `generationReady: false`; jto_generate refuses until every marker is replaced. Fill slots by pointer with jto_workspace_patch. A brief fact fills props.metadata.<key> and the <key> slot of the cover, running head and memo header (`title` is a memo’s subject); a markdown outline fills the body — `#` is the title, each `##` in order the next section opener, each `###` beneath it the next sub-heading, the paragraphs that section’s body text. Whatever matches nothing is reported.',
       annotations: {
         readOnlyHint: false,
         destructiveHint: false,
@@ -332,7 +391,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
             type: 'string',
             minLength: 1,
             description:
-              'A blueprint id from jto_discover, e.g. "client-report".',
+              'A blueprint id from jto_discover, e.g. "client-report" or "technical-report".',
           },
           variant: {
             type: 'string',
@@ -347,7 +406,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
           brief: {
             type: 'object',
             description:
-              'Facts of the brief by name — title, subtitle, client, date, author, confidentiality — written into the metadata field and the cover / running-head slot of the same name. Anything else is reported as unused.',
+              'Facts of the brief by name — title, subtitle, client, date, author, confidentiality, and to / from for a memo — written into the metadata field and the cover, running-head or memo-header slot of the same name (title is the memo’s subject). Anything else is reported as unused.',
             additionalProperties: { type: 'string' },
           },
           outline: {
