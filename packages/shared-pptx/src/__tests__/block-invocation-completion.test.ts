@@ -121,20 +121,22 @@ function withInvocation(invocation: string): string {
   return JSON.stringify(document).replace('"@@"', invocation);
 }
 const definitions = () => deck().props.blocks;
+/** The deck's definitions, in definition order. */
+const NAMES = ['cover', 'action-chart', 'kpi-row', 'two-column', 'statement'];
 
 describe('document-local block invocations through the language service', () => {
   it('completes the document’s block names at ref, described from the definition', async () => {
     const { labels, descriptions } = await inspect(
       withInvocation('{"name":"block","props":{"ref":"|"}}')
     );
-    expect(labels).toEqual(['action-chart']);
+    expect(labels).toEqual(NAMES);
     expect(descriptions['action-chart']).toBe(
       definitions()['action-chart'].description
     );
   });
   it('completes a second, document-local definition beside the shipped one', async () => {
     const document = deck();
-    document.props.blocks.statement = {
+    document.props.blocks.aside = {
       description: 'One sentence on an empty slide.',
       slots: { text: { type: 'string', required: true, maxWords: 30 } },
       body: [
@@ -151,10 +153,10 @@ describe('document-local block invocations through the language service', () => 
       text('{"name":"block","props":{"ref":"|"}}'),
       document.props.blocks
     );
-    expect(labels).toEqual(['action-chart', 'statement']);
-    expect(descriptions.statement).toBe('One sentence on an empty slide.');
+    expect(labels).toEqual([...NAMES, 'aside']);
+    expect(descriptions.aside).toBe('One sentence on an empty slide.');
     const slots = await inspect(
-      text('{"name":"block","props":{"ref":"statement","slots":{"|"}}}'),
+      text('{"name":"block","props":{"ref":"aside","slots":{"|"}}}'),
       document.props.blocks
     );
     expect(slots.labels).toEqual(['text']);
@@ -217,7 +219,7 @@ describe('document-local block invocations through the language service', () => 
         '{"name":"block","props":{"ref":"action-chart","slots":{"chart":{"name":"block","props":{"ref":"|"}}}}}'
       )
     );
-    expect(labels).toEqual(['action-chart']);
+    expect(labels).toEqual(NAMES);
     const slots = await inspect(
       withInvocation(
         '{"name":"block","props":{"ref":"action-chart","slots":{"chart":{"name":"block","props":{"ref":"action-chart","slots":{"|"}}}}}}'
@@ -248,8 +250,10 @@ describe('document-local block invocations through the language service', () => 
   it.each([
     [
       'an unknown reference',
-      '{"name":"block","props":{"ref":"kpi-row"}}',
-      ['Value must be "action-chart".'],
+      '{"name":"block","props":{"ref":"nowhere"}}',
+      [
+        'Value is not accepted. Valid values: "cover", "action-chart", "kpi-row", "two-column", "statement".',
+      ],
     ],
     [
       'a missing required slot',

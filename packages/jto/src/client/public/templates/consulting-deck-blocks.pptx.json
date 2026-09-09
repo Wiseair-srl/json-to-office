@@ -8,6 +8,185 @@
     "slideWidth": 13.333,
     "slideHeight": 7.5,
     "blocks": {
+      "cover": {
+        "description": "The deck's first slide: a client line and date in the eyebrow role, the title in the title role over an accent rule, a subtitle, an optional logo top right and the confidentiality line at the foot. Geometry is a frame of the slide in percentages; every size binds to a theme role with a safe default, so it renders on any bundled theme. Copy and adapt this document-local example.",
+        "slots": {
+          "title": {
+            "type": "string",
+            "required": true,
+            "maxWords": 16,
+            "description": "The deck's conclusion in one sentence; three lines at most, stepping down to 28 then 24pt."
+          },
+          "subtitle": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 20,
+            "description": "What the deck answers, for whom."
+          },
+          "client": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 8,
+            "description": "Who the deck is for; drawn with the date in the eyebrow line, which needs the client to appear."
+          },
+          "date": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 6
+          },
+          "confidentiality": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 6
+          },
+          "logo": {
+            "type": "component",
+            "description": "An image; the definition frames it top right at 18% of the width."
+          }
+        },
+        "body": [
+          {
+            "name": "group",
+            "props": {
+              "x": "3.75%",
+              "y": "4.5%",
+              "w": "92.5%",
+              "h": "91%"
+            },
+            "children": [
+              {
+                "$if": "/logo",
+                "then": {
+                  "$slot": "/logo",
+                  "props": {
+                    "x": "82%",
+                    "y": "0%",
+                    "w": "18%",
+                    "h": "10%"
+                  }
+                }
+              },
+              {
+                "name": "shape",
+                "props": {
+                  "type": "line",
+                  "x": "0%",
+                  "y": "30%",
+                  "w": "16%",
+                  "h": 0,
+                  "line": {
+                    "color": {
+                      "$theme": "/chrome/cover/rule/color",
+                      "default": "accent"
+                    },
+                    "width": {
+                      "$theme": "/chrome/cover/rule/weightPt",
+                      "default": 3
+                    }
+                  }
+                }
+              },
+              {
+                "$if": "/client",
+                "then": {
+                  "name": "text",
+                  "props": {
+                    "text": {
+                      "$join": [
+                        {
+                          "$slot": "/client",
+                          "default": ""
+                        },
+                        {
+                          "$slot": "/date",
+                          "default": ""
+                        }
+                      ],
+                      "separator": " · "
+                    },
+                    "style": "eyebrow",
+                    "fontSize": {
+                      "$theme": "/styles/eyebrow/fontSize",
+                      "default": 10
+                    },
+                    "x": "0%",
+                    "y": "33%",
+                    "w": "100%",
+                    "h": "5%"
+                  }
+                }
+              },
+              {
+                "name": "text",
+                "props": {
+                  "text": {
+                    "$slot": "/title"
+                  },
+                  "style": "title",
+                  "fontSize": {
+                    "$theme": "/styles/title/fontSize",
+                    "default": 32
+                  },
+                  "x": "0%",
+                  "y": "39%",
+                  "w": "90%",
+                  "h": "30%",
+                  "valign": "top",
+                  "fit": {
+                    "maxLines": 3,
+                    "shrink": [28, 24]
+                  }
+                }
+              },
+              {
+                "$if": "/subtitle",
+                "then": {
+                  "name": "text",
+                  "props": {
+                    "text": {
+                      "$slot": "/subtitle"
+                    },
+                    "style": "subtitle",
+                    "fontSize": {
+                      "$theme": "/styles/subtitle/fontSize",
+                      "default": 16
+                    },
+                    "x": "0%",
+                    "y": "60%",
+                    "w": "80%",
+                    "h": "14%",
+                    "valign": "top",
+                    "fit": {
+                      "maxLines": 2,
+                      "shrink": [14, 12]
+                    }
+                  }
+                }
+              },
+              {
+                "$if": "/confidentiality",
+                "then": {
+                  "name": "text",
+                  "props": {
+                    "text": {
+                      "$slot": "/confidentiality"
+                    },
+                    "style": "footer",
+                    "fontSize": {
+                      "$theme": "/styles/footer/fontSize",
+                      "default": 9
+                    },
+                    "x": "0%",
+                    "y": "96%",
+                    "w": "50%",
+                    "h": "4%"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
       "action-chart": {
         "description": "The consulting workhorse: an action title over one chart, an optional takeaway beside it and an optional source beneath. Copy and adapt this document-local example; the consulting-deck quality profile requires the takeaway and the source, the theme only styles them. Geometry is a frame of the slide in percentages, so the same definition lays out on every canvas; sizes bind to the theme's type roles with safe defaults, so it renders on any bundled theme.",
         "slots": {
@@ -252,6 +431,717 @@
             ]
           }
         ]
+      },
+      "kpi-row": {
+        "description": "An action title over two to four headline figures in equal cells: the value with its unit beside it in the stat role, a signed delta beneath, the label under that; an optional source at the foot. Two figures take half the row each, four a quarter and set the figures a size smaller; a figure too wide for its cell steps down to 20pt, then fails. Copy and adapt this document-local example; the consulting-deck profile asks for the source, the theme only styles it.",
+        "slots": {
+          "title": {
+            "type": "string",
+            "required": true,
+            "oneLine": true,
+            "maxWords": 24,
+            "role": "actionTitle",
+            "description": "The claim the slide proves: a sentence with a number or a verb, two lines at most. Longer titles step down to 24 then 22pt, then fail."
+          },
+          "tracker": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 4,
+            "role": "tracker",
+            "description": "Section label, top right. Omit it and nothing is drawn."
+          },
+          "items": {
+            "type": "array",
+            "required": true,
+            "minItems": 2,
+            "maxItems": 4,
+            "items": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string",
+                  "required": true,
+                  "maxLength": 7,
+                  "description": "The headline figure, already formatted: 8.8, 94, +18."
+                },
+                "unit": {
+                  "type": "string",
+                  "maxLength": 5,
+                  "description": "Suffix drawn after the figure in the muted colour: %, €m, pts."
+                },
+                "label": {
+                  "type": "string",
+                  "required": true,
+                  "oneLine": true,
+                  "maxWords": 6,
+                  "description": "What the figure measures."
+                },
+                "delta": {
+                  "type": "string",
+                  "maxLength": 12,
+                  "description": "Signed change shown under the figure: +3.2 pts, −0.4."
+                }
+              }
+            }
+          },
+          "source": {
+            "type": "string",
+            "maxWords": 24,
+            "role": "source",
+            "description": "Where the numbers come from. Omit it and its rule collapses too."
+          }
+        },
+        "body": [
+          {
+            "name": "group",
+            "props": {
+              "x": "3.75%",
+              "y": "4.5%",
+              "w": "92.5%",
+              "h": "91%"
+            },
+            "children": [
+              {
+                "$if": "/tracker",
+                "then": {
+                  "name": "text",
+                  "props": {
+                    "text": {
+                      "$slot": "/tracker"
+                    },
+                    "style": "tracker",
+                    "fontSize": {
+                      "$theme": "/styles/tracker/fontSize",
+                      "default": 10
+                    },
+                    "x": "70%",
+                    "y": "0%",
+                    "w": "30%",
+                    "h": "4.5%",
+                    "align": "right"
+                  }
+                }
+              },
+              {
+                "name": "text",
+                "props": {
+                  "text": {
+                    "$slot": "/title"
+                  },
+                  "style": "display",
+                  "fontSize": {
+                    "$theme": "/styles/display/fontSize",
+                    "default": 28
+                  },
+                  "x": "0%",
+                  "y": "5%",
+                  "w": "100%",
+                  "h": "19%",
+                  "valign": "top",
+                  "fit": {
+                    "maxLines": 2,
+                    "shrink": [24, 22]
+                  }
+                }
+              },
+              {
+                "name": "shape",
+                "props": {
+                  "type": "line",
+                  "x": "0%",
+                  "y": "26%",
+                  "w": "100%",
+                  "h": 0,
+                  "line": {
+                    "color": {
+                      "$theme": "/palette/rule",
+                      "default": "background2"
+                    },
+                    "width": 0.5
+                  }
+                }
+              },
+              {
+                "name": "group",
+                "props": {
+                  "x": "0%",
+                  "y": "32%",
+                  "w": "100%",
+                  "h": "56%",
+                  "direction": "row",
+                  "gap": 0.35
+                },
+                "children": [
+                  {
+                    "$each": "/items",
+                    "template": {
+                      "name": "group",
+                      "props": {},
+                      "children": [
+                        {
+                          "name": "text",
+                          "props": {
+                            "runs": [
+                              {
+                                "text": {
+                                  "$item": "/value"
+                                }
+                              },
+                              {
+                                "$if": {
+                                  "$item": "/unit"
+                                },
+                                "then": {
+                                  "text": {
+                                    "$join": [
+                                      " ",
+                                      {
+                                        "$item": "/unit"
+                                      }
+                                    ],
+                                    "separator": ""
+                                  },
+                                  "color": "text2"
+                                }
+                              }
+                            ],
+                            "style": "stat",
+                            "fontSize": {
+                              "$if": "/items/3",
+                              "then": 32,
+                              "else": {
+                                "$theme": "/styles/stat/fontSize",
+                                "default": 40
+                              }
+                            },
+                            "bold": true,
+                            "x": "0%",
+                            "y": "0%",
+                            "w": "100%",
+                            "h": "42%",
+                            "valign": "bottom",
+                            "fit": {
+                              "maxLines": 1,
+                              "shrink": [28, 24, 20]
+                            }
+                          }
+                        },
+                        {
+                          "$if": {
+                            "$item": "/delta"
+                          },
+                          "then": {
+                            "name": "text",
+                            "props": {
+                              "text": {
+                                "$item": "/delta"
+                              },
+                              "style": "label",
+                              "fontSize": {
+                                "$theme": "/styles/label/fontSize",
+                                "default": 12
+                              },
+                              "color": "text2",
+                              "x": "0%",
+                              "y": "44%",
+                              "w": "100%",
+                              "h": "12%"
+                            }
+                          }
+                        },
+                        {
+                          "name": "text",
+                          "props": {
+                            "text": {
+                              "$item": "/label"
+                            },
+                            "style": "body",
+                            "fontSize": {
+                              "$theme": "/styles/body/fontSize",
+                              "default": 14
+                            },
+                            "x": "0%",
+                            "y": "60%",
+                            "w": "100%",
+                            "h": "20%",
+                            "valign": "top",
+                            "fit": {
+                              "maxLines": 2,
+                              "shrink": [12]
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "$if": "/source",
+                "then": [
+                  {
+                    "name": "shape",
+                    "props": {
+                      "type": "line",
+                      "x": "0%",
+                      "y": "93.5%",
+                      "w": "100%",
+                      "h": 0,
+                      "line": {
+                        "color": {
+                          "$theme": "/palette/rule",
+                          "default": "background2"
+                        },
+                        "width": 0.5
+                      }
+                    }
+                  },
+                  {
+                    "name": "text",
+                    "props": {
+                      "text": {
+                        "$slot": "/source"
+                      },
+                      "style": "source",
+                      "fontSize": {
+                        "$theme": "/styles/source/fontSize",
+                        "default": 9
+                      },
+                      "x": "0%",
+                      "y": "94.5%",
+                      "w": "75%",
+                      "h": "5%"
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "text",
+                "props": {
+                  "text": "{PAGE_NUMBER} / {PAGE_COUNT}",
+                  "style": "footer",
+                  "fontSize": {
+                    "$theme": "/styles/footer/fontSize",
+                    "default": 9
+                  },
+                  "x": "88%",
+                  "y": "96%",
+                  "w": "12%",
+                  "h": "4%",
+                  "align": "right"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "two-column": {
+        "description": "An action title over a 1.1 : 1 split: prose or up to five bullets on the left, a chart, table or image on the right in the frame the definition owns; an optional source at the foot. Give `text` or `bullets`, not both. Copy and adapt this document-local example.",
+        "slots": {
+          "title": {
+            "type": "string",
+            "required": true,
+            "oneLine": true,
+            "maxWords": 24,
+            "role": "actionTitle",
+            "description": "The claim the slide proves: a sentence with a number or a verb, two lines at most. Longer titles step down to 24 then 22pt, then fail."
+          },
+          "tracker": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 4,
+            "role": "tracker",
+            "description": "Section label, top right. Omit it and nothing is drawn."
+          },
+          "text": {
+            "type": "string",
+            "maxWords": 50,
+            "description": "Left column as prose, at most fifty words so the slide stays under the density the profiles allow; leave it out to use bullets."
+          },
+          "bullets": {
+            "type": "array",
+            "maxItems": 5,
+            "items": {
+              "type": "string",
+              "oneLine": true,
+              "maxWords": 10
+            },
+            "description": "Left column as up to five bullets of ten words; leave it out to use text."
+          },
+          "content": {
+            "type": "component",
+            "required": true,
+            "description": "A chart, highcharts, table or image for the right column; the definition owns its frame, the theme paints its series."
+          },
+          "source": {
+            "type": "string",
+            "maxWords": 24,
+            "role": "source",
+            "description": "Where the numbers come from. Omit it and its rule collapses too."
+          }
+        },
+        "body": [
+          {
+            "name": "group",
+            "props": {
+              "x": "3.75%",
+              "y": "4.5%",
+              "w": "92.5%",
+              "h": "91%"
+            },
+            "children": [
+              {
+                "$if": "/tracker",
+                "then": {
+                  "name": "text",
+                  "props": {
+                    "text": {
+                      "$slot": "/tracker"
+                    },
+                    "style": "tracker",
+                    "fontSize": {
+                      "$theme": "/styles/tracker/fontSize",
+                      "default": 10
+                    },
+                    "x": "70%",
+                    "y": "0%",
+                    "w": "30%",
+                    "h": "4.5%",
+                    "align": "right"
+                  }
+                }
+              },
+              {
+                "name": "text",
+                "props": {
+                  "text": {
+                    "$slot": "/title"
+                  },
+                  "style": "display",
+                  "fontSize": {
+                    "$theme": "/styles/display/fontSize",
+                    "default": 28
+                  },
+                  "x": "0%",
+                  "y": "5%",
+                  "w": "100%",
+                  "h": "19%",
+                  "valign": "top",
+                  "fit": {
+                    "maxLines": 2,
+                    "shrink": [24, 22]
+                  }
+                }
+              },
+              {
+                "name": "shape",
+                "props": {
+                  "type": "line",
+                  "x": "0%",
+                  "y": "26%",
+                  "w": "100%",
+                  "h": 0,
+                  "line": {
+                    "color": {
+                      "$theme": "/palette/rule",
+                      "default": "background2"
+                    },
+                    "width": 0.5
+                  }
+                }
+              },
+              {
+                "name": "group",
+                "props": {
+                  "x": "0%",
+                  "y": "29%",
+                  "w": "100%",
+                  "h": "62%",
+                  "direction": "row",
+                  "gap": 0.35,
+                  "weights": [1.1, 1]
+                },
+                "children": [
+                  {
+                    "name": "group",
+                    "props": {},
+                    "children": [
+                      {
+                        "$if": "/text",
+                        "then": {
+                          "name": "text",
+                          "props": {
+                            "text": {
+                              "$slot": "/text"
+                            },
+                            "style": "body",
+                            "fontSize": {
+                              "$theme": "/styles/body/fontSize",
+                              "default": 14
+                            },
+                            "x": "0%",
+                            "y": "0%",
+                            "w": "100%",
+                            "h": "100%",
+                            "valign": "top",
+                            "fit": {
+                              "shrink": [12, 11]
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "$if": "/bullets",
+                        "then": {
+                          "name": "text",
+                          "props": {
+                            "text": {
+                              "$join": [
+                                {
+                                  "$slot": "/bullets/0",
+                                  "default": ""
+                                },
+                                {
+                                  "$slot": "/bullets/1",
+                                  "default": ""
+                                },
+                                {
+                                  "$slot": "/bullets/2",
+                                  "default": ""
+                                },
+                                {
+                                  "$slot": "/bullets/3",
+                                  "default": ""
+                                },
+                                {
+                                  "$slot": "/bullets/4",
+                                  "default": ""
+                                }
+                              ],
+                              "separator": "\n"
+                            },
+                            "style": "body",
+                            "bullet": true,
+                            "fontSize": {
+                              "$theme": "/styles/body/fontSize",
+                              "default": 14
+                            },
+                            "x": "0%",
+                            "y": "0%",
+                            "w": "100%",
+                            "h": "100%",
+                            "valign": "top",
+                            "fit": {
+                              "shrink": [12, 11]
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "$slot": "/content"
+                  }
+                ]
+              },
+              {
+                "$if": "/source",
+                "then": [
+                  {
+                    "name": "shape",
+                    "props": {
+                      "type": "line",
+                      "x": "0%",
+                      "y": "93.5%",
+                      "w": "100%",
+                      "h": 0,
+                      "line": {
+                        "color": {
+                          "$theme": "/palette/rule",
+                          "default": "background2"
+                        },
+                        "width": 0.5
+                      }
+                    }
+                  },
+                  {
+                    "name": "text",
+                    "props": {
+                      "text": {
+                        "$slot": "/source"
+                      },
+                      "style": "source",
+                      "fontSize": {
+                        "$theme": "/styles/source/fontSize",
+                        "default": 9
+                      },
+                      "x": "0%",
+                      "y": "94.5%",
+                      "w": "75%",
+                      "h": "5%"
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "text",
+                "props": {
+                  "text": "{PAGE_NUMBER} / {PAGE_COUNT}",
+                  "style": "footer",
+                  "fontSize": {
+                    "$theme": "/styles/footer/fontSize",
+                    "default": 9
+                  },
+                  "x": "88%",
+                  "y": "96%",
+                  "w": "12%",
+                  "h": "4%",
+                  "align": "right"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "statement": {
+        "description": "One assertion in the display role, at most fourteen words, with up to thirty words of support beneath it in the quote role: a section divider or a closing slide. Copy and adapt this document-local example.",
+        "slots": {
+          "tracker": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 4,
+            "role": "tracker",
+            "description": "Section label, top right. Omit it and nothing is drawn."
+          },
+          "assertion": {
+            "type": "string",
+            "required": true,
+            "maxWords": 14,
+            "role": "actionTitle",
+            "description": "The one sentence, at most fourteen words; steps down to 28 then 24pt."
+          },
+          "support": {
+            "type": "string",
+            "maxWords": 30,
+            "description": "What backs the assertion, at most thirty words."
+          }
+        },
+        "body": [
+          {
+            "name": "group",
+            "props": {
+              "x": "3.75%",
+              "y": "4.5%",
+              "w": "92.5%",
+              "h": "91%"
+            },
+            "children": [
+              {
+                "$if": "/tracker",
+                "then": {
+                  "name": "text",
+                  "props": {
+                    "text": {
+                      "$slot": "/tracker"
+                    },
+                    "style": "tracker",
+                    "fontSize": {
+                      "$theme": "/styles/tracker/fontSize",
+                      "default": 10
+                    },
+                    "x": "70%",
+                    "y": "0%",
+                    "w": "30%",
+                    "h": "4.5%",
+                    "align": "right"
+                  }
+                }
+              },
+              {
+                "name": "shape",
+                "props": {
+                  "type": "line",
+                  "x": "0%",
+                  "y": "30%",
+                  "w": "16%",
+                  "h": 0,
+                  "line": {
+                    "color": {
+                      "$theme": "/chrome/keyTakeaways/rule/color",
+                      "default": "accent"
+                    },
+                    "width": {
+                      "$theme": "/chrome/keyTakeaways/rule/weightPt",
+                      "default": 2
+                    }
+                  }
+                }
+              },
+              {
+                "name": "text",
+                "props": {
+                  "text": {
+                    "$slot": "/assertion"
+                  },
+                  "style": "display",
+                  "fontSize": {
+                    "$theme": "/styles/display/fontSize",
+                    "default": 28
+                  },
+                  "x": "0%",
+                  "y": "34%",
+                  "w": "92%",
+                  "h": "30%",
+                  "valign": "top",
+                  "fit": {
+                    "maxLines": 3,
+                    "shrink": [24, 22]
+                  }
+                }
+              },
+              {
+                "$if": "/support",
+                "then": {
+                  "name": "text",
+                  "props": {
+                    "text": {
+                      "$slot": "/support"
+                    },
+                    "style": "quote",
+                    "fontSize": {
+                      "$theme": "/styles/quote/fontSize",
+                      "default": 18
+                    },
+                    "x": "0%",
+                    "y": "66%",
+                    "w": "75%",
+                    "h": "18%",
+                    "valign": "top",
+                    "fit": {
+                      "shrink": [16, 14]
+                    }
+                  }
+                }
+              },
+              {
+                "name": "text",
+                "props": {
+                  "text": "{PAGE_NUMBER} / {PAGE_COUNT}",
+                  "style": "footer",
+                  "fontSize": {
+                    "$theme": "/styles/footer/fontSize",
+                    "default": 9
+                  },
+                  "x": "88%",
+                  "y": "96%",
+                  "w": "12%",
+                  "h": "4%",
+                  "align": "right"
+                }
+              }
+            ]
+          }
+        ]
       }
     }
   },
@@ -262,66 +1152,62 @@
         "meta": {
           "title": "Cover"
         },
-        "notes": "A coordinate-authored cover. The cover block itself is a later definition; direct authoring stays available beside blocks."
+        "notes": "The cover block: client and date in the eyebrow, the conclusion as the title, an accent rule from the theme's cover recipe."
       },
       "children": [
         {
-          "name": "shape",
+          "name": "block",
           "props": {
-            "type": "line",
-            "x": 0.5,
-            "y": 2.35,
-            "w": 2,
-            "h": 0,
-            "line": {
-              "color": "accent",
-              "width": 3
+            "ref": "cover",
+            "slots": {
+              "title": "Growth improved as delivery became more reliable",
+              "subtitle": "Quarterly client performance review",
+              "client": "Example client",
+              "date": "September 2026",
+              "confidentiality": "Confidential"
             }
           }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "meta": {
+          "title": "The quarter in four numbers"
         },
+        "notes": "A kpi-row block: two to four figures in equal cells, the delta under each."
+      },
+      "children": [
         {
-          "name": "text",
+          "name": "block",
           "props": {
-            "text": "Example client · September 2026",
-            "style": "eyebrow",
-            "x": 0.5,
-            "y": 2.55,
-            "w": 12,
-            "h": 0.35
-          }
-        },
-        {
-          "name": "text",
-          "props": {
-            "text": "Growth improved as delivery became more reliable",
-            "style": "title",
-            "x": 0.5,
-            "y": 3.0,
-            "w": 11,
-            "h": 1.7,
-            "valign": "top"
-          }
-        },
-        {
-          "name": "text",
-          "props": {
-            "text": "Quarterly client performance review",
-            "style": "subtitle",
-            "x": 0.5,
-            "y": 4.8,
-            "w": 11,
-            "h": 0.5
-          }
-        },
-        {
-          "name": "text",
-          "props": {
-            "text": "Confidential",
-            "style": "footer",
-            "x": 0.5,
-            "y": 6.9,
-            "w": 4,
-            "h": 0.3
+            "ref": "kpi-row",
+            "slots": {
+              "title": "Revenue, retention and delivery all moved the right way this quarter",
+              "tracker": "Summary",
+              "items": [
+                {
+                  "value": "8.8",
+                  "unit": "€m",
+                  "label": "Revenue year to date",
+                  "delta": "+16.9%"
+                },
+                {
+                  "value": "94",
+                  "unit": "%",
+                  "label": "Client retention",
+                  "delta": "+2 pts"
+                },
+                {
+                  "value": "11",
+                  "unit": "days",
+                  "label": "Median time to deliver",
+                  "delta": "−3 days"
+                }
+              ],
+              "source": "Source: quarterly operating review, 2026."
+            }
           }
         }
       ]
@@ -409,44 +1295,59 @@
       "name": "slide",
       "props": {
         "meta": {
-          "title": "Next quarter"
+          "title": "Delivery model"
         },
-        "notes": "A closing statement, coordinate-authored. Blocks and direct coordinates mix freely in one deck."
+        "notes": "A two-column block: bullets on the left, a table on the right at a 1.1 : 1 split."
       },
       "children": [
         {
-          "name": "text",
+          "name": "block",
           "props": {
-            "text": "Next quarter: protect retention first, then scale delivery capacity",
-            "style": "display",
-            "x": 0.5,
-            "y": 2.6,
-            "w": 12.333,
-            "h": 1.4,
-            "valign": "top"
+            "ref": "two-column",
+            "slots": {
+              "title": "Weekly ownership closed the gap between promise and delivery",
+              "tracker": "Delivery",
+              "bullets": [
+                "Every account has one named owner and a weekly review",
+                "Late work is escalated on day one, not month end",
+                "Scope changes are priced before they are agreed"
+              ],
+              "content": {
+                "name": "table",
+                "props": {
+                  "colW": [2.2, 1.4, 1.4],
+                  "rows": [
+                    ["Stage", "Before", "After"],
+                    ["Intake", "6 days", "2 days"],
+                    ["Delivery", "81%", "94%"],
+                    ["Renewal", "88%", "94%"]
+                  ]
+                }
+              },
+              "source": "Source: delivery tracker, September 2026."
+            }
           }
+        }
+      ]
+    },
+    {
+      "name": "slide",
+      "props": {
+        "meta": {
+          "title": "Next quarter"
         },
+        "notes": "A statement block: one assertion, thirty words of support."
+      },
+      "children": [
         {
-          "name": "text",
+          "name": "block",
           "props": {
-            "text": "Expansion now depends on delivery capacity, not on demand.",
-            "style": "quote",
-            "x": 0.5,
-            "y": 4.1,
-            "w": 9,
-            "h": 0.8
-          }
-        },
-        {
-          "name": "text",
-          "props": {
-            "text": "{PAGE_NUMBER} / {PAGE_COUNT}",
-            "style": "footer",
-            "x": 11.333,
-            "y": 6.9,
-            "w": 1.5,
-            "h": 0.3,
-            "align": "right"
+            "ref": "statement",
+            "slots": {
+              "tracker": "Next quarter",
+              "assertion": "Next quarter: protect retention first, then scale delivery capacity",
+              "support": "Expansion now depends on delivery capacity, not on demand; every new account needs a named owner before it is signed."
+            }
           }
         }
       ]

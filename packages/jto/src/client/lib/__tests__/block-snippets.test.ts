@@ -39,6 +39,9 @@ const references: BlockReference[] = blockReferencesFromDocument(deck(), {
   template: 'consulting-deck-blocks',
   format: 'pptx',
 });
+/** The deck's definitions, in definition order. */
+const NAMES = ['cover', 'action-chart', 'kpi-row', 'two-column', 'statement'];
+const chart = references.find((entry) => entry.name === 'action-chart')!;
 
 /** A pretty-printed deck without definitions, with `|` marking the cursor. */
 function bare(children: string): string {
@@ -75,9 +78,7 @@ const resolveSnippet = (snippet: string, text: string, offset: number) => {
 
 describe('readDocumentBlockDefinitions', () => {
   it('reads the definitions of a complete document', () => {
-    expect(Object.keys(readDocumentBlockDefinitions(deckText))).toEqual([
-      'action-chart',
-    ]);
+    expect(Object.keys(readDocumentBlockDefinitions(deckText))).toEqual(NAMES);
   });
   it('tolerates a document mid-edit and skips a half-typed definition', () => {
     const broken = deckText
@@ -87,7 +88,7 @@ describe('readDocumentBlockDefinitions', () => {
         '"draft": {"slots": {}}, "action-chart": {'
       );
     const definitions = readDocumentBlockDefinitions(broken);
-    expect(Object.keys(definitions)).toEqual(['action-chart']);
+    expect(Object.keys(definitions)).toEqual(NAMES);
     expect(readDocumentBlockDefinitions('')).toEqual({});
     expect(readDocumentBlockDefinitions('{"name": "pptx", "props": {')).toEqual(
       {}
@@ -143,20 +144,17 @@ describe('blockCompletionContext', () => {
 });
 
 describe('insertBlockDefinitions', () => {
-  const definition = references[0].definition;
+  const definition = chart.definition;
   it('adds to an existing blocks object, keeping what is there', () => {
     const text = deckText;
     const edited = applyTextEdits(
       text,
-      insertBlockDefinitions(text, { statement: { slots: {}, body: [] } })
+      insertBlockDefinitions(text, { aside: { slots: {}, body: [] } })
     );
     const parsed = JSON.parse(edited);
-    expect(Object.keys(parsed.props.blocks)).toEqual([
-      'statement',
-      'action-chart',
-    ]);
+    expect(Object.keys(parsed.props.blocks)).toEqual(['aside', ...NAMES]);
     expect(parsed.props.blocks['action-chart']).toEqual(definition);
-    expect(edited).toContain('\n      "statement": {\n        "slots": {},');
+    expect(edited).toContain('\n      "aside": {\n        "slots": {},');
   });
   it('creates blocks under props, and props under the root, as needed', () => {
     const withProps = JSON.stringify(
@@ -204,7 +202,13 @@ describe('insertBlockDefinitions', () => {
 });
 
 describe('blockSnippets', () => {
-  const options = { references, definitions: {}, format: 'pptx' as const };
+  // One reference, so a test about a snippet reasons about one snippet; the
+  // deck-wide tests below use every definition the deck embeds.
+  const options = {
+    references: [chart],
+    definitions: {},
+    format: 'pptx' as const,
+  };
 
   it('offers a reference at ref and brings its definition along', () => {
     const { text, offset } = cursor(
@@ -226,15 +230,13 @@ describe('blockSnippets', () => {
     expect(
       blockSnippets(typed.text, typed.offset, options).map((s) => s.filterText)
     ).toEqual(['"action-chart']);
-    expect(snippet.documentation).toBe(references[0].description);
+    expect(snippet.documentation).toBe(chart.description);
     const edited = applyTextEdits(text, [
       { ...snippet.replace, content: snippet.insertText },
       ...snippet.additionalEdits,
     ]);
     const document = JSON.parse(edited);
-    expect(document.props.blocks['action-chart']).toEqual(
-      references[0].definition
-    );
+    expect(document.props.blocks['action-chart']).toEqual(chart.definition);
     // Resolved: the only complaints are the slots the definition requires.
     const errors = validatePresentationDocument(document).errors;
     expect(errors.length).toBeGreaterThan(0);
@@ -268,7 +270,7 @@ describe('blockSnippets', () => {
         ...snippet.additionalEdits,
       ]);
       const document = JSON.parse(edited);
-      expect(document.children[0].children[0]).toEqual(references[0].example);
+      expect(document.children[0].children[0]).toEqual(chart.example);
       expect(validatePresentationDocument(document).errors).toEqual([]);
       // The child sits at indent 8, so the invocation's lines sit at 10.
       if (child !== '|')
@@ -284,9 +286,9 @@ describe('blockSnippets', () => {
     const { text: clean, offset } = cursor(text);
     const definitions = readDocumentBlockDefinitions(clean);
     const snippets = blockSnippets(clean, offset, { ...options, definitions });
-    expect(snippets.map((s) => [s.label, s.detail])).toEqual([
-      ['action-chart', 'block defined in this document'],
-    ]);
+    expect(snippets.map((s) => [s.label, s.detail])).toEqual(
+      NAMES.map((name) => [name, 'block defined in this document'])
+    );
     expect(snippets[0].additionalEdits).toEqual([]);
     const edited = applyTextEdits(clean, [
       {
