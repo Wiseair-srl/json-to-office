@@ -47,7 +47,7 @@
     },
     "consulting-deck-blocks.pptx.json": {
       "archetype": "consulting deck with document-local JSON blocks",
-      "whenToUse": "Learn, copy and customize the action-chart JSON definition on the consulting house theme. Definition and invocations are embedded in the complete playground deck; the cover and closing slides show direct coordinate authoring beside blocks."
+      "whenToUse": "Learn, copy and customize the five consulting deck JSON definitions on the house theme: cover, action-chart, kpi-row, two-column and statement. Every slide of this complete playground deck invokes one; the definitions own the geometry as percentage frames and bind every size to a theme role, so the same deck lays out on every theme and canvas."
     }
   }
 }

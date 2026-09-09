@@ -160,8 +160,13 @@ describe('block invocation examples', () => {
       document.props.blocks['action-chart'],
       { document, format: 'pptx' }
     );
-    expect(example).toEqual(document.children[1].children[0]);
-    expect(example).not.toBe(document.children[1].children[0]);
+    // The deck's first action-chart slide, wherever the cover and KPI row
+    // put it; a copy, never the document's own node.
+    const first = document.children.find(
+      (slide: any) => slide.children[0].props.ref === 'action-chart'
+    ).children[0];
+    expect(example).toEqual(first);
+    expect(example).not.toBe(first);
   });
   it('synthesizes a valid example at typical cardinality otherwise', () => {
     const defs = definitions();
@@ -249,8 +254,15 @@ describe('block dependencies and references', () => {
       template: 'consulting-deck-blocks',
       format: 'pptx',
     });
-    expect(references).toHaveLength(1);
-    const [reference] = references;
+    // Every definition the deck embeds, in definition order.
+    expect(references.map((entry) => entry.name)).toEqual([
+      'cover',
+      'action-chart',
+      'kpi-row',
+      'two-column',
+      'statement',
+    ]);
+    const reference = references[1];
     expect(reference).toMatchObject({
       name: 'action-chart',
       format: 'pptx',
@@ -263,7 +275,11 @@ describe('block dependencies and references', () => {
     );
     expect(reference.definition).toEqual(document.props.blocks['action-chart']);
     expect(reference.slotsSchema.required).toEqual(['title', 'chart']);
-    expect(reference.example).toEqual(document.children[1].children[0]);
+    expect(reference.example).toEqual(
+      document.children.find(
+        (slide: any) => slide.children[0].props.ref === 'action-chart'
+      ).children[0]
+    );
     expect(
       validateBlockInvocations(
         {

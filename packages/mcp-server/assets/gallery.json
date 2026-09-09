@@ -41,30 +41,31 @@
       "name": "consulting-deck-blocks.pptx.json",
       "format": "pptx",
       "archetype": "consulting deck with document-local JSON blocks",
-      "whenToUse": "Learn, copy and customize the action-chart JSON definition on the consulting house theme. Definition and invocations are embedded in the complete playground deck; the cover and closing slides show direct coordinate authoring beside blocks.",
+      "whenToUse": "Learn, copy and customize the five consulting deck JSON definitions on the house theme: cover, action-chart, kpi-row, two-column and statement. Every slide of this complete playground deck invokes one; the definitions own the geometry as percentage frames and bind every size to a theme role, so the same deck lays out on every theme and canvas.",
       "theme": "consulting",
-      "pages": 4,
+      "pages": 6,
       "components": {
-        "block": 2,
+        "block": 6,
         "chart": 2,
-        "group": 1,
+        "group": 9,
         "pptx": 1,
-        "shape": 4,
-        "slide": 4,
-        "text": 13
+        "shape": 9,
+        "slide": 6,
+        "table": 1,
+        "text": 27
       },
       "slots": {
-        "speaker-notes": 3,
-        "text": 9,
-        "title": 7
+        "speaker-notes": 5,
+        "text": 5,
+        "title": 13
       },
       "externalAssets": [],
       "externalFonts": [],
-      "hash": "3e80844db63ebe6e10541113ea92c8584e36e2633e571845f9da953062861a35",
+      "hash": "b68f80feec72653e44f982c78d8bb3c2f8f5675e61d0d3b20a003f723da0e986",
       "bytes": {
-        "document": 13874,
-        "gzipped": 2693,
-        "thumbnail": 18393
+        "document": 44998,
+        "gzipped": 5264,
+        "thumbnail": 28824
       }
     },
     {
