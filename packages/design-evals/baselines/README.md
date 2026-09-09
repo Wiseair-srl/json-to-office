@@ -284,12 +284,16 @@ the before set in the mix. Every rejection again carries the single reason
 "empty or half-blank pages"; two of the 24 new documents were held on it
 (`cr-workforce-planning#1`, a stub last page; `cr-pricing-review-logistics#2`).
 
-Against the judge on this set, shipping agreement is 62% (kappa 0.25) with the
-shared sitting and 56% (0.12) with the original: the judge ships 8 where Paolo
-ships 22. Its level still tracks him — 14 of the 15 documents it put at level
-4 he would send, 9 of 29 at level 3 — so "excellent" remains the estimate to
-read; the ship question in the rubric is now clearly stricter than the human
-it is meant to stand in for, and recalibrating it is the follow-up.
+Across all 48 absolute verdicts of round two, shipping agreement with the
+judge is 62% (kappa 0.25) in the shared sitting and 56% (0.12) with the
+original sessions; most of that agreement is the before set, where both say
+no (92% and 88%). On the 24 after-exhibits sheets alone it is 33% (kappa
+−0.04) and 25% (−0.06): the judge ships 8 in the shared sitting and 6 in its
+own session where Paolo ships 22. Its level still tracks him — 14 of the 15
+documents it put at level 4 he would send, 9 of 29 at level 3 — so
+"excellent" remains the estimate to read; the ship question in the rubric is
+now clearly stricter than the human it is meant to stand in for, and
+recalibrating it is the follow-up.
 
 ## Reading one
 
