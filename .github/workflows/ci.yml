@@ -269,8 +269,8 @@ jobs:
           # never install from; when one of them serves a bad index,
           # `apt-get update` exits 100 and the job dies before any code runs.
           # Drop them, and retry the update against the Ubuntu mirrors.
-          sudo rm -f /etc/apt/sources.list.d/google-chrome*.list \
-            /etc/apt/sources.list.d/microsoft-edge*.list
+          sudo rm -f /etc/apt/sources.list.d/google-chrome* \
+            /etc/apt/sources.list.d/microsoft-edge*
           for attempt in 1 2 3; do
             sudo apt-get update && break
             echo "apt-get update failed (attempt $attempt); retrying"
