@@ -30,6 +30,20 @@ A report for a client or a public administration, on the `consulting` theme and 
 
 Both variants invoke `cover`, `running-head`, `section-opener`, `key-takeaways`, `kpi-row`, `callout`, `footnotes` and, through them, `source-line`; the data-heavy one adds `chart-figure` and `data-table`. The chart slot holds a `highcharts` component whose categories, series name and axis title are markers, so the export server draws a placeholder chart until the data arrives and generation refuses the document until every marker is gone.
 
+## `technical-report`
+
+A technical report or memo for engineers and their managers, on the `consulting` theme and judged by the `technical-report` profile: numbered sections under a running head that numbers the pages, a contents list rendered from cached entries so LibreOffice previews show it, a summary first, a source under every figure and table, references last. Its definitions come from the `technical-report-blocks.docx.json` template — a load-test report — which defines the same blocks as the client-report template plus `memo-header`.
+
+| Variant      | Structure                                                                                                                                                                                                                  | Pages |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| `data-heavy` | Cover; contents; summary; scope and method with an assumptions note; results with a chart, two sub-headed findings and a runs table; recommendations with a risk note; a readiness statement; references                   | 4–10  |
+| `narrative`  | Cover; contents; summary; context and constraints; analysis built on one comparison table; options and risks; recommendation and next steps; references                                                                    | 3–8   |
+| `memo`       | One flowing section: To, From, Date and Subject in place of a cover, the recommendation first, the question, the options against the requirements in one table, what would change the answer; references. No contents list | 1–3   |
+
+The report variants invoke `cover`, `running-head`, `section-opener`, `key-takeaways`, `callout`, `data-table`, `footnotes` and, through them, `source-line`; the data-heavy one adds `chart-figure`. Sub-headings are ordinary level-2 `heading` components whose text carries the number (`3.1 …`), so the contents list and the heading-hierarchy rule both see them. The memo invokes `memo-header` and declares its `running-head` in the same, only section, so the first page already carries the title and `1 / N`; the profile's running-head rule starts at the second section and therefore asks nothing of a memo, which carries the chrome by construction.
+
+The `technical-report` profile differs from `client-report` in what it owes a figure: a `source` wherever a block declares one, never a `takeaway` — the caption is the block's own requirement — and one more text size, for the contents list and the sub-headings.
+
 ## Instantiating one
 
 ```ts
@@ -65,11 +79,12 @@ Patch every pointer with content and the document is generation-ready; leave one
 
 The brief and the outline are mapped by one rule each:
 
-| Input                   | Fills                                                                                                                                                                 |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `brief.<key>`           | `props.metadata.<key>` (`client` also fills `company`) and the `<key>` slot of the cover and the running head — never a body block, where `title` means the section's |
-| `# Heading`             | The title, unless the brief gave one                                                                                                                                  |
-| `## Heading`, in order  | The next section opener's `title`                                                                                                                                     |
-| Paragraphs under a `##` | That section's body text markers, in order; a blank line separates paragraphs                                                                                         |
+| Input                   | Fills                                                                                                                                                                                                                            |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `brief.<key>`           | `props.metadata.<key>` (`client` also fills `company`) and the `<key>` slot of the cover, the running head and the memo header (`title` also fills the memo's `subject`) — never a body block, where `title` means the section's |
+| `# Heading`             | The title, unless the brief gave one                                                                                                                                                                                             |
+| `## Heading`, in order  | The next section opener's `title`                                                                                                                                                                                                |
+| `### Heading`, in order | The next level-2 `heading` marker between that opener and the following one                                                                                                                                                      |
+| Paragraphs under a `##` | The body text markers between that opener and the following one, in order; a blank line separates paragraphs                                                                                                                     |
 
-A brief key that matches nothing comes back as `W_BRIEF_UNUSED`; a section or paragraph the variant has no room for, text before the first `##`, a second `#` and any deeper heading come back as `W_OUTLINE_UNMAPPED`. Nothing is dropped silently. `jto_validate` on the handle reports the markers as advisory findings with `generationReady: false` and, once they are gone, `generationReady: true`; `jto_generate` refuses in between, naming every remaining marker by pointer. `jto://blueprints` serves the plans in full and `jto_discover` their summaries.
+A brief key that matches nothing comes back as `W_BRIEF_UNUSED`; a section, sub-heading or paragraph the variant has no room for, text before the first `##`, a second `#` and any heading deeper than `###` come back as `W_OUTLINE_UNMAPPED`. Nothing is dropped silently. `jto_validate` on the handle reports the markers as advisory findings with `generationReady: false` and, once they are gone, `generationReady: true`; `jto_generate` refuses in between, naming every remaining marker by pointer. `jto://blueprints` serves the plans in full and `jto_discover` their summaries.

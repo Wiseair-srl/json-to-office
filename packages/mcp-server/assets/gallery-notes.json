@@ -21,6 +21,10 @@
       "archetype": "technical-report",
       "whenToUse": "A numbered technical document with a table of contents, code, figures and references. Use for a standard, a post-incident report, an audit or anything an engineer has to implement from."
     },
+    "technical-report-blocks.docx.json": {
+      "archetype": "technical report with document-local JSON blocks",
+      "whenToUse": "Learn, copy and customize JSON definitions for a technical report or memo: cover, running-head, contents, section-opener, key-takeaways, callout, chart-figure, data-table, footnotes and memo-header. A load-test report on the house theme with numbered sections and sub-headings; the chart draws through the Highcharts export server. The technical-report blueprint scaffolds from these definitions."
+    },
     "vermilion-annual-report.docx.json": {
       "archetype": "annual-report",
       "whenToUse": "The house editorial language of the examples: poster-red display headings, ink text, warm creams, hairline rules. Use when the document should look designed rather than produced."

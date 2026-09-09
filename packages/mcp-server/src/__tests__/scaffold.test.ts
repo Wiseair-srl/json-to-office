@@ -183,7 +183,10 @@ describe('what a scaffold is', () => {
     expect(unknown.ok).toBe(false);
     expect(unknown.diagnostics[0]).toMatchObject({
       code: 'E_BLUEPRINT_NOT_FOUND',
-      context: { format: 'docx', blueprints: ['client-report'] },
+      context: {
+        format: 'docx',
+        blueprints: ['client-report', 'technical-report'],
+      },
     });
     const variant = await call('jto_scaffold', {
       blueprint: 'client-report',
@@ -408,8 +411,14 @@ describe('the brief and the outline', () => {
     expect(outline).toEqual({
       title: 'Title',
       orphans: ['A preamble nobody asked for.'],
-      skippedHeadings: ['Another title', 'Method'],
-      sections: [{ heading: 'One', paragraphs: ['Body.', 'Still in One.'] }],
+      skippedHeadings: ['Another title'],
+      sections: [
+        {
+          heading: 'One',
+          paragraphs: ['Body.', 'Still in One.'],
+          subheadings: ['Method'],
+        },
+      ],
     });
     const document = { props: { metadata: {} }, children: [] };
     const fill = applyFacts(document, [], {}, outline);
@@ -417,9 +426,146 @@ describe('the brief and the outline', () => {
     expect(fill.diagnostics.map((d) => [d.code, d.context])).toEqual([
       ['W_OUTLINE_UNMAPPED', { headings: ['Title'] }],
       ['W_OUTLINE_UNMAPPED', { headings: ['One'] }],
-      ['W_OUTLINE_UNMAPPED', { headings: ['Another title', 'Method'] }],
+      ['W_OUTLINE_UNMAPPED', { headings: ['Another title'] }],
       ['W_OUTLINE_UNMAPPED', { paragraphs: 1 }],
     ]);
+    // A `###` before any `##`, and anything deeper than `###`, have no place.
+    expect(parseOutline('### Early\n## One\n#### Deep')).toMatchObject({
+      skippedHeadings: ['Early', 'Deep'],
+      sections: [{ heading: 'One', subheadings: [] }],
+    });
+  });
+});
+
+describe('scaffolding a technical report', () => {
+  const technical = (args: Record<string, unknown>) =>
+    scaffold({ blueprint: 'technical-report', ...args });
+  /** Every leaf of the workspace document by JSON pointer. */
+  const projection = async (handle: string) => {
+    const { document } = (await call('jto_workspace_inspect', {
+      handle,
+      includeDocument: true,
+    })) as { document: unknown };
+    const leaves: Record<string, unknown> = {};
+    const walk = (value: unknown, pointer: string): void => {
+      if (Array.isArray(value))
+        value.forEach((item, i) => walk(item, `${pointer}/${i}`));
+      else if (value && typeof value === 'object')
+        for (const [key, item] of Object.entries(value))
+          walk(item, `${pointer}/${key}`);
+      else leaves[pointer] = value;
+    };
+    walk(document, '');
+    return leaves;
+  };
+
+  it('fills the memo header from the brief, the title as its subject, and keeps three openers in one section apart', async () => {
+    const out = await technical({
+      variant: 'memo',
+      brief: {
+        title: 'Adopt the managed broker',
+        to: 'Head of engineering',
+        from: 'Platform team',
+        date: '9 September 2026',
+        confidentiality: 'Internal',
+      },
+      outline: [
+        '## The question',
+        'Four requirements.',
+        '## The options',
+        'Option C wins.',
+        '',
+        'Option B loses on throughput.',
+        '## What would change the answer',
+        'A cheaper managed tier.',
+      ].join('\n'),
+    });
+    expect(out.ok).toBe(true);
+    expect(out.blueprint).toMatchObject({
+      id: 'technical-report',
+      variant: 'memo',
+      profile: 'technical-report',
+      definitions: 'technical-report-blocks.docx.json',
+    });
+    expect(out.blueprint.blocks).toEqual(
+      expect.arrayContaining(['memo-header', 'running-head', 'data-table'])
+    );
+    expect(out.blueprint.blocks).not.toContain('cover');
+    expect(codes(out)).not.toContain('W_BRIEF_UNUSED');
+    const doc = await projection(out.workspace.handle);
+    const header = '/children/0/children/0/props/slots';
+    expect(doc[`${header}/subject`]).toBe('Adopt the managed broker');
+    expect(doc[`${header}/to`]).toBe('Head of engineering');
+    expect(doc[`${header}/from`]).toBe('Platform team');
+    expect(doc[`${header}/date`]).toBe('9 September 2026');
+    expect(doc['/props/metadata/title']).toBe('Adopt the managed broker');
+    expect(doc['/children/0/children/1/props/slots/date']).toBe(
+      '9 September 2026'
+    );
+    // Each opener's paragraphs land under it, not under the first opener.
+    const texts = Object.entries(doc)
+      .filter(([pointer]) =>
+        /^\/children\/0\/children\/\d+\/props\/text$/.test(pointer)
+      )
+      .sort(([a], [b]) => Number(a.split('/')[3]) - Number(b.split('/')[3]))
+      .map(([, value]) => value);
+    expect(texts).toEqual([
+      'Four requirements.',
+      'Option C wins.',
+      'A cheaper managed tier.',
+    ]);
+    expect(out.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'W_OUTLINE_UNMAPPED',
+          context: { paragraphs: 1 },
+        }),
+      ])
+    );
+  });
+
+  it('maps ### headings to the section’s sub-heading markers and never writes a paragraph into a heading', async () => {
+    const out = await technical({
+      variant: 'data-heavy',
+      outline: [
+        '# Load test results',
+        '## Summary',
+        'Not ready.',
+        '## Scope and method',
+        'Replayed the peak hour.',
+        '## Results',
+        'Latency was flat to 2.0.',
+        '### The pool',
+        'Queued at 200.',
+        '### The lock',
+        'Serialised per product.',
+        '### One too many',
+      ].join('\n'),
+    });
+    expect(out.ok).toBe(true);
+    const doc = await projection(out.workspace.handle);
+    const results = '/children/3/children';
+    expect(doc[`${results}/0/props/slots/title`]).toBe('Results');
+    expect(doc[`${results}/1/props/text`]).toBe('Latency was flat to 2.0.');
+    expect(doc[`${results}/3/props/text`]).toBe('The pool');
+    expect(doc[`${results}/4/props/text`]).toBe('Queued at 200.');
+    expect(doc[`${results}/5/props/text`]).toBe('The lock');
+    expect(doc[`${results}/6/props/text`]).toBe('Serialised per product.');
+    expect(out.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'W_OUTLINE_UNMAPPED',
+          path: '/children/3',
+          context: { headings: ['One too many'] },
+        }),
+      ])
+    );
+    // The heading markers are gone from the map; a body marker is not a heading.
+    expect(
+      out.fillMap
+        .filter((entry) => entry.path.startsWith(`${results}/`))
+        .map((entry) => entry.path)
+    ).not.toContain(`${results}/3/props/text`);
   });
 });
 

@@ -60,7 +60,7 @@ A design profile defines what good means for a document class. It may be referen
 by a theme, but it is not a theme: tokens describe available visual values, while a
 profile describes intended use.
 
-Examples include `executive-deck`, `technical-report`, and `legal-appendix`. Profiles
+Examples include `consulting-deck`, `client-report`, `technical-report` and `legal-appendix`; `general` is the DOCX default. Profiles
 may constrain typography roles, density, safe areas, spacing rhythm, accessibility,
 and renderer targets.
 
@@ -179,8 +179,9 @@ Each document class contains:
 - cross-renderer cases separating portability defects from renderer-specific craft.
 
 Initial profiles: `executive-presentation`, `technical-presentation`,
-`consulting-deck`, `executive-report`, `technical-report`, and `legal-appendix`.
-Their 18 executable cases and authored-structure digests live in
+`consulting-deck`, `client-report`, `technical-report`, `executive-report`,
+`legal-appendix` and `general`. Their executable cases and authored-structure
+digests live in
 `packages/jto-ops/src/quality-reference-corpus.ts`; the core renderer corpora retain
 the package-part goldens.
 

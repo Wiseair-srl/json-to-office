@@ -183,6 +183,7 @@ describe('jto_discover', () => {
       .blueprints;
     expect(blueprints?.map((blueprint) => blueprint.id)).toEqual([
       'client-report',
+      'technical-report',
     ]);
     expect(blueprints?.[0]).toMatchObject({
       theme: 'consulting',
@@ -201,9 +202,12 @@ describe('jto_discover', () => {
     // The DOCX document schema is over 3 MB. Whatever else changes here, this
     // tool must never start shipping schemas. The ceiling grew from 32 KB to
     // 36 KB when the blueprint summaries joined the gallery and block
-    // references; a full blueprint plan would blow it, and belongs to the
+    // references, and to 44 KB with the technical-report blueprint and the
+    // twelfth template, whose eleven block references (ten shared by name
+    // with the client-report template, one new) are each listed under their
+    // own template; a full blueprint plan would blow it, and belongs to the
     // scaffold, never to discovery.
-    expect(JSON.stringify(result).length).toBeLessThan(36 * 1024);
+    expect(JSON.stringify(result).length).toBeLessThan(44 * 1024);
     expect(JSON.stringify(result)).not.toContain('"$schema"');
   });
 

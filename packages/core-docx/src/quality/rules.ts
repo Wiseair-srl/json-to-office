@@ -1320,7 +1320,36 @@ export const DOCX_QUALITY_PROFILES = {
   'technical-report': {
     id: 'technical-report',
     formats: ['docx'],
-    description: 'Portable professional report defaults.',
+    description:
+      'Technical report or memo: numbered sections under a running head with page numbers on every section after the cover, a source wherever a block declares one, no heading skipped, every size on the theme scale with at most nine in play, no page rendered empty or left half blank, and at least one chart or table.',
+    rules: {
+      // A figure or table in a technical report cites where its numbers come
+      // from; the takeaway is the client report's ask, the caption is the
+      // block's own.
+      'docx/required-chrome': { parameters: { required: ['source'] } },
+      'docx/running-head': {
+        parameters: {
+          required: ['header', 'footer', 'pageNumber'],
+          fromSection: 1,
+        },
+      },
+      'docx/heading-hierarchy': { severity: 'warning' },
+      'docx/type-scale': { enabled: true },
+      // One more than the client report: the contents list paints TOC2 and
+      // the sub-headings paint heading 2.
+      'docx/size-count': { enabled: true, parameters: { maximumSizes: 9 } },
+      'docx/role-drift': { enabled: true },
+      'rendered/empty-page': { severity: 'warning' },
+      'rendered/page-underfilled': { severity: 'warning' },
+      // A technical report argues from measurements: a runs table, a chart.
+      'docx/exhibit-required': { enabled: true },
+    },
+  },
+  general: {
+    id: 'general',
+    formats: ['docx'],
+    description:
+      'Any document that names no archetype: integrity and information-design rules at their defaults, nothing required by structure.',
   },
   'legal-appendix': {
     id: 'legal-appendix',
@@ -1330,7 +1359,7 @@ export const DOCX_QUALITY_PROFILES = {
 } as const satisfies Record<string, QualityProfile>;
 
 export const DOCX_DEFAULT_QUALITY_PROFILE: QualityProfile =
-  DOCX_QUALITY_PROFILES['technical-report'];
+  DOCX_QUALITY_PROFILES['general'];
 
 const DOCX_PROFILES_BY_ID: Readonly<Record<string, QualityProfile>> =
   DOCX_QUALITY_PROFILES;

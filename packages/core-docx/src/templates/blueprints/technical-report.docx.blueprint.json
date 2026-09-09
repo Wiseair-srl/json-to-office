@@ -1,0 +1,693 @@
+{
+  "id": "technical-report",
+  "format": "docx",
+  "title": "Technical report",
+  "description": "A technical report or memo for engineers and their managers: numbered sections under a running head that numbers the pages, a contents list, a summary first, method and results with a chart and a runs table, recommendations, a readiness or decision statement, references last; or a memo that opens with To, From, Date and Subject and argues one recommendation in two pages.",
+  "whenToUse": "A load-test or audit report, a migration or capacity plan, a post-incident report, a standard, a security review, or a short memo recommending one option. Not for a client's periodic report, which reads for the conclusion first and rarely cites a method.",
+  "theme": "consulting",
+  "profile": "technical-report",
+  "definitions": "technical-report-blocks.docx.json",
+  "numbering": "sections",
+  "toc": true,
+  "variants": {
+    "data-heavy": {
+      "description": "Evidence-led: summary, scope and method with its assumptions, results with a chart and two sub-headed findings and a runs table, recommendations with a risk note, a readiness statement, references.",
+      "whenToUse": "The brief comes with measurements: runs, findings, incidents, timings, anything the reader will check against a figure.",
+      "pages": {
+        "min": 4,
+        "max": 10
+      },
+      "metadata": {
+        "title": "{{Title: as on the cover}}",
+        "author": "{{Author or team}}",
+        "company": "{{Team or client name}}",
+        "date": "{{Month YYYY}}"
+      },
+      "children": [
+        {
+          "name": "section",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "cover",
+                "slots": {
+                  "title": "{{Title: the report's conclusion in one sentence}}",
+                  "subtitle": "{{Subtitle: what was examined, for whom}}",
+                  "client": "{{Team or client name}}",
+                  "date": "{{Month YYYY}}",
+                  "confidentiality": "{{Confidentiality: Internal, or Confidential}}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "section",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "running-head",
+                "slots": {
+                  "confidentiality": "{{Confidentiality: as on the cover}}",
+                  "date": "{{Month YYYY}}"
+                }
+              }
+            },
+            {
+              "name": "toc",
+              "props": {
+                "scope": "document",
+                "title": "Contents",
+                "depth": {
+                  "from": 1,
+                  "to": 2
+                }
+              }
+            },
+            {
+              "name": "block",
+              "props": {
+                "ref": "section-opener",
+                "slots": {
+                  "number": "1",
+                  "title": "{{Section title: the conclusion, as a statement}}"
+                }
+              }
+            },
+            {
+              "name": "block",
+              "props": {
+                "ref": "key-takeaways",
+                "slots": {
+                  "label": "Summary",
+                  "items": [
+                    "{{Finding 1: one claim, one sentence, with its number}}",
+                    "{{Finding 2: one claim, one sentence, with its number}}",
+                    "{{Finding 3: the recommendation that follows}}"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "{{Body: what was examined, what was found and what is recommended, in one paragraph}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "section",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "section-opener",
+                "slots": {
+                  "number": "2",
+                  "title": "{{Section title: scope and method}}"
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "{{Body: what was measured, under which conditions, with which instruments, and what was left out}}"
+              }
+            },
+            {
+              "name": "block",
+              "props": {
+                "ref": "callout",
+                "slots": {
+                  "label": "{{Note label: Assumptions, or Limitations}}",
+                  "text": "{{Note: the assumption or limit the results rest on}}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "section",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "section-opener",
+                "slots": {
+                  "number": "3",
+                  "title": "{{Section title: results, as the headline finding}}"
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "{{Body: what the figure shows and the number that matters}}"
+              }
+            },
+            {
+              "name": "block",
+              "props": {
+                "ref": "chart-figure",
+                "slots": {
+                  "chart": {
+                    "name": "highcharts",
+                    "props": {
+                      "width": "100%",
+                      "options": {
+                        "chart": {
+                          "type": "column",
+                          "width": 900,
+                          "height": 460
+                        },
+                        "title": {
+                          "text": null
+                        },
+                        "xAxis": {
+                          "categories": [
+                            "{{Condition 1}}",
+                            "{{Condition 2}}",
+                            "{{Condition 3}}"
+                          ],
+                          "title": {
+                            "text": "{{Independent variable (unit)}}"
+                          }
+                        },
+                        "yAxis": {
+                          "min": 0,
+                          "title": {
+                            "text": "{{Measure (unit)}}"
+                          }
+                        },
+                        "series": [
+                          {
+                            "name": "{{Series name}}",
+                            "data": [0, 0, 0]
+                          }
+                        ],
+                        "credits": {
+                          "enabled": false
+                        }
+                      }
+                    }
+                  },
+                  "caption": "{{Caption: what the chart shows, as a statement}}",
+                  "takeaway": "{{Takeaway: the one sentence the reader should keep}}",
+                  "source": "{{Source: system, run or document, date}}"
+                }
+              }
+            },
+            {
+              "name": "heading",
+              "props": {
+                "level": 2,
+                "text": "{{Sub-heading 3.1: the first result, as a statement}}"
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "{{Body: the evidence for the sub-heading, with its numbers}}"
+              }
+            },
+            {
+              "name": "heading",
+              "props": {
+                "level": 2,
+                "text": "{{Sub-heading 3.2: the second result, as a statement}}"
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "{{Body: the evidence for the sub-heading, with its numbers}}"
+              }
+            },
+            {
+              "name": "block",
+              "props": {
+                "ref": "data-table",
+                "slots": {
+                  "title": "{{Table title: the runs or cases, and their conditions}}",
+                  "labelHeader": "{{Run or case}}",
+                  "labels": ["{{Row 1}}", "{{Row 2}}", "{{Row 3}}"],
+                  "columns": [
+                    {
+                      "header": "{{Measure (unit)}}",
+                      "cells": ["{{0.0}}", "{{0.0}}", "{{0.0}}"]
+                    },
+                    {
+                      "header": "{{Measure (unit)}}",
+                      "cells": ["{{0.0}}", "{{0.0}}", "{{0.0}}"]
+                    }
+                  ],
+                  "notes": "{{Notes: definitions, conditions, exclusions the reader needs to read the figures}}",
+                  "source": "{{Source: system, run or document, date}}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "section",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "section-opener",
+                "slots": {
+                  "number": "4",
+                  "title": "{{Section title: recommendations, as what to do}}"
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "{{Body: each recommendation with its expected effect, cost and owner}}"
+              }
+            },
+            {
+              "name": "block",
+              "props": {
+                "ref": "callout",
+                "slots": {
+                  "label": "{{Note label: Risk, or Open question}}",
+                  "text": "{{Note: what could invalidate the recommendation and how it will be checked}}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "section",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "section-opener",
+                "slots": {
+                  "number": "5",
+                  "title": "{{Section title: the readiness or decision statement}}"
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "{{Body: the answer to the brief's question, with its condition}}"
+              }
+            },
+            {
+              "name": "block",
+              "props": {
+                "ref": "footnotes",
+                "slots": {
+                  "title": "References"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "narrative": {
+      "description": "Argument-led: summary, context and constraints, an analysis section built on one comparison table, options and risks, a recommendation with next steps, references.",
+      "whenToUse": "The brief is a plan, a policy, a standard or an assessment with few numbers; the reader follows an argument to a decision.",
+      "pages": {
+        "min": 3,
+        "max": 8
+      },
+      "metadata": {
+        "title": "{{Title: as on the cover}}",
+        "author": "{{Author or team}}",
+        "company": "{{Team or client name}}",
+        "date": "{{Month YYYY}}"
+      },
+      "children": [
+        {
+          "name": "section",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "cover",
+                "slots": {
+                  "title": "{{Title: the report's conclusion in one sentence}}",
+                  "subtitle": "{{Subtitle: what was examined, for whom}}",
+                  "client": "{{Team or client name}}",
+                  "date": "{{Month YYYY}}",
+                  "confidentiality": "{{Confidentiality: Internal, or Confidential}}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "section",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "running-head",
+                "slots": {
+                  "confidentiality": "{{Confidentiality: as on the cover}}",
+                  "date": "{{Month YYYY}}"
+                }
+              }
+            },
+            {
+              "name": "toc",
+              "props": {
+                "scope": "document",
+                "title": "Contents",
+                "depth": {
+                  "from": 1,
+                  "to": 2
+                }
+              }
+            },
+            {
+              "name": "block",
+              "props": {
+                "ref": "section-opener",
+                "slots": {
+                  "number": "1",
+                  "title": "{{Section title: the conclusion, as a statement}}"
+                }
+              }
+            },
+            {
+              "name": "block",
+              "props": {
+                "ref": "key-takeaways",
+                "slots": {
+                  "label": "Summary",
+                  "items": [
+                    "{{Finding 1: one claim, one sentence, with its number}}",
+                    "{{Finding 2: one claim, one sentence, with its number}}",
+                    "{{Finding 3: the recommendation that follows}}"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "{{Body: what was examined, what was found and what is recommended, in one paragraph}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "section",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "section-opener",
+                "slots": {
+                  "number": "2",
+                  "title": "{{Section title: context and constraints}}"
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "{{Body: the system or situation as it is, with the numbers that bound it}}"
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "{{Body: the requirement or question this report answers}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "section",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "section-opener",
+                "slots": {
+                  "number": "3",
+                  "title": "{{Section title: analysis, as the headline finding}}"
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "{{Body: the argument, opening with its claim}}"
+              }
+            },
+            {
+              "name": "block",
+              "props": {
+                "ref": "data-table",
+                "slots": {
+                  "title": "{{Table title: what it compares, and the conditions}}",
+                  "labelHeader": "{{Option or case}}",
+                  "labels": ["{{Row 1}}", "{{Row 2}}", "{{Row 3}}"],
+                  "columns": [
+                    {
+                      "header": "{{Measure (unit)}}",
+                      "cells": ["{{0.0}}", "{{0.0}}", "{{0.0}}"]
+                    },
+                    {
+                      "header": "{{Measure (unit)}}",
+                      "cells": ["{{0.0}}", "{{0.0}}", "{{0.0}}"]
+                    }
+                  ],
+                  "notes": "{{Notes: definitions, conditions, exclusions the reader needs to read the figures}}",
+                  "source": "{{Source: system, run or document, date}}"
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "{{Body: what the table settles and what it leaves open}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "section",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "section-opener",
+                "slots": {
+                  "number": "4",
+                  "title": "{{Section title: options and risks}}"
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "{{Body: each option with its cost, its risk and what it forecloses}}"
+              }
+            },
+            {
+              "name": "block",
+              "props": {
+                "ref": "callout",
+                "slots": {
+                  "label": "{{Note label: Risk, or Open question}}",
+                  "text": "{{Note: what could invalidate the recommendation and how it will be checked}}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "section",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "section-opener",
+                "slots": {
+                  "number": "5",
+                  "title": "{{Section title: recommendation and next steps}}"
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "{{Body: the recommendation, its condition and the first three steps with owners and dates}}"
+              }
+            },
+            {
+              "name": "block",
+              "props": {
+                "ref": "footnotes",
+                "slots": {
+                  "title": "References"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "memo": {
+      "description": "A memo in one flowing section: To, From, Date and Subject in place of a cover, the recommendation first, then the question, the options against the requirements in one table, and what would change the answer; references last. No contents list.",
+      "whenToUse": "One decision for one reader, argued in under three pages: a vendor or option choice, a go or no-go, a change of approach.",
+      "pages": {
+        "min": 1,
+        "max": 3
+      },
+      "metadata": {
+        "title": "{{Title: the subject line}}",
+        "author": "{{Author or team}}",
+        "company": "{{Team or client name}}",
+        "date": "{{Month YYYY}}"
+      },
+      "children": [
+        {
+          "name": "section",
+          "children": [
+            {
+              "name": "block",
+              "props": {
+                "ref": "memo-header",
+                "slots": {
+                  "subject": "{{Subject: the recommendation in one line}}",
+                  "to": "{{To: the person or group who decides}}",
+                  "from": "{{From: author or team}}",
+                  "date": "{{D Month YYYY}}"
+                }
+              }
+            },
+            {
+              "name": "block",
+              "props": {
+                "ref": "running-head",
+                "slots": {
+                  "confidentiality": "{{Confidentiality: Internal, or Confidential}}",
+                  "date": "{{Month YYYY}}"
+                }
+              }
+            },
+            {
+              "name": "block",
+              "props": {
+                "ref": "key-takeaways",
+                "slots": {
+                  "label": "Recommendation",
+                  "items": [
+                    "{{Recommendation: what to do, in one sentence}}",
+                    "{{Reason 1: the requirement it meets, with its number}}",
+                    "{{Reason 2: the cost or risk accepted, with its number}}"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "block",
+              "props": {
+                "ref": "section-opener",
+                "slots": {
+                  "number": "1",
+                  "title": "{{Section title: the question and its constraints}}"
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "{{Body: the requirements, each with its number, and what was considered}}"
+              }
+            },
+            {
+              "name": "block",
+              "props": {
+                "ref": "section-opener",
+                "slots": {
+                  "number": "2",
+                  "title": "{{Section title: the options against the requirements}}"
+                }
+              }
+            },
+            {
+              "name": "block",
+              "props": {
+                "ref": "data-table",
+                "slots": {
+                  "title": "{{Table title: options against the requirements}}",
+                  "labelHeader": "{{Option}}",
+                  "labels": ["{{Row 1}}", "{{Row 2}}", "{{Row 3}}"],
+                  "columns": [
+                    {
+                      "header": "{{Measure (unit)}}",
+                      "cells": ["{{0.0}}", "{{0.0}}", "{{0.0}}"]
+                    },
+                    {
+                      "header": "{{Measure (unit)}}",
+                      "cells": ["{{0.0}}", "{{0.0}}", "{{0.0}}"]
+                    }
+                  ],
+                  "notes": "{{Notes: definitions, conditions, exclusions the reader needs to read the figures}}",
+                  "source": "{{Source: system, run or document, date}}"
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "{{Body: why the recommended option wins and what the others lose on}}"
+              }
+            },
+            {
+              "name": "block",
+              "props": {
+                "ref": "callout",
+                "slots": {
+                  "label": "{{Note label: Assumption}}",
+                  "text": "{{Note: the assumption the recommendation rests on}}"
+                }
+              }
+            },
+            {
+              "name": "block",
+              "props": {
+                "ref": "section-opener",
+                "slots": {
+                  "number": "3",
+                  "title": "{{Section title: what would change the answer}}"
+                }
+              }
+            },
+            {
+              "name": "paragraph",
+              "props": {
+                "text": "{{Body: the two or three facts that would reverse the recommendation, and who checks them}}"
+              }
+            },
+            {
+              "name": "block",
+              "props": {
+                "ref": "footnotes",
+                "slots": {
+                  "title": "References"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

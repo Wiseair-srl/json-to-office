@@ -45,12 +45,19 @@ const PROFILES: Record<FormatName, readonly Choice<string>[]> = {
     {
       value: 'technical-report',
       label: 'Technical report',
-      description: 'Portable professional report defaults',
+      description:
+        'Numbered sections under a running head, a source under every figure, every size on the theme scale, at least one chart or table',
     },
     {
       value: 'legal-appendix',
       label: 'Legal appendix',
       description: 'Dense appendix: preserve integrity without editorial taste',
+    },
+    {
+      value: 'general',
+      label: 'General',
+      description:
+        'The format default: integrity and information design, nothing required by structure',
     },
   ],
   pptx: [
@@ -69,7 +76,7 @@ const PROFILES: Record<FormatName, readonly Choice<string>[]> = {
 
 /** The profile the server falls back to, so "Default" can name what it means. */
 const DEFAULT_PROFILE_ID: Record<FormatName, string> = {
-  docx: 'technical-report',
+  docx: 'general',
   pptx: 'technical-presentation',
 };
 

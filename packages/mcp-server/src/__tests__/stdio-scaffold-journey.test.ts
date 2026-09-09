@@ -51,7 +51,10 @@ describe('scaffolding a client report over stdio', () => {
     async () => {
       const blueprints = await readJson('jto://blueprints');
       const docx = blueprints.formats.find((f: any) => f.format === 'docx');
-      expect(docx.blueprints.map((b: any) => b.id)).toEqual(['client-report']);
+      expect(docx.blueprints.map((b: any) => b.id)).toEqual([
+        'client-report',
+        'technical-report',
+      ]);
       const [plan] = docx.blueprints;
       // The full plan, not the summary: variants carry their sections.
       expect(Object.keys(plan.variants)).toEqual(['data-heavy', 'narrative']);
@@ -63,6 +66,7 @@ describe('scaffolding a client report over stdio', () => {
       })) as any;
       expect(discovered.formats[0].blueprints.map((b: any) => b.id)).toEqual([
         'client-report',
+        'technical-report',
       ]);
       expect(JSON.stringify(discovered.formats[0].blueprints)).not.toContain(
         '"children"'

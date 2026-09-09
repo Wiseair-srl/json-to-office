@@ -2,7 +2,7 @@
  * What the `client-report` profile asks of a report, and what the theme never
  * does: a takeaway and a source wherever a block declares the slot, and a
  * running head with page numbers on every section after the cover. The same
- * document on `technical-report` owes none of it, and a document may name the
+ * document on `general` owes none of it, and a document may name the
  * profile it wants judged by.
  */
 import { describe, expect, it } from 'vitest';
@@ -54,9 +54,7 @@ describe('required chrome under the client-report profile', () => {
         path: '/children/0/children/2/props/slots/source',
       }),
     ]);
-    expect(
-      chromeFindings(doc, { profile: profile('technical-report') })
-    ).toEqual([]);
+    expect(chromeFindings(doc, { profile: profile('general') })).toEqual([]);
   });
 
   it('counts a whitespace-only slot as missing', () => {
@@ -99,9 +97,9 @@ describe('required chrome under the client-report profile', () => {
         profile: profile('client-report'),
       })
     ).toEqual([]);
-    expect(
-      chromeFindings(report([]), { profile: profile('technical-report') })
-    ).toEqual([]);
+    expect(chromeFindings(report([]), { profile: profile('general') })).toEqual(
+      []
+    );
   });
 
   it('reads a linked part from the section it links to', () => {
@@ -149,18 +147,16 @@ describe('the profile a document names', () => {
       )
     ).toHaveLength(2);
     const named = analyzeDocxQuality(doc, {
-      profile: profile('technical-report'),
+      profile: profile('general'),
     });
-    expect(named.profileId).toBe('technical-report');
-    expect(
-      chromeFindings(doc, { profile: profile('technical-report') })
-    ).toEqual([]);
+    expect(named.profileId).toBe('general');
+    expect(chromeFindings(doc, { profile: profile('general') })).toEqual([]);
     doc.props.qualityProfile = 'no-such-profile';
-    expect(analyzeDocxQuality(doc).profileId).toBe('technical-report');
+    expect(analyzeDocxQuality(doc).profileId).toBe('general');
     // An inherited member is nobody's profile either.
     for (const id of ['__proto__', 'constructor', 'toString']) {
       doc.props.qualityProfile = id;
-      expect(analyzeDocxQuality(doc).profileId, id).toBe('technical-report');
+      expect(analyzeDocxQuality(doc).profileId, id).toBe('general');
     }
   });
 });

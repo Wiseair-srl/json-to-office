@@ -142,6 +142,7 @@ Every definition in `client-report-blocks.docx.json` binds its sizes and colours
 | `chart-figure`   | chart (component: `highcharts`, or `chart` on office-open), caption, takeaway, source (required)                                          | The chart as given; `**Figure {SEQ:figure}.** caption` in the label role; the takeaway beneath in the quote role; the source through `source-line`. The block's `takeaway` and `source` slots are what `W_QUALITY_CHART_ANNOTATION` reads, so a chart placed here is annotated by them                                                                                |
 | `figure`         | image (component: `image` or `visual`), caption, source                                                                                   | The same numbered caption over the same `figure` sequence, so figures and charts number together; source through `source-line`                                                                                                                                                                                                                                        |
 | `footnotes`      | title (default "Notes and sources")                                                                                                       | Nothing unless the document cites a source; otherwise a hairline, the title in the label role and a numbered list of every distinct `source`-role slot value in document order, from the engine's `/sources` context                                                                                                                                                  |
+| `memo-header`    | label (default "Technical memo"), subject ≤ 16 words, to, from, date (required), cc                                                       | In place of a cover: the label in the eyebrow role, the subject at the heading-1 size, then `**To**`, `**From**`, `**Date**` and an optional `**Cc**` on one tab stop, closed by a rule. Defined in `technical-report-blocks.docx.json`; a `running-head` declared in the same section still numbers the pages                                                        |
 
 ![cover on consulting](/blocks/cover-consulting.png)
 
@@ -162,6 +163,8 @@ Every definition in `client-report-blocks.docx.json` binds its sizes and colours
 ![figure on consulting](/blocks/figure-consulting.png)
 
 ![footnotes on consulting](/blocks/footnotes-consulting.png)
+
+![memo-header on consulting](/blocks/memo-header-consulting.png)
 
 Two engine capabilities the figure blocks compose rather than implement. `{SEQ:name}` in any paragraph text is a Word `SEQ` field the compiler also counts, so `Figure {SEQ:figure}.` reads 1, 2, 3 in document order in Word, in headless LibreOffice and in the preview PDF alike (see [shared text features](/reference/docx/components#shared-text-features)). `/sources` in a DOCX block context is the list of every distinct `source`-role slot value across the document's invocations, in order; `{ "$each": { "$context": "/sources" } }` walks it, and each item maps back to the slot it was written in.
 

@@ -201,7 +201,7 @@ function summarize(analysis: QualityAnalysis) {
  * requested `profileId`. These cases fail if that regresses.
  */
 describe('shipped profiles are reachable by id', () => {
-  it('executive-report promotes the outline rule technical-report leaves advisory', async () => {
+  it('executive-report promotes the outline rule the general default leaves advisory', async () => {
     const adapter = new DocxFormatAdapter();
 
     const byDefault = await adapter.analyzeQuality(OUTLINE_SKIP_DOCX);
@@ -233,7 +233,7 @@ describe('shipped profiles are reachable by id', () => {
   // The remaining profiles ship no rule overrides: they must resolve and stamp
   // their id without silently shifting the baseline verdict.
   for (const [id, format] of [
-    ['technical-report', 'docx'],
+    ['general', 'docx'],
     ['legal-appendix', 'docx'],
     ['technical-presentation', 'pptx'],
   ] as const) {
