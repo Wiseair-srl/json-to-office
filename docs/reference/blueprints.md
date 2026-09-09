@@ -8,16 +8,16 @@ Themes and profiles stay independent by construction. Switching the theme of a s
 
 Blueprints live as JSON files under `packages/core-docx/src/templates/blueprints/`: the registry reads every `*.docx.blueprint.json` in that directory when the package loads and validates each against the shared blueprint schema, so adding one is a file, not code, and a malformed one fails at import rather than at scaffold time. `jto_discover` lists them per format as summaries — id, title, description, when to use, theme, profile, definitions, variants with their expected length — and the library exposes the registry as `DOCX_BLUEPRINTS`.
 
-| Field         | Meaning                                                                                                                                           |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`          | Kebab-case identifier                                                                                                                             |
-| `format`      | `docx` or `pptx`                                                                                                                                  |
-| `theme`       | The recommended theme; any theme renders the scaffold                                                                                             |
-| `profile`     | The quality profile written to the scaffold's `props.qualityProfile`, so validation without arguments judges it                                   |
-| `definitions` | The playground template whose `props.blocks` the variants invoke; the scaffold carries the definitions it uses and the ones those depend on       |
-| `numbering`   | `sections` when openers carry numbers the reader cites, else `none`; the variants write the numbers themselves                                    |
-| `toc`         | Whether the archetype carries a table of contents; declared for the scaffold to read, and no variant asks for one yet                             |
-| `variants`    | Structural variants of the same archetype: `description`, `whenToUse`, `pages` (`min`/`max` once filled), `metadata` and the top-level `children` |
+| Field         | Meaning                                                                                                                                                                              |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `id`          | Kebab-case identifier                                                                                                                                                                |
+| `format`      | `docx` or `pptx`                                                                                                                                                                     |
+| `theme`       | The recommended theme; any theme renders the scaffold                                                                                                                                |
+| `profile`     | The quality profile written to the scaffold's `props.qualityProfile`, so validation without arguments judges it                                                                      |
+| `definitions` | The playground template whose `props.blocks` the variants invoke; the scaffold carries the definitions it uses and the ones those depend on                                          |
+| `numbering`   | `sections` when openers carry numbers the reader cites, else `none`; the variants write the numbers themselves                                                                       |
+| `toc`         | Whether the archetype carries a table of contents; the variants that do place a document-scoped `toc` component themselves (`technical-report`'s report variants; its memo does not) |
+| `variants`    | Structural variants of the same archetype: `description`, `whenToUse`, `pages` (`min`/`max` once filled), `metadata` and the top-level `children`                                    |
 
 ## `client-report`
 
