@@ -1,0 +1,265 @@
+{
+  "name": "vermilion",
+  "displayName": "Vermilion Editorial",
+  "description": "Poster-red editorial deck — vermilion display titles, ink text, warm creams and hairline rules; the twin of the DOCX vermilion theme",
+  "whenToUse": "Talks and readouts that want a strong red display voice beside a vermilion report: a few large titles, one figure per slide. Not for a dense data deck.",
+  "version": "1.0.0",
+  "colors": {
+    "primary": "#282829",
+    "secondary": "#58595B",
+    "accent": "#EF4130",
+    "background": "#FFFFFF",
+    "text": "#282829",
+    "text2": "#58595B",
+    "background2": "#FAF7F5",
+    "accent4": "#F4857A",
+    "accent5": "#F9C4BE",
+    "accent6": "#939598"
+  },
+  "palette": {
+    "rule": "#C7C8CA",
+    "textMuted": "#939598",
+    "onPrimary": "#FFFFFF",
+    "surfaceInverse": "#282829",
+    "positive": "#2E7D4F",
+    "negative": "#B42318",
+    "chart": ["accent", "primary", "textMuted", "accent4", "rule", "accent5"]
+  },
+  "fonts": {
+    "heading": "Arial",
+    "body": "Calibri",
+    "mono": "Courier New"
+  },
+  "defaults": {
+    "fontSize": 14,
+    "fontColor": "#282829"
+  },
+  "styles": {
+    "title": {
+      "fontSize": 32,
+      "bold": true,
+      "fontColor": "accent",
+      "align": "left"
+    },
+    "subtitle": {
+      "fontSize": 16,
+      "fontColor": "text2",
+      "align": "left"
+    },
+    "heading1": {
+      "fontSize": 24,
+      "bold": true,
+      "fontColor": "accent"
+    },
+    "heading2": {
+      "fontSize": 18,
+      "bold": true,
+      "fontColor": "text"
+    },
+    "heading3": {
+      "fontSize": 14,
+      "bold": true,
+      "fontColor": "text2"
+    },
+    "body": {
+      "fontSize": 14,
+      "fontColor": "text"
+    },
+    "caption": {
+      "fontSize": 10,
+      "fontColor": "text2"
+    }
+  },
+  "typography": {
+    "roles": {
+      "eyebrow": {
+        "face": "heading",
+        "size": 10,
+        "weight": 700,
+        "case": "upper",
+        "tracking": 8,
+        "color": "accent"
+      },
+      "display": {
+        "face": "heading",
+        "size": 28,
+        "weight": 700,
+        "color": "accent",
+        "lineHeight": 1.1
+      },
+      "stat": {
+        "face": "heading",
+        "size": 40,
+        "weight": 700,
+        "color": "accent",
+        "lineHeight": 1
+      },
+      "quote": {
+        "face": "body",
+        "size": 18,
+        "color": "text2",
+        "lineHeight": 1.3
+      },
+      "label": {
+        "face": "body",
+        "size": 12,
+        "weight": 700,
+        "color": "text2"
+      },
+      "footer": {
+        "face": "body",
+        "size": 9,
+        "color": "text2"
+      },
+      "tableHeader": {
+        "face": "body",
+        "size": 12,
+        "weight": 700,
+        "color": "accent"
+      },
+      "tableCell": {
+        "face": "body",
+        "size": 12,
+        "color": "text"
+      },
+      "chartLabel": {
+        "face": "body",
+        "size": 11,
+        "weight": 400,
+        "color": "text2"
+      },
+      "tracker": {
+        "face": "body",
+        "size": 10,
+        "case": "upper",
+        "tracking": 6,
+        "color": "text2"
+      },
+      "source": {
+        "face": "body",
+        "size": 9,
+        "color": "text2"
+      }
+    },
+    "scale": {
+      "wide169": {
+        "base": 14,
+        "ratio": 1.2,
+        "baselinePt": 2
+      },
+      "standard43": {
+        "base": 14,
+        "ratio": 1.2,
+        "baselinePt": 2
+      }
+    }
+  },
+  "spacing": {
+    "basePt": 8,
+    "blockGap": {
+      "tight": 4,
+      "normal": 8,
+      "loose": 16
+    },
+    "canvas": {
+      "wide169": {
+        "safeAreaIn": 0.5,
+        "gutterIn": 0.2,
+        "columns": 12,
+        "rows": 8
+      },
+      "standard43": {
+        "safeAreaIn": 0.5,
+        "gutterIn": 0.2,
+        "columns": 12,
+        "rows": 8
+      }
+    }
+  },
+  "chrome": {
+    "runningHead": {
+      "type": "tracker",
+      "color": "text2",
+      "rule": {
+        "weightPt": 0.5,
+        "color": "rule"
+      },
+      "alignment": "right"
+    },
+    "tracker": {
+      "type": "tracker",
+      "color": "text2",
+      "alignment": "right"
+    },
+    "actionTitle": {
+      "type": "display",
+      "color": "primary"
+    },
+    "keyTakeaways": {
+      "type": "label",
+      "color": "primary",
+      "rule": {
+        "weightPt": 1.5,
+        "color": "accent"
+      },
+      "padPt": 8
+    },
+    "sourceLine": {
+      "type": "source",
+      "color": "text2"
+    },
+    "confidentialFooter": {
+      "type": "footer",
+      "color": "text2",
+      "rule": {
+        "weightPt": 0.5,
+        "color": "rule"
+      },
+      "alignment": "left"
+    },
+    "logoSlot": {
+      "alignment": "right"
+    },
+    "cover": {
+      "type": "display",
+      "color": "primary",
+      "rule": {
+        "weightPt": 4,
+        "color": "accent"
+      }
+    }
+  },
+  "motif": {
+    "kind": "rule",
+    "color": "accent",
+    "weightPt": 4,
+    "placement": "top"
+  },
+  "componentDefaults": {
+    "table": {
+      "border": {
+        "type": "solid",
+        "pt": 0.5,
+        "color": "#C7C8CA"
+      },
+      "headerRow": true,
+      "fontSize": 12
+    },
+    "chart": {
+      "showLegend": true,
+      "legendPos": "b",
+      "legendFontSize": 11,
+      "catAxisLabelFontSize": 11,
+      "valAxisLabelFontSize": 11,
+      "catGridLine": {
+        "style": "none"
+      },
+      "valGridLine": {
+        "style": "solid",
+        "size": 0.5,
+        "color": "#EFEAE4"
+      },
+      "valAxisLineShow": false
+    }
+  }
+}

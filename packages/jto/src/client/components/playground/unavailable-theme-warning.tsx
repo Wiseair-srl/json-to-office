@@ -7,7 +7,7 @@ import { FORMAT } from '../../lib/env';
 // Theme names registered in the server-side core packages. Documents may
 // reference these even without a matching customThemes entry.
 const BUILTIN_THEMES: Record<string, readonly string[]> = {
-  pptx: ['default', 'dark', 'minimal', 'consulting'],
+  pptx: ['default', 'dark', 'minimal', 'consulting', 'vermilion', 'devportal'],
   docx: ['minimal', 'devportal', 'vermilion', 'consulting'],
 };
 

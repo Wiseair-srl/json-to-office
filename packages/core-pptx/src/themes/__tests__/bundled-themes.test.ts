@@ -40,7 +40,14 @@ const names = Object.keys(pptxThemes).sort();
 
 describe('built-in pptx themes', () => {
   it('registers the themes the docs and the schema enum promise', () => {
-    expect(names).toEqual(['consulting', 'dark', 'default', 'minimal']);
+    expect(names).toEqual([
+      'consulting',
+      'dark',
+      'default',
+      'devportal',
+      'minimal',
+      'vermilion',
+    ]);
   });
 
   it.each(names)('%s validates against the theme schema', (name) => {
@@ -85,62 +92,73 @@ describe('the theme lookup', () => {
   });
 });
 
-describe('the consulting twin', () => {
-  // The DOCX theme is the source of the house tokens; the deck must not drift
-  // from the report it accompanies. Read the JSON rather than importing
-  // core-docx, so this package keeps no dependency on the other core.
-  const docx = JSON.parse(
-    readFileSync(
-      new URL(
-        '../../../../core-docx/src/templates/themes/consulting.docx.theme.json',
-        import.meta.url
-      ),
-      'utf8'
-    )
-  );
-  const pptx = pptxThemes.consulting;
-
-  it('shares palette roles, chart series, chrome recipes and motif with the report theme', () => {
-    expect(pptx.palette).toEqual(docx.palette);
-    // One deliberate substitution: the recipes that paint small projected
-    // text use the darker grey so a 9pt run clears the contrast rule.
-    const projected = JSON.parse(
-      JSON.stringify(pptx.chrome).replace(
-        /"color":"text2"/g,
-        '"color":"textMuted"'
+describe.each(['consulting', 'vermilion', 'devportal'])(
+  'the %s twin',
+  (name) => {
+    // The DOCX theme is the source of the tokens; the deck must not drift from
+    // the report it accompanies. Read the JSON rather than importing core-docx,
+    // so this package keeps no dependency on the other core.
+    const docx = JSON.parse(
+      readFileSync(
+        new URL(
+          `../../../../core-docx/src/templates/themes/${name}.docx.theme.json`,
+          import.meta.url
+        ),
+        'utf8'
       )
     );
-    expect(projected).toEqual(docx.chrome);
-    expect(pptx.motif).toEqual(docx.motif);
-  });
+    const pptx = pptxThemes[name];
 
-  it('shares ink, greys, accent and chart slots', () => {
-    expect(pptx.colors.primary).toBe(docx.colors.primary);
-    expect(pptx.colors.secondary).toBe(docx.colors.secondary);
-    expect(pptx.colors.accent).toBe(docx.colors.accent);
-    expect(pptx.colors.text).toBe(docx.colors.textPrimary);
-    expect(pptx.colors.text2).toBe(docx.colors.textSecondary);
-    expect(pptx.colors.background2).toBe(docx.colors.backgroundSecondary);
-    for (const slot of ['accent4', 'accent5', 'accent6'] as const) {
-      expect(pptx.colors[slot]).toBe(docx.colors[slot]);
-    }
-  });
-
-  it('names only safe fonts, the same families as the report', () => {
-    expect(pptx.fonts).toEqual({
-      heading: docx.fonts.heading.family,
-      body: docx.fonts.body.family,
-      mono: docx.fonts.mono.family,
+    it('shares palette roles, chart series, chrome recipes and motif with the report theme', () => {
+      expect(pptx.palette).toEqual(docx.palette);
+      // One deliberate substitution: the recipes that paint small projected
+      // text use the darker grey so a 9pt run clears the contrast rule.
+      const projected = JSON.parse(
+        JSON.stringify(pptx.chrome).replace(
+          /"color":"text2"/g,
+          '"color":"textMuted"'
+        )
+      );
+      expect(projected).toEqual(docx.chrome);
+      expect(pptx.motif).toEqual(docx.motif);
     });
-    for (const family of Object.values(pptx.fonts)) {
-      expect(isSafeFont(family as string)).toBe(true);
-    }
-    expect(pptx.fontRegistry).toBeUndefined();
-  });
 
-  it('declares every type role the report declares', () => {
-    expect(Object.keys(pptx.typography?.roles ?? {}).sort()).toEqual(
-      Object.keys(docx.typography.roles).sort()
-    );
-  });
-});
+    it('shares ink, greys, accent and chart slots', () => {
+      expect(pptx.colors.primary).toBe(docx.colors.primary);
+      expect(pptx.colors.secondary).toBe(docx.colors.secondary);
+      expect(pptx.colors.accent).toBe(docx.colors.accent);
+      expect(pptx.colors.text).toBe(docx.colors.textPrimary);
+      expect(pptx.colors.text2).toBe(docx.colors.textSecondary);
+      expect(pptx.colors.background2).toBe(docx.colors.backgroundSecondary);
+      for (const slot of ['accent4', 'accent5', 'accent6'] as const) {
+        expect(pptx.colors[slot]).toBe(docx.colors[slot]);
+      }
+    });
+
+    it('names only safe fonts, the same families as the report', () => {
+      expect(pptx.fonts).toEqual({
+        heading: docx.fonts.heading.family,
+        body: docx.fonts.body.family,
+        mono: docx.fonts.mono.family,
+      });
+      for (const family of Object.values(pptx.fonts)) {
+        expect(isSafeFont(family as string)).toBe(true);
+      }
+      expect(pptx.fontRegistry).toBeUndefined();
+    });
+
+    it('declares every type role the report declares', () => {
+      expect(Object.keys(pptx.typography?.roles ?? {}).sort()).toEqual(
+        Object.keys(docx.typography.roles).sort()
+      );
+    });
+
+    it('is a twin in name and in the layers the design guide reads', () => {
+      expect(pptx.name).toBe(docx.name);
+      expect(pptx.displayName).toBe(docx.displayName);
+      expect(`${pptx.description} ${pptx.whenToUse}`).toContain('twin');
+      for (const layer of ['typography', 'spacing', 'chrome', 'motif'] as const)
+        expect(pptx[layer], layer).toBeDefined();
+    });
+  }
+);

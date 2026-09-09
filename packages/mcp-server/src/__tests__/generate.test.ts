@@ -338,7 +338,11 @@ describe('jto_generate', () => {
   // to arrive as nothing at all: the render fell back and returned a file
   // byte-identical to one nobody asked for.
   it.each([
-    ['pptx', PPTX, ['consulting', 'dark', 'default', 'minimal']],
+    [
+      'pptx',
+      PPTX,
+      ['consulting', 'dark', 'default', 'devportal', 'minimal', 'vermilion'],
+    ],
     ['docx', DOCX, ['consulting', 'devportal', 'minimal', 'vermilion']],
   ] as const)(
     'warns that a %s theme option matched nothing, and names the ones that would',

@@ -7,7 +7,7 @@ import {
 } from '@json-to-office/shared-docx';
 import { generateBufferFromJson } from '../core/generator';
 import { createDocumentGenerator } from '../plugin/createDocumentGenerator';
-import { vermilionTheme } from '../templates/themes';
+import { minimalTheme } from '../templates/themes';
 import { applyThemeOverrides } from '../themes/overrides';
 import { resolveDocxDesignSystem } from '../themes/design-system';
 import { prepareDocxQualityDocument } from '../quality/facts';
@@ -105,7 +105,8 @@ describe('DOCX theme foundation', () => {
     expect(charts[0]).toContain('123456');
   });
   it('validates on both theme and override surfaces; preserves values', () => {
-    const theme = applyThemeOverrides(vermilionTheme, foundation);
+    // A theme without layers of its own, so the override is the whole palette.
+    const theme = applyThemeOverrides(minimalTheme, foundation);
     expect(Value.Check(ThemeOverridesSchema, foundation)).toBe(true);
     expect(Value.Check(ThemeConfigSchema, theme)).toBe(true);
     const merged = applyThemeOverrides(theme, {
