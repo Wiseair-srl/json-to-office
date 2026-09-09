@@ -1,0 +1,505 @@
+{
+  "note": "Paolo, 2026-09-09, second blind guided review: the 24 checkpoint-before sheets (repeated from 2026-09-08-human-checkpoint-verdicts.json, a test-retest) and the 24 checkpoint-after-exhibits sheets, shuffled, then the 24 before/after-exhibits pairs with sides randomised. Same questions and chips as round one.",
+  "reviewer": "paolo",
+  "sets": {
+    "before": "2026-09-07-checkpoint-before-cold-server-4.4.0.json",
+    "after-exhibits": "2026-09-08-checkpoint-after-exhibits-cold-server-4.4.4.json"
+  },
+  "summary": {
+    "wouldShip": {
+      "before": 2,
+      "after-exhibits": 22,
+      "of": 24
+    },
+    "pairs": {
+      "after-exhibits": 24
+    },
+    "reasons": {
+      "pages": 24
+    }
+  },
+  "verdicts": [
+    {
+      "set": "after-exhibits",
+      "run": "cr-brand-repositioning#1",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-09T05:46:32.622Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-brand-repositioning#1",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-09T05:46:41.490Z"
+    },
+    {
+      "set": "after-exhibits",
+      "run": "cr-brand-repositioning#2",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-09T05:45:39.504Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-brand-repositioning#2",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-09T05:44:13.967Z"
+    },
+    {
+      "set": "after-exhibits",
+      "run": "cr-brand-repositioning#3",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-09T05:45:51.613Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-brand-repositioning#3",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-09T05:45:38.749Z"
+    },
+    {
+      "set": "after-exhibits",
+      "run": "cr-cost-programme-review#1",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-09T05:44:56.051Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-cost-programme-review#1",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-09T05:45:42.197Z"
+    },
+    {
+      "set": "after-exhibits",
+      "run": "cr-cost-programme-review#2",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-09T05:46:31.483Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-cost-programme-review#2",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-09T05:46:54.926Z"
+    },
+    {
+      "set": "after-exhibits",
+      "run": "cr-cost-programme-review#3",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-09T05:45:36.708Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-cost-programme-review#3",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-09T05:46:56.764Z"
+    },
+    {
+      "set": "after-exhibits",
+      "run": "cr-esg-reporting-readiness#1",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-09T05:46:43.154Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-esg-reporting-readiness#1",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-09T05:46:14.775Z"
+    },
+    {
+      "set": "after-exhibits",
+      "run": "cr-esg-reporting-readiness#2",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-09T05:46:06.406Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-esg-reporting-readiness#2",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-09T05:46:44.202Z"
+    },
+    {
+      "set": "after-exhibits",
+      "run": "cr-esg-reporting-readiness#3",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-09T05:45:43.080Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-esg-reporting-readiness#3",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-09T05:45:19.157Z"
+    },
+    {
+      "set": "after-exhibits",
+      "run": "cr-market-entry-nordics#1",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-09T05:45:03.853Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-market-entry-nordics#1",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-09T05:44:20.019Z"
+    },
+    {
+      "set": "after-exhibits",
+      "run": "cr-market-entry-nordics#2",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-09T05:46:52.215Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-market-entry-nordics#2",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-09T05:46:53.950Z"
+    },
+    {
+      "set": "after-exhibits",
+      "run": "cr-market-entry-nordics#3",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-09T05:46:17.523Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-market-entry-nordics#3",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-09T05:46:24.938Z"
+    },
+    {
+      "set": "after-exhibits",
+      "run": "cr-post-merger-integration#1",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-09T05:46:04.105Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-post-merger-integration#1",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-09T05:46:29.791Z"
+    },
+    {
+      "set": "after-exhibits",
+      "run": "cr-post-merger-integration#2",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-09T05:46:34.405Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-post-merger-integration#2",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-09T05:46:16.470Z"
+    },
+    {
+      "set": "after-exhibits",
+      "run": "cr-post-merger-integration#3",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-09T05:46:09.063Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-post-merger-integration#3",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-09T05:46:07.664Z"
+    },
+    {
+      "set": "after-exhibits",
+      "run": "cr-pricing-review-logistics#1",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-09T05:46:11.699Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-pricing-review-logistics#1",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-09T05:46:35.584Z"
+    },
+    {
+      "set": "after-exhibits",
+      "run": "cr-pricing-review-logistics#2",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-09T05:46:27.002Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-pricing-review-logistics#2",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-09T05:46:02.118Z"
+    },
+    {
+      "set": "after-exhibits",
+      "run": "cr-pricing-review-logistics#3",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-09T05:46:36.782Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-pricing-review-logistics#3",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-09T05:45:53.122Z"
+    },
+    {
+      "set": "after-exhibits",
+      "run": "cr-service-model-redesign#1",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-09T05:46:33.538Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-service-model-redesign#1",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-09T05:46:39.741Z"
+    },
+    {
+      "set": "after-exhibits",
+      "run": "cr-service-model-redesign#2",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-09T05:46:05.382Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-service-model-redesign#2",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-09T05:45:15.552Z"
+    },
+    {
+      "set": "after-exhibits",
+      "run": "cr-service-model-redesign#3",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-09T05:45:56.524Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-service-model-redesign#3",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-09T05:45:50.268Z"
+    },
+    {
+      "set": "after-exhibits",
+      "run": "cr-workforce-planning#1",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-09T05:46:28.529Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-workforce-planning#1",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-09T05:46:00.187Z"
+    },
+    {
+      "set": "after-exhibits",
+      "run": "cr-workforce-planning#2",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-09T05:45:24.471Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-workforce-planning#2",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-09T05:45:34.357Z"
+    },
+    {
+      "set": "after-exhibits",
+      "run": "cr-workforce-planning#3",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-09T05:45:09.707Z"
+    },
+    {
+      "set": "before",
+      "run": "cr-workforce-planning#3",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-09T05:46:19.308Z"
+    }
+  ],
+  "pairs": [
+    {
+      "pair": "cr-brand-repositioning#1",
+      "preferred": "after-exhibits",
+      "leftWas": "before",
+      "at": "2026-09-09T05:47:30.050Z"
+    },
+    {
+      "pair": "cr-brand-repositioning#2",
+      "preferred": "after-exhibits",
+      "leftWas": "after-exhibits",
+      "at": "2026-09-09T05:47:03.596Z"
+    },
+    {
+      "pair": "cr-brand-repositioning#3",
+      "preferred": "after-exhibits",
+      "leftWas": "after-exhibits",
+      "at": "2026-09-09T05:47:22.590Z"
+    },
+    {
+      "pair": "cr-cost-programme-review#1",
+      "preferred": "after-exhibits",
+      "leftWas": "after-exhibits",
+      "at": "2026-09-09T05:47:16.759Z"
+    },
+    {
+      "pair": "cr-cost-programme-review#2",
+      "preferred": "after-exhibits",
+      "leftWas": "after-exhibits",
+      "at": "2026-09-09T05:47:32.767Z"
+    },
+    {
+      "pair": "cr-cost-programme-review#3",
+      "preferred": "after-exhibits",
+      "leftWas": "before",
+      "at": "2026-09-09T05:47:21.071Z"
+    },
+    {
+      "pair": "cr-esg-reporting-readiness#1",
+      "preferred": "after-exhibits",
+      "leftWas": "after-exhibits",
+      "at": "2026-09-09T05:47:33.487Z"
+    },
+    {
+      "pair": "cr-esg-reporting-readiness#2",
+      "preferred": "after-exhibits",
+      "leftWas": "before",
+      "at": "2026-09-09T05:47:40.728Z"
+    },
+    {
+      "pair": "cr-esg-reporting-readiness#3",
+      "preferred": "after-exhibits",
+      "leftWas": "before",
+      "at": "2026-09-09T05:47:39.519Z"
+    },
+    {
+      "pair": "cr-market-entry-nordics#1",
+      "preferred": "after-exhibits",
+      "leftWas": "after-exhibits",
+      "at": "2026-09-09T05:47:01.428Z"
+    },
+    {
+      "pair": "cr-market-entry-nordics#2",
+      "preferred": "after-exhibits",
+      "leftWas": "after-exhibits",
+      "at": "2026-09-09T05:47:13.728Z"
+    },
+    {
+      "pair": "cr-market-entry-nordics#3",
+      "preferred": "after-exhibits",
+      "leftWas": "before",
+      "at": "2026-09-09T05:47:35.175Z"
+    },
+    {
+      "pair": "cr-post-merger-integration#1",
+      "preferred": "after-exhibits",
+      "leftWas": "before",
+      "at": "2026-09-09T05:47:17.776Z"
+    },
+    {
+      "pair": "cr-post-merger-integration#2",
+      "preferred": "after-exhibits",
+      "leftWas": "before",
+      "at": "2026-09-09T05:47:19.271Z"
+    },
+    {
+      "pair": "cr-post-merger-integration#3",
+      "preferred": "after-exhibits",
+      "leftWas": "before",
+      "at": "2026-09-09T05:47:06.806Z"
+    },
+    {
+      "pair": "cr-pricing-review-logistics#1",
+      "preferred": "after-exhibits",
+      "leftWas": "after-exhibits",
+      "at": "2026-09-09T05:47:41.884Z"
+    },
+    {
+      "pair": "cr-pricing-review-logistics#2",
+      "preferred": "after-exhibits",
+      "leftWas": "after-exhibits",
+      "at": "2026-09-09T05:47:29.056Z"
+    },
+    {
+      "pair": "cr-pricing-review-logistics#3",
+      "preferred": "after-exhibits",
+      "leftWas": "before",
+      "at": "2026-09-09T05:47:38.645Z"
+    },
+    {
+      "pair": "cr-service-model-redesign#1",
+      "preferred": "after-exhibits",
+      "leftWas": "before",
+      "at": "2026-09-09T05:47:05.750Z"
+    },
+    {
+      "pair": "cr-service-model-redesign#2",
+      "preferred": "after-exhibits",
+      "leftWas": "after-exhibits",
+      "at": "2026-09-09T05:47:37.503Z"
+    },
+    {
+      "pair": "cr-service-model-redesign#3",
+      "preferred": "after-exhibits",
+      "leftWas": "after-exhibits",
+      "at": "2026-09-09T05:47:26.348Z"
+    },
+    {
+      "pair": "cr-workforce-planning#1",
+      "preferred": "after-exhibits",
+      "leftWas": "after-exhibits",
+      "at": "2026-09-09T05:47:31.058Z"
+    },
+    {
+      "pair": "cr-workforce-planning#2",
+      "preferred": "after-exhibits",
+      "leftWas": "after-exhibits",
+      "at": "2026-09-09T05:47:34.243Z"
+    },
+    {
+      "pair": "cr-workforce-planning#3",
+      "preferred": "after-exhibits",
+      "leftWas": "before",
+      "at": "2026-09-09T05:47:12.314Z"
+    }
+  ]
+}
