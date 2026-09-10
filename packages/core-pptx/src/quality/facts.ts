@@ -1288,6 +1288,12 @@ function addSlideFacts(
   });
 
   const CHROME_STYLES = new Set(['footer', 'tracker', 'source', 'caption']);
+  // A shape with no words is a rule, a panel or a bullet glyph: it decorates
+  // the slide rather than saying anything on it, so a divider drawn from one
+  // is not a slide carrying content under no title.
+  const carriesContent = (box: BoxNode): boolean =>
+    box.componentName !== 'shape' ||
+    (typeof box.props.text === 'string' && box.props.text.trim() !== '');
   addFact({
     id: `pptx:slide:${renderedIndex}:${slidePath}`,
     kind: 'pptx/slide',
@@ -1297,7 +1303,9 @@ function addSlideFacts(
       (box) =>
         ['text', 'shape', 'table', 'chart', 'highcharts', 'image'].includes(
           box.componentName
-        ) && !CHROME_STYLES.has(String((box.props as Rec).style ?? ''))
+        ) &&
+        carriesContent(box) &&
+        !CHROME_STYLES.has(String(box.props.style ?? ''))
     ).length,
   });
 

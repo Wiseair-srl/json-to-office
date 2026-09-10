@@ -95,9 +95,14 @@ export function offScaleFindings(
   drifting: ReadonlyMap<PaintedSize, unknown> = new Map()
 ): QualityRuleFinding[] {
   if (scale.length === 0) return [];
+  // By pointer, not by object: the caller is not required to hand both
+  // functions the same array, and two records of one authored size must not
+  // end up with a drift fix and an off-scale one.
+  const drifted = new Set([...drifting.keys()].map((size) => size.sizePath));
   const offScale = patchable(sizes).filter(
     (size) =>
-      !drifting.has(size) && !scale.some((step) => near(step, size.fontSizePt))
+      !drifted.has(size.sizePath) &&
+      !scale.some((step) => near(step, size.fontSizePt))
   );
   // One finding per role and size, patching every pointer together: snapping
   // one place of a consistently sized role on its own would leave the role at
