@@ -1,5 +1,20 @@
 # @json-to-office/mcp-server
 
+## 5.3.2
+
+### Patch Changes
+
+- 27e76b1: Three known defects of the report workflow, each verified on the rendered page rather than on the XML.
+
+  **A section number now reads as part of its heading (#410).** The section gap sat on the heading, leaving the number above it in the space that separates two sections, so it read as a footnote to the section that had ended. Both report templates' `section-opener` definitions state the theme's `heading1` space-before on the number and none on the heading below it, keeping the number/heading pair together; an unnumbered opener keeps the heading style's own gap. No forced page breaks return — the sections still flow. Fixed examples measure the gap on the page across all four bundled DOCX themes, at a page top, mid-page and over a heading of more than one line, and a new drift guard pins the two templates' shared definitions to each other.
+
+  **Rendered table cells no longer read as missing (#420).** Three false positives in the rendered pass, all from reading order. A row is now parted into cells at any gap the row's own word spacing cannot account for, not only at gaps wider than half a line: within a row a word space holds to its median within a hundredth, while a cell boundary poppler ran together at tight padding is close to twice it — so a wrapped cell's text stopped merging into its neighbour's. A run of rows that resolves into more than one column reads column by column even when no single row holds two cells, so a figure centred between the two lines of the label beside it no longer interrupts it. And a bare-digits row inside a page band counts as the page number only when it stands alone and its height recurs on another page, so a table's numeric row that flowed into the band keeps its own occurrence. Across the 24-document checkpoint set this clears nine false findings and adds none; genuinely missing and clipped cells still report. The issue named the second failure as the cell `1.05` losing its occurrence to the body text `£1.05m`; measured against the geometry that document actually rendered, `£1.05m` never claimed it — the numeric row had flowed into the bottom fifth of the page and was taken for the page number. The three documents that showed all this are now regression inputs.
+
+  **A stub last page names the move that repairs it (#408).** The finding for a last page holding only the tail of the document now points at the section that closes the document — not at whatever section cited the source its notes were painted from — and its advice names the repair: `pageBreak: true` on that section, or on the one before it when the closing section already starts a page. That was chosen by measuring every page-break position in the last two sections of the four documents that showed the defect; a break on a section was the only move that cleared all four, and the recorded documents are now regression inputs. The finding's `mapping` still says whether the page's own words were owned, so the redirected pointer does not claim a match that was not made.
+
+- Updated dependencies [27e76b1]
+  - @json-to-office/jto-ops@5.3.2
+
 ## 5.3.0
 
 ### Minor Changes
