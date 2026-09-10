@@ -7,7 +7,15 @@ import {
   nearestPaletteToken,
   offPaletteFinding,
   placeholderFinding,
+  DEFAULT_IMAGE_ASPECT_TOLERANCE,
+  imageAspectFinding,
+  driftingSizes,
+  offScaleFindings,
   QUALITY_CODES,
+  roleDriftFindings,
+  sizeCountFinding,
+  type PaintedSize,
+  type TypeVocabulary,
   QualityEngine,
   resolveRuleConfiguration,
   tableInfoDesignFindings,
@@ -1165,9 +1173,15 @@ export const pptxActionTitleRule: QualityRule<
   },
 };
 
-const SIZE_TOLERANCE_PT = 0.25;
 /** How far two title boxes may sit apart before the deck reads as unaligned. */
 const TITLE_DRIFT_TOLERANCE_PT = 2;
+
+/** A deck names its styles and paints them on slides. */
+const PPTX_TYPE_VOCABULARY: TypeVocabulary = {
+  subject: 'deck',
+  keepTo:
+    'Keep to the theme styles — title, heading, body, label, statistic — and drop the ad-hoc sizes.',
+};
 
 function pptxThemeFact(
   facts: readonly PptxQualityFact[]
@@ -1177,65 +1191,15 @@ function pptxThemeFact(
   );
 }
 
-/** Authored, patchable sizes: the ones a fix can move. */
-function authoredSizeFacts(
-  facts: readonly PptxQualityFact[]
-): readonly PptxTextFact[] {
-  return textFacts(facts).filter(
-    (fact) => fact.sizePath !== undefined && !fact.generated
-  );
-}
-
-/**
- * The text facts `pptx/role-drift` reports: authored, away from the theme
- * size of a style that is painted at more than one size. `pptx/type-scale`
- * leaves these alone so the two rules never offer two sizes for one pointer.
- */
-function pptxRoleDriftFacts(
-  facts: readonly PptxQualityFact[],
-  theme: PptxThemeFact | undefined
-): Map<PptxTextFact, { expected: number; sizes: number[] }> {
-  const byStyle = new Map<string, PptxTextFact[]>();
-  for (const fact of textFacts(facts)) {
-    if (fact.styleName === undefined) continue;
-    byStyle.set(fact.styleName, [...(byStyle.get(fact.styleName) ?? []), fact]);
-  }
-  const drifting = new Map<
-    PptxTextFact,
-    { expected: number; sizes: number[] }
-  >();
-  for (const [style, members] of byStyle) {
-    const sizes = [...new Set(members.map((fact) => fact.fontSizePt))].sort(
-      (a, b) => a - b
-    );
-    if (sizes.length < 2) continue;
-    const expected = theme?.roleSizesPt[style];
-    if (expected === undefined) continue;
-    for (const fact of members) {
-      if (
-        fact.sizePath !== undefined &&
-        !fact.generated &&
-        Math.abs(fact.fontSizePt - expected) > SIZE_TOLERANCE_PT
-      )
-        drifting.set(fact, { expected, sizes });
-    }
-  }
-  return drifting;
-}
-
-function nearestSize(
-  size: number,
-  scale: readonly number[]
-): number | undefined {
-  let best: number | undefined;
-  for (const candidate of scale) {
-    if (
-      best === undefined ||
-      Math.abs(candidate - size) < Math.abs(best - size)
-    )
-      best = candidate;
-  }
-  return best;
+/** Every size a deck paints, in the vocabulary the shared rules speak. */
+function paintedSizes(facts: readonly PptxQualityFact[]): PaintedSize[] {
+  return textFacts(facts).map((fact) => ({
+    path: fact.path,
+    ...(fact.styleName !== undefined && { role: fact.styleName }),
+    fontSizePt: fact.fontSizePt,
+    ...(fact.sizePath !== undefined && { sizePath: fact.sizePath }),
+    generated: fact.generated,
+  }));
 }
 
 /**
@@ -1260,54 +1224,15 @@ export const pptxTypeScaleRule: QualityRule<PptxQualityModel, PptxQualityFact> =
     defaultEnabled: false,
     evaluate: ({ facts }) => {
       const theme = pptxThemeFact(facts);
-      const scale = theme?.typeScalePt ?? [];
-      if (scale.length === 0) return [];
-      const drifting = pptxRoleDriftFacts(facts, theme);
-      const offScale = authoredSizeFacts(facts).filter(
-        (fact) =>
-          !drifting.has(fact) &&
-          !scale.some(
-            (size) => Math.abs(size - fact.fontSizePt) <= SIZE_TOLERANCE_PT
-          )
+      if (!theme) return [];
+      const sizes = paintedSizes(facts);
+      return offScaleFindings(
+        sizes,
+        theme.typeScalePt,
+        theme.themeName,
+        PPTX_TYPE_VOCABULARY,
+        driftingSizes(sizes, theme.roleSizesPt)
       );
-      // One finding per style and size, patching every pointer together:
-      // snapping one box of a consistently sized style on its own would
-      // leave the style at two sizes and trade this finding for a drift one.
-      const groups = new Map<string, PptxTextFact[]>();
-      for (const fact of offScale) {
-        const key = `${fact.styleName ?? 'default'}@${fact.fontSizePt}`;
-        groups.set(key, [...(groups.get(key) ?? []), fact]);
-      }
-      return [...groups.values()].map((members) => {
-        const [first] = members;
-        const nearest = nearestSize(first.fontSizePt, scale)!;
-        const sizePaths = members.map((fact) => fact.sizePath!);
-        const count =
-          members.length === 1
-            ? ''
-            : ` (${members.length} places, patched together)`;
-        const role = first.styleName ?? 'the deck default';
-        return {
-          path: sizePaths[0],
-          ...(sizePaths.length > 1 && { relatedPaths: sizePaths.slice(1) }),
-          message:
-            `${first.fontSizePt}pt is not a size the ${theme!.themeName} theme paints; ` +
-            `the nearest on its scale is ${nearest}pt${count}.`,
-          suggestion: `Use ${nearest}pt, or drop the size and let "${role}" set it.`,
-          context: { style: first.styleName, scale, paths: sizePaths },
-          evidence: {
-            actual: first.fontSizePt,
-            expected: nearest,
-            unit: 'pt',
-            values: { source: 'theme' },
-          },
-          fixes: sizePaths.map((path) => ({
-            op: 'replace' as const,
-            path,
-            value: nearest,
-          })),
-        };
-      });
     },
   };
 
@@ -1329,37 +1254,14 @@ export const pptxSizeCountRule: QualityRule<PptxQualityModel, PptxQualityFact> =
     formats: ['pptx'],
     defaultEnabled: false,
     defaultParameters: { maximumSizes: 8 },
-    evaluate: ({ facts, configuration, profile }) => {
-      const maximum = numberParameter(
-        configuration.parameters,
-        'maximumSizes',
-        8
-      );
-      const firstPathBySize = new Map<number, string>();
-      for (const fact of textFacts(facts)) {
-        const size = Math.round(fact.fontSizePt * 4) / 4;
-        if (!firstPathBySize.has(size)) firstPathBySize.set(size, fact.path);
-      }
-      if (firstPathBySize.size <= maximum) return [];
-      const sizes = [...firstPathBySize.keys()].sort((a, b) => a - b);
-      return [
-        {
-          path: pptxThemeFact(facts)?.path ?? '/props',
-          relatedPaths: sizes.map((size) => firstPathBySize.get(size)!),
-          message:
-            `The deck paints ${sizes.length} distinct text sizes ` +
-            `(${sizes.join(', ')}pt); the ${profile?.id ?? 'selected'} profile allows ${maximum}.`,
-          suggestion:
-            'Keep to the theme styles — title, heading, body, label, statistic — and drop the ad-hoc sizes.',
-          context: { sizes, maximum },
-          evidence: {
-            actual: sizes.length,
-            expected: maximum,
-            values: { source: 'profile' },
-          },
-        },
-      ];
-    },
+    evaluate: ({ facts, configuration, profile }) =>
+      sizeCountFinding(
+        paintedSizes(facts),
+        numberParameter(configuration.parameters, 'maximumSizes', 8),
+        pptxThemeFact(facts)?.path ?? '/props',
+        profile?.id,
+        PPTX_TYPE_VOCABULARY
+      ),
   };
 
 /**
@@ -1383,36 +1285,9 @@ export const pptxRoleDriftRule: QualityRule<PptxQualityModel, PptxQualityFact> =
     defaultEnabled: false,
     evaluate: ({ facts }) => {
       const theme = pptxThemeFact(facts);
-      const findings: QualityRuleFinding[] = [];
-      for (const [fact, { expected, sizes }] of pptxRoleDriftFacts(
-        facts,
-        theme
-      )) {
-        const keeper = textFacts(facts).find(
-          (member) =>
-            member.styleName === fact.styleName &&
-            Math.abs(member.fontSizePt - expected) <= SIZE_TOLERANCE_PT
-        );
-        const others = sizes.filter((size) => size !== fact.fontSizePt);
-        const sizePath = fact.sizePath!;
-        findings.push({
-          path: sizePath,
-          ...(keeper && { relatedPaths: [keeper.path] }),
-          message:
-            `"${fact.styleName}" is painted at ${fact.fontSizePt}pt here and at ` +
-            `${others.join('pt, ')}pt elsewhere; the theme sets it at ${expected}pt.`,
-          suggestion: `Drop the size so "${fact.styleName}" paints at the theme's ${expected}pt.`,
-          context: { style: fact.styleName, sizes },
-          evidence: {
-            actual: fact.fontSizePt,
-            expected,
-            unit: 'pt',
-            values: { role: fact.styleName, source: 'theme' },
-          },
-          fixes: [{ op: 'replace' as const, path: sizePath, value: expected }],
-        });
-      }
-      return findings;
+      return theme
+        ? roleDriftFindings(paintedSizes(facts), theme.roleSizesPt)
+        : [];
     },
   };
 
@@ -1448,9 +1323,7 @@ function titleGroups(
     // A block's slot compiles to a box whose own pointer is the invocation,
     // not the slot: the slot's text on the slot's slide is what identifies it.
     const painted = texts.find(
-      (fact) =>
-        chrome.path.startsWith(`${fact.slidePath}/`) &&
-        fact.text === chrome.text
+      (fact) => fact.slidePath === chrome.slidePath && fact.text === chrome.text
     );
     if (painted) push(chrome.block, painted);
   }
@@ -1753,10 +1626,8 @@ export const pptxSlideTitleRule: QualityRule<
         fact.kind === 'pptx/chrome-slot' &&
         (fact as PptxChromeSlotFact).role === 'actionTitle' &&
         (fact as PptxChromeSlotFact).present
-      ) {
-        const slide = /^(\/children\/\d+)/.exec(fact.path)?.[1];
-        if (slide) titledSlides.add(slide);
-      }
+      )
+        titledSlides.add((fact as PptxChromeSlotFact).slidePath);
     return facts
       .filter(
         (fact): fact is PptxSlideFact =>
@@ -1794,12 +1665,12 @@ export const pptxImageAspectRule: QualityRule<
   defaultSeverity: 'warning',
   defaultCertainty: 'deterministic',
   formats: ['pptx'],
-  defaultParameters: { tolerance: 0.02 },
+  defaultParameters: { tolerance: DEFAULT_IMAGE_ASPECT_TOLERANCE },
   evaluate: ({ facts, configuration }) => {
     const tolerance = numberParameter(
       configuration.parameters,
       'tolerance',
-      0.02
+      DEFAULT_IMAGE_ASPECT_TOLERANCE
     );
     return facts
       .filter(
@@ -1808,30 +1679,20 @@ export const pptxImageAspectRule: QualityRule<
           fact.drawnRatio !== undefined &&
           fact.naturalRatio !== undefined
       )
-      .filter(
-        (fact) =>
-          Math.abs(fact.drawnRatio! - fact.naturalRatio!) / fact.naturalRatio! >
+      .flatMap((fact) => {
+        const finding = imageAspectFinding(
+          {
+            path: fact.path,
+            drawn: fact.drawnRatio!,
+            natural: fact.naturalRatio!,
+          },
+          'slide',
           tolerance
-      )
-      .map((fact) => ({
-        path: fact.path,
-        message:
-          `The image is drawn at ${pptxAspect(fact.drawnRatio!)} and the asset is ${pptxAspect(fact.naturalRatio!)}, ` +
-          'so it is stretched on the slide.',
-        suggestion:
-          'State one of w and h and let the other follow the asset, or crop the asset to the shape you want.',
-        context: { drawn: fact.drawnRatio, natural: fact.naturalRatio },
-        evidence: {
-          actual: Math.round(fact.drawnRatio! * 1000) / 1000,
-          expected: Math.round(fact.naturalRatio! * 1000) / 1000,
-          values: { source: 'asset' },
-        },
-      }));
+        );
+        return finding ? [finding] : [];
+      });
   },
 };
-
-const pptxAspect = (ratio: number): string =>
-  `${Math.round(ratio * 100) / 100}:1`;
 
 export const PPTX_QUALITY_RULES: QualityRulePack<
   PptxQualityModel,

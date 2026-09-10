@@ -754,6 +754,29 @@ describe('analyzeRenderedDocument', () => {
       expect(result.findings).toEqual([]);
     });
 
+    it('sees a table a block filled from its own slot', () => {
+      const slot = (row: number, column: number) =>
+        `/children/1/children/0/props/slots/columns/${column}/cells/${row}`;
+      const result = analyzeRenderedDocument({
+        format: 'docx',
+        pages: [
+          page([...row(0, 760), ...row(1, 780), ...row(2, 800)]),
+          page([...row(3, 40)]),
+        ],
+        inventory: Array.from({ length: 4 }, (_, r) => [
+          entry(slot(r, 0), `Quarter ${r + 1}`, 'table-cell'),
+          entry(slot(r, 1), `${r + 1}00`, 'table-cell'),
+        ]).flat(),
+      });
+      expect(codes(result.findings)).toEqual([
+        QUALITY_CODES.RENDERED_TABLE_SPLIT,
+      ]);
+      expect(result.findings[0]).toMatchObject({
+        path: slot(3, 0),
+        context: { kind: 'widow-row' },
+      });
+    });
+
     it('says nothing about a table that fits on one page', () => {
       const result = analyzeRenderedDocument({
         format: 'docx',

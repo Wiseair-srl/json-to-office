@@ -317,18 +317,18 @@ export const QUALITY_REFERENCE_DIGESTS: Readonly<Record<string, string>> = {
     '8ecf6e3a18aa1548124aeb1b94e655614f281fcabd2bfd88e243360563d9bb17',
   'executive-report/excellent':
     'd0fa2eecb17c904c9cda00decbeb2122bdfa22e0643bcd068af879d42714621b',
-  'technical-report/poor':
-    '8c8e4bdcc01e694fda1a755f44bc6037867c6195bea43c5b8c983798ac6238b7',
-  'technical-report/professional':
-    '248a128be1e0c8a957c400b34895f7f2e8ad032b52512d5102c44e28dd345caa',
-  'technical-report/excellent':
-    '8409d54f86a2add09f52a26ee9f075b023c205a4047f5db3599f1d99265d3dcb',
   'general/poor':
     '6793a0dd27d1032a562998a2afb707faa97fae0709fdb00029c971e20a1f39f9',
   'general/professional':
     'd48d10118d930eab8c61c75a13b5f01cad6feafbf3932242fc5ef9e69c50da55',
   'general/excellent':
     '593300b6f3894cc5da0e07da458df198f13b1c8819e9136a0b5acfd107202c4a',
+  'technical-report/poor':
+    '8c8e4bdcc01e694fda1a755f44bc6037867c6195bea43c5b8c983798ac6238b7',
+  'technical-report/professional':
+    '248a128be1e0c8a957c400b34895f7f2e8ad032b52512d5102c44e28dd345caa',
+  'technical-report/excellent':
+    '8409d54f86a2add09f52a26ee9f075b023c205a4047f5db3599f1d99265d3dcb',
   'legal-appendix/poor':
     '7d54c02db6da12cbe7c2616589b56d0605dea4aa520abebbe9b86c23b21a1351',
   'legal-appendix/professional':

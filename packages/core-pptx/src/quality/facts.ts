@@ -235,6 +235,8 @@ export interface PptxBlockSlotFact extends QualityFact {
 export interface PptxChromeSlotFact extends QualityFact {
   kind: 'pptx/chrome-slot';
   block: string;
+  /** The slide the invocation sits on. */
+  slidePath: string;
   /** Authored pointer of the invocation. */
   invocation: string;
   slot: string;
@@ -1617,6 +1619,9 @@ export function preparePptxQualityDocument(
       relatedPaths: [role.invocation],
       block: role.block,
       invocation: role.invocation,
+      // The invocation is a slide child, so its slide is the first two
+      // segments of its pointer — the one place that has to know that.
+      slidePath: role.invocation.split('/').slice(0, 3).join('/'),
       slot: role.slot,
       role: role.role,
       present,

@@ -7,7 +7,7 @@
 import { describe, expect, it } from 'vitest';
 import { QUALITY_CODES } from '@json-to-office/quality';
 import { analyzeDocxQuality } from './preflight';
-import { example, para, section } from '../blocks/__tests__/example';
+import { block, example, para, section } from '../blocks/__tests__/example';
 
 const profile = (id: string) => ({ id, formats: ['docx'] });
 const findings = (doc: unknown, code: string, options = {}) =>
@@ -127,6 +127,29 @@ describe('a figure nothing names', () => {
       })
     );
     expect(onReport(described, QUALITY_CODES.FIGURE_UNLABELLED)).toEqual([]);
+  });
+  it('is cleared by the image’s own caption, and by a figure block’s', () => {
+    const own = report(
+      section(heading('One'), {
+        name: 'image',
+        props: { base64: PNG_4X2, caption: 'Figure 1. The delivery model.' },
+      })
+    );
+    expect(onReport(own, QUALITY_CODES.FIGURE_UNLABELLED)).toEqual([]);
+    // The report block writes its caption as a paragraph at the invocation,
+    // not as a caption slot: the rule has to see that one too.
+    const doc = example();
+    doc.props.theme = 'consulting';
+    doc.children = [
+      section(
+        block('figure', {
+          image: { name: 'image', props: { base64: PNG_4X2 } },
+          caption: 'The delivery model, in four stages.',
+          source: 'Operating handbook, 2026.',
+        })
+      ),
+    ];
+    expect(onReport(doc, QUALITY_CODES.FIGURE_UNLABELLED)).toEqual([]);
   });
 });
 

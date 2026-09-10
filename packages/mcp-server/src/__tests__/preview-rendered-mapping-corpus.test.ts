@@ -70,7 +70,7 @@ interface Case {
   /** Warning-level rendered codes the pass must report, as a set. */
   warnings: string[];
   /** Information-level rendered codes the pass must report, as a set. */
-  infos?: string[];
+  infos: string[];
 }
 
 const LONG = Array.from(
@@ -129,6 +129,7 @@ const CASES: Case[] = [
       '/children/4/props/text': { status: 'mapped', page: 1 },
     },
     warnings: [],
+    infos: [],
   },
   {
     id: 'ligatures',
@@ -147,6 +148,7 @@ const CASES: Case[] = [
     ]),
     labels: {},
     warnings: [],
+    infos: [],
   },
   {
     id: 'chrome-around-a-split-paragraph',
@@ -184,6 +186,9 @@ const CASES: Case[] = [
       '/children/0/children/4/props/text': { status: 'mapped', afterPage: 1 },
     },
     warnings: [],
+    // A short fixture ends on a page holding only its tail; the pass is
+    // right to say so, and the case states it rather than hiding it.
+    infos: ['W_QUALITY_RENDERED_PAGE_UNDERFILLED'],
   },
   {
     // A table at the top of a page, its label column wrapping and its
@@ -239,6 +244,9 @@ const CASES: Case[] = [
       '/children/0/props/footer/0/props/text': { status: 'skipped' },
     },
     warnings: [],
+    // A short fixture ends on a page holding only its tail; the pass is
+    // right to say so, and the case states it rather than hiding it.
+    infos: ['W_QUALITY_RENDERED_PAGE_UNDERFILLED'],
   },
   {
     id: 'declared-font-that-cannot-load',
@@ -267,6 +275,7 @@ const CASES: Case[] = [
     ),
     labels: {},
     warnings: ['W_QUALITY_RENDERED_FONT_SUBSTITUTED'],
+    infos: [],
   },
   {
     id: 'native-chart-titles',
@@ -298,6 +307,7 @@ const CASES: Case[] = [
       '/children/1/props/valAxisTitle': { status: 'mapped', page: 1 },
     },
     warnings: [],
+    infos: [],
   },
   {
     id: 'table-split-across-a-page',
@@ -350,6 +360,7 @@ const CASES: Case[] = [
     ]),
     labels: { '/children/0/props/text': { status: 'mapped', page: 1 } },
     warnings: ['W_QUALITY_RENDERED_CLIP'],
+    infos: [],
   },
 ];
 

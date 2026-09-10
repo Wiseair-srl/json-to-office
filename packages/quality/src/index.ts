@@ -54,9 +54,11 @@ export {
   chartEncodingFor,
   chartInfoDesignFindings,
   columnNumericProfile,
+  DEFAULT_IMAGE_ASPECT_TOLERANCE,
   DEFAULT_MAXIMUM_CHART_SERIES,
   DEFAULT_MAXIMUM_PIE_SLICES,
   hasUnitMarker,
+  imageAspectFinding,
   normalizeHighchartsChart,
   parseNumericCell,
   tableInfoDesignFindings,
@@ -66,11 +68,21 @@ export {
   type ChartInfoDesignOptions,
   type ColumnNumericProfile,
   type HighchartsChartShape,
+  type ImageAspect,
   type TableAlignment,
   type TableColumnInfoDesign,
   type TableInfoDesign,
   type TableInfoDesignOptions,
 } from './information-design';
+export {
+  driftingSizes,
+  offScaleFindings,
+  roleDriftFindings,
+  sizeCountFinding,
+  SIZE_TOLERANCE_PT,
+  type PaintedSize,
+  type TypeVocabulary,
+} from './type-consistency';
 export { DuplicateQualityRuleError, QualityRuleRegistry } from './registry';
 export {
   collectPlaceholders,

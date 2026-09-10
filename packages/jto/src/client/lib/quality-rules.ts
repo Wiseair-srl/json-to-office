@@ -363,7 +363,7 @@ export const QUALITY_RULES: Record<FormatName, readonly QualityRuleInfo[]> = {
       category: 'hierarchy',
       defaultSeverity: 'warning',
       description:
-        'A heading that is not bound to the content under it, so a page break can strand it. Off until a profile or policy enables it.',
+        'A heading that is not bound to the content under it, so a page break can strand it; the fix sets keepNext on an authored heading. Off until a profile or policy enables it.',
       parameters: [],
     },
     {
