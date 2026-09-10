@@ -44,6 +44,24 @@ export interface ChartGenerationResult {
 const DEFAULT_EXPORT_SERVER_URL = 'http://localhost:7801';
 
 /**
+ * The export server this chart will actually be posted to.
+ *
+ * Exported because the concurrency gate is keyed by it: `desugarExternals`
+ * has to know which server a chart is bound for before it lets the request
+ * through, and resolving that in two places is how the two would drift.
+ */
+export function effectiveChartServerUrl(
+  props: HighchartsProps,
+  servicesConfig: HighchartsServiceConfig | undefined
+): string {
+  return resolveServiceUrl(
+    props.serverUrl,
+    servicesConfig?.serverUrl,
+    DEFAULT_EXPORT_SERVER_URL
+  );
+}
+
+/**
  * Generate chart using Highcharts Export Server
  */
 /**
@@ -78,11 +96,7 @@ async function generateChart(
     );
   }
 
-  const serverUrl = resolveServiceUrl(
-    config.serverUrl,
-    servicesConfig?.serverUrl,
-    DEFAULT_EXPORT_SERVER_URL
-  );
+  const serverUrl = effectiveChartServerUrl(config, servicesConfig);
   assertExportServerAllowed(serverUrl, servicesConfig, warnings);
 
   const requestBody: Record<string, unknown> = {

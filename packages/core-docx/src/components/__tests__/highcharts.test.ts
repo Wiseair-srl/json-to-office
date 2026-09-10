@@ -9,6 +9,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { isValidThemeConfig } from '@json-to-office/shared-docx';
+import { resetChartLimiters } from '@json-to-office/shared';
 import { createMockTheme } from './helpers';
 import { minimalTheme, vermilionTheme } from '../../templates/themes';
 import { resolveDocxDesignSystem } from '../../themes/design-system';
@@ -1091,5 +1092,131 @@ describe('theme typography injection', () => {
       { family: 'Unused', weight: 400, italic: false, data: 'BBBB' },
     ]);
     expect('resources' in request()).toBe(false);
+  });
+});
+
+/**
+ * What a document does to a single-worker export server.
+ *
+ * The walk desugars sibling components with `Promise.all`, so the thing worth
+ * asserting is not how many requests are made but how many are open at once:
+ * an unbounded document posts all fifty charts before the first PNG comes
+ * back, which is exactly the shape that made every one of them time out.
+ */
+describe('bounded chart concurrency', () => {
+  /** A fake export server that records how many requests it holds at once. */
+  function countingExportServer(): {
+    peak: () => number;
+    calls: () => number;
+    handler: () => Promise<{ ok: true; text: () => Promise<string> }>;
+  } {
+    let inFlight = 0;
+    let peak = 0;
+    let calls = 0;
+    return {
+      peak: () => peak,
+      calls: () => calls,
+      handler: async () => {
+        calls++;
+        inFlight++;
+        peak = Math.max(peak, inFlight);
+        // A real render is not instantaneous; without a turn of the event
+        // loop here every request would look serial whatever the cap is.
+        await new Promise((resolve) => setTimeout(resolve, 1));
+        inFlight--;
+        return { ok: true, text: async () => 'AA==' };
+      },
+    };
+  }
+
+  /** `count` charts that differ, so dedupe cannot stand in for the cap. */
+  function documentWithCharts(
+    count: number,
+    serverUrl?: string
+  ): Record<string, unknown> {
+    return {
+      name: 'docx',
+      props: {},
+      children: Array.from({ length: count }, (_, index) => ({
+        name: 'highcharts',
+        props: {
+          options: {
+            chart: { width: 400, height: 300 },
+            series: [{ type: 'column', data: [index, index + 1] }],
+          },
+          ...(serverUrl ? { serverUrl } : {}),
+        },
+      })),
+    };
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // The gate outlives a document by design, so a test that inherited one
+    // from another test would be asserting the wrong cap.
+    resetChartLimiters();
+  });
+
+  it('never opens more than the default four requests at once, over fifty charts', async () => {
+    const server = countingExportServer();
+    mockFetch.mockImplementation(server.handler);
+
+    await desugarExternals(documentWithCharts(50), {
+      theme: createMockTheme(),
+    });
+
+    expect(server.calls()).toBe(50);
+    expect(server.peak()).toBe(4);
+  });
+
+  it('honours a configured cap', async () => {
+    const server = countingExportServer();
+    mockFetch.mockImplementation(server.handler);
+
+    await desugarExternals(documentWithCharts(20), {
+      theme: createMockTheme(),
+      services: { highcharts: { concurrency: 2 } },
+    });
+
+    expect(server.peak()).toBe(2);
+  });
+
+  it('holds the cap across documents rendered together in one process', async () => {
+    const server = countingExportServer();
+    mockFetch.mockImplementation(server.handler);
+
+    await Promise.all([
+      desugarExternals(documentWithCharts(20), { theme: createMockTheme() }),
+      desugarExternals(documentWithCharts(20), { theme: createMockTheme() }),
+      desugarExternals(documentWithCharts(20), { theme: createMockTheme() }),
+    ]);
+
+    expect(server.calls()).toBe(60);
+    expect(server.peak()).toBe(4);
+  });
+
+  it('gives a second export server its own pool', async () => {
+    const perUrl = new Map<string, { inFlight: number; peak: number }>();
+    mockFetch.mockImplementation(async (url: string) => {
+      const state = perUrl.get(url) ?? { inFlight: 0, peak: 0 };
+      perUrl.set(url, state);
+      state.inFlight++;
+      state.peak = Math.max(state.peak, state.inFlight);
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      state.inFlight--;
+      return { ok: true, text: async () => 'AA==' };
+    });
+
+    await Promise.all([
+      desugarExternals(documentWithCharts(20, 'http://charts-a.internal'), {
+        theme: createMockTheme(),
+      }),
+      desugarExternals(documentWithCharts(20, 'http://charts-b.internal'), {
+        theme: createMockTheme(),
+      }),
+    ]);
+
+    expect(perUrl.get('http://charts-a.internal/export')?.peak).toBe(4);
+    expect(perUrl.get('http://charts-b.internal/export')?.peak).toBe(4);
   });
 });

@@ -188,6 +188,14 @@ export {
   REMOTE_EXPORT_WARNING,
 } from './utils/serviceUrl';
 
+// Bounded concurrency
+export { createLimiter } from './utils/promiseLimiter';
+export {
+  DEFAULT_CHART_CONCURRENCY,
+  limitChartRequest,
+  resetChartLimiters,
+} from './utils/chartRequests';
+
 // Semver utilities
 export {
   isValidSemver,
