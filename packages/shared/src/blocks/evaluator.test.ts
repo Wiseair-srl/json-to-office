@@ -854,23 +854,32 @@ describe('$theme pointer chains', () => {
     ).toThrow(/\/chrome\/sourceLine\/color, \/styles\/source\/color/);
   });
   it('rejects an empty chain at definition validation', () => {
-    const issues = validateBlockDefinitions({
-      line: {
-        slots: {},
-        body: [{ name: 'paragraph', props: { text: { $theme: [] } } }],
+    const issues = validateBlockDefinitions(
+      {
+        line: {
+          slots: {},
+          body: [{ name: 'paragraph', props: { text: { $theme: [] } } }],
+        },
       },
-    });
+      'docx'
+    );
     expect(issues.map((i) => i.code)).toContain('block_invalid_binding');
   });
   it('rejects a chain entry that is not a pointer', () => {
-    const issues = validateBlockDefinitions({
-      line: {
-        slots: {},
-        body: [
-          { name: 'paragraph', props: { text: { $theme: ['/a', 'accent'] } } },
-        ],
+    const issues = validateBlockDefinitions(
+      {
+        line: {
+          slots: {},
+          body: [
+            {
+              name: 'paragraph',
+              props: { text: { $theme: ['/a', 'accent'] } },
+            },
+          ],
+        },
       },
-    });
+      'docx'
+    );
     expect(issues.map((i) => i.code)).toContain('block_invalid_binding');
   });
 });

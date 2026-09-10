@@ -1,6 +1,6 @@
 ---
 '@json-to-office/core-docx': major
-'@json-to-office/core-pptx': major
+'@json-to-office/core-pptx': minor
 '@json-to-office/shared': minor
 '@json-to-office/mcp-server': major
 '@json-to-office/jto-ops': patch
