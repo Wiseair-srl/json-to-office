@@ -175,10 +175,27 @@ function expectedDocx(
 }
 
 function expectedPptx(
+  profileId: string,
   tier: QualityReferenceTier
 ): readonly ExpectedQualityDiagnostic[] {
-  if (tier !== 'poor') return [];
+  // Every tier writes its size by hand; only the consulting profile asks
+  // whether the theme paints it. `minimal` paints 10, 14, 18, 20, 22, 28 and
+  // 36pt, so the 28pt `excellent` slide is on the scale and the others are
+  // not — the same slide, judged by the archetype that cares.
+  const offScale: readonly ExpectedQualityDiagnostic[] =
+    profileId === 'consulting-deck' && tier !== 'excellent'
+      ? [
+          {
+            code: 'W_QUALITY_TYPE_OFF_SCALE',
+            category: 'consistency',
+            certainty: 'deterministic',
+            severity: 'warning',
+          },
+        ]
+      : [];
+  if (tier !== 'poor') return offScale;
   return [
+    ...offScale,
     {
       code: 'W_QUALITY_FONT_SIZE_MIN',
       category: 'legibility',
@@ -239,7 +256,7 @@ export const QUALITY_REFERENCE_CORPUS: readonly QualityReferenceCase[] = [
       renderer: 'pptxgenjs',
       rationale: pptxRationale(profile.id, tier),
       document: pptxDocument(profile.id, tier),
-      expected: expectedPptx(tier),
+      expected: expectedPptx(profile.id, tier),
     }))
   ),
 ];

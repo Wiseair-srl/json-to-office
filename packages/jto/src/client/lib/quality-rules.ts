@@ -578,6 +578,64 @@ export const QUALITY_RULES: Record<FormatName, readonly QualityRuleInfo[]> = {
         },
       ],
     },
+    {
+      id: 'pptx/type-scale',
+      label: 'Type scale',
+      category: 'consistency',
+      defaultSeverity: 'warning',
+      description:
+        'An authored size the theme never paints: not a style, not a type role, not a step of its scale. Off until a profile or policy enables it.',
+      parameters: [],
+    },
+    {
+      id: 'pptx/size-count',
+      label: 'Size count',
+      category: 'consistency',
+      defaultSeverity: 'warning',
+      description:
+        'More distinct text sizes than maximumSizes allows, blocks included. Off until a profile or policy enables it.',
+      parameters: [
+        {
+          name: 'maximumSizes',
+          type: 'number',
+          default: 8,
+          description: 'Distinct text sizes the deck may paint.',
+        },
+      ],
+    },
+    {
+      id: 'pptx/role-drift',
+      label: 'Role drift',
+      category: 'consistency',
+      defaultSeverity: 'warning',
+      description:
+        'One named style or type role painted at two sizes across the deck; the theme size is the fix. Off until a profile or policy enables it.',
+      parameters: [],
+    },
+    {
+      id: 'pptx/title-drift',
+      label: 'Title drift',
+      category: 'consistency',
+      defaultSeverity: 'warning',
+      description:
+        'A slide title away from the left edge or baseline the deck\u2019s other titles of that kind share. Off until a profile or policy enables it.',
+      parameters: [
+        {
+          name: 'titleStyles',
+          type: 'string-list',
+          default: ['title'],
+          description:
+            'Named styles a hand-placed title is set in; block titles are found by their actionTitle slot.',
+        },
+        {
+          name: 'tolerancePt',
+          type: 'number',
+          default: 2,
+          description:
+            'How far two titles may sit apart before the deck reads as unaligned.',
+        },
+      ],
+    },
   ],
 };
 

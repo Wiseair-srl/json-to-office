@@ -21,7 +21,11 @@ import {
   DEFAULT_PPTX_RENDERER_ID,
   SEMANTIC_COLOR_NAMES,
 } from '@json-to-office/shared-pptx';
-import { designColors } from '@json-to-office/shared';
+import {
+  designCanvas,
+  designColors,
+  typeScaleSizes,
+} from '@json-to-office/shared';
 import type {
   GridConfig,
   GridPosition,
@@ -78,6 +82,13 @@ export interface PptxTextFact extends QualityFact {
   autoFit: boolean;
   /** Effective bold, from the run or its named style. */
   bold: boolean;
+  /** Pointer to the authored size value; absent when the size is inherited. */
+  sizePath?: string;
+  /**
+   * A block compiled this node, so its pointer is the slot the author wrote
+   * rather than a size they can patch.
+   */
+  generated: boolean;
   /** Resolved run colour, bare hex, when the document states one. */
   colorHex?: string;
   /**
@@ -115,6 +126,15 @@ export interface PptxThemeFact extends QualityFact {
   /** Token name to `#RRGGBB`, for every palette entry that resolves. */
   paletteHexes: Readonly<Record<string, string>>;
   fontFamilies: readonly string[];
+  /**
+   * Every size the theme paints, ascending: each named style, each type role
+   * projected onto one, the deck's default size and, where the theme declares
+   * a type scale for this canvas, every step of it. A size an author writes
+   * by hand is on the theme's scale when it is in this list.
+   */
+  typeScalePt: readonly number[];
+  /** Style name (`title`, `body`, a type role) to the size it paints. */
+  roleSizesPt: Readonly<Record<string, number>>;
 }
 
 /** A colour written as a literal rather than as a theme token. */
@@ -967,6 +987,7 @@ function addSlideFacts(
   analyzedContentPaths: Set<string>,
   paletteTokens: readonly string[],
   authoredPropsAt: (path: string) => Rec | undefined,
+  authoredPath: (path: string) => string,
   addFact: (fact: PptxQualityFact) => void
 ): void {
   const nodes: TextNode[] = [];
@@ -1174,6 +1195,10 @@ function addSlideFacts(
       align: horizontalAlign(node.props, ctx),
       rotationDeg: asNumber(node.props.rotate) ?? 0,
       bold: typography.bold,
+      ...(asNumber(node.props.fontSize) !== undefined && {
+        sizePath: `${node.path}/props/fontSize`,
+      }),
+      generated: authoredPath(node.path) !== node.path,
       autoFit: node.props.h === undefined && gridPos === undefined,
       ...(colorHex !== undefined && { colorHex }),
       ...(!backgroundUnknown &&
@@ -1309,12 +1334,36 @@ export function preparePptxQualityDocument(
           : hex
       ] = hex;
   }
+  // Type roles are already projected onto `styles` by the design system, so
+  // one pass over the resolved styles is every size the theme paints by name.
+  const roleSizesPt: Record<string, number> = {};
+  for (const [name, style] of Object.entries(processed.theme.styles ?? {})) {
+    const size = asNumber(style?.fontSize);
+    if (size !== undefined) roleSizesPt[name] = size;
+  }
+  const defaultFontSize = asNumber(processed.theme.defaults?.fontSize);
+  const scale =
+    processed.theme.typography?.scale?.[
+      designCanvas('pptx', {
+        width: processed.slideWidth,
+        height: processed.slideHeight,
+      })
+    ];
+  const typeScalePt = [
+    ...new Set([
+      ...Object.values(roleSizesPt),
+      ...(defaultFontSize === undefined ? [] : [defaultFontSize]),
+      ...(scale ? typeScaleSizes(scale) : []),
+    ]),
+  ].sort((a, b) => a - b);
   addFact({
     id: 'pptx:theme',
     kind: 'pptx/theme',
     path: '/props',
     themeName: processed.theme.name,
     paletteHexes,
+    typeScalePt,
+    roleSizesPt,
     fontFamilies: [
       ...new Set(
         [processed.theme.fonts?.heading, processed.theme.fonts?.body].filter(
@@ -1376,6 +1425,7 @@ export function preparePptxQualityDocument(
       analyzedContentPaths,
       paletteTokens,
       authoredPropsAt,
+      authoredPath,
       addFact
     );
   });
