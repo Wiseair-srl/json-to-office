@@ -178,12 +178,20 @@ function assertExportServerAllowed(
   warnings: PipelineWarning[]
 ): void {
   const notice = remoteExportNotice(serverUrl, services?.allowRemote);
-  if (notice)
-    warnings.push({
-      code: REMOTE_EXPORT_WARNING,
-      component: 'highcharts',
-      message: notice,
-    });
+  if (!notice) return;
+  // Once per deck per destination: the notice is about where the data went,
+  // and a chart-heavy deck repeating it drowns out every other warning. The
+  // message names the URL, so matching on it is matching on the destination.
+  const alreadySaid = warnings.some(
+    (warning) =>
+      warning.code === REMOTE_EXPORT_WARNING && warning.message === notice
+  );
+  if (alreadySaid) return;
+  warnings.push({
+    code: REMOTE_EXPORT_WARNING,
+    component: 'highcharts',
+    message: notice,
+  });
 }
 
 async function renderChart(

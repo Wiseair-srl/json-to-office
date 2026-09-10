@@ -85,13 +85,22 @@ export function assertExportServerAllowed(
   warnings: GenerationWarning[] | undefined
 ): void {
   const notice = remoteExportNotice(serverUrl, servicesConfig?.allowRemote);
-  if (notice)
-    warnings?.push({
-      component: 'highcharts',
-      severity: 'warning',
-      message: notice,
-      context: { code: REMOTE_EXPORT_WARNING, serverUrl },
-    });
+  if (!notice || !warnings) return;
+  // The notice is about the destination, not about this chart, so a
+  // fifty-chart document should carry it once — fifty identical copies bury
+  // whatever else the generation had to say.
+  const alreadySaid = warnings.some(
+    (warning) =>
+      warning.context?.code === REMOTE_EXPORT_WARNING &&
+      warning.context?.serverUrl === serverUrl
+  );
+  if (alreadySaid) return;
+  warnings.push({
+    component: 'highcharts',
+    severity: 'warning',
+    message: notice,
+    context: { code: REMOTE_EXPORT_WARNING, serverUrl },
+  });
 }
 
 async function generateChart(

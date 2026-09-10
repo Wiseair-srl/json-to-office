@@ -13,6 +13,7 @@ import {
   getChartRequestStats,
   resetChartLimiters,
   resetChartRequestStats,
+  type GenerationWarning,
 } from '@json-to-office/shared';
 import { createMockTheme } from './helpers';
 import { minimalTheme, vermilionTheme } from '../../templates/themes';
@@ -1523,5 +1524,87 @@ describe('chart work the host can see', () => {
     );
 
     expect(getChartRequestStats().retries).toBe(2);
+  });
+});
+
+describe('saying once where the chart data went', () => {
+  const remote = { serverUrl: 'https://charts.example.com', allowRemote: true };
+  const chartProps = (data: number[]): Record<string, unknown> => ({
+    options: {
+      chart: { width: 400, height: 300 },
+      series: [{ type: 'column', data }],
+    },
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetChartLimiters();
+    mockFetch.mockResolvedValue({ ok: true, text: async () => 'AA==' });
+  });
+
+  it('reports one notice for a document of charts on one remote server', async () => {
+    const warnings: GenerationWarning[] = [];
+
+    await desugarExternals(
+      {
+        name: 'docx',
+        props: {},
+        children: Array.from({ length: 10 }, (_, index) => ({
+          name: 'highcharts',
+          props: chartProps([index, index + 1]),
+        })),
+      },
+      { theme: createMockTheme(), services: { highcharts: remote }, warnings }
+    );
+
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0].context).toEqual({
+      code: 'W_HIGHCHARTS_REMOTE_EXPORT',
+      serverUrl: 'https://charts.example.com',
+    });
+  });
+
+  it('still names every remote server the document reached', async () => {
+    const warnings: GenerationWarning[] = [];
+
+    await desugarExternals(
+      {
+        name: 'docx',
+        props: {},
+        children: [
+          {
+            name: 'highcharts',
+            props: {
+              ...chartProps([1, 2]),
+              serverUrl: 'https://a.example.com',
+            },
+          },
+          {
+            name: 'highcharts',
+            props: {
+              ...chartProps([2, 1]),
+              serverUrl: 'https://b.example.com',
+            },
+          },
+          {
+            name: 'highcharts',
+            props: {
+              ...chartProps([3, 4]),
+              serverUrl: 'https://a.example.com',
+            },
+          },
+        ],
+      },
+      {
+        theme: createMockTheme(),
+        services: { highcharts: { allowRemote: true } },
+        warnings,
+      }
+    );
+
+    expect(warnings.map((w) => w.context?.serverUrl)).toEqual([
+      'https://a.example.com',
+      'https://b.example.com',
+    ]);
   });
 });
