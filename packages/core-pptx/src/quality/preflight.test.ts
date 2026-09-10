@@ -621,10 +621,15 @@ describe('renderer normalization parity', () => {
 
 describe('shipped profiles', () => {
   // 10pt clears the 7pt default floor but not the executive profile's 14pt.
+  // The slide carries a title so that the profiles' own title rule has
+  // nothing to say and these cases stay about profile resolution.
   const small = deck(CANVAS, [
     {
       name: 'slide',
-      children: [{ name: 'text', props: { text: 'fine print', fontSize: 10 } }],
+      children: [
+        { name: 'text', props: { text: 'The terms', style: 'title' } },
+        { name: 'text', props: { text: 'fine print', fontSize: 10 } },
+      ],
     },
   ]);
 
@@ -676,6 +681,7 @@ describe('shipped profiles', () => {
       {
         name: 'slide',
         children: [
+          { name: 'text', props: { text: 'The terms', style: 'title' } },
           { name: 'text', props: { text: 'word '.repeat(80).trim() } },
           { name: 'text', props: { text: 'fine print', fontSize: 10 } },
         ],

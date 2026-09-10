@@ -20,6 +20,8 @@ import {
 import type {
   PptxBlockSlotFact,
   PptxBoxFact,
+  PptxBulletsFact,
+  PptxImageFact,
   PptxCanvasFact,
   PptxChromeSlotFact,
   PptxChartFact,
@@ -1558,6 +1560,279 @@ export const pptxTitleDriftRule: QualityRule<
 
 const round = (value: number): number => Math.round(value * 10) / 10;
 
+/**
+ * Bullets an audience is asked to read at once. Past five, a slide is a
+ * document; past twelve words, a bullet is a sentence. Both bounds are the
+ * profile's — a technical deck lists ten build steps on purpose.
+ */
+export const pptxBulletRule: QualityRule<PptxQualityModel, PptxQualityFact> = {
+  id: 'pptx/bullet-density',
+  description:
+    'More bullets in one box, or more words in one bullet, than the profile allows. Off at 0.',
+  code: QUALITY_CODES.BULLET_COUNT,
+  category: 'information-design',
+  defaultSeverity: 'warning',
+  defaultCertainty: 'deterministic',
+  formats: ['pptx'],
+  defaultParameters: { maximumBullets: 0, maximumWordsPerBullet: 0 },
+  evaluate: ({ facts, configuration }) => {
+    const maximumBullets = numberParameter(
+      configuration.parameters,
+      'maximumBullets',
+      0
+    );
+    const maximumWords = numberParameter(
+      configuration.parameters,
+      'maximumWordsPerBullet',
+      0
+    );
+    const findings: QualityRuleFinding[] = [];
+    for (const fact of facts) {
+      if (fact.kind !== 'pptx/bullets') continue;
+      const bullets = fact as PptxBulletsFact;
+      if (maximumBullets > 0 && bullets.items > maximumBullets)
+        findings.push({
+          path: bullets.path,
+          code: QUALITY_CODES.BULLET_COUNT,
+          message: `${bullets.items} bullets in one box; a slide carries at most ${maximumBullets}.`,
+          suggestion:
+            'Keep the ones that carry the argument and move the rest to the notes, or split the slide.',
+          context: { items: bullets.items, maximum: maximumBullets },
+          evidence: {
+            actual: bullets.items,
+            expected: maximumBullets,
+            unit: 'bullets',
+            values: { source: 'profile' },
+          },
+        });
+      if (maximumWords > 0 && bullets.longestWords > maximumWords)
+        findings.push({
+          path: bullets.path,
+          code: QUALITY_CODES.BULLET_LENGTH,
+          message:
+            `The longest bullet here runs to ${bullets.longestWords} words; ` +
+            `a bullet states its point in at most ${maximumWords}.`,
+          suggestion:
+            'Cut each bullet to a claim. What is left is the speaker’s to say.',
+          context: { words: bullets.longestWords, maximum: maximumWords },
+          evidence: {
+            actual: bullets.longestWords,
+            expected: maximumWords,
+            unit: 'words',
+            values: { source: 'profile' },
+          },
+        });
+    }
+    return findings;
+  },
+};
+
+/**
+ * Content outside the theme's safe area. Chrome lives in the margin band by
+ * design — a tracker at the top edge, a page number at the foot — and so
+ * does a deliberate bleed, which touches an edge and spans the whole of the
+ * other axis. Everything else belongs inside the margin the theme drew.
+ */
+export const pptxSafeAreaRule: QualityRule<PptxQualityModel, PptxQualityFact> =
+  {
+    id: 'pptx/safe-area',
+    description:
+      'Content outside the theme’s safe area that is neither chrome nor a full bleed. Off until a profile or policy enables it.',
+    code: QUALITY_CODES.SAFE_AREA,
+    category: 'composition',
+    defaultSeverity: 'warning',
+    defaultCertainty: 'measured',
+    formats: ['pptx'],
+    defaultEnabled: false,
+    defaultParameters: { tolerancePt: 2 },
+    evaluate: ({ facts, configuration }) => {
+      const tolerance = numberParameter(
+        configuration.parameters,
+        'tolerancePt',
+        2
+      );
+      const canvas = facts.find(
+        (fact): fact is PptxCanvasFact => fact.kind === 'pptx/canvas'
+      );
+      const safe = canvas?.safeAreaPt;
+      if (canvas === undefined || safe === undefined || safe <= 0) return [];
+      const chromePaths = new Set(
+        facts
+          .filter(
+            (fact): fact is PptxChromeSlotFact =>
+              fact.kind === 'pptx/chrome-slot' &&
+              (fact.role === 'tracker' || fact.role === 'footer')
+          )
+          .map((fact) => fact.path)
+      );
+      const chromeStyles = new Set(['footer', 'tracker']);
+      const styledChrome = new Set(
+        textFacts(facts)
+          .filter(
+            (fact) =>
+              fact.styleName !== undefined && chromeStyles.has(fact.styleName)
+          )
+          .map((fact) => fact.path)
+      );
+      return facts
+        .filter((fact): fact is PptxBoxFact => fact.kind === 'pptx/box')
+        .filter(
+          (fact) => !chromePaths.has(fact.path) && !styledChrome.has(fact.path)
+        )
+        .flatMap((fact) => {
+          const right = fact.xPt + fact.widthPt;
+          const bottom = fact.yPt + fact.heightPt;
+          // A bleed touches an edge and runs the full length of the other
+          // axis: a band across the top, a column down the side.
+          const spansWidth =
+            fact.xPt <= tolerance && right >= canvas.widthPt - tolerance;
+          const spansHeight =
+            fact.yPt <= tolerance && bottom >= canvas.heightPt - tolerance;
+          if (spansWidth || spansHeight) return [];
+          const breaches: string[] = [];
+          if (fact.xPt < safe - tolerance) breaches.push('left');
+          if (fact.yPt < safe - tolerance) breaches.push('top');
+          if (right > canvas.widthPt - safe + tolerance) breaches.push('right');
+          if (bottom > canvas.heightPt - safe + tolerance)
+            breaches.push('bottom');
+          if (breaches.length === 0) return [];
+          const worst = Math.max(
+            safe - fact.xPt,
+            safe - fact.yPt,
+            right - (canvas.widthPt - safe),
+            bottom - (canvas.heightPt - safe)
+          );
+          return [
+            {
+              path: fact.path,
+              message:
+                `This ${fact.componentName} crosses the theme's ${Math.round(safe)}pt safe area at the ` +
+                `${breaches.join(' and ')}, by ${Math.round(worst * 10) / 10}pt.`,
+              suggestion:
+                'Move it inside the margin, or make it a full bleed that runs edge to edge.',
+              context: { edges: breaches, safeAreaPt: safe },
+              evidence: {
+                actual: Math.round(worst * 10) / 10,
+                expected: 0,
+                unit: 'pt',
+                values: { source: 'theme' },
+              },
+            },
+          ];
+        });
+    },
+  };
+
+/**
+ * A slide carrying content that nothing names. The title may be a block's
+ * `actionTitle` slot or a box in one of the theme's title styles; a slide
+ * with nothing but chrome on it is a divider, not an untitled slide.
+ */
+export const pptxSlideTitleRule: QualityRule<
+  PptxQualityModel,
+  PptxQualityFact
+> = {
+  id: 'pptx/slide-title',
+  description:
+    'A content slide with no title: no actionTitle slot, no box in a title style. Off until a profile or policy enables it.',
+  code: QUALITY_CODES.SLIDE_UNTITLED,
+  category: 'hierarchy',
+  defaultSeverity: 'warning',
+  defaultCertainty: 'deterministic',
+  formats: ['pptx'],
+  defaultEnabled: false,
+  defaultParameters: { titleStyles: ['title', 'display', 'heading1'] },
+  evaluate: ({ facts, configuration }) => {
+    const styles = stringListParameter(configuration.parameters, 'titleStyles');
+    const titledSlides = new Set<string>();
+    for (const fact of textFacts(facts))
+      if (fact.styleName !== undefined && styles.includes(fact.styleName))
+        titledSlides.add(fact.slidePath);
+    for (const fact of facts)
+      if (
+        fact.kind === 'pptx/chrome-slot' &&
+        (fact as PptxChromeSlotFact).role === 'actionTitle' &&
+        (fact as PptxChromeSlotFact).present
+      ) {
+        const slide = /^(\/children\/\d+)/.exec(fact.path)?.[1];
+        if (slide) titledSlides.add(slide);
+      }
+    return facts
+      .filter(
+        (fact): fact is PptxSlideFact =>
+          fact.kind === 'pptx/slide' &&
+          fact.contentBoxes > 0 &&
+          !titledSlides.has(fact.path)
+      )
+      .map((fact) => ({
+        path: fact.path,
+        message:
+          'This slide carries content under no title, so nothing tells the reader what it is for.',
+        suggestion:
+          'Lead the slide with a claim: an action title in a block, or a box in the theme’s title style.',
+        context: { contentBoxes: fact.contentBoxes },
+        evidence: {
+          actual: 0,
+          expected: 1,
+          unit: 'titles',
+          values: { source: 'profile' },
+        },
+      }));
+  },
+};
+
+/** An image drawn at an aspect the asset does not have. */
+export const pptxImageAspectRule: QualityRule<
+  PptxQualityModel,
+  PptxQualityFact
+> = {
+  id: 'pptx/image-aspect',
+  description:
+    'An image drawn at an aspect the asset does not have, where the asset can be read from the document.',
+  code: QUALITY_CODES.IMAGE_ASPECT,
+  category: 'integrity',
+  defaultSeverity: 'warning',
+  defaultCertainty: 'deterministic',
+  formats: ['pptx'],
+  defaultParameters: { tolerance: 0.02 },
+  evaluate: ({ facts, configuration }) => {
+    const tolerance = numberParameter(
+      configuration.parameters,
+      'tolerance',
+      0.02
+    );
+    return facts
+      .filter(
+        (fact): fact is PptxImageFact =>
+          fact.kind === 'pptx/image' &&
+          fact.drawnRatio !== undefined &&
+          fact.naturalRatio !== undefined
+      )
+      .filter(
+        (fact) =>
+          Math.abs(fact.drawnRatio! - fact.naturalRatio!) / fact.naturalRatio! >
+          tolerance
+      )
+      .map((fact) => ({
+        path: fact.path,
+        message:
+          `The image is drawn at ${pptxAspect(fact.drawnRatio!)} and the asset is ${pptxAspect(fact.naturalRatio!)}, ` +
+          'so it is stretched on the slide.',
+        suggestion:
+          'State one of w and h and let the other follow the asset, or crop the asset to the shape you want.',
+        context: { drawn: fact.drawnRatio, natural: fact.naturalRatio },
+        evidence: {
+          actual: Math.round(fact.drawnRatio! * 1000) / 1000,
+          expected: Math.round(fact.naturalRatio! * 1000) / 1000,
+          values: { source: 'asset' },
+        },
+      }));
+  },
+};
+
+const pptxAspect = (ratio: number): string =>
+  `${Math.round(ratio * 100) / 100}:1`;
+
 export const PPTX_QUALITY_RULES: QualityRulePack<
   PptxQualityModel,
   PptxQualityFact
@@ -1583,6 +1858,10 @@ export const PPTX_QUALITY_RULES: QualityRulePack<
     pptxSizeCountRule,
     pptxRoleDriftRule,
     pptxTitleDriftRule,
+    pptxBulletRule,
+    pptxSafeAreaRule,
+    pptxSlideTitleRule,
+    pptxImageAspectRule,
   ],
 };
 
@@ -1594,6 +1873,10 @@ export const PPTX_QUALITY_PROFILES = {
     rules: {
       'pptx/minimum-font-size': { parameters: { minimumFontPt: 14 } },
       'pptx/slide-density': { parameters: { maximumBodyWords: 70 } },
+      'pptx/bullet-density': {
+        parameters: { maximumBullets: 5, maximumWordsPerBullet: 12 },
+      },
+      'pptx/slide-title': { enabled: true },
     },
   },
   'technical-presentation': {
@@ -1605,7 +1888,7 @@ export const PPTX_QUALITY_PROFILES = {
     id: 'consulting-deck',
     formats: ['pptx'],
     description:
-      'Consulting readout: every content slide leads with a two-line action title, every chart carries a takeaway and a source.',
+      'Consulting readout: every content slide leads with a two-line action title, every chart carries a takeaway and a source, content stays inside the theme’s safe area, bullets stay under five and under twelve words, every size is on the theme scale with at most eight in play, and titles of one kind hold one line.',
     rules: {
       'pptx/required-chrome': {
         parameters: { required: ['takeaway', 'source'] },
@@ -1619,6 +1902,11 @@ export const PPTX_QUALITY_PROFILES = {
         enabled: true,
         parameters: { titleStyles: ['title', 'display'] },
       },
+      'pptx/bullet-density': {
+        parameters: { maximumBullets: 5, maximumWordsPerBullet: 12 },
+      },
+      'pptx/safe-area': { enabled: true },
+      'pptx/slide-title': { enabled: true },
     },
   },
 } as const satisfies Record<string, QualityProfile>;

@@ -161,7 +161,7 @@ describe('the generator', () => {
     const third = (a4.document.children as { props?: { page?: unknown } }[])[2];
     expect(third.props?.page).toMatchObject({
       size: 'A4',
-      margins: { left: 720, right: 720 },
+      margins: { left: 1080, right: 1080 },
     });
     const fallback = cases.find((c) => c.font === 'fallback')!;
     expect(

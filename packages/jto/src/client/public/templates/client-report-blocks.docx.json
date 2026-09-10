@@ -1684,8 +1684,8 @@
         "page": {
           "size": "LETTER",
           "margins": {
-            "left": 720,
-            "right": 720
+            "left": 1080,
+            "right": 1080
           }
         }
       },

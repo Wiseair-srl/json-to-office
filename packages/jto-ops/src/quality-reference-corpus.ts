@@ -130,6 +130,13 @@ function pptxDocument(profileId: string, tier: QualityReferenceTier) {
         name: 'slide',
         props: {},
         children: [
+          // Every tier's slide is titled: the tiers differ by type and
+          // density, and an untitled slide would say the same thing about
+          // all three while telling us nothing about either.
+          {
+            name: 'text',
+            props: { text: `${profileId} ${tier}`, style: 'title' },
+          },
           {
             name: 'text',
             props: {
@@ -310,18 +317,18 @@ export const QUALITY_REFERENCE_DIGESTS: Readonly<Record<string, string>> = {
     '8ecf6e3a18aa1548124aeb1b94e655614f281fcabd2bfd88e243360563d9bb17',
   'executive-report/excellent':
     'd0fa2eecb17c904c9cda00decbeb2122bdfa22e0643bcd068af879d42714621b',
-  'general/poor':
-    '6793a0dd27d1032a562998a2afb707faa97fae0709fdb00029c971e20a1f39f9',
-  'general/professional':
-    'd48d10118d930eab8c61c75a13b5f01cad6feafbf3932242fc5ef9e69c50da55',
-  'general/excellent':
-    '593300b6f3894cc5da0e07da458df198f13b1c8819e9136a0b5acfd107202c4a',
   'technical-report/poor':
     '8c8e4bdcc01e694fda1a755f44bc6037867c6195bea43c5b8c983798ac6238b7',
   'technical-report/professional':
     '248a128be1e0c8a957c400b34895f7f2e8ad032b52512d5102c44e28dd345caa',
   'technical-report/excellent':
     '8409d54f86a2add09f52a26ee9f075b023c205a4047f5db3599f1d99265d3dcb',
+  'general/poor':
+    '6793a0dd27d1032a562998a2afb707faa97fae0709fdb00029c971e20a1f39f9',
+  'general/professional':
+    'd48d10118d930eab8c61c75a13b5f01cad6feafbf3932242fc5ef9e69c50da55',
+  'general/excellent':
+    '593300b6f3894cc5da0e07da458df198f13b1c8819e9136a0b5acfd107202c4a',
   'legal-appendix/poor':
     '7d54c02db6da12cbe7c2616589b56d0605dea4aa520abebbe9b86c23b21a1351',
   'legal-appendix/professional':
@@ -329,21 +336,21 @@ export const QUALITY_REFERENCE_DIGESTS: Readonly<Record<string, string>> = {
   'legal-appendix/excellent':
     '17670dbb01c9f7b94f8a03429602609157c3893bb58a47ead92d2d0d18c55531',
   'executive-presentation/poor':
-    'b0b6381c95adb078b37644168239f7940213bb1dfc8f2c535c1195dce7fb4b57',
+    '3d00419c255b971d7837967a77153230cf7292d2e1273f0c940be4f5fd000058',
   'executive-presentation/professional':
-    'ccd4f28492260e58ed6e4ebf96c9628fea42eed5c95cd7a98fd8bbf70a6f17dc',
+    '093bf8c03fa95a5d0e659a4146720db71feeb6b8322c1472cba9854301d51a1e',
   'executive-presentation/excellent':
-    '7a26eead97ebd0863236cdb281f63403fcaeb083ea0c7e8e68739b902ed4b740',
+    '56525b6d5f37bd63afd786183399301630c9f2b689f5e551ab42a34ef037aa9b',
   'technical-presentation/poor':
-    'bdb8460c0467987e822ecc9c98c0e3439a2cf974b45d29a965eb3ae8c56771ce',
+    '68d3c3e81af664f4d9db36be44b28373130b842450cb54f4754cc33f29045e88',
   'technical-presentation/professional':
-    'c70d4adeb5c2d57712a9ad27814aeaa5a03b9d2403c56126f7f4ad25c0de352a',
+    '30e6f0544bcd6077ac596a749c760c462ffda6ead69b20386fb9f196e270f3cc',
   'technical-presentation/excellent':
-    '2e6b70ef98a686c1a311adb36298a6b14e16b758ba72e3aad82479929fa06f6d',
+    '11a9716afeb41b205dc864589a254e17a401606a07e730d5a847a692cb32f1af',
   'consulting-deck/poor':
-    'c3cca4f9856c08d3af56b8f5008aff9dc1b0051dca623812bf9e693060b7fa7a',
+    'b0441e9248ee39df9a6c2f2c5cb01cb4378d900ccad70fe54c3cd6644cf816c0',
   'consulting-deck/professional':
-    'b37ba8f0a4bd1b5f2b1e5d611093c9b63a2b4240b4317d145f995e180227fce0',
+    'cd7c54cc9a4f71cf27ae26e36473108af8c673898aeb885d9d8141027e24b10d',
   'consulting-deck/excellent':
-    'a83f33d2b836e55e21aee461337cb1d213e06e1f855e0162deef0b435c3ed189',
+    '84e215320fb61932af8bd9ea5a7b28b1608be68b0212a3a36aae6f297e0d068b',
 };

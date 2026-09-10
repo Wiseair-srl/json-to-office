@@ -176,6 +176,9 @@ const COMPACT_SLIDE_PPTX = {
       name: 'slide',
       props: {},
       children: [
+        // Titled, so the profile's own title rule has nothing to say and
+        // this case stays about the type and density it is named for.
+        { name: 'text', props: { text: 'The compact slide', style: 'title' } },
         {
           name: 'text',
           props: {
