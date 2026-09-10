@@ -1459,10 +1459,21 @@ export const pptxBulletRule: QualityRule<PptxQualityModel, PptxQualityFact> = {
       'maximumWordsPerBullet',
       0
     );
-    const findings: QualityRuleFinding[] = [];
+    // One run of bullets per authored pointer: a definition may draw one slot
+    // at two frames, and the author has one place to shorten either way.
+    const worst = new Map<string, PptxBulletsFact>();
     for (const fact of facts) {
       if (fact.kind !== 'pptx/bullets') continue;
       const bullets = fact as PptxBulletsFact;
+      const held = worst.get(bullets.path);
+      worst.set(bullets.path, {
+        ...bullets,
+        items: Math.max(bullets.items, held?.items ?? 0),
+        longestWords: Math.max(bullets.longestWords, held?.longestWords ?? 0),
+      });
+    }
+    const findings: QualityRuleFinding[] = [];
+    for (const bullets of worst.values()) {
       if (maximumBullets > 0 && bullets.items > maximumBullets)
         findings.push({
           path: bullets.path,

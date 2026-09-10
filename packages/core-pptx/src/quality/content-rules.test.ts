@@ -146,6 +146,32 @@ describe('a slide nothing names', () => {
       expect.objectContaining({ path: '/children/0' }),
     ]);
   });
+  it('is silent on a divider drawn from a shape with no words', () => {
+    const rule = deck(
+      slide({
+        name: 'shape',
+        props: {
+          type: 'rect',
+          x: 5,
+          y: 3,
+          w: 3,
+          h: 0.1,
+          fill: { color: 'accent' },
+        },
+      })
+    );
+    expect(onDeck(rule, QUALITY_CODES.SLIDE_UNTITLED)).toEqual([]);
+    // A shape that says something is content, whatever it is drawn as.
+    const claim = deck(
+      slide({
+        name: 'shape',
+        props: { type: 'rect', x: 5, y: 3, w: 3, h: 1, text: 'A claim' },
+      })
+    );
+    expect(onDeck(claim, QUALITY_CODES.SLIDE_UNTITLED)).toEqual([
+      expect.objectContaining({ path: '/children/0' }),
+    ]);
+  });
   it('is silent on a titled slide, and on a slide carrying only chrome', () => {
     expect(
       onDeck(
@@ -176,6 +202,59 @@ describe('a slide nothing names', () => {
         QUALITY_CODES.SLIDE_UNTITLED
       )
     ).toEqual([]);
+  });
+});
+
+describe('a slot a definition draws twice', () => {
+  // A definition may draw one slot at two frames. Both boxes report at the
+  // slot the author wrote, so the reader must get one finding, not two.
+  const twice = (points: string) => ({
+    name: 'pptx',
+    props: {
+      ...CANVAS,
+      blocks: {
+        twice: {
+          slots: { points: { type: 'string' } },
+          body: [
+            {
+              name: 'group',
+              props: { x: '0%', y: '0%', w: '100%', h: '100%' },
+              children: [0, 1].map((column) => ({
+                name: 'text',
+                props: {
+                  text: { $slot: '/points' },
+                  bullet: true,
+                  x: `${column * 50}%`,
+                  y: '30%',
+                  w: '40%',
+                  h: '50%',
+                },
+              })),
+            },
+          ],
+        },
+      },
+    },
+    children: [
+      {
+        name: 'slide',
+        children: [
+          title(),
+          { name: 'block', props: { ref: 'twice', slots: { points } } },
+        ],
+      },
+    ],
+  });
+  it('reports its bullets once, at the invocation that drew them', () => {
+    const doc = twice('One.\nTwo.\nThree.\nFour.\nFive.\nSix.');
+    // The box is the definition's, not the slot's — the definition supplies
+    // the bullet and the frame — so the invocation is what the author holds.
+    expect(onDeck(doc, QUALITY_CODES.BULLET_COUNT)).toEqual([
+      expect.objectContaining({
+        path: '/children/0/children/1',
+        evidence: expect.objectContaining({ actual: 6, expected: 5 }),
+      }),
+    ]);
   });
 });
 
