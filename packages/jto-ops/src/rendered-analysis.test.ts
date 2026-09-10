@@ -654,6 +654,123 @@ describe('analyzeRenderedDocument', () => {
     });
   });
 
+  describe('a table broken across a page', () => {
+    const table = (row: number, column: number, cell = true) =>
+      `/children/0/children/0/props/columns/${column}/${cell ? `cells/${row}` : 'header'}`;
+    const header = (column: number) => table(0, column, false);
+    /** Two columns of header plus `rows` rows, as the inventory writes them. */
+    const inventory = (rows: number) => [
+      entry(header(0), 'Quarter', 'table-header'),
+      entry(header(1), 'Revenue', 'table-header'),
+      ...Array.from({ length: rows }, (_, row) => [
+        entry(table(row, 0), `Quarter ${row + 1}`, 'table-cell'),
+        entry(table(row, 1), `${row + 1}00`, 'table-cell'),
+      ]).flat(),
+    ];
+    const row = (index: number, y: number) => [
+      word('Quarter', 10, y),
+      word(`${index + 1}`, 45, y, 8),
+      word(`${index + 1}00`, 200, y),
+    ];
+
+    it('reports a header left alone at the foot of a page', () => {
+      const result = analyzeRenderedDocument({
+        format: 'docx',
+        pages: [
+          page([word('Quarter', 10, 800), word('Revenue', 200, 800)]),
+          page([...row(0, 40), ...row(1, 60), ...row(2, 80)]),
+        ],
+        inventory: inventory(3),
+      });
+      expect(codes(result.findings)).toEqual([
+        QUALITY_CODES.RENDERED_TABLE_SPLIT,
+      ]);
+      expect(result.findings[0]).toMatchObject({
+        severity: 'info',
+        path: header(0),
+        context: { kind: 'header-alone', page: 1, mapping: 'mapped' },
+      });
+    });
+
+    it('reports one row left alone above the break, at that row', () => {
+      const result = analyzeRenderedDocument({
+        format: 'docx',
+        pages: [
+          page([
+            word('Quarter', 10, 780),
+            word('Revenue', 200, 780),
+            ...row(0, 800),
+          ]),
+          page([...row(1, 40), ...row(2, 60)]),
+        ],
+        inventory: inventory(3),
+      });
+      expect(codes(result.findings)).toEqual([
+        QUALITY_CODES.RENDERED_TABLE_SPLIT,
+      ]);
+      expect(result.findings[0]).toMatchObject({
+        path: table(0, 0),
+        context: { kind: 'orphan-row', page: 1 },
+      });
+    });
+
+    it('reports one row left alone below the break', () => {
+      const result = analyzeRenderedDocument({
+        format: 'docx',
+        pages: [
+          page([
+            word('Quarter', 10, 760),
+            word('Revenue', 200, 760),
+            ...row(0, 780),
+            ...row(1, 800),
+          ]),
+          page([...row(2, 40)]),
+        ],
+        inventory: inventory(3),
+      });
+      expect(codes(result.findings)).toEqual([
+        QUALITY_CODES.RENDERED_TABLE_SPLIT,
+      ]);
+      expect(result.findings[0]).toMatchObject({
+        path: table(2, 0),
+        context: { kind: 'widow-row', page: 2 },
+      });
+    });
+
+    it('says nothing about a table that breaks with rows on both sides', () => {
+      const result = analyzeRenderedDocument({
+        format: 'docx',
+        pages: [
+          page([
+            word('Quarter', 10, 740),
+            word('Revenue', 200, 740),
+            ...row(0, 760),
+            ...row(1, 780),
+          ]),
+          page([...row(2, 40), ...row(3, 60)]),
+        ],
+        inventory: inventory(4),
+      });
+      expect(result.findings).toEqual([]);
+    });
+
+    it('says nothing about a table that fits on one page', () => {
+      const result = analyzeRenderedDocument({
+        format: 'docx',
+        pages: [
+          page([
+            word('Quarter', 10, 700),
+            word('Revenue', 200, 700),
+            ...row(0, 720),
+            ...row(1, 740),
+          ]),
+        ],
+        inventory: inventory(2),
+      });
+      expect(result.findings).toEqual([]);
+    });
+  });
+
   it('does not touch docx-only composition checks on a deck', () => {
     const result = analyzeRenderedDocument({
       format: 'pptx',
