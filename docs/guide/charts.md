@@ -240,6 +240,30 @@ export HIGHCHARTS_SERVER_URL=https://charts.example.com
 export HIGHCHARTS_API_KEY=sk-...
 ```
 
+### How hard the server is pushed
+
+One chart is one Puppeteer render, and a self-hosted export server usually runs a single worker. A document's charts are therefore queued rather than posted all at once: at most four requests are in flight per server URL, and the cap is process-wide, so several documents generated together in one process share it instead of each opening a pool of their own. A request the server could not answer — a timeout, a refused connection, a 429 or a 5xx — is retried twice with jittered exponential backoff; a 4xx is about the chart you sent and fails at once.
+
+| Option                            | Default | What it does                                                      |
+| --------------------------------- | ------- | ----------------------------------------------------------------- |
+| `services.highcharts.concurrency` | `4`     | Requests in flight at once against this export server             |
+| `services.highcharts.timeoutMs`   | `30000` | Abort one export request after this long                          |
+| `services.highcharts.retries`     | `2`     | Retries after the first attempt, for a failure the server may fix |
+
+```ts
+await generateAndSaveFromJson(document, 'report.docx', {
+  services: {
+    highcharts: {
+      serverUrl: 'https://charts.example.com',
+      // A server with more workers can take more at once; a slow one that
+      // renders large charts needs longer before an abort is honest.
+      concurrency: 8,
+      timeoutMs: 60000,
+    },
+  },
+});
+```
+
 ## Theme typography in Highcharts output
 
 The chart is a PNG drawn by a browser that has never seen the document, so on its own it would come out in the export server's default face at Highcharts' own sizes — visibly foreign to the prose around it. json-to-office therefore writes the document's typography into the request, beneath whatever the author set:
