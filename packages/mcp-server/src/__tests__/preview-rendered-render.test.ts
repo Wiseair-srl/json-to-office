@@ -210,6 +210,158 @@ describe.skipIf(!RUN)('rendered pass over a LibreOffice PDF', () => {
     expect(findings.summary?.inventory.missing).toBe(0);
   }, 120_000);
 
+  // #408: a report whose closing section spills a line of prose and its
+  // notes onto a page of their own. The finding has to land on the section
+  // that closes the document and name the move that repairs it, and the
+  // move has to work: `pageBreak` on that section, so the closing argument
+  // and its notes share one designed page.
+  const NOTES = [
+    {
+      name: 'divider',
+      props: { thickness: 0.5, spacing: { before: 12, after: 4 } },
+    },
+    {
+      name: 'paragraph',
+      props: {
+        text: 'Notes and sources',
+        font: { bold: true },
+        keepNext: true,
+      },
+    },
+    {
+      name: 'list',
+      props: {
+        format: 'decimal',
+        items: [
+          'Internal business case model, September 2026.',
+          'Market sizing and competitor share, internal analysis, 2026.',
+        ],
+      },
+    },
+  ];
+  /** Sixteen sentences of recommendation: two pages of evidence, then a tail. */
+  const CLOSE = Array.from(
+    { length: 16 },
+    (_, i) => `Point ${i} states the recommendation with several more words`
+  ).join('. ');
+  const closing = (notes: unknown[] = NOTES, tail = CLOSE) =>
+    report([
+      {
+        name: 'section',
+        props: {
+          header: [{ name: 'paragraph', props: { text: 'Client report' } }],
+          footer: [{ name: 'paragraph', props: { text: 'Page {PAGE}' } }],
+        },
+        children: [
+          { name: 'heading', props: { text: 'Evidence', level: 1 } },
+          { name: 'paragraph', props: { text: LONG } },
+          { name: 'paragraph', props: { text: LONG } },
+          { name: 'paragraph', props: { text: LONG } },
+        ],
+      },
+      {
+        name: 'section',
+        children: [
+          { name: 'heading', props: { text: 'Recommendation', level: 1 } },
+          { name: 'paragraph', props: { text: tail } },
+          ...notes,
+        ],
+      },
+    ]);
+
+  it('lands a stub last page on the closing section and names the page break that repairs it', async () => {
+    const { rendered, findings } = await renderWithFindings(closing());
+    const stub = findings.diagnostics.filter(
+      (d) =>
+        d.code === 'W_QUALITY_RENDERED_PAGE_UNDERFILLED' &&
+        d.context?.kind === 'last-page'
+    );
+    expect(stub).toEqual([
+      expect.objectContaining({
+        path: '/children/1',
+        context: expect.objectContaining({ page: rendered.totalPages }),
+      }),
+    ]);
+    expect(stub[0].suggestion).toMatch(/pageBreak/);
+    expect(findings.summary?.inventory.missing).toBe(0);
+  }, 120_000);
+
+  it('clears the stub when the closing section starts its own page, with every string still mapped', async () => {
+    const document = closing() as {
+      children: { props?: Record<string, unknown> }[];
+    };
+    const last = document.children[document.children.length - 1];
+    last.props = { ...(last.props ?? {}), pageBreak: true };
+    const before = await renderWithFindings(closing());
+    const after = await renderWithFindings(document);
+    expect(
+      before.findings.diagnostics.some((d) => d.context?.kind === 'last-page')
+    ).toBe(true);
+    expect(
+      after.findings.diagnostics.filter(
+        (d) => d.code === 'W_QUALITY_RENDERED_PAGE_UNDERFILLED'
+      )
+    ).toEqual([]);
+    // Nothing dropped, nothing clipped, no page left blank.
+    expect(after.findings.summary?.inventory.missing).toBe(0);
+    expect(
+      after.findings.diagnostics.filter(
+        (d) =>
+          d.code === 'W_QUALITY_RENDERED_EMPTY_PAGE' ||
+          d.code === 'W_QUALITY_RENDERED_CLIP'
+      )
+    ).toEqual([]);
+    expect(after.findings.summary?.inventory.mapped).toBe(
+      before.findings.summary?.inventory.mapped
+    );
+  }, 240_000);
+
+  it('leaves a last page that a long notes section legitimately fills alone', async () => {
+    // Twenty sources are a page of content, not a stub: the rule measures
+    // ink, so a notes-only last page that is full must not be reported.
+    const long = [
+      NOTES[0],
+      NOTES[1],
+      {
+        name: 'list',
+        props: {
+          format: 'decimal',
+          items: Array.from(
+            { length: 26 },
+            (_, i) =>
+              `Source ${i + 1}: internal analysis of the programme's cost base and delivery plan, 2026.`
+          ),
+        },
+      },
+    ];
+    const { findings } = await renderWithFindings(
+      closing(long, 'A short close.')
+    );
+    expect(
+      findings.diagnostics.filter(
+        (d) =>
+          d.code === 'W_QUALITY_RENDERED_PAGE_UNDERFILLED' &&
+          d.context?.kind === 'last-page'
+      )
+    ).toEqual([]);
+    expect(findings.summary?.inventory.missing).toBe(0);
+  }, 120_000);
+
+  it('leaves a short closing paragraph that still shares its page', async () => {
+    // The other boundary: a two-line close and two sources, on a page the
+    // evidence already fills. Nothing spills, so nothing is a stub.
+    const { rendered, findings } = await renderWithFindings(
+      closing(NOTES, 'The recommendation is to proceed as set out above.')
+    );
+    expect(rendered.totalPages).toBe(2);
+    expect(
+      findings.diagnostics.filter(
+        (d) => d.code === 'W_QUALITY_RENDERED_PAGE_UNDERFILLED'
+      )
+    ).toEqual([]);
+    expect(findings.summary?.inventory.missing).toBe(0);
+  }, 120_000);
+
   it('reports nothing on a clean report, and reuses cached geometry on a re-preview', async () => {
     const document = report([
       { name: 'heading', props: { text: 'Executive summary', level: 1 } },

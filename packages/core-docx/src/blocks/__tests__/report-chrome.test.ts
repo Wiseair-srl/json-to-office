@@ -19,17 +19,32 @@ import { promisify } from 'node:util';
 import { validateDocument } from '@json-to-office/shared-docx';
 import { generateBufferWithWarnings } from '../../core/generator';
 import { analyzeDocxQuality } from '../../quality/preflight';
+import { expandBlocks } from '../index';
+import {
+  consultingTheme,
+  minimalTheme,
+  vermilionTheme,
+  devportalTheme,
+} from '../../styles';
 import { block, example, on, para, section } from './example';
 import {
   findLibreOffice,
   hasPdftotext,
   requireIfInsisted,
+  pdfWordBoxes,
+  textRows,
 } from '../../__tests__/libreoffice';
 
 const run = promisify(execFile);
 
 const THEMES = ['consulting', 'minimal', 'vermilion', 'devportal'] as const;
 type Theme = (typeof THEMES)[number];
+const THEME_CONFIG = {
+  consulting: consultingTheme,
+  minimal: minimalTheme,
+  vermilion: vermilionTheme,
+  devportal: devportalTheme,
+} as const;
 
 // Trackers that occur nowhere in the openers or the body, so a rendered page
 // that shows one can only have taken it from its header.
@@ -140,6 +155,41 @@ describe('the report architecture blocks', () => {
     );
   });
 
+  // #410: the number opens the section, so the section's gap belongs above
+  // it. Leaving the gap on the heading below put the number in the space
+  // that separates the sections, where it read as a footnote to the one
+  // that ended rather than the number of the one starting.
+  it.each(THEMES)(
+    'puts the section gap above the number and keeps the pair together on %s',
+    (theme) => {
+      const config = THEME_CONFIG[theme];
+      const gap = config.styles?.heading1?.spacing?.before;
+      expect(typeof gap, theme).toBe('number');
+      const opener = (slots: Record<string, string>) =>
+        (
+          expandBlocks(on(theme, block('section-opener', slots)), config)
+            .document as any
+        ).children[0].children[0].children;
+
+      const [number, heading] = opener({
+        number: '01',
+        title: 'The year in one page',
+      });
+      expect(number.name, theme).toBe('paragraph');
+      expect(number.props.spacing, theme).toEqual({ before: gap, after: 0 });
+      expect(number.props.keepNext, theme).toBe(true);
+      expect(heading.name, theme).toBe('heading');
+      expect(heading.props.spacing, theme).toEqual({ before: 0 });
+
+      // Nothing above it to group with: an unnumbered opener keeps the
+      // heading style's own gap rather than losing it to a number that is
+      // not there.
+      const [only] = opener({ title: 'The year in one page' });
+      expect(only.name, theme).toBe('heading');
+      expect(only.props.spacing, theme).toBeUndefined();
+    }
+  );
+
   describe.each(THEMES)('on the %s theme', (theme) => {
     it('generates a cover and three openers under one running head, warning-clean, the title on every section after the cover', async () => {
       const doc = report(theme);
@@ -230,6 +280,111 @@ describe.skipIf(!soffice || !pdftotext)('rendered through LibreOffice', () => {
               title.replace(/\s+/g, '')
             );
         });
+      }
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  }, 300_000);
+
+  // #410, measured rather than asserted about the XML: on the page, the
+  // space that separates two sections has to be above the number, not
+  // between the number and the heading it belongs to.
+  it('sets each section number against its heading, with the section gap above the pair, on every theme', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'jto-opener-gap-'));
+    try {
+      // Four sections in one flow: short headings, one that wraps, and
+      // enough body between the third and the fourth to carry the last
+      // opener over a page break. So the pair is measured at a page top,
+      // mid-page, over a heading of more than one line, and at a page
+      // boundary — the case where the number could be stranded at the foot
+      // of one page with its heading at the top of the next.
+      const FILL = Array.from(
+        { length: 52 },
+        (_, i) => `Sentence ${i} carries the section on with several more words`
+      ).join('. ');
+      const flowing = (theme: Theme) => {
+        const doc = example();
+        doc.props.theme = theme;
+        doc.children = [
+          section(
+            block('section-opener', { number: '01', title: 'The year' }),
+            para('Summary body.'),
+            block('section-opener', { number: '02', title: 'Results' }),
+            para('Results body.'),
+            block('section-opener', {
+              number: '03',
+              title:
+                'What to do next year across every region and every function',
+            }),
+            para(FILL),
+            para(FILL),
+            block('section-opener', { number: '04', title: 'What comes next' }),
+            para('Outlook body.')
+          ),
+        ];
+        return doc;
+      };
+      for (const theme of THEMES) {
+        const { buffer } = await generateBufferWithWarnings(flowing(theme));
+        await writeFile(join(dir, `${theme}.docx`), buffer);
+      }
+      await run(
+        soffice as string,
+        [
+          `-env:UserInstallation=file://${join(dir, 'profile').replace(/\\/g, '/')}`,
+          '--headless',
+          '--convert-to',
+          'pdf',
+          '--outdir',
+          dir,
+          ...THEMES.map((theme) => join(dir, `${theme}.docx`)),
+        ],
+        { timeout: 240_000 }
+      );
+      for (const theme of THEMES) {
+        const xml = join(dir, `${theme}.xml`);
+        await run('pdftotext', ['-bbox', join(dir, `${theme}.pdf`), xml]);
+        const pages = pdfWordBoxes(await readFile(xml, 'utf8')).map(textRows);
+        expect(pages.length, `${theme}: pages`).toBeGreaterThan(1);
+        const gap = THEME_CONFIG[theme].styles!.heading1!.spacing!.before!;
+        const seen: string[] = [];
+        pages.forEach((rows, pageIndex) => {
+          const numbers = rows
+            .map((row, i) => (/^0[1234]$/.test(row.text) ? i : -1))
+            .filter((i) => i >= 0);
+          for (const i of numbers) {
+            const label = `${theme} ${rows[i].text} on page ${pageIndex + 1}`;
+            seen.push(rows[i].text);
+            // The heading is on this page too, right under the number: the
+            // pair never straddles the break. What separates them is
+            // leading, not the gap that separates two sections — and the
+            // boxes may even overlap slightly, since a display heading's
+            // line box reaches above its caps.
+            expect(rows[i + 1], `${label}: the heading under it`).toBeDefined();
+            const below = rows[i + 1].yMin - rows[i].yMax;
+            expect(below, `${label}: below the number`).toBeLessThan(gap / 2);
+            // And the section's own gap is above the number, so the number
+            // opens its section instead of trailing the one that ended. A
+            // number at the top of a page has no row above it to measure.
+            if (i === 0) continue;
+            const above = rows[i].yMin - rows[i - 1].yMax;
+            expect(above, `${label}: above the number`).toBeGreaterThan(below);
+            expect(above, `${label}: above the number`).toBeGreaterThanOrEqual(
+              gap * 0.9
+            );
+          }
+        });
+        expect(seen, `${theme}: every opener`).toEqual([
+          '01',
+          '02',
+          '03',
+          '04',
+        ]);
+        // The fourth opener is the one carried over a page break.
+        expect(
+          pages[0].some((row) => row.text === '04'),
+          `${theme}: the opener at the page boundary`
+        ).toBe(false);
       }
     } finally {
       await rm(dir, { recursive: true, force: true });

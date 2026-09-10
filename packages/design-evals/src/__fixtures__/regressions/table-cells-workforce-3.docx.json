@@ -2,105 +2,8 @@
   "name": "docx",
   "props": {
     "theme": "consulting",
-    "metadata": {
-      "title": "Client performance report"
-    },
+    "qualityProfile": "client-report",
     "blocks": {
-      "key-takeaways": {
-        "description": "Executive conclusions with bounded one-line takeaways. Copy and adapt this document-local example.",
-        "slots": {
-          "label": {
-            "type": "string",
-            "oneLine": true,
-            "maxWords": 8,
-            "required": false,
-            "default": "Key takeaways"
-          },
-          "items": {
-            "type": "array",
-            "required": true,
-            "minItems": 3,
-            "maxItems": 5,
-            "items": {
-              "type": "string",
-              "oneLine": true,
-              "maxWords": 25,
-              "required": true
-            }
-          }
-        },
-        "body": [
-          {
-            "name": "divider",
-            "props": {
-              "thickness": {
-                "$theme": "/chrome/keyTakeaways/rule/weightPt",
-                "default": 1.5
-              },
-              "color": {
-                "$theme": "/chrome/keyTakeaways/rule/color",
-                "default": "borderPrimary"
-              },
-              "spacing": {
-                "before": 4,
-                "after": 6
-              }
-            }
-          },
-          {
-            "name": "paragraph",
-            "props": {
-              "text": {
-                "$slot": "/label"
-              },
-              "font": {
-                "family": {
-                  "$theme": "/fonts/body/family",
-                  "default": "Calibri"
-                },
-                "size": {
-                  "$theme": "/styles/label/size",
-                  "default": 9
-                },
-                "bold": {
-                  "$theme": "/styles/label/bold",
-                  "default": true
-                },
-                "color": {
-                  "$theme": "/styles/label/color",
-                  "default": "textPrimary"
-                }
-              },
-              "keepNext": true
-            }
-          },
-          {
-            "name": "list",
-            "props": {
-              "items": {
-                "$slot": "/items"
-              }
-            }
-          },
-          {
-            "name": "divider",
-            "props": {
-              "thickness": {
-                "$theme": "/chrome/keyTakeaways/rule/weightPt",
-                "default": 0.5
-              },
-              "color": {
-                "$theme": "/chrome/keyTakeaways/rule/color",
-                "default": "borderPrimary"
-              },
-              "spacing": {
-                "before": 4,
-                "after": 6
-              }
-            }
-          }
-        ]
-      },
       "cover": {
         "description": "A themed title page; optional subtitle, logo and metadata collapse when omitted.",
         "slots": {
@@ -351,84 +254,19 @@
           }
         ]
       },
-      "section-opener": {
-        "description": "A numbered section heading. The number opens the section, so it carries the gap that separates one section from the next and the heading under it carries none: the pair reads as one unit rather than the number trailing the section that ended.",
-        "slots": {
-          "number": {
-            "type": "string",
-            "oneLine": true,
-            "maxWords": 3,
-            "required": false
-          },
-          "title": {
-            "type": "string",
-            "oneLine": true,
-            "maxWords": 12,
-            "required": true
-          }
-        },
-        "body": [
-          {
-            "$if": "/number",
-            "then": {
-              "name": "paragraph",
-              "props": {
-                "text": {
-                  "$slot": "/number"
-                },
-                "font": {
-                  "family": {
-                    "$theme": "/fonts/body/family",
-                    "default": "Calibri"
-                  },
-                  "size": {
-                    "$theme": "/styles/eyebrow/size",
-                    "default": 9
-                  },
-                  "bold": {
-                    "$theme": "/styles/eyebrow/bold",
-                    "default": true
-                  },
-                  "color": {
-                    "$theme": "/styles/eyebrow/color",
-                    "default": "accent"
-                  }
-                },
-                "keepNext": true,
-                "spacing": {
-                  "before": {
-                    "$theme": "/styles/heading1/spacing/before",
-                    "default": 12
-                  },
-                  "after": 0
-                }
-              }
-            }
-          },
-          {
-            "name": "heading",
-            "props": {
-              "text": {
-                "$slot": "/title"
-              },
-              "level": 1,
-              "spacing": {
-                "$if": "/number",
-                "then": {
-                  "before": 0
-                }
-              }
-            }
-          }
-        ]
-      },
       "running-head": {
-        "description": "Document title in the header and confidentiality, page fields and date in the footer, inherited by every later section; those sections continue on the page.",
+        "description": "Document title/section tracker and page fields, inherited by subsequent sections.",
         "slots": {
           "title": {
             "type": "string",
             "oneLine": true,
             "maxWords": 6,
+            "required": false
+          },
+          "tracker": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 3,
             "required": false
           },
           "confidentiality": {
@@ -457,11 +295,24 @@
               "name": "paragraph",
               "props": {
                 "text": {
-                  "$slot": "/title",
-                  "default": {
-                    "$context": "/document/title",
-                    "default": ""
-                  }
+                  "$join": [
+                    {
+                      "$slot": "/title",
+                      "default": {
+                        "$context": "/document/title",
+                        "default": ""
+                      }
+                    },
+                    {
+                      "$context": "/section/tracker",
+                      "default": {
+                        "$slot": "/tracker",
+                        "default": ""
+                      }
+                    }
+                  ],
+                  "separator": "\t",
+                  "keepEmpty": true
                 },
                 "font": {
                   "family": {
@@ -481,6 +332,15 @@
                     "default": "textMuted"
                   }
                 },
+                "tabStops": [
+                  {
+                    "type": "right",
+                    "position": {
+                      "$measure": "width",
+                      "unit": "twip"
+                    }
+                  }
+                ],
                 "spacing": {
                   "before": 0,
                   "after": 0
@@ -589,6 +449,173 @@
           ]
         }
       },
+      "section-opener": {
+        "description": "A numbered section heading which sets the general section tracker.",
+        "slots": {
+          "number": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 3,
+            "required": false
+          },
+          "title": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 12,
+            "required": true
+          },
+          "tracker": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 3,
+            "required": false
+          }
+        },
+        "section": {
+          "tracker": {
+            "$slot": "/tracker",
+            "default": {
+              "$slot": "/title"
+            }
+          }
+        },
+        "body": [
+          {
+            "$if": "/number",
+            "then": {
+              "name": "paragraph",
+              "props": {
+                "text": {
+                  "$slot": "/number"
+                },
+                "font": {
+                  "family": {
+                    "$theme": "/fonts/body/family",
+                    "default": "Calibri"
+                  },
+                  "size": {
+                    "$theme": "/styles/eyebrow/size",
+                    "default": 9
+                  },
+                  "bold": {
+                    "$theme": "/styles/eyebrow/bold",
+                    "default": true
+                  },
+                  "color": {
+                    "$theme": "/styles/eyebrow/color",
+                    "default": "accent"
+                  }
+                },
+                "keepNext": true
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "props": {
+              "text": {
+                "$slot": "/title"
+              },
+              "level": 1
+            }
+          }
+        ]
+      },
+      "key-takeaways": {
+        "description": "Executive conclusions with bounded one-line takeaways. Copy and adapt this document-local example.",
+        "slots": {
+          "label": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 8,
+            "required": false,
+            "default": "Key takeaways"
+          },
+          "items": {
+            "type": "array",
+            "required": true,
+            "minItems": 3,
+            "maxItems": 5,
+            "items": {
+              "type": "string",
+              "oneLine": true,
+              "maxWords": 25,
+              "required": true
+            }
+          }
+        },
+        "body": [
+          {
+            "name": "divider",
+            "props": {
+              "thickness": {
+                "$theme": "/chrome/keyTakeaways/rule/weightPt",
+                "default": 1.5
+              },
+              "color": {
+                "$theme": "/chrome/keyTakeaways/rule/color",
+                "default": "borderPrimary"
+              },
+              "spacing": {
+                "before": 4,
+                "after": 6
+              }
+            }
+          },
+          {
+            "name": "paragraph",
+            "props": {
+              "text": {
+                "$slot": "/label"
+              },
+              "font": {
+                "family": {
+                  "$theme": "/fonts/body/family",
+                  "default": "Calibri"
+                },
+                "size": {
+                  "$theme": "/styles/label/size",
+                  "default": 9
+                },
+                "bold": {
+                  "$theme": "/styles/label/bold",
+                  "default": true
+                },
+                "color": {
+                  "$theme": "/styles/label/color",
+                  "default": "textPrimary"
+                }
+              },
+              "keepNext": true
+            }
+          },
+          {
+            "name": "list",
+            "props": {
+              "items": {
+                "$slot": "/items"
+              }
+            }
+          },
+          {
+            "name": "divider",
+            "props": {
+              "thickness": {
+                "$theme": "/chrome/keyTakeaways/rule/weightPt",
+                "default": 0.5
+              },
+              "color": {
+                "$theme": "/chrome/keyTakeaways/rule/color",
+                "default": "borderPrimary"
+              },
+              "spacing": {
+                "before": 4,
+                "after": 6
+              }
+            }
+          }
+        ]
+      },
       "source-line": {
         "description": "A hairline and a source line in the source role, under a figure or a table. The data blocks invoke it; copy it to add a source to anything else.",
         "slots": {
@@ -682,7 +709,11 @@
                 },
                 "trend": {
                   "type": "string",
-                  "enum": ["up", "down", "neutral"],
+                  "enum": [
+                    "up",
+                    "down",
+                    "neutral"
+                  ],
                   "description": "Direction glyph drawn before the delta."
                 }
               }
@@ -750,90 +781,133 @@
           }
         ]
       },
-      "callout": {
-        "description": "An aside set off by a hairline rule down its left edge: a short label over up to sixty words of text. No fill, so it reads as a note beside the argument rather than a box in it.",
+      "figure-caption": {
+        "description": "The numbered caption under a figure: **Figure N.** and the text, N being a Word SEQ field over the figure sequence. chart-figure and figure invoke it, so charts and images number together.",
         "slots": {
-          "label": {
-            "type": "string",
-            "oneLine": true,
-            "maxWords": 6,
-            "default": "Note"
-          },
           "text": {
             "type": "string",
             "required": true,
-            "maxWords": 60
+            "oneLine": true,
+            "maxWords": 20
           }
         },
         "body": [
           {
-            "name": "text-box",
+            "name": "paragraph",
             "props": {
-              "width": "100%",
-              "style": {
-                "padding": {
-                  "top": 2,
-                  "bottom": 2,
-                  "left": 10,
-                  "right": 0
-                },
-                "border": {
-                  "left": {
-                    "style": "solid",
-                    "width": 0.75,
-                    "color": {
-                      "$theme": "/palette/rule",
-                      "default": "borderPrimary"
-                    }
+              "text": {
+                "$join": [
+                  "**Figure {SEQ:figure}.** ",
+                  {
+                    "$slot": "/text"
                   }
-                }
-              }
-            },
-            "children": [
-              {
-                "name": "paragraph",
-                "props": {
-                  "text": {
-                    "$slot": "/label"
-                  },
-                  "font": {
-                    "family": {
-                      "$theme": "/fonts/body/family",
-                      "default": "Calibri"
-                    },
-                    "size": {
-                      "$theme": "/styles/label/size",
-                      "default": 9
-                    },
-                    "bold": {
-                      "$theme": "/styles/label/bold",
-                      "default": true
-                    },
-                    "color": {
-                      "$theme": "/styles/label/color",
-                      "default": "textPrimary"
-                    }
-                  },
-                  "spacing": {
-                    "before": 0,
-                    "after": 2
-                  },
-                  "keepNext": true
+                ]
+              },
+              "font": {
+                "family": {
+                  "$theme": "/fonts/body/family",
+                  "default": "Calibri"
+                },
+                "size": {
+                  "$theme": "/styles/label/size",
+                  "default": 9
+                },
+                "bold": false,
+                "color": {
+                  "$theme": "/styles/label/color",
+                  "default": "textPrimary"
                 }
               },
-              {
-                "name": "paragraph",
-                "props": {
-                  "text": {
-                    "$slot": "/text"
+              "spacing": {
+                "before": 4,
+                "after": 2
+              },
+              "keepNext": true
+            }
+          }
+        ]
+      },
+      "chart-figure": {
+        "description": "A numbered, sourced chart: the chart itself (highcharts through the export server, or a native chart on the office-open renderer), a caption that says what it shows, an optional takeaway beneath, and the source line the report cites. The source is required; the figure number is a Word SEQ field.",
+        "slots": {
+          "chart": {
+            "type": "component",
+            "required": true,
+            "description": "A highcharts or chart component. Put the unit in the value-axis title: Revenue (€m)."
+          },
+          "caption": {
+            "type": "string",
+            "required": true,
+            "oneLine": true,
+            "maxWords": 20,
+            "description": "What the chart shows, as a statement: Revenue by quarter, 2026."
+          },
+          "takeaway": {
+            "type": "string",
+            "maxWords": 30,
+            "role": "takeaway",
+            "description": "The one sentence the reader should leave with."
+          },
+          "source": {
+            "type": "string",
+            "required": true,
+            "maxWords": 20,
+            "role": "source"
+          }
+        },
+        "body": [
+          {
+            "$slot": "/chart"
+          },
+          {
+            "name": "block",
+            "props": {
+              "ref": "figure-caption",
+              "slots": {
+                "text": {
+                  "$slot": "/caption"
+                }
+              }
+            }
+          },
+          {
+            "$if": "/takeaway",
+            "then": {
+              "name": "paragraph",
+              "props": {
+                "text": {
+                  "$slot": "/takeaway"
+                },
+                "font": {
+                  "family": {
+                    "$theme": "/fonts/body/family",
+                    "default": "Calibri"
                   },
-                  "spacing": {
-                    "before": 0,
-                    "after": 0
+                  "color": {
+                    "$theme": "/styles/quote/color",
+                    "default": "textSecondary"
+                  }
+                },
+                "spacing": {
+                  "before": 0,
+                  "after": 2
+                }
+              }
+            }
+          },
+          {
+            "$if": "/source",
+            "then": {
+              "name": "block",
+              "props": {
+                "ref": "source-line",
+                "slots": {
+                  "text": {
+                    "$slot": "/source"
                   }
                 }
               }
-            ]
+            }
           }
         ]
       },
@@ -1077,184 +1151,90 @@
           }
         ]
       },
-      "figure-caption": {
-        "description": "The numbered caption under a figure: **Figure N.** and the text, N being a Word SEQ field over the figure sequence. chart-figure and figure invoke it, so charts and images number together.",
+      "callout": {
+        "description": "An aside set off by a hairline rule down its left edge: a short label over up to sixty words of text. No fill, so it reads as a note beside the argument rather than a box in it.",
         "slots": {
+          "label": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 6,
+            "default": "Note"
+          },
           "text": {
             "type": "string",
             "required": true,
-            "oneLine": true,
-            "maxWords": 20
+            "maxWords": 60
           }
         },
         "body": [
           {
-            "name": "paragraph",
+            "name": "text-box",
             "props": {
-              "text": {
-                "$join": [
-                  "**Figure {SEQ:figure}.** ",
-                  {
-                    "$slot": "/text"
+              "width": "100%",
+              "style": {
+                "padding": {
+                  "top": 2,
+                  "bottom": 2,
+                  "left": 10,
+                  "right": 0
+                },
+                "border": {
+                  "left": {
+                    "style": "solid",
+                    "width": 0.75,
+                    "color": {
+                      "$theme": "/palette/rule",
+                      "default": "borderPrimary"
+                    }
                   }
-                ]
-              },
-              "font": {
-                "family": {
-                  "$theme": "/fonts/body/family",
-                  "default": "Calibri"
-                },
-                "size": {
-                  "$theme": "/styles/label/size",
-                  "default": 9
-                },
-                "bold": false,
-                "color": {
-                  "$theme": "/styles/label/color",
-                  "default": "textPrimary"
-                }
-              },
-              "spacing": {
-                "before": 4,
-                "after": 2
-              },
-              "keepNext": true
-            }
-          }
-        ]
-      },
-      "chart-figure": {
-        "description": "A numbered, sourced chart: the chart itself (highcharts through the export server, or a native chart on the office-open renderer), a caption that says what it shows, an optional takeaway beneath, and the source line the report cites. The source is required; the figure number is a Word SEQ field.",
-        "slots": {
-          "chart": {
-            "type": "component",
-            "required": true,
-            "description": "A highcharts or chart component. Put the unit in the value-axis title: Revenue (€m)."
-          },
-          "caption": {
-            "type": "string",
-            "required": true,
-            "oneLine": true,
-            "maxWords": 20,
-            "description": "What the chart shows, as a statement: Revenue by quarter, 2026."
-          },
-          "takeaway": {
-            "type": "string",
-            "maxWords": 30,
-            "role": "takeaway",
-            "description": "The one sentence the reader should leave with."
-          },
-          "source": {
-            "type": "string",
-            "required": true,
-            "maxWords": 20,
-            "role": "source"
-          }
-        },
-        "body": [
-          {
-            "$slot": "/chart"
-          },
-          {
-            "name": "block",
-            "props": {
-              "ref": "figure-caption",
-              "slots": {
-                "text": {
-                  "$slot": "/caption"
                 }
               }
-            }
-          },
-          {
-            "$if": "/takeaway",
-            "then": {
-              "name": "paragraph",
-              "props": {
-                "text": {
-                  "$slot": "/takeaway"
-                },
-                "font": {
-                  "family": {
-                    "$theme": "/fonts/body/family",
-                    "default": "Calibri"
+            },
+            "children": [
+              {
+                "name": "paragraph",
+                "props": {
+                  "text": {
+                    "$slot": "/label"
                   },
-                  "color": {
-                    "$theme": "/styles/quote/color",
-                    "default": "textSecondary"
-                  }
-                },
-                "spacing": {
-                  "before": 0,
-                  "after": 2
+                  "font": {
+                    "family": {
+                      "$theme": "/fonts/body/family",
+                      "default": "Calibri"
+                    },
+                    "size": {
+                      "$theme": "/styles/label/size",
+                      "default": 9
+                    },
+                    "bold": {
+                      "$theme": "/styles/label/bold",
+                      "default": true
+                    },
+                    "color": {
+                      "$theme": "/styles/label/color",
+                      "default": "textPrimary"
+                    }
+                  },
+                  "spacing": {
+                    "before": 0,
+                    "after": 2
+                  },
+                  "keepNext": true
                 }
-              }
-            }
-          },
-          {
-            "$if": "/source",
-            "then": {
-              "name": "block",
-              "props": {
-                "ref": "source-line",
-                "slots": {
+              },
+              {
+                "name": "paragraph",
+                "props": {
                   "text": {
-                    "$slot": "/source"
+                    "$slot": "/text"
+                  },
+                  "spacing": {
+                    "before": 0,
+                    "after": 0
                   }
                 }
               }
-            }
-          }
-        ]
-      },
-      "figure": {
-        "description": "A numbered image with a caption and an optional source line. The image keeps its own width and alt text; the figure number is a Word SEQ field shared with chart-figure.",
-        "slots": {
-          "image": {
-            "type": "component",
-            "required": true,
-            "description": "An image or visual component. Give it alt text and a width."
-          },
-          "caption": {
-            "type": "string",
-            "required": true,
-            "oneLine": true,
-            "maxWords": 20
-          },
-          "source": {
-            "type": "string",
-            "maxWords": 20,
-            "role": "source"
-          }
-        },
-        "body": [
-          {
-            "$slot": "/image"
-          },
-          {
-            "name": "block",
-            "props": {
-              "ref": "figure-caption",
-              "slots": {
-                "text": {
-                  "$slot": "/caption"
-                }
-              }
-            }
-          },
-          {
-            "$if": "/source",
-            "then": {
-              "name": "block",
-              "props": {
-                "ref": "source-line",
-                "slots": {
-                  "text": {
-                    "$slot": "/source"
-                  }
-                }
-              }
-            }
+            ]
           }
         ]
       },
@@ -1334,23 +1314,28 @@
           }
         ]
       }
+    },
+    "metadata": {
+      "title": "Workforce Plan: Scaling from 240 to 400 Staff",
+      "author": "Workforce Planning Team",
+      "company": "Managing Partners",
+      "date": "8 September 2026"
     }
   },
   "children": [
     {
       "name": "section",
-      "props": {},
       "children": [
         {
           "name": "block",
           "props": {
             "ref": "cover",
             "slots": {
-              "title": "Growth improved as delivery became more reliable",
-              "subtitle": "Quarterly client performance review",
-              "client": "Example client",
-              "date": "September 2026",
-              "confidentiality": "Confidential"
+              "title": "Workforce Plan: Scaling from 240 to 400 Staff",
+              "subtitle": "A Hiring, Retention and Mix-Shift Plan for the Managing Partners",
+              "client": "Managing Partners",
+              "date": "8 September 2026",
+              "confidentiality": "Confidential — Partners Only"
             }
           }
         }
@@ -1358,15 +1343,14 @@
     },
     {
       "name": "section",
-      "props": {},
       "children": [
         {
           "name": "block",
           "props": {
             "ref": "running-head",
             "slots": {
-              "confidentiality": "Confidential",
-              "date": "September 2026"
+              "confidentiality": "Confidential — Partners Only",
+              "date": "8 September 2026"
             }
           }
         },
@@ -1376,7 +1360,8 @@
             "ref": "section-opener",
             "slots": {
               "number": "01",
-              "title": "Delivery improvements supported growth"
+              "title": "Hiring alone will not reach 400 staff",
+              "tracker": "Overview"
             }
           }
         },
@@ -1386,17 +1371,11 @@
             "ref": "key-takeaways",
             "slots": {
               "items": [
-                "Revenue grew as more contracted work reached completion.",
-                "On-time delivery improved following clearer weekly ownership.",
-                "Next quarter should prioritize retention and recurring revenue."
+                "Growing from 240 to 400 staff needs roughly 280 hires against 17% attrition, rising to 26% in the three-to-five-year cohort.",
+                "Hiring at today's pace closes only 62% of the gap; the rest must come from retention and a shift toward junior hiring.",
+                "A targeted retention programme and mix-shift plan close the remaining gap for about £1.1m a year, roughly 5% of current payroll."
               ]
             }
-          }
-        },
-        {
-          "name": "paragraph",
-          "props": {
-            "text": "The report designs above are ordinary JSON definitions in this document. Edit their slots or composition in the playground; the engine has no built-in cover or takeaways implementation."
           }
         },
         {
@@ -1406,54 +1385,35 @@
             "slots": {
               "items": [
                 {
-                  "value": "8.8",
-                  "unit": " €m",
-                  "label": "Revenue year to date",
-                  "delta": "+16.9%",
-                  "trend": "up"
+                  "value": "400",
+                  "label": "Target headcount by year 3",
+                  "unit": ""
                 },
                 {
-                  "value": "94",
-                  "unit": "%",
-                  "label": "Client retention",
-                  "delta": "+2 pts",
-                  "trend": "up"
+                  "value": "17",
+                  "label": "Current blended attrition rate",
+                  "unit": "%"
                 },
                 {
-                  "value": "11",
-                  "unit": " days",
-                  "label": "Median time to deliver",
-                  "delta": "−3 days",
-                  "trend": "down"
+                  "value": "62",
+                  "label": "Share of gap hiring fills",
+                  "unit": "%"
                 }
               ],
-              "source": "Source: quarterly operating review, 2026."
+              "source": "Historic HR and finance data; workforce model, September 2026"
             }
           }
         },
         {
-          "name": "block",
+          "name": "paragraph",
           "props": {
-            "ref": "callout",
-            "slots": {
-              "label": "How to read the deltas",
-              "text": "Deltas compare the first three quarters of 2026 with the same period of 2025. Retention counts contracts renewed within thirty days of their term; late renewals are excluded from both years."
-            }
+            "text": "Attrition already runs at 17% across the firm and rises to 26% among staff with three to five years' tenure — precisely the cohort the practice depends on to staff mid-sized engagements and to backfill outgoing partners. Recruiting at today's pace keeps pace with roughly six in ten of the hires the growth plan needs; the remainder has to come from keeping more of the people we already have, and from hiring a higher share of juniors who can be trained into the gap faster than laterals can be found. This plan sets out both moves together with the headcount bridge and the cost of delivering it."
           }
         }
       ]
     },
     {
       "name": "section",
-      "props": {
-        "page": {
-          "size": "LETTER",
-          "margins": {
-            "left": 720,
-            "right": 720
-          }
-        }
-      },
       "children": [
         {
           "name": "block",
@@ -1461,46 +1421,15 @@
             "ref": "section-opener",
             "slots": {
               "number": "02",
-              "title": "Focus the next quarter on retention"
-            }
-          }
-        },
-        {
-          "name": "block",
-          "props": {
-            "ref": "data-table",
-            "slots": {
-              "title": "Revenue and retention by segment, 2026 to date",
-              "labelHeader": "Segment",
-              "labels": [
-                "Enterprise",
-                "Mid-market",
-                "Public sector",
-                "All segments"
-              ],
-              "columns": [
-                {
-                  "header": "Revenue (€m)",
-                  "cells": ["4.2", "2.7", "1.9", "8.8"]
-                },
-                {
-                  "header": "Growth (%)",
-                  "cells": ["21.0", "14.5", "9.8", "16.9"]
-                },
-                {
-                  "header": "Retention (%)",
-                  "cells": ["96", "93", "91", "94"]
-                }
-              ],
-              "notes": "Growth is year on year on the same nine months. Retention counts contracts renewed within thirty days of their term.",
-              "source": "Source: quarterly operating review, 2026."
+              "title": "Attrition among mid-tenure staff drives the shortfall",
+              "tracker": "Attrition"
             }
           }
         },
         {
           "name": "paragraph",
           "props": {
-            "text": "The inherited running header carries the document title and this section’s page width; the section continues on the page. Page numbers are native Word fields."
+            "text": "Blended attrition of 17% masks a sharper problem inside the pyramid. Staff between their third and fifth year — the consultants and senior consultants who run engagements and mentor juniors — leave at 26% a year, roughly one-and-a-half times the firm average."
           }
         },
         {
@@ -1522,50 +1451,235 @@
                       "text": null
                     },
                     "xAxis": {
-                      "categories": ["Q1", "Q2", "Q3", "Q4"]
+                      "categories": [
+                        "<1 year",
+                        "1–3 years",
+                        "3–5 years",
+                        "5+ years"
+                      ]
                     },
                     "yAxis": {
-                      "min": 0,
                       "title": {
-                        "text": "Revenue (€m)"
+                        "text": "Annual attrition rate (%)"
                       }
-                    },
-                    "legend": {
-                      "enabled": false
                     },
                     "series": [
                       {
-                        "name": "Revenue",
-                        "data": [1.9, 2.4, 2.7, 3.1]
+                        "name": "Attrition rate",
+                        "data": [
+                          10,
+                          15,
+                          26,
+                          12
+                        ]
                       }
-                    ],
-                    "credits": {
-                      "enabled": false
-                    }
+                    ]
                   }
                 }
               },
-              "caption": "Revenue by quarter, 2026",
-              "takeaway": "Each quarter outgrew the last as delivery stabilised; the fourth quarter alone matched the first half of 2025.",
-              "source": "Source: quarterly operating review, 2026."
+              "caption": "Attrition peaks at 26% among staff with three to five years' tenure",
+              "takeaway": "The three-to-five-year cohort leaves at one-and-a-half times the firm average, and it is this group the retention programme must target first.",
+              "source": "Internal HR system, tenure-banded attrition, FY2023–FY2026 average"
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "This is the cohort the growth plan can least afford to lose. Replacing a departing senior consultant typically costs 50–150% of salary in recruitment, onboarding and lost productivity, and every unplanned departure in this band pushes a junior's promotion forward before they are ready, which risks pulling attrition higher still."
+          }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "section-opener",
+            "slots": {
+              "number": "03",
+              "title": "The bridge to 400 needs 280 hires over three years",
+              "tracker": "Bridge"
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Reaching 400 staff by year three means adding a net 160 people on top of replacing everyone attrition takes. Under the recommended plan, retention actions bring blended attrition down from 17% toward 12.5% by year three, and hiring shifts toward junior grades to widen the pool the firm can draw on. The table below sets out the resulting headcount bridge."
+          }
+        },
+        {
+          "name": "block",
+          "props": {
+            "ref": "data-table",
+            "slots": {
+              "title": "Recommended headcount bridge, current staff to 400 by year 3",
+              "labelHeader": "Year",
+              "labels": [
+                "Year 1",
+                "Year 2",
+                "Year 3"
+              ],
+              "columns": [
+                {
+                  "header": "Opening",
+                  "cells": [
+                    "240",
+                    "290",
+                    "345"
+                  ]
+                },
+                {
+                  "header": "Attrition %",
+                  "cells": [
+                    "15.5",
+                    "14.0",
+                    "12.5"
+                  ]
+                },
+                {
+                  "header": "Leavers",
+                  "cells": [
+                    "37",
+                    "41",
+                    "43"
+                  ]
+                },
+                {
+                  "header": "Hires",
+                  "cells": [
+                    "87",
+                    "96",
+                    "98"
+                  ]
+                },
+                {
+                  "header": "Closing",
+                  "cells": [
+                    "290",
+                    "345",
+                    "400"
+                  ]
+                }
+              ],
+              "source": "Workforce model, partners' workforce planning team, September 2026",
+              "notes": "Figures assume the recommended plan: retention actions cut blended attrition from a 17% baseline and hiring shifts toward junior grades. The year 3 closing headcount of 400 includes both external hires and internal promotions."
             }
           }
         },
         {
           "name": "block",
           "props": {
-            "ref": "figure",
+            "ref": "callout",
             "slots": {
-              "image": {
-                "name": "image",
-                "props": {
-                  "path": "media/client-report-blocks/delivery-model.png",
-                  "width": "100%",
-                  "alt": "Four delivery stages in sequence: intake, weekly ownership, delivery and renewal; ownership and delivery are shaded as the stages that changed"
+              "label": "Without the plan",
+              "text": "Hiring at today's pace alone — with attrition unchanged at 17% — reaches only about 341 staff by year three, roughly 59 short of the 400 target. The gap analysis below shows why relying on hiring alone is not enough."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "section-opener",
+            "slots": {
+              "number": "04",
+              "title": "Retention and mix-shift close the gap for 5% more spend",
+              "tracker": "Plan and cost"
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Filling the remaining 38% of the gap needs three moves working together: a retention programme aimed squarely at the three-to-five-year cohort, faster internal promotion so senior roles are filled from within rather than through scarce lateral hires, and a shift in the hiring mix toward junior grades, where the market is deeper and time-to-hire is shorter."
+          }
+        },
+        {
+          "name": "heading",
+          "props": {
+            "text": "Hiring and retention actions",
+            "level": 2
+          }
+        },
+        {
+          "name": "list",
+          "props": {
+            "items": [
+              "Run a retention review for every consultant entering year three, with a compensation and career-path check before, not after, they consider leaving.",
+              "Introduce a retention bonus for the at-risk three-to-five-year cohort, vesting over 18 months, targeted at roughly 85 staff a year.",
+              "Add two senior recruiters and expand agency panels to lift sourcing capacity beyond the current 62% fill rate.",
+              "Shift the graduate and junior intake ratio from roughly 45% to 55% of new hires, backed by a structured 18-month development track.",
+              "Promote from within a year earlier where performance supports it, reducing reliance on scarce lateral senior hires.",
+              "Review workload and staffing on the highest-attrition accounts quarterly, and act on early-warning signals from exit interviews."
+            ]
+          }
+        },
+        {
+          "name": "heading",
+          "props": {
+            "text": "What the plan costs against the current run rate",
+            "level": 2
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Current payroll runs at approximately £20.4m a year for 240 staff, assuming a blended, fully loaded cost of about £85,000 per head. Reaching 400 staff under the recommended mix lifts the run rate to roughly £32m a year by year three — additional payroll expected to be funded by the fee income the extra headcount generates. The retention, recruiting and development plan itself needs about £1.05m a year on top of that, roughly 5% of today's run rate."
+          }
+        },
+        {
+          "name": "block",
+          "props": {
+            "ref": "data-table",
+            "slots": {
+              "title": "Annual cost of the plan, against today's £20.4m payroll run rate",
+              "labelHeader": "Cost item",
+              "labels": [
+                "Retention programme (target cohort)",
+                "Additional recruiting capacity",
+                "Career development and L&D",
+                "Total incremental investment"
+              ],
+              "columns": [
+                {
+                  "header": "£m / year",
+                  "cells": [
+                    "0.35",
+                    "0.45",
+                    "0.25",
+                    "1.05"
+                  ]
+                },
+                {
+                  "header": "% of run rate",
+                  "cells": [
+                    "1.7",
+                    "2.2",
+                    "1.2",
+                    "5.1"
+                  ]
                 }
-              },
-              "caption": "The delivery model, with the two stages that changed this year",
-              "source": "Source: operating handbook, 2026 edition."
+              ],
+              "notes": "Figures are incremental to the current £20.4m payroll run rate (240 FTE at a blended £85k fully loaded cost) and exclude the payroll growth from adding headcount itself, which is expected to be revenue-funded.",
+              "source": "Finance business partner and workforce model, September 2026"
+            }
+          }
+        },
+        {
+          "name": "block",
+          "props": {
+            "ref": "callout",
+            "slots": {
+              "label": "Payroll versus investment",
+              "text": "Growing to 400 staff lifts payroll itself from about £20.4m to about £32m a year — the direct, revenue-funded cost of growth. The £1.05m a year plan cost is separate: it secures the retention and hiring performance the growth depends on."
             }
           }
         },

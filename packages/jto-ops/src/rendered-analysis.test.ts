@@ -508,8 +508,51 @@ describe('analyzeRenderedDocument', () => {
           code: QUALITY_CODES.RENDERED_PAGE_UNDERFILLED,
           path: '/children/2',
           message: expect.stringMatching(/Page 3, the last, is \d+% filled/),
-          suggestion: expect.stringMatching(/notes and sources/),
+          suggestion: expect.stringMatching(/pageBreak/),
           context: expect.objectContaining({ page: 3, kind: 'last-page' }),
+        }),
+      ]);
+    });
+
+    // #408: the notes on a stub last page are painted from source slots
+    // authored in whatever section cited them, so the text that reaches the
+    // page furthest down names a section near the front of the document —
+    // useless to an author told to break a page. A last page belongs to the
+    // section that closes the document.
+    it('lands a stub last page on the closing section, not on the section its notes were cited in', () => {
+      const result = analyzeRenderedDocument({
+        format: 'docx',
+        pages: [
+          { ...dressed([word('Cover', 10, 300)]), ink: ink([3, 100, 277]) },
+          {
+            ...dressed([word('Full', 10, 100)]),
+            ink: ink([3, ...range(5, 250), 277]),
+          },
+          {
+            // The closing section's own heading, then the notes below it.
+            ...dressed([word('Close', 10, 100), word('Notes', 10, 130)]),
+            ink: ink([3, ...range(5, 20), 277]),
+          },
+        ],
+        inventory: [
+          ...chrome,
+          entry('/children/1/children/0/props/text', 'Full'),
+          entry('/children/4/children/0/props/slots/title', 'Close', 'heading'),
+          // The notes list is the /sources context: its pointer is the slot
+          // in section 1 that cited the source, not the closing section, and
+          // it is the text furthest down the page.
+          entry('/children/1/children/2/props/slots/source', 'Notes'),
+        ],
+      });
+      expect(result.findings).toEqual([
+        expect.objectContaining({
+          code: QUALITY_CODES.RENDERED_PAGE_UNDERFILLED,
+          path: '/children/4',
+          context: expect.objectContaining({
+            page: 3,
+            kind: 'last-page',
+            mapping: 'mapped',
+          }),
         }),
       ]);
     });

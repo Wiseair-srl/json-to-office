@@ -174,6 +174,61 @@ const CASES: Case[] = [
     warnings: [],
   },
   {
+    // A table at the top of a page, its label column wrapping and its
+    // figures centred beside the wrap, so each figure sits alone on a row
+    // of nothing but digits inside the top fifth — the band where running
+    // chrome lives and where a bare number is normally the page number.
+    // These are cells; each must keep its own occurrence, and the footer,
+    // which is nothing but the page field, must still take its own row.
+    id: 'numeric-cells-in-the-chrome-band',
+    document: report(
+      [
+        {
+          name: 'section',
+          props: {
+            footer: [{ name: 'paragraph', props: { text: '{PAGE}' } }],
+          },
+          children: [
+            { name: 'heading', props: { text: 'Cost of the plan', level: 1 } },
+            { name: 'paragraph', props: { text: 'Opening line.' } },
+            {
+              name: 'heading',
+              props: { text: 'What the plan costs', level: 2, pageBreak: true },
+            },
+            {
+              name: 'table',
+              props: {
+                width: 100,
+                columns: [
+                  {
+                    width: '60%',
+                    header: cell('Cost item'),
+                    cells: [
+                      'Retention programme for the target cohort across every region we operate in',
+                      'Additional recruiting capacity and tooling for the in-house talent team',
+                    ].map(cell),
+                  },
+                  {
+                    width: '40%',
+                    header: cell('0.35'),
+                    cells: ['0.45', '0.25'].map(cell),
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+      // The house theme centres a cell against a wrapped neighbour, which
+      // is what leaves a figure alone on its row.
+      { theme: 'consulting' }
+    ),
+    labels: {
+      '/children/0/props/footer/0/props/text': { status: 'skipped' },
+    },
+    warnings: [],
+  },
+  {
     id: 'declared-font-that-cannot-load',
     document: report(
       [
