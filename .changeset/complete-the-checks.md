@@ -18,3 +18,5 @@ Complete the design checks: theme and profile consistency in PPTX, the content h
 **Two reference documents were wrong and are fixed.** The report template's LETTER demo section ran 123 characters a line at half-inch margins; its margins are now three-quarters of an inch. The deck cover stretched any logo that was not 18:10; the frame now states a width and lets the height follow the asset, as the report cover already did.
 
 Every new rule names the value it expected and whether the theme, the profile or the asset asked for it, and appears in the generated design guide.
+
+**API.** `@json-to-office/quality` gains the shared implementations the two formats now call: `offScaleFindings`, `sizeCountFinding`, `roleDriftFindings`, `driftingSizes` and `SIZE_TOLERANCE_PT` for type consistency, and `imageAspectFinding` with `DEFAULT_IMAGE_ASPECT_TOLERANCE`. Nothing was removed; the format packs keep the same rule ids, codes and parameters, and `role` is the key on `context` and `evidence.values` in both.
