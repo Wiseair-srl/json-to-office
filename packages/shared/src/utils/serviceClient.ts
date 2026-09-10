@@ -5,8 +5,12 @@
  * JSON body with optional dynamic headers, and normalize transport errors — with
  * a request timeout so a wedged service can't hang the render forever, and a
  * bounded retry so one blip does not cost a whole document.
- * Callers decode the response body themselves (highcharts returns base64 text,
- * visual returns JSON), so this returns the raw Response on success.
+ *
+ * The caller says how to read the body (`decode`: highcharts returns base64
+ * text, visual returns JSON) rather than receiving the Response, because the
+ * timeout has to cover the body too. A service that sends its headers and then
+ * stalls the stream is the same outage as one that never answers, and a
+ * Response handed back after the abort was disarmed would hang on the read.
  */
 
 export type ServiceHeaders =
@@ -42,7 +46,7 @@ export function resolveServiceUrl(
   return withScheme.replace(/\/+$/, '');
 }
 
-export interface PostJsonOptions {
+export interface PostJsonOptions<T> {
   /** Resolved base URL (use resolveServiceUrl). */
   url: string;
   /** Path appended to the base URL, e.g. '/export' or '/rasterize'. */
@@ -63,6 +67,8 @@ export interface PostJsonOptions {
   serviceLabel: string;
   /** Message builder for a connection failure (distinct from a timeout). */
   onUnreachable: (url: string, cause: string) => string;
+  /** Read the 2xx body. Runs while the abort is still armed. */
+  decode: (response: Response) => Promise<T>;
 }
 
 /**
@@ -116,35 +122,48 @@ function backoffMs(attempt: number, baseDelayMs: number): number {
   return Math.round(ceiling * (0.5 + Math.random() * 0.5));
 }
 
-async function attemptPost(
-  opts: PostJsonOptions,
-  headers: Record<string, string>,
+/**
+ * A service that did not answer, whether it refused the connection, timed out,
+ * or broke off mid-body. One shape for all three, because the caller's choice
+ * — fall back, retry, report the outage — is the same for all three.
+ */
+function transportFailure(
+  error: unknown,
+  opts: PostJsonOptions<unknown>,
   timeoutMs: number
-): Promise<Response> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+): Error {
+  if ((error as Error)?.name === 'AbortError') {
+    return serviceUnavailable(
+      `${opts.serviceLabel} timed out after ${timeoutMs}ms at ${opts.url}.`
+    );
+  }
+  const cause = error instanceof Error ? error.message : String(error);
+  return serviceUnavailable(opts.onUnreachable(opts.url, cause));
+}
 
+/** One request/response exchange, from connection to decoded body. */
+async function exchange<T>(
+  opts: PostJsonOptions<T>,
+  headers: Record<string, string>,
+  signal: AbortSignal,
+  timeoutMs: number
+): Promise<T> {
   let response: Response;
   try {
     response = await fetch(`${opts.url}${opts.path}`, {
       method: 'POST',
       headers,
       body: JSON.stringify(opts.body),
-      signal: controller.signal,
+      signal,
     });
   } catch (error) {
-    if ((error as Error)?.name === 'AbortError') {
-      throw serviceUnavailable(
-        `${opts.serviceLabel} timed out after ${timeoutMs}ms at ${opts.url}.`
-      );
-    }
-    const cause = error instanceof Error ? error.message : String(error);
-    throw serviceUnavailable(opts.onUnreachable(opts.url, cause));
-  } finally {
-    clearTimeout(timer);
+    throw transportFailure(error, opts, timeoutMs);
   }
 
   if (!response.ok) {
+    // Nothing here will read a failed body, and an undrained one holds its
+    // connection open — which a document's worth of failures would exhaust.
+    await response.body?.cancel().catch(() => undefined);
     // `status` is what the retry decision reads; the message stays the one
     // every existing caller matches on.
     throw Object.assign(
@@ -154,17 +173,39 @@ async function attemptPost(
       { status: response.status }
     );
   }
-  return response;
+
+  try {
+    return await opts.decode(response);
+  } catch (error) {
+    throw transportFailure(error, opts, timeoutMs);
+  }
+}
+
+async function attemptPost<T>(
+  opts: PostJsonOptions<T>,
+  headers: Record<string, string>,
+  timeoutMs: number
+): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await exchange(opts, headers, controller.signal, timeoutMs);
+  } finally {
+    // Only once the body has been read: disarming at the headers would leave
+    // a stalled stream with nothing to interrupt it.
+    clearTimeout(timer);
+  }
 }
 
 /**
- * POST a JSON body to `${url}${path}` with a timeout, retrying a service that
- * was busy or restarting. Returns the Response on a 2xx; throws a normalized
- * Error on timeout, connection failure, or non-2xx.
+ * POST a JSON body to `${url}${path}` and return the decoded 2xx body, under
+ * one timeout covering the whole exchange and retrying a service that was
+ * busy or restarting. Throws a normalized Error on timeout, connection
+ * failure, a body that broke off, or a non-2xx.
  */
-export async function postJsonToService(
-  opts: PostJsonOptions
-): Promise<Response> {
+export async function postJsonToService<T>(
+  opts: PostJsonOptions<T>
+): Promise<T> {
   const resolvedHeaders =
     typeof opts.headers === 'function'
       ? await opts.headers(opts.body)

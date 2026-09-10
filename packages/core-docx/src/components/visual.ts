@@ -234,7 +234,10 @@ export async function rasterizeVisualSlide(
     DEFAULT_RASTERIZE_SERVER_URL
   );
 
-  const response = await postJsonToService({
+  // Read the body inside the client (bounded by its timeout), parse outside:
+  // parsing is CPU, and doing it here keeps the "non-JSON response" message
+  // instead of dissolving it into a generic transport failure.
+  const body = await postJsonToService({
     url: serverUrl,
     path: '/rasterize',
     body: {
@@ -249,11 +252,12 @@ export async function rasterizeVisualSlide(
       `PPTX rasterization service is not reachable at ${url}. ` +
       'Configure services.pptx with a `render` callback or a running `serverUrl`.\n' +
       `Cause: ${cause}`,
+    decode: (response) => response.text(),
   });
 
   let result: PptxRasterizeResult;
   try {
-    result = (await response.json()) as PptxRasterizeResult;
+    result = JSON.parse(body) as PptxRasterizeResult;
   } catch {
     throw new Error(
       'PPTX rasterization service returned a non-JSON response (expected { base64DataUri, width, height }).'

@@ -60,17 +60,33 @@ async function desugar(
   })) as { children: Array<{ name: string; props: Record<string, unknown> }> };
 }
 
+/**
+ * A fake 2xx Response. The service client reads the body as text and parses it
+ * itself, so a stub that only answers `json()` is not a Response the client
+ * can use — which is the point of routing every mock through here.
+ */
+function jsonResponse(value: unknown): {
+  ok: true;
+  json: () => Promise<unknown>;
+  text: () => Promise<string>;
+} {
+  return {
+    ok: true,
+    json: async () => value,
+    text: async () => JSON.stringify(value),
+  };
+}
+
 describe('components/visual', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: vi.fn().mockResolvedValue({
+    mockFetch.mockResolvedValue(
+      jsonResponse({
         base64DataUri: PNG_DATA_URI,
         width: 1200,
         height: 800,
-      }),
-    });
+      })
+    );
   });
 
   afterEach(() => {

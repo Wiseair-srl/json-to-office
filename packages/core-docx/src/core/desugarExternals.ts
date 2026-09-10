@@ -16,7 +16,7 @@
 import {
   clampVisualDpi,
   DEFAULT_VISUAL_DPI,
-  limitChartRequest,
+  recordChartCollected,
   type RasterizeFontFace,
   type ServicesConfig,
   type GenerationWarning,
@@ -36,7 +36,6 @@ import {
   visualToImageProps,
 } from '../components/visual';
 import {
-  effectiveChartServerUrl,
   renderChartToImageProps,
   type ChartCache,
 } from '../components/highcharts';
@@ -109,26 +108,20 @@ export async function desugarExternals<T>(
     }
 
     if (node.name === 'highcharts') {
-      const props = node.props as HighchartsProps;
-      const chartConfig = options.services?.highcharts;
+      recordChartCollected();
       // The walk resolves sibling components with `Promise.all`, so every
       // chart in the document would otherwise be posted at the same instant.
-      // The gate is keyed by the server this chart is bound for, and lives
-      // outside this call, so the cap holds across concurrent documents too.
+      // What paces them is the gate around the service call itself (see
+      // `sendChartRequest`), not anything here: the walk stays a walk.
       return withNodeIdentity(node, {
         name: 'image',
-        props: await limitChartRequest(
-          effectiveChartServerUrl(props, chartConfig),
-          chartConfig?.concurrency,
-          () =>
-            renderChartToImageProps(
-              props,
-              options.theme,
-              chartConfig,
-              options.chartFonts,
-              options.warnings,
-              chartCache
-            )
+        props: await renderChartToImageProps(
+          node.props as HighchartsProps,
+          options.theme,
+          options.services?.highcharts,
+          options.chartFonts,
+          options.warnings,
+          chartCache
         ),
       });
     }
