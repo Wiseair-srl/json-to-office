@@ -13,6 +13,23 @@ const PNG = 'data:image/png;base64,AAAA';
 
 const okResult = { base64DataUri: PNG, width: 960, height: 640 };
 
+/**
+ * A fake 2xx Response. The service client reads the body as text and parses it
+ * itself, so a stub that only answers `json()` is not a Response the client
+ * can use — which is the point of routing every mock through here.
+ */
+function jsonResponse(value: unknown): {
+  ok: true;
+  json: () => Promise<unknown>;
+  text: () => Promise<string>;
+} {
+  return {
+    ok: true,
+    json: async () => value,
+    text: async () => JSON.stringify(value),
+  };
+}
+
 const visual = (text: string, extra: Record<string, unknown> = {}) => ({
   name: 'visual',
   props: {
@@ -213,7 +230,7 @@ describe('prerasterizeVisuals (in-process batch)', () => {
     const renderBatch = vi.fn(async () => {
       throw new Error('batch exploded');
     });
-    mockFetch.mockResolvedValue({ ok: true, json: async () => okResult });
+    mockFetch.mockResolvedValue(jsonResponse(okResult));
     const doc = [visual('a')];
 
     const map = await prerasterizeVisuals(doc, {
@@ -265,15 +282,14 @@ describe('prerasterizeVisuals (in-process single render)', () => {
 
 describe('prerasterizeVisuals (HTTP)', () => {
   it('POSTs one /rasterize/batch request and seeds the map', async () => {
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({
+    mockFetch.mockResolvedValue(
+      jsonResponse({
         results: [
           { ok: true, ...okResult },
           { ok: true, ...okResult },
         ],
-      }),
-    });
+      })
+    );
     const doc = [visual('a'), visual('b')];
 
     const map = await prerasterizeVisuals(doc, {
@@ -293,7 +309,7 @@ describe('prerasterizeVisuals (HTTP)', () => {
       if (url.endsWith('/rasterize/batch')) {
         return { ok: false, status: 404, statusText: 'Not Found' };
       }
-      return { ok: true, json: async () => okResult };
+      return jsonResponse(okResult);
     });
     const doc = [visual('a'), visual('b')];
 
@@ -311,10 +327,9 @@ describe('prerasterizeVisuals (HTTP)', () => {
   });
 
   it('leaves visuals with a per-visual serverUrl override to the render-time path', async () => {
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({ results: [{ ok: true, ...okResult }] }),
-    });
+    mockFetch.mockResolvedValue(
+      jsonResponse({ results: [{ ok: true, ...okResult }] })
+    );
     const doc = [
       visual('default-server'),
       visual('other', { serverUrl: 'http://other:1' }),
@@ -367,10 +382,9 @@ describe('font forwarding (Area 6)', () => {
   });
 
   it('puts fonts at the REQUEST level of the HTTP batch body', async () => {
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({ results: [{ ok: true, ...okResult }] }),
-    });
+    mockFetch.mockResolvedValue(
+      jsonResponse({ results: [{ ok: true, ...okResult }] })
+    );
     await prerasterizeVisuals(
       [visual('a')],
       { serverUrl: 'http://svc:9000' },
@@ -407,10 +421,7 @@ describe('font forwarding (Area 6)', () => {
     mockFetch.mockImplementation(async (_url: string, init: any) => {
       const body = JSON.parse(init.body);
       if (body.fonts) return { ok: false, status: 400, text: async () => 'no' };
-      return {
-        ok: true,
-        json: async () => ({ results: [{ ok: true, ...okResult }] }),
-      };
+      return jsonResponse({ results: [{ ok: true, ...okResult }] });
     });
 
     const doc = [visual('a')];
@@ -433,24 +444,19 @@ describe('font forwarding (Area 6)', () => {
     // that retry succeeding latched `fontsRejected` for the REST of the
     // document — every later visual silently rendered with the wrong fonts.
     // Only a 400 (what additionalProperties:false produces) may latch.
-    // The service client retries a 5xx (2 retries), so the first chunk has to
-    // exhaust that budget before it gives up and falls back to per-visual.
     let batchCalls = 0;
     mockFetch.mockImplementation(async (url: string, init: any) => {
       const body = JSON.parse(init.body);
       if (url.endsWith('/rasterize/batch')) {
         batchCalls++;
-        if (batchCalls <= 3) {
+        if (batchCalls === 1) {
           return { ok: false, status: 503, statusText: 'Service Unavailable' };
         }
-        return {
-          ok: true,
-          json: async () => ({
-            results: body.slides.map(() => ({ ok: true, ...okResult })),
-          }),
-        };
+        return jsonResponse({
+          results: body.slides.map(() => ({ ok: true, ...okResult })),
+        });
       }
-      return { ok: true, json: async () => okResult };
+      return jsonResponse(okResult);
     });
 
     // 33 visuals → two chunks, so the second chunk observes the latch.
@@ -464,13 +470,11 @@ describe('font forwarding (Area 6)', () => {
     const batchBodies = mockFetch.mock.calls
       .filter((c) => (c[0] as string).endsWith('/rasterize/batch'))
       .map((c) => JSON.parse(c[1].body));
-    // A 5xx is not evidence about the body: no fontless batch retry at all,
-    // only the client's three plain attempts on the first chunk plus the
-    // second chunk's own.
-    expect(batchBodies).toHaveLength(4);
-    expect(batchBodies.every((b) => b.fonts)).toBe(true);
+    // A 5xx is not evidence about the body: no fontless batch retry at all.
+    // Nor a plain one — the per-visual fallback is this call's retry.
+    expect(batchBodies).toHaveLength(2);
     // The second chunk must still carry the document's fonts.
-    expect(batchBodies[3].fonts).toEqual(fonts);
+    expect(batchBodies[1].fonts).toEqual(fonts);
     // …and so must the per-visual fallback the failed first chunk took.
     const perVisual = mockFetch.mock.calls.filter(
       (c) => c[0] === 'http://flaky:9000/rasterize'
@@ -492,7 +496,7 @@ describe('font forwarding (Area 6)', () => {
       if (JSON.parse(init.body).fonts) {
         return { ok: false, status: 400, statusText: 'Bad Request' };
       }
-      return { ok: true, json: async () => okResult };
+      return jsonResponse(okResult);
     });
 
     const doc = [visual('a'), visual('b')];

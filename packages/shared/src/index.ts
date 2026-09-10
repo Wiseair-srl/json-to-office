@@ -201,14 +201,14 @@ export {
 export { createLimiter } from './utils/promiseLimiter';
 export {
   DEFAULT_CHART_CONCURRENCY,
-  chartRequestKey,
-  dedupeChartRequest,
   getChartRequestStats,
-  limitChartRequest,
+  recordChartCollected,
   recordChartRetry,
   resetChartLimiters,
   resetChartRequestStats,
+  sendChartRequest,
   type ChartRenderCache,
+  type ChartRequest,
   type ChartRequestStats,
 } from './utils/chartRequests';
 

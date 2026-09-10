@@ -16,4 +16,4 @@ New `services.highcharts` options, all optional and all defaulting to the previo
 - `timeoutMs` (default `30000`, previously hard-coded)
 - `retries` (default `2`)
 
-The pptx chart path now uses the same HTTP client as docx, so it finally has a request timeout; its `SERVICE_UNAVAILABLE` code and message are unchanged. `getChartRequestStats()` / `resetChartRequestStats()` report charts collected, unique requests, retries spent and peak in-flight. The `W_HIGHCHARTS_REMOTE_EXPORT` notice is now recorded once per export server rather than once per chart.
+The pptx chart path now uses the same HTTP client as docx, so it finally has a request timeout; its `SERVICE_UNAVAILABLE` code and message are unchanged. That timeout now covers reading the response body as well as receiving its headers, so a service that answers and then stalls its stream is reported as the outage it is rather than hanging the render. `getChartRequestStats()` / `resetChartRequestStats()` report charts collected, unique requests, retries spent and peak in-flight. The `W_HIGHCHARTS_REMOTE_EXPORT` notice is now recorded once per export server rather than once per chart.

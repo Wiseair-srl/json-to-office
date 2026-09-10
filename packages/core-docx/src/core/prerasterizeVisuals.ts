@@ -414,9 +414,9 @@ export async function prerasterizeVisuals(
     chunk: VisualRasterTarget[],
     fonts: readonly RasterizeFontFace[] | undefined
   ): Promise<BatchOutcome> => {
-    let response: Response;
+    let body: string;
     try {
-      response = await postJsonToService({
+      body = await postJsonToService({
         url: serverUrl,
         path: '/rasterize/batch',
         body: {
@@ -430,9 +430,16 @@ export async function prerasterizeVisuals(
         headers: serviceConfig?.headers,
         timeoutMs:
           BATCH_TIMEOUT_BASE_MS + BATCH_TIMEOUT_PER_SLIDE_MS * chunk.length,
+        // The per-visual fallback below IS this call's retry, and a better
+        // one: it degrades to smaller work instead of repeating the same
+        // large request. Retrying here first would spend three full batch
+        // timeouts — up to seventeen minutes on a 32-slide chunk — before
+        // the fallback that was going to run anyway gets its turn.
+        retries: 0,
         serviceLabel: 'PPTX batch rasterization service',
         onUnreachable: (url, cause) =>
           `PPTX rasterization service is not reachable at ${url}. Cause: ${cause}`,
+        decode: (response) => response.text(),
       });
     } catch (error) {
       // A 400 means the server rejected the body we sent; anything else
@@ -440,7 +447,7 @@ export async function prerasterizeVisuals(
       return { applied: false, schemaRejected: isSchemaRejection(error) };
     }
     try {
-      if (applyBatchResponse(chunk, await response.json(), map)) {
+      if (applyBatchResponse(chunk, JSON.parse(body), map)) {
         return { applied: true };
       }
     } catch {

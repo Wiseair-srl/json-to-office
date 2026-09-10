@@ -26,9 +26,8 @@ import {
   type ChartTypography,
   resolveServiceUrl,
   postJsonToService,
-  chartRequestKey,
-  dedupeChartRequest,
   recordChartRetry,
+  sendChartRequest,
   type ChartRenderCache,
   type HighchartsServiceConfig,
   type RasterizeFontFace,
@@ -130,11 +129,13 @@ async function generateChart(
     ...(config.resources ? { resources: config.resources } : {}),
   };
 
-  return dedupeChartRequest(
+  return sendChartRequest({
     cache,
-    chartRequestKey(serverUrl, requestBody),
-    () => postChart(serverUrl, requestBody, config, servicesConfig)
-  );
+    serverUrl,
+    concurrency: servicesConfig?.concurrency,
+    requestBody,
+    send: () => postChart(serverUrl, requestBody, config, servicesConfig),
+  });
 }
 
 async function postChart(
@@ -143,7 +144,7 @@ async function postChart(
   config: HighchartsProps,
   servicesConfig: HighchartsServiceConfig | undefined
 ): Promise<ChartGenerationResult> {
-  const response = await postJsonToService({
+  const base64Data = await postJsonToService({
     url: serverUrl,
     path: '/export',
     body: requestBody,
@@ -156,17 +157,13 @@ async function postChart(
       `Highcharts Export Server is not running at ${url}. ` +
       'Start it with: npx highcharts-export-server --enableServer true\n' +
       `Cause: ${cause}`,
+    decode: (response) => response.text(),
   });
 
-  const base64Data = await response.text();
-  const base64DataUri = `data:image/png;base64,${base64Data}`;
-  const width = config.options.chart.width;
-  const height = config.options.chart.height;
-
   return {
-    base64DataUri,
-    width,
-    height,
+    base64DataUri: `data:image/png;base64,${base64Data}`,
+    width: config.options.chart.width,
+    height: config.options.chart.height,
   };
 }
 

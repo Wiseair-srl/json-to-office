@@ -1346,6 +1346,32 @@ describe('what the host can dial', () => {
     ).rejects.toThrow(/timed out after 20ms/);
   });
 
+  it('aborts a body that stalls after the headers arrive', async () => {
+    // The abort used to be disarmed as soon as the headers landed, so a
+    // service that answered 200 and then stalled the stream hung the render
+    // for good — the exact failure the timeout is there to prevent.
+    mockFetch.mockImplementation(
+      async (_url: string, init: { signal: AbortSignal }) => ({
+        ok: true,
+        text: () =>
+          new Promise((_resolve, reject) => {
+            init.signal.addEventListener('abort', () =>
+              reject(
+                Object.assign(new Error('aborted'), { name: 'AbortError' })
+              )
+            );
+          }),
+      })
+    );
+
+    await expect(
+      renderChartToImageProps(chart as never, createMockTheme(), {
+        timeoutMs: 20,
+        retries: 0,
+      })
+    ).rejects.toThrow(/timed out after 20ms/);
+  });
+
   it('takes the retry budget from the config', async () => {
     mockFetch.mockRejectedValue(new Error('ECONNREFUSED'));
 
@@ -1398,6 +1424,45 @@ describe('rendering a repeated chart once', () => {
         props: { base64: 'data:image/png;base64,AA==' },
       });
     }
+  });
+
+  it('does not let repeats of one chart occupy the gate', async () => {
+    // A duplicate has no request to make, so it must not hold a slot a chart
+    // with real work could use. Three distinct charts behind forty copies of
+    // one figure: all four renders must be able to run together, which they
+    // cannot if the copies are queuing.
+    let inFlight = 0;
+    let peak = 0;
+    mockFetch.mockImplementation(async () => {
+      inFlight++;
+      peak = Math.max(peak, inFlight);
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      inFlight--;
+      return { ok: true, text: async () => 'AA==' };
+    });
+
+    await desugarExternals(
+      {
+        name: 'docx',
+        props: {},
+        children: [
+          ...Array.from({ length: 40 }, () => ({
+            name: 'highcharts',
+            props: chartProps([1, 2, 3]),
+          })),
+          ...Array.from({ length: 3 }, (_, index) => ({
+            name: 'highcharts',
+            props: chartProps([index + 10, index + 11]),
+          })),
+        ],
+      },
+      { theme: createMockTheme() }
+    );
+
+    // One render for the forty repeats plus three distinct ones, all four in
+    // flight at once. Queue the copies instead and the peak drops to three.
+    expect(mockFetch).toHaveBeenCalledTimes(4);
+    expect(peak).toBe(4);
   });
 
   it('keeps charts that differ apart', async () => {
