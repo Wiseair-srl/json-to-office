@@ -36,6 +36,7 @@ import type {
   ProcessedPresentation,
   TextStyle,
 } from '../types';
+import probe from 'probe-image-size';
 import { resolveColor } from '../utils/color';
 import { resolveGridPosition } from '../core/grid';
 import { resolveThemeContext } from '../core/generationContext';
@@ -56,6 +57,11 @@ export interface PptxCanvasFact extends QualityFact {
   kind: 'pptx/canvas';
   widthIn?: number;
   heightIn?: number;
+  /** The canvas the deck actually renders on, after the renderer's defaults. */
+  widthPt: number;
+  heightPt: number;
+  /** The theme's safe area for this canvas, where it declares one. */
+  safeAreaPt?: number;
 }
 
 export interface PptxTextFact extends QualityFact {
@@ -102,6 +108,31 @@ export interface PptxTextFact extends QualityFact {
 export interface PptxSlideFact extends QualityFact {
   kind: 'pptx/slide';
   bodyWords: number;
+  /** Boxes that carry content: text, tables, charts, images — chrome aside. */
+  contentBoxes: number;
+}
+
+/**
+ * A run of bullets in one box: what the audience is asked to read at once.
+ * `items` counts the bulleted paragraphs, `longestWords` the wordiest.
+ */
+export interface PptxBulletsFact extends QualityFact {
+  kind: 'pptx/bullets';
+  slidePath: string;
+  items: number;
+  longestWords: number;
+}
+
+/**
+ * A drawn image and what is known about the asset behind it. `naturalRatio`
+ * is present only when the asset could be read from the document itself — a
+ * base64 data URI; a `path` is resolved at generation, not here.
+ */
+export interface PptxImageFact extends QualityFact {
+  kind: 'pptx/image';
+  alt?: string;
+  drawnRatio?: number;
+  naturalRatio?: number;
 }
 
 /** A box drawn on a slide, in draw order — the input to the overlap rule. */
@@ -224,6 +255,8 @@ export type PptxQualityFact =
   | PptxPlaceholderFact
   | PptxBoxFact
   | PptxThemeFact
+  | PptxBulletsFact
+  | PptxImageFact
   | PptxColorFact
   | PptxFontFact
   | PptxChartFact
@@ -386,6 +419,52 @@ function horizontalAlign(props: Rec, ctx: ThemeContext): PptxTextFact['align'] {
   return styled && HORIZONTAL_ALIGNMENTS.has(styled)
     ? (styled as PptxTextFact['align'])
     : 'left';
+}
+
+/**
+ * The bulleted paragraphs of one box. A box bullets either as a whole — the
+ * component says `bullet` and its lines are the items — or run by run, where
+ * each run that asks for a bullet is one. Anything else is prose.
+ */
+function bulletItems(props: Rec): string[] {
+  const runs = Array.isArray(props.runs) ? props.runs : undefined;
+  const whole = props.bullet !== undefined && props.bullet !== false;
+  if (runs) {
+    const bulleted = runs
+      .map(asRecord)
+      .filter(
+        (run): run is Rec =>
+          run !== undefined &&
+          (whole || (run.bullet !== undefined && run.bullet !== false))
+      )
+      .map((run) => (typeof run.text === 'string' ? run.text : ''));
+    return bulleted.filter((item) => item.trim() !== '');
+  }
+  if (!whole || typeof props.text !== 'string') return [];
+  return props.text.split('\n').filter((line) => line.trim() !== '');
+}
+
+/**
+ * The asset's own aspect, where the document carries it: a base64 data URI.
+ * A `path` is resolved against a base directory at generation time and is
+ * deliberately not opened here.
+ */
+function readablePptxRatio(props: Rec): number | undefined {
+  const source =
+    typeof props.base64 === 'string'
+      ? props.base64
+      : typeof props.path === 'string' && props.path.startsWith('data:')
+        ? props.path
+        : undefined;
+  if (source === undefined) return undefined;
+  const comma = source.indexOf(',');
+  if (comma < 0) return undefined;
+  try {
+    const size = probe.sync(Buffer.from(source.slice(comma + 1), 'base64'));
+    return size && size.height > 0 ? size.width / size.height : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function themeContext(theme: PptxThemeConfig): ThemeContext {
@@ -1206,12 +1285,67 @@ function addSlideFacts(
     });
   });
 
+  const CHROME_STYLES = new Set(['footer', 'tracker', 'source', 'caption']);
   addFact({
     id: `pptx:slide:${renderedIndex}:${slidePath}`,
     kind: 'pptx/slide',
     path: slidePath,
     bodyWords,
+    contentBoxes: boxes.filter(
+      (box) =>
+        ['text', 'shape', 'table', 'chart', 'highcharts', 'image'].includes(
+          box.componentName
+        ) && !CHROME_STYLES.has(String((box.props as Rec).style ?? ''))
+    ).length,
   });
+
+  // What the audience is asked to read at once, and what the document says
+  // the pictures are. Both come off the same box walk the geometry uses.
+  for (const box of boxes) {
+    if (box.componentName === 'image') {
+      const resolved = resolveBox(box.props, grid, slideWidthIn, slideHeightIn);
+      const alt = box.props.alt;
+      const natural = readablePptxRatio(box.props);
+      // The compiler stretches an image to its box only when the author
+      // states both sides and asks for no fitting: with one side stated the
+      // other follows the asset, and `contain`/`cover` fit it to the box. In
+      // both of those the box is not the shape the image is painted at.
+      // Read from the authored node, not the processed one: a frame resolves
+      // a child's missing side before this walk sees it, and an image the
+      // author gave one side to is not an image the author stretched.
+      const authored = authoredPropsAt(box.path) ?? box.props;
+      const stretched =
+        authored.w !== undefined &&
+        authored.h !== undefined &&
+        !['contain', 'cover'].includes(
+          String(asRecord(authored.sizing)?.type ?? '')
+        );
+      addFact({
+        id: `pptx:image:${renderedIndex}:${box.path}`,
+        kind: 'pptx/image',
+        path: box.path,
+        ...(typeof alt === 'string' && alt.trim() !== '' && { alt }),
+        ...(stretched &&
+          isCompleteBox(resolved) &&
+          resolved.heightPt > 0 && {
+            drawnRatio: resolved.widthPt / resolved.heightPt,
+          }),
+        ...(natural !== undefined && { naturalRatio: natural }),
+      });
+    }
+    const bullets = bulletItems(box.props);
+    if (bullets.length > 1)
+      addFact({
+        id: `pptx:bullets:${renderedIndex}:${box.path}`,
+        kind: 'pptx/bullets',
+        path: box.path,
+        slidePath,
+        items: bullets.length,
+        longestWords: Math.max(
+          ...bullets.map((item) => item.split(/\s+/).filter(Boolean).length)
+        ),
+      });
+  }
 }
 
 export function preparePptxQualityDocument(
@@ -1244,17 +1378,6 @@ export function preparePptxQualityDocument(
   };
 
   const props = asRecord(document.props) ?? {};
-  addFact({
-    id: 'pptx:canvas',
-    kind: 'pptx/canvas',
-    path: '/props',
-    ...(asNumber(props.slideWidth) !== undefined && {
-      widthIn: asNumber(props.slideWidth),
-    }),
-    ...(asNumber(props.slideHeight) !== undefined && {
-      heightIn: asNumber(props.slideHeight),
-    }),
-  });
 
   // Over the authored tree, before any theme or template resolution: a marker
   // has to be reported where the author can patch it out.
@@ -1305,6 +1428,28 @@ export function preparePptxQualityDocument(
     warnings,
   });
   const ctx = themeContext(processed.theme);
+  const safeAreaIn = asNumber(
+    processed.theme.spacing?.canvas?.[
+      designCanvas('pptx', {
+        width: processed.slideWidth,
+        height: processed.slideHeight,
+      })
+    ]?.safeAreaIn
+  );
+  addFact({
+    id: 'pptx:canvas',
+    kind: 'pptx/canvas',
+    path: '/props',
+    ...(asNumber(props.slideWidth) !== undefined && {
+      widthIn: asNumber(props.slideWidth),
+    }),
+    ...(asNumber(props.slideHeight) !== undefined && {
+      heightIn: asNumber(props.slideHeight),
+    }),
+    widthPt: processed.slideWidth * 72,
+    heightPt: processed.slideHeight * 72,
+    ...(safeAreaIn !== undefined && { safeAreaPt: safeAreaIn * 72 }),
+  });
 
   const paletteHexes: Record<string, string> = {};
   const visualColors = designColors(

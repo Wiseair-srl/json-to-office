@@ -50,7 +50,9 @@ import {
 import { resolveFontSize } from '../styles/utils/styleHelpers';
 import { getThemeStyles } from '../themes/defaults';
 import { relativeLengthToTwips } from '../utils/widthUtils';
+import probe from 'probe-image-size';
 import { collectDocxTextInventory, type DocxTextFact } from './text-inventory';
+import { estimateTextWidthPt } from './text-metrics';
 
 type Rec = Record<string, unknown>;
 
@@ -115,6 +117,14 @@ export interface DocxHeadingFact extends QualityFact {
   kind: 'docx/heading';
   level: number;
   previousLevel?: number;
+  /**
+   * Whether the heading is bound to what follows it, from its own prop or
+   * from the style the theme gives its level. Word breaks a page between an
+   * unbound heading and its first paragraph without a second thought.
+   */
+  keepNext: boolean;
+  /** The heading node itself; `path` addresses its level, which the outline rule patches. */
+  headingPath: string;
 }
 
 /**
@@ -302,8 +312,64 @@ export interface DocxSectionChromeFact extends QualityFact {
   pageNumber: boolean;
 }
 
+/**
+ * What a top-level section holds once blocks have expanded: whether anything
+ * reaches the page at all, and whether a heading opens it. A profile decides
+ * whether either is required; the theme never does.
+ */
+export interface DocxSectionFact extends QualityFact {
+  kind: 'docx/section';
+  index: number;
+  /** Paragraphs, list items, table cells, captions — text a reader sees. */
+  words: number;
+  /** Figures a section carries without words: a chart, a table, an image. */
+  exhibits: number;
+  headings: number;
+}
+
+/**
+ * The document's outline as a whole: how many headings it carries and whether
+ * it offers a table of contents to reach them by.
+ */
+export interface DocxOutlineFact extends QualityFact {
+  kind: 'docx/outline';
+  headings: number;
+  contents: boolean;
+}
+
+/**
+ * A drawn image and what is known about the asset behind it. `naturalRatio`
+ * is present only when the asset could be read where it stands — a data URI
+ * or inline SVG markup. A path is resolved at generation, not here, so a
+ * distorted file-backed image is the rendered pass's to catch.
+ */
+export interface DocxImageFact extends QualityFact {
+  kind: 'docx/image';
+  alt?: string;
+  /** Whether a caption paragraph follows the image in reading order. */
+  captioned: boolean;
+  drawnRatio?: number;
+  naturalRatio?: number;
+}
+
+/**
+ * How wide a line of body copy runs, in characters. The measure is the
+ * section's usable width; the characters are what the body face fits in it.
+ */
+export interface DocxMeasureFact extends QualityFact {
+  kind: 'docx/measure';
+  index: number;
+  charactersPerLine: number;
+  widthTwips: number;
+  fontSizePt: number;
+}
+
 export type DocxQualityFact =
   | DocxTextFact
+  | DocxSectionFact
+  | DocxOutlineFact
+  | DocxImageFact
+  | DocxMeasureFact
   | DocxChromeSlotFact
   | DocxSectionChromeFact
   | DocxTableWidthFact
@@ -1512,6 +1578,23 @@ export function prepareDocxQualityDocument(
 
     if (node.name === 'image' || node.name === 'visual') {
       for (const fact of svgTextFacts(props, path)) addFact(fact);
+      const drawn = drawnRatio(props);
+      const natural = readableRatio(props);
+      addFact({
+        id: `docx:image:${path}`,
+        kind: 'docx/image',
+        path,
+        ...(typeof props.alt === 'string' &&
+          props.alt.trim() !== '' && { alt: props.alt }),
+        captioned: facts.some(
+          (fact) =>
+            fact.kind === 'docx/text' &&
+            (fact as DocxTextFact).role === 'caption' &&
+            siblingOf(fact.path) === siblingOf(authoredPath(path))
+        ),
+        ...(drawn !== undefined && { drawnRatio: drawn }),
+        ...(natural !== undefined && { naturalRatio: natural }),
+      });
     }
 
     if (node.name === 'heading') {
@@ -1519,11 +1602,18 @@ export function prepareDocxQualityDocument(
         typeof props.level === 'number' && Number.isFinite(props.level)
           ? props.level
           : 1;
+      const styleKeepNext = asRecord(
+        typography.styles[`heading${level}`]
+      )?.keepNext;
       addFact({
         id: `docx:heading:${path}`,
         kind: 'docx/heading',
         path: `${path}/props/level`,
         level,
+        keepNext:
+          props.keepNext === true ||
+          (props.keepNext === undefined && styleKeepNext === true),
+        headingPath: path,
         ...(previousHeadingLevel !== undefined && {
           previousLevel: previousHeadingLevel,
         }),
@@ -1544,6 +1634,81 @@ export function prepareDocxQualityDocument(
         ? pageBox(resolved.theme, context.themeName, rec.props?.page)
         : basePage;
     walkActive(component, `/children/${index}`, page, visit);
+  });
+
+  // What each section came to, once every other fact is in: a section is the
+  // unit a reader turns to, and both "nothing here" and "no heading here" are
+  // answered by counting what the section's own pointers carry.
+  const wordsOf = (text: string): number =>
+    text.split(/\s+/).filter(Boolean).length;
+  const bodyRoles = new Set([
+    'body',
+    'list-item',
+    'table-header',
+    'table-cell',
+    'statistic',
+    'caption',
+  ]);
+  const exhibitKinds = new Set(['docx/table', 'docx/chart', 'docx/image']);
+  resolved.children.forEach((component, index) => {
+    const rec = component as ComponentDefinition;
+    if (rec.name !== 'section') return;
+    const prefix = `/children/${index}/`;
+    const own = facts.filter((fact) => fact.path.startsWith(prefix));
+    const texts = own.filter(
+      (fact): fact is DocxTextFact => fact.kind === 'docx/text'
+    );
+    addFact({
+      id: `docx:section:${index}`,
+      kind: 'docx/section',
+      path: `/children/${index}`,
+      index,
+      words: texts
+        .filter((fact) => bodyRoles.has(fact.role))
+        .reduce((total, fact) => total + wordsOf(fact.text), 0),
+      exhibits: own.filter((fact) => exhibitKinds.has(fact.kind)).length,
+      headings: texts.filter((fact) => fact.role === 'heading').length,
+    });
+    // A `columns` component gives the copy inside it a measure of its own,
+    // which this section-level width is not. Rather than answer with the
+    // wrong number, a section that lays any of its text in columns has no
+    // measure fact at all.
+    if (hasColumnsComponent(rec)) return;
+    const page = pageBox(
+      resolved.theme,
+      context.themeName,
+      (rec as { props?: Rec }).props?.page
+    );
+    const fontSizePt =
+      effectiveFontSize({ name: 'paragraph' }, {}, typography)?.fontSizePt ??
+      11;
+    const widthPt = page.availableWidthTwips / 20;
+    const averageAdvancePt =
+      estimateTextWidthPt(MEASURE_SAMPLE, fontSizePt) / MEASURE_SAMPLE.length;
+    if (averageAdvancePt > 0)
+      addFact({
+        id: `docx:measure:${index}`,
+        kind: 'docx/measure',
+        path: `/children/${index}`,
+        index,
+        charactersPerLine: Math.round(widthPt / averageAdvancePt),
+        widthTwips: page.availableWidthTwips,
+        fontSizePt,
+      });
+  });
+  const headingCount = facts.filter(
+    (fact) =>
+      fact.kind === 'docx/text' && (fact as DocxTextFact).role === 'heading'
+  ).length;
+  addFact({
+    id: 'docx:outline',
+    kind: 'docx/outline',
+    path: '/props',
+    headings: headingCount,
+    contents: facts.some(
+      (fact) =>
+        fact.kind === 'docx/text' && (fact as DocxTextFact).role === 'toc-entry'
+    ),
   });
 
   return {
@@ -1576,6 +1741,69 @@ export function prepareDocxQualityDocument(
       },
     }),
   };
+}
+
+/** Whether a subtree lays any of its content in a `columns` component. */
+function hasColumnsComponent(node: unknown): boolean {
+  if (Array.isArray(node)) return node.some(hasColumnsComponent);
+  const rec = asRecord(node);
+  if (!rec) return false;
+  if (rec.name === 'columns') return true;
+  return Object.values(rec).some(hasColumnsComponent);
+}
+
+/** The array a pointer sits in, so two siblings compare equal. */
+function siblingOf(pointer: string): string {
+  return pointer.slice(0, pointer.lastIndexOf('/'));
+}
+
+/**
+ * A line of ordinary English at one size, in points. The measure rule needs
+ * an average advance rather than the width of any particular sentence, and
+ * this is the sentence it averages: lowercase-heavy, spaced as prose is.
+ */
+const MEASURE_SAMPLE =
+  'the quick brown fox jumps over the lazy dog and then settles under it ';
+
+/** The aspect the document draws an image at, when it states both sides. */
+function drawnRatio(props: Rec): number | undefined {
+  const width = finiteNumber(props.width);
+  const height = finiteNumber(props.height);
+  return width !== undefined && height !== undefined && height > 0
+    ? width / height
+    : undefined;
+}
+
+/**
+ * The asset's own aspect, where it can be read from the document itself: an
+ * inline SVG's viewBox, or the header of a base64 data URI. A `path` is
+ * resolved against a base directory at generation time and is deliberately
+ * not opened here — a static pass that touched the filesystem would answer
+ * differently depending on where it ran.
+ */
+function readableRatio(props: Rec): number | undefined {
+  if (typeof props.svg === 'string') {
+    const box =
+      /viewBox\s*=\s*["']\s*[-\d.]+[ ,]+[-\d.]+[ ,]+([\d.]+)[ ,]+([\d.]+)/.exec(
+        props.svg
+      );
+    const width = box ? Number(box[1]) : NaN;
+    const height = box ? Number(box[2]) : NaN;
+    return Number.isFinite(width) && Number.isFinite(height) && height > 0
+      ? width / height
+      : undefined;
+  }
+  if (typeof props.base64 !== 'string') return undefined;
+  const comma = props.base64.indexOf(',');
+  if (comma < 0) return undefined;
+  try {
+    const size = probe.sync(
+      Buffer.from(props.base64.slice(comma + 1), 'base64')
+    );
+    return size && size.height > 0 ? size.width / size.height : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function slotIsFilled(value: unknown): boolean {

@@ -317,6 +317,98 @@ export const QUALITY_RULES: Record<FormatName, readonly QualityRuleInfo[]> = {
         'One heading level, table role or paragraph style painted at two sizes; the theme size is the fix. Off until a profile or policy enables it.',
       parameters: [],
     },
+    {
+      id: 'docx/body-measure',
+      label: 'Body measure',
+      category: 'legibility',
+      defaultSeverity: 'warning',
+      description:
+        'A section whose body copy runs outside the readable measure. Off until a profile or policy enables it.',
+      parameters: [
+        {
+          name: 'minimumCharacters',
+          type: 'number',
+          default: 45,
+          description:
+            'Shortest line of body copy a reader follows comfortably.',
+        },
+        {
+          name: 'maximumCharacters',
+          type: 'number',
+          default: 90,
+          description:
+            'Longest line of body copy a reader follows comfortably.',
+        },
+      ],
+    },
+    {
+      id: 'docx/section-content',
+      label: 'Section content',
+      category: 'hierarchy',
+      defaultSeverity: 'warning',
+      description:
+        'A section that renders nothing, or one that carries body copy under no heading. Off until a profile or policy enables it.',
+      parameters: [
+        {
+          name: 'minimumWordsForHeading',
+          type: 'number',
+          default: 60,
+          description: 'Words past which a section owes the reader a heading.',
+        },
+      ],
+    },
+    {
+      id: 'docx/heading-keep-next',
+      label: 'Heading keep-next',
+      category: 'hierarchy',
+      defaultSeverity: 'warning',
+      description:
+        'A heading that is not bound to the content under it, so a page break can strand it. Off until a profile or policy enables it.',
+      parameters: [],
+    },
+    {
+      id: 'docx/figure-label',
+      label: 'Figure label',
+      category: 'accessibility',
+      defaultSeverity: 'warning',
+      description:
+        'An image with neither a caption beside it nor alt text on it. Off until a profile or policy enables it.',
+      parameters: [],
+    },
+    {
+      id: 'docx/image-aspect',
+      label: 'Image aspect',
+      category: 'integrity',
+      defaultSeverity: 'warning',
+      description:
+        'An image drawn at an aspect the asset does not have, where the asset can be read from the document.',
+      parameters: [
+        {
+          name: 'tolerance',
+          type: 'number',
+          default: 0.02,
+          description:
+            'How far the drawn aspect may sit from the asset\u2019s, as a fraction.',
+        },
+      ],
+    },
+    {
+      id: 'docx/contents-missing',
+      label: 'Contents missing',
+      category: 'hierarchy',
+      defaultSeverity: 'info',
+      description:
+        'More headings than minimumHeadings with no table of contents. Off at 0.',
+      parameters: [
+        {
+          name: 'minimumHeadings',
+          type: 'number',
+          default: 0,
+          description:
+            'Headings past which a document owes a contents page; 0 disables the rule.',
+        },
+      ],
+    },
   ],
   pptx: [
     {
@@ -633,6 +725,79 @@ export const QUALITY_RULES: Record<FormatName, readonly QualityRuleInfo[]> = {
           default: 2,
           description:
             'How far two titles may sit apart before the deck reads as unaligned.',
+        },
+      ],
+    },
+    {
+      id: 'pptx/bullet-density',
+      label: 'Bullet density',
+      category: 'information-design',
+      defaultSeverity: 'warning',
+      description:
+        'More bullets in one box, or more words in one bullet, than the profile allows. Off at 0.',
+      parameters: [
+        {
+          name: 'maximumBullets',
+          type: 'number',
+          default: 0,
+          description: 'Bullets one box may carry; 0 disables the count.',
+        },
+        {
+          name: 'maximumWordsPerBullet',
+          type: 'number',
+          default: 0,
+          description:
+            'Words one bullet may run to; 0 disables the length check.',
+        },
+      ],
+    },
+    {
+      id: 'pptx/safe-area',
+      label: 'Safe area',
+      category: 'composition',
+      defaultSeverity: 'warning',
+      description:
+        'Content outside the theme\u2019s safe area that is neither chrome nor a full bleed. Off until a profile or policy enables it.',
+      parameters: [
+        {
+          name: 'tolerancePt',
+          type: 'number',
+          default: 2,
+          description:
+            'How far a box may cross the safe area before it is reported.',
+        },
+      ],
+    },
+    {
+      id: 'pptx/slide-title',
+      label: 'Slide title',
+      category: 'hierarchy',
+      defaultSeverity: 'warning',
+      description:
+        'A content slide with no title: no actionTitle slot, no box in a title style. Off until a profile or policy enables it.',
+      parameters: [
+        {
+          name: 'titleStyles',
+          type: 'string-list',
+          default: ['title', 'display', 'heading1'],
+          description: 'Named styles that read as a slide title.',
+        },
+      ],
+    },
+    {
+      id: 'pptx/image-aspect',
+      label: 'Image aspect',
+      category: 'integrity',
+      defaultSeverity: 'warning',
+      description:
+        'An image drawn at an aspect the asset does not have, where the asset can be read from the document.',
+      parameters: [
+        {
+          name: 'tolerance',
+          type: 'number',
+          default: 0.02,
+          description:
+            'How far the drawn aspect may sit from the asset\u2019s, as a fraction.',
         },
       ],
     },

@@ -23,12 +23,16 @@ import type {
   DocxFontFact,
   DocxFrameTextFact,
   DocxHeadingFact,
+  DocxImageFact,
   DocxLineBoxFact,
+  DocxMeasureFact,
+  DocxOutlineFact,
   DocxPlaceholderFact,
   DocxBlockSlotFact,
   DocxQualityFact,
   DocxQualityModel,
   DocxSectionChromeFact,
+  DocxSectionFact,
   DocxSvgTextFact,
   DocxTableColumnFact,
   DocxTableFact,
@@ -1250,6 +1254,314 @@ export const docxRoleDriftRule: QualityRule<DocxQualityModel, DocxQualityFact> =
     },
   };
 
+/**
+ * How wide a line of body copy runs. Between 45 and 90 characters a reader's
+ * eye finds the next line without hunting; outside it, a page is either a
+ * ribbon or a wall. The width model is an estimate — an average advance over
+ * ordinary English at the body size — so the finding is `estimated` and its
+ * bounds are generous.
+ */
+export const docxMeasureRule: QualityRule<DocxQualityModel, DocxQualityFact> = {
+  id: 'docx/body-measure',
+  description:
+    'A section whose body copy runs outside the readable measure. Off until a profile or policy enables it.',
+  code: QUALITY_CODES.BODY_MEASURE,
+  category: 'legibility',
+  defaultSeverity: 'warning',
+  defaultCertainty: 'estimated',
+  formats: ['docx'],
+  defaultEnabled: false,
+  defaultParameters: { minimumCharacters: 45, maximumCharacters: 90 },
+  evaluate: ({ facts, configuration }) => {
+    const minimum = numberParameter(
+      configuration.parameters,
+      'minimumCharacters',
+      45
+    );
+    const maximum = numberParameter(
+      configuration.parameters,
+      'maximumCharacters',
+      90
+    );
+    const words = new Map(
+      facts
+        .filter((fact): fact is DocxSectionFact => fact.kind === 'docx/section')
+        .map((fact) => [fact.index, fact.words])
+    );
+    return (
+      facts
+        .filter((fact): fact is DocxMeasureFact => fact.kind === 'docx/measure')
+        // A section with no prose has no measure to judge: a cover is one line
+        // across the page on purpose.
+        .filter((fact) => (words.get(fact.index) ?? 0) >= 40)
+        .filter(
+          (fact) =>
+            fact.charactersPerLine < minimum || fact.charactersPerLine > maximum
+        )
+        .map((fact) => {
+          const wide = fact.charactersPerLine > maximum;
+          return {
+            path: fact.path,
+            message:
+              `Body copy runs about ${fact.charactersPerLine} characters a line at ${fact.fontSizePt}pt; ` +
+              `a readable measure is ${minimum}–${maximum}.`,
+            suggestion: wide
+              ? 'Widen the margins, set the body a size larger, or put the text in columns.'
+              : 'Narrow the margins or set the body a size smaller.',
+            context: {
+              charactersPerLine: fact.charactersPerLine,
+              minimum,
+              maximum,
+            },
+            evidence: {
+              actual: fact.charactersPerLine,
+              expected: wide ? maximum : minimum,
+              unit: 'characters',
+              values: { source: 'profile' },
+            },
+          };
+        })
+    );
+  },
+};
+
+/** A section that renders nothing, and a section no heading opens. */
+export const docxSectionRule: QualityRule<DocxQualityModel, DocxQualityFact> = {
+  id: 'docx/section-content',
+  description:
+    'A section that renders nothing, or one that carries body copy under no heading. Off until a profile or policy enables it.',
+  code: QUALITY_CODES.SECTION_EMPTY,
+  category: 'hierarchy',
+  defaultSeverity: 'warning',
+  defaultCertainty: 'deterministic',
+  formats: ['docx'],
+  defaultEnabled: false,
+  defaultParameters: { minimumWordsForHeading: 60 },
+  evaluate: ({ facts, configuration }) => {
+    const minimumWords = numberParameter(
+      configuration.parameters,
+      'minimumWordsForHeading',
+      60
+    );
+    const sections = facts.filter(
+      (fact): fact is DocxSectionFact => fact.kind === 'docx/section'
+    );
+    return sections.flatMap((fact): QualityRuleFinding[] => {
+      if (fact.words === 0 && fact.exhibits === 0)
+        return [
+          {
+            path: fact.path,
+            code: QUALITY_CODES.SECTION_EMPTY,
+            message:
+              'This section renders nothing: no text, no table, no figure. It still starts a page.',
+            suggestion:
+              'Fill the section, or remove it so the document does not open a page on nothing.',
+            context: { index: fact.index },
+          },
+        ];
+      // A cover or a divider carries a few words under no heading by design;
+      // a section long enough to be read owes the reader a title.
+      if (fact.headings === 0 && fact.words >= minimumWords)
+        return [
+          {
+            path: fact.path,
+            code: QUALITY_CODES.SECTION_UNTITLED,
+            message:
+              `This section runs to ${fact.words} words under no heading, so nothing names it ` +
+              'in the outline or the contents.',
+            suggestion:
+              'Open the section with a heading — a section-opener block, or a level-1 heading.',
+            context: { index: fact.index, words: fact.words },
+            evidence: {
+              actual: 0,
+              expected: 1,
+              unit: 'headings',
+              values: { source: 'profile' },
+            },
+          },
+        ];
+      return [];
+    });
+  },
+};
+
+/**
+ * A heading Word may leave at the foot of a page with its first paragraph
+ * overleaf. Every bundled theme binds its heading styles, so this fires on a
+ * heading that unbinds itself or on a theme that never bound one; the fix is
+ * the property Word reads.
+ */
+export const docxHeadingKeepNextRule: QualityRule<
+  DocxQualityModel,
+  DocxQualityFact
+> = {
+  id: 'docx/heading-keep-next',
+  description:
+    'A heading that is not bound to the content under it, so a page break can strand it. Off until a profile or policy enables it.',
+  code: QUALITY_CODES.HEADING_ORPHAN,
+  category: 'hierarchy',
+  defaultSeverity: 'warning',
+  defaultCertainty: 'deterministic',
+  formats: ['docx'],
+  defaultEnabled: false,
+  evaluate: ({ facts }) =>
+    facts
+      .filter(
+        (fact): fact is DocxHeadingFact =>
+          fact.kind === 'docx/heading' && !fact.keepNext
+      )
+      .map((fact) => ({
+        path: fact.headingPath,
+        message:
+          'This heading is not bound to the content under it: a page break can leave it alone at the foot of a page.',
+        suggestion:
+          'Set keepNext on the heading, or give the theme’s heading style keepNext so every level is bound.',
+        context: { level: fact.level },
+        evidence: { values: { source: 'profile' } },
+        fixes: [
+          {
+            op: 'add' as const,
+            path: `${fact.headingPath}/props/keepNext`,
+            value: true,
+          },
+        ],
+      })),
+};
+
+/**
+ * A figure a reader cannot name and a screen reader cannot describe. Either
+ * answers the question — a caption beside the image, or alt text on it — so
+ * the finding stands only when neither does.
+ */
+export const docxFigureLabelRule: QualityRule<
+  DocxQualityModel,
+  DocxQualityFact
+> = {
+  id: 'docx/figure-label',
+  description:
+    'An image with neither a caption beside it nor alt text on it. Off until a profile or policy enables it.',
+  code: QUALITY_CODES.FIGURE_UNLABELLED,
+  category: 'accessibility',
+  defaultSeverity: 'warning',
+  defaultCertainty: 'deterministic',
+  formats: ['docx'],
+  defaultEnabled: false,
+  evaluate: ({ facts }) =>
+    facts
+      .filter(
+        (fact): fact is DocxImageFact =>
+          fact.kind === 'docx/image' &&
+          fact.alt === undefined &&
+          !fact.captioned
+      )
+      .map((fact) => ({
+        path: fact.path,
+        message:
+          'This figure carries neither a caption nor alt text, so nothing in the document says what it shows.',
+        suggestion:
+          'Put the image in a figure block, which numbers and captions it, or write alt text on the image.',
+        context: {},
+      })),
+};
+
+/** An image drawn at an aspect the asset does not have. */
+export const docxImageAspectRule: QualityRule<
+  DocxQualityModel,
+  DocxQualityFact
+> = {
+  id: 'docx/image-aspect',
+  description:
+    'An image drawn at an aspect the asset does not have, where the asset can be read from the document.',
+  code: QUALITY_CODES.IMAGE_ASPECT,
+  category: 'integrity',
+  defaultSeverity: 'warning',
+  defaultCertainty: 'deterministic',
+  formats: ['docx'],
+  defaultParameters: { tolerance: 0.02 },
+  evaluate: ({ facts, configuration }) => {
+    const tolerance = numberParameter(
+      configuration.parameters,
+      'tolerance',
+      0.02
+    );
+    return facts
+      .filter(
+        (fact): fact is DocxImageFact =>
+          fact.kind === 'docx/image' &&
+          fact.drawnRatio !== undefined &&
+          fact.naturalRatio !== undefined
+      )
+      .filter(
+        (fact) =>
+          Math.abs(fact.drawnRatio! - fact.naturalRatio!) / fact.naturalRatio! >
+          tolerance
+      )
+      .map((fact) => ({
+        path: fact.path,
+        message:
+          `The image is drawn at ${aspect(fact.drawnRatio!)} and the asset is ${aspect(fact.naturalRatio!)}, ` +
+          'so it is stretched on the page.',
+        suggestion:
+          'State one of width and height and let the other follow the asset, or crop the asset to the shape you want.',
+        context: { drawn: fact.drawnRatio, natural: fact.naturalRatio },
+        evidence: {
+          actual: Math.round(fact.drawnRatio! * 1000) / 1000,
+          expected: Math.round(fact.naturalRatio! * 1000) / 1000,
+          values: { source: 'asset' },
+        },
+      }));
+  },
+};
+
+const aspect = (ratio: number): string => `${Math.round(ratio * 100) / 100}:1`;
+
+/**
+ * A document long enough to be navigated, with no contents to navigate it by.
+ * The threshold is the profile's: a memo with four headings needs none, a
+ * report with a dozen does.
+ */
+export const docxContentsRule: QualityRule<DocxQualityModel, DocxQualityFact> =
+  {
+    id: 'docx/contents-missing',
+    description:
+      'More headings than minimumHeadings with no table of contents. Off at 0.',
+    code: QUALITY_CODES.CONTENTS_MISSING,
+    category: 'hierarchy',
+    defaultSeverity: 'info',
+    defaultCertainty: 'deterministic',
+    formats: ['docx'],
+    defaultParameters: { minimumHeadings: 0 },
+    evaluate: ({ facts, configuration, profile }) => {
+      const minimum = numberParameter(
+        configuration.parameters,
+        'minimumHeadings',
+        0
+      );
+      if (minimum <= 0) return [];
+      const outline = facts.find(
+        (fact): fact is DocxOutlineFact => fact.kind === 'docx/outline'
+      );
+      if (!outline || outline.contents || outline.headings < minimum) return [];
+      return [
+        {
+          path: outline.path,
+          message:
+            `The document carries ${outline.headings} headings and no table of contents; ` +
+            `the ${profile?.id ?? 'selected'} profile expects one from ${minimum}.`,
+          suggestion:
+            'Add a `toc` component after the cover. Word fills it from the headings already there.',
+          context: { headings: outline.headings, minimum },
+          evidence: {
+            actual: outline.headings,
+            expected: minimum,
+            unit: 'headings',
+            values: { source: 'profile' },
+          },
+        },
+      ];
+    },
+  };
+
 export const DOCX_QUALITY_RULES: QualityRulePack<
   DocxQualityModel,
   DocxQualityFact
@@ -1274,6 +1586,12 @@ export const DOCX_QUALITY_RULES: QualityRulePack<
     docxTypeScaleRule,
     docxSizeCountRule,
     docxRoleDriftRule,
+    docxMeasureRule,
+    docxSectionRule,
+    docxHeadingKeepNextRule,
+    docxFigureLabelRule,
+    docxImageAspectRule,
+    docxContentsRule,
   ],
 };
 
@@ -1282,7 +1600,7 @@ export const DOCX_QUALITY_PROFILES = {
     id: 'client-report',
     formats: ['docx'],
     description:
-      'Client or public-administration report: a running head with page numbers on every section after the cover, a takeaway and a source wherever a block declares them, no heading skipped, every size on the theme scale with at most eight in play, no page rendered empty or left half blank under the running head, and at least one chart or table.',
+      'Client or public-administration report: a running head with page numbers on every section after the cover, a takeaway and a source wherever a block declares them, no heading skipped, every size on the theme scale with at most eight in play, a readable measure, no empty or untitled section, every heading bound to what follows and every figure named, no page rendered empty or left half blank under the running head, and at least one chart or table.',
     rules: {
       'docx/required-chrome': {
         parameters: { required: ['takeaway', 'source'] },
@@ -1307,6 +1625,20 @@ export const DOCX_QUALITY_PROFILES = {
       'rendered/page-underfilled': { severity: 'warning' },
       // A client report argues numbers: at least one chart or real table.
       'docx/exhibit-required': { enabled: true },
+      // 45-90 is book typography, and the bundled themes are not books.
+      // Measured over every bundled theme and both page sizes, a body line
+      // runs 97 characters (minimal on A4) to 121 (devportal on LETTER,
+      // whose 9.5pt body is dense on purpose), and #362's blind review
+      // shipped documents in that range. So an archetype judges at 125,
+      // which still catches an 8pt body or half-inch margins, while the low
+      // bound still catches a measure set too narrow to read.
+      'docx/body-measure': {
+        enabled: true,
+        parameters: { maximumCharacters: 125 },
+      },
+      'docx/section-content': { enabled: true },
+      'docx/heading-keep-next': { enabled: true },
+      'docx/figure-label': { enabled: true },
     },
   },
   'executive-report': {
@@ -1315,13 +1647,15 @@ export const DOCX_QUALITY_PROFILES = {
     description: 'Short decision document with strict outline continuity.',
     rules: {
       'docx/heading-hierarchy': { severity: 'warning' },
+      'docx/section-content': { enabled: true },
+      'docx/heading-keep-next': { enabled: true },
     },
   },
   'technical-report': {
     id: 'technical-report',
     formats: ['docx'],
     description:
-      'Technical report or memo: numbered sections under a running head with page numbers on every section after the cover, a source wherever a block declares one, no heading skipped, every size on the theme scale with at most nine in play, no page rendered empty or left half blank, and at least one chart or table.',
+      'Technical report or memo: numbered sections under a running head with page numbers on every section after the cover, a source wherever a block declares one, no heading skipped, every size on the theme scale with at most nine in play, a readable measure, no empty or untitled section, every heading bound to what follows, every figure named, a contents page past eight headings, no page rendered empty or left half blank, and at least one chart or table.',
     rules: {
       // A figure or table in a technical report cites where its numbers come
       // from; the takeaway is the client report's ask, the caption is the
@@ -1343,6 +1677,26 @@ export const DOCX_QUALITY_PROFILES = {
       'rendered/page-underfilled': { severity: 'warning' },
       // A technical report argues from measurements: a runs table, a chart.
       'docx/exhibit-required': { enabled: true },
+      // 45-90 is book typography, and the bundled themes are not books.
+      // Measured over every bundled theme and both page sizes, a body line
+      // runs 97 characters (minimal on A4) to 121 (devportal on LETTER,
+      // whose 9.5pt body is dense on purpose), and #362's blind review
+      // shipped documents in that range. So an archetype judges at 125,
+      // which still catches an 8pt body or half-inch margins, while the low
+      // bound still catches a measure set too narrow to read.
+      'docx/body-measure': {
+        enabled: true,
+        parameters: { maximumCharacters: 125 },
+      },
+      'docx/section-content': { enabled: true },
+      'docx/heading-keep-next': { enabled: true },
+      'docx/figure-label': { enabled: true },
+      // Numbered sections are meant to be reached by number: past eight
+      // headings a technical report owes the reader a contents page.
+      'docx/contents-missing': {
+        severity: 'warning',
+        parameters: { minimumHeadings: 8 },
+      },
     },
   },
   general: {

@@ -134,7 +134,7 @@ describe('JSON report blocks from playground templates', () => {
     const letter = expanded.document.children[2];
     expect(report.props.header[0].props.text).toBe('Client performance report');
     expect(letter.props.header[0].props.text).toBe('Client performance report');
-    expect(letter.props.footer[1].props.tabStops[0].position).toBe(5400);
+    expect(letter.props.footer[1].props.tabStops[0].position).toBe(5040);
     // The running head starts its own section on a new page (after the
     // cover); a section that merely inherits it continues on the page.
     expect(report.props.pageBreak).toBe(true);

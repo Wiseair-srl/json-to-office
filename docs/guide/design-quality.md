@@ -136,6 +136,10 @@ true.
 | `pptx/size-count`        | `W_QUALITY_TYPE_SIZE_COUNT`                                                                                                                                                 | warning; off unless a profile enables it                | deterministic | More distinct text sizes in the deck than `maximumSizes` (8), blocks included; no fix      |
 | `pptx/role-drift`        | `W_QUALITY_TYPE_ROLE_DRIFT`                                                                                                                                                 | warning; off unless a profile enables it                | deterministic | A named style or type role painted at two sizes; the fix restores the theme's size         |
 | `pptx/title-drift`       | `W_QUALITY_TITLE_DRIFT`                                                                                                                                                     | warning; off unless a profile enables it                | deterministic | A title away from the left edge or baseline the deck's other titles of that kind share     |
+| `pptx/bullet-density`    | `W_QUALITY_BULLET_COUNT`, `W_QUALITY_BULLET_LENGTH`                                                                                                                         | warning; off unless a profile sets a bound              | deterministic | More bullets in one box, or more words in one bullet, than the profile allows              |
+| `pptx/safe-area`         | `W_QUALITY_SAFE_AREA`                                                                                                                                                       | warning; off unless a profile enables it                | measured      | Content outside the theme's safe area that is neither chrome nor a full bleed              |
+| `pptx/slide-title`       | `W_QUALITY_SLIDE_UNTITLED`                                                                                                                                                  | warning; off unless a profile enables it                | deterministic | A slide carrying content with no action title and no title-styled box                      |
+| `pptx/image-aspect`      | `W_QUALITY_IMAGE_ASPECT`                                                                                                                                                    | warning                                                 | deterministic | An image drawn at an aspect the asset does not have                                        |
 
 The three type rules read the resolved PPTX theme exactly as their DOCX twins
 read theirs: `styles` after the design system has projected every type role
@@ -285,9 +289,26 @@ rules run on.
 | `docx/type-scale`        | `W_QUALITY_TYPE_OFF_SCALE`                                                                                                                                                  | warning; off unless a profile enables it                   | deterministic | An authored size the theme never paints; the fix snaps it to the nearest size on the theme's scale         |
 | `docx/size-count`        | `W_QUALITY_TYPE_SIZE_COUNT`                                                                                                                                                 | warning; off unless a profile enables it                   | deterministic | More distinct text sizes in the document than `maximumSizes` (8), blocks included; no fix                  |
 | `docx/role-drift`        | `W_QUALITY_TYPE_ROLE_DRIFT`                                                                                                                                                 | warning; off unless a profile enables it                   | deterministic | A heading level or paragraph style painted at two sizes; the fix restores the theme's size                 |
+| `docx/body-measure`      | `W_QUALITY_BODY_MEASURE`                                                                                                                                                    | warning; off unless a profile enables it                   | estimated     | A section whose body copy runs outside 45–90 characters a line; the report profiles judge at 120           |
+| `docx/section-content`   | `W_QUALITY_SECTION_EMPTY`, `W_QUALITY_SECTION_UNTITLED`                                                                                                                     | warning; off unless a profile enables it                   | deterministic | A section that renders nothing, or one carrying 60+ words under no heading                                 |
+| `docx/heading-keep-next` | `W_QUALITY_HEADING_ORPHAN`                                                                                                                                                  | warning; off unless a profile enables it                   | deterministic | A heading a page break can strand; the fix adds `keepNext`                                                 |
+| `docx/figure-label`      | `W_QUALITY_FIGURE_UNLABELLED`                                                                                                                                               | warning; off unless a profile enables it                   | deterministic | An image with neither a caption beside it nor alt text on it                                               |
+| `docx/image-aspect`      | `W_QUALITY_IMAGE_ASPECT`                                                                                                                                                    | warning                                                    | deterministic | An image drawn at an aspect the asset does not have                                                        |
+| `docx/contents-missing`  | `W_QUALITY_CONTENTS_MISSING`                                                                                                                                                | info; off unless a profile sets `minimumHeadings`          | deterministic | More headings than the profile allows without a table of contents                                          |
 
 The three consistency rules divide their evidence the way the whole system
 does: the theme supplies the values and the profile supplies the requirement.
+The measure is estimated: an average advance over ordinary English at the
+section's body size, across the section's usable width. A section that lays
+any of its text in a `columns` component has no measure fact — the column, not
+the page, is the measure there, and answering with the page's number would be
+worse than saying nothing. The image-aspect rules read the asset only where
+the document carries it: a base64 data URI, or an inline SVG's viewBox. A
+`path` is resolved against a base directory at generation time, so a distorted
+file-backed image is the rendered pass's to catch. Neither rule speaks when one
+side is left for the asset to supply, or when PPTX `sizing` fits the image to
+its box.
+
 `docx/type-scale` reads every size the resolved theme paints — its named
 styles, its font roles, every step of its declared type scale — so a custom
 theme is judged by its own list and a block's compiled paragraphs, whose sizes
