@@ -27,6 +27,50 @@ export const DEFAULT_CHART_CONCURRENCY = 4;
 
 type Limit = <T>(fn: () => Promise<T>) => Promise<T>;
 
+/**
+ * Cumulative chart-work counters, on the model of `getVisualPrepassStats()`.
+ *
+ * A saturated export server should be legible before it starts failing:
+ * `maxInFlight` at the cap for a whole run says the queue is the bottleneck,
+ * and `retries` climbing says the server is shedding work rather than
+ * refusing it. `collected - unique` is what deduplication saved.
+ */
+export interface ChartRequestStats {
+  /** Charts that entered the gate. */
+  collected: number;
+  /** Requests that actually reached an export server, after dedupe. */
+  unique: number;
+  /** Retries spent across those requests. */
+  retries: number;
+  /** Most requests observed open against an export server at one time. */
+  maxInFlight: number;
+}
+
+const stats: ChartRequestStats = {
+  collected: 0,
+  unique: 0,
+  retries: 0,
+  maxInFlight: 0,
+};
+
+let inFlight = 0;
+
+export function getChartRequestStats(): ChartRequestStats {
+  return { ...stats };
+}
+
+export function resetChartRequestStats(): void {
+  stats.collected = 0;
+  stats.unique = 0;
+  stats.retries = 0;
+  stats.maxInFlight = 0;
+}
+
+/** Record one retry. Wire it to `postJsonToService`'s `onRetry`. */
+export function recordChartRetry(): void {
+  stats.retries++;
+}
+
 const gates = new Map<string, Limit>();
 
 function gateFor(serverUrl: string, concurrency: number | undefined): Limit {
@@ -58,6 +102,7 @@ export function limitChartRequest<T>(
   concurrency: number | undefined,
   fn: () => Promise<T>
 ): Promise<T> {
+  stats.collected++;
   return gateFor(serverUrl, concurrency)(fn);
 }
 
@@ -95,12 +140,24 @@ export function dedupeChartRequest<T>(
   key: string,
   send: () => Promise<T>
 ): Promise<T> {
-  if (!cache) return send();
+  if (!cache) return counted(send);
   const pending = cache.get(key);
   if (pending) return pending;
-  const started = send();
+  const started = counted(send);
   cache.set(key, started);
   return started;
+}
+
+/** One real trip to an export server, counted while it is open. */
+async function counted<T>(send: () => Promise<T>): Promise<T> {
+  stats.unique++;
+  inFlight++;
+  stats.maxInFlight = Math.max(stats.maxInFlight, inFlight);
+  try {
+    return await send();
+  } finally {
+    inFlight--;
+  }
 }
 
 /**

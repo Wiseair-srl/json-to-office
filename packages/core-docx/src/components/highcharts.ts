@@ -28,6 +28,7 @@ import {
   postJsonToService,
   chartRequestKey,
   dedupeChartRequest,
+  recordChartRetry,
   type ChartRenderCache,
   type HighchartsServiceConfig,
   type RasterizeFontFace,
@@ -140,6 +141,7 @@ async function postChart(
     headers: servicesConfig?.headers,
     timeoutMs: servicesConfig?.timeoutMs,
     retries: servicesConfig?.retries,
+    onRetry: recordChartRetry,
     serviceLabel: 'Highcharts export server',
     onUnreachable: (url, cause) =>
       `Highcharts Export Server is not running at ${url}. ` +

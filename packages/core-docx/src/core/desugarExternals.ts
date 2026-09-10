@@ -59,11 +59,16 @@ export interface DesugarExternalsOptions {
 /**
  * Replace every `visual` and `highcharts` in `document` with its image.
  *
- * Visuals are rasterized in one batch first: the document walk is sequential,
- * and without the batch each visual would cost its own service round trip and
- * its own LibreOffice launch — about twenty-five of each for the bundled
- * templates. The batch is only an accelerator, though: anything it misses, or a
- * batch that fails outright, falls back to rasterizing that visual on its own.
+ * Visuals are rasterized in one batch first: without it each visual would cost
+ * its own service round trip and its own LibreOffice launch — about
+ * twenty-five of each for the bundled templates. The batch is only an
+ * accelerator, though: anything it misses, or a batch that fails outright,
+ * falls back to rasterizing that visual on its own.
+ *
+ * The walk resolves sibling components together rather than one at a time, so
+ * charts are not paced by the document's shape and have to be paced
+ * deliberately: each one waits for a slot in its export server's gate, and a
+ * chart identical to one already rendered here reuses that render.
  */
 export async function desugarExternals<T>(
   document: T,

@@ -266,6 +266,8 @@ await generateAndSaveFromJson(document, 'report.docx', {
 
 A chart identical to one already rendered in the same document is requested once and its PNG reused, so a figure that appears in a summary and again in its own section costs one render. Identical means the same request body — the same options, the same theme, and the same placement, since the type in a chart is sized for the width the image is placed at.
 
+`getChartRequestStats()` (from `@json-to-office/core-docx` or `@json-to-office/core-pptx`) reports the cumulative counters behind all of this — `collected` charts, `unique` requests after dedupe, `retries` spent, and `maxInFlight`, the most requests open against an export server at one time. `maxInFlight` sitting at the cap for a whole run says the queue, not the renderer, is what the documents are waiting on; `retries` climbing says the server is shedding work. `resetChartRequestStats()` zeroes them.
+
 ## Theme typography in Highcharts output
 
 The chart is a PNG drawn by a browser that has never seen the document, so on its own it would come out in the export server's default face at Highcharts' own sizes — visibly foreign to the prose around it. json-to-office therefore writes the document's typography into the request, beneath whatever the author set:
