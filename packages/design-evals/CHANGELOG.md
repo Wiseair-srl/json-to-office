@@ -1,5 +1,13 @@
 # @json-to-office/design-evals
 
+## 6.0.0
+
+### Patch Changes
+
+- Updated dependencies [f9b6c20]
+  - @json-to-office/mcp-server@6.0.0
+  - @json-to-office/jto-ops@6.0.0
+
 ## 5.0.0
 
 ### Patch Changes
