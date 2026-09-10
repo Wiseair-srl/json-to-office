@@ -1307,3 +1307,52 @@ describe('retrying a chart the export server could not answer', () => {
     expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('what the host can dial', () => {
+  const chart = {
+    options: {
+      chart: { width: 400, height: 300 },
+      series: [{ type: 'column', data: [1, 2, 3] }],
+    },
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetChartLimiters();
+  });
+
+  it('aborts at the configured timeout, and names it', async () => {
+    // A server that accepts the connection and never answers is the shape
+    // the abort exists for; without it the render waits forever.
+    mockFetch.mockImplementation(
+      (_url: string, init: { signal: AbortSignal }) =>
+        new Promise((_resolve, reject) => {
+          init.signal.addEventListener('abort', () =>
+            reject(Object.assign(new Error('aborted'), { name: 'AbortError' }))
+          );
+        })
+    );
+
+    await expect(
+      renderChartToImageProps(chart as never, createMockTheme(), {
+        timeoutMs: 20,
+        retries: 0,
+      })
+    ).rejects.toThrow(/timed out after 20ms/);
+  });
+
+  it('takes the retry budget from the config', async () => {
+    mockFetch.mockRejectedValue(new Error('ECONNREFUSED'));
+
+    await expect(
+      renderChartToImageProps(chart as never, createMockTheme(), { retries: 0 })
+    ).rejects.toThrow(/not running/);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+
+    mockFetch.mockClear();
+    await expect(
+      renderChartToImageProps(chart as never, createMockTheme(), { retries: 1 })
+    ).rejects.toThrow(/after 2 attempts/);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+});

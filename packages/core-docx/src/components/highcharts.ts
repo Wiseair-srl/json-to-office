@@ -114,6 +114,8 @@ async function generateChart(
     path: '/export',
     body: requestBody,
     headers: servicesConfig?.headers,
+    timeoutMs: servicesConfig?.timeoutMs,
+    retries: servicesConfig?.retries,
     serviceLabel: 'Highcharts export server',
     onUnreachable: (url, cause) =>
       `Highcharts Export Server is not running at ${url}. ` +
