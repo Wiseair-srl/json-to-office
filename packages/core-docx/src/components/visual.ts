@@ -11,7 +11,6 @@
 
 import { createHash } from 'crypto';
 import { isNodeEnvironment } from '../utils/environment';
-import { resolveServiceUrl, postJsonToService } from '../utils/serviceClient';
 
 import type { VisualRasterProps } from '@json-to-office/shared-docx';
 import type {
@@ -19,6 +18,7 @@ import type {
   PptxRasterizeResult,
   RasterizeFontFace,
 } from '@json-to-office/shared';
+import { resolveServiceUrl, postJsonToService } from '@json-to-office/shared';
 
 export const DEFAULT_RASTERIZE_SERVER_URL = 'http://localhost:7802';
 /** 1 inch = 96 CSS pixels — used to size the embedded image at its physical canvas size. */

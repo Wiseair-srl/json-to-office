@@ -11,7 +11,6 @@ import { ThemeConfig } from '../styles';
 import { chartPaletteValues, resolveColor } from '../styles/utils/colorUtils';
 import { getPageSetup } from '../styles/utils/layoutUtils';
 import { isNodeEnvironment } from '../utils/environment';
-import { resolveServiceUrl, postJsonToService } from '../utils/serviceClient';
 
 // Import only the types we actually use from shared package
 import type { HighchartsProps } from '@json-to-office/shared-docx';
@@ -25,6 +24,8 @@ import {
   withChartFontFaceCss,
   withChartTypography,
   type ChartTypography,
+  resolveServiceUrl,
+  postJsonToService,
   type HighchartsServiceConfig,
   type RasterizeFontFace,
 } from '@json-to-office/shared';
