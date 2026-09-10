@@ -894,3 +894,43 @@ describe('rendering a repeated chart once', () => {
     expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('saying once where the chart data went', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetChartLimiters();
+    mockFetch.mockResolvedValue({ ok: true, text: async () => FAKE_B64 });
+  });
+
+  it('reports one notice for a deck of charts on one remote server', async () => {
+    const warnings: PipelineWarning[] = [];
+    const deck = presentation(
+      Array.from(
+        { length: 8 },
+        (_, index) =>
+          ({
+            name: 'highcharts',
+            props: {
+              options: {
+                chart: { width: 600, height: 400 },
+                series: [{ data: [index, index + 1] }],
+              },
+            },
+          }) as PptxComponentInput
+      ),
+      EMPTY_THEME
+    );
+
+    await expandHighchartsComponents(
+      deck,
+      { serverUrl: 'https://charts.example.com', allowRemote: true },
+      warnings
+    );
+
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toMatchObject({
+      code: 'W_HIGHCHARTS_REMOTE_EXPORT',
+      message: expect.stringContaining('https://charts.example.com'),
+    });
+  });
+});
