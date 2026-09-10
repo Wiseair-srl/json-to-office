@@ -9,6 +9,12 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { isValidThemeConfig } from '@json-to-office/shared-docx';
+import {
+  getChartRequestStats,
+  resetChartLimiters,
+  resetChartRequestStats,
+  type GenerationWarning,
+} from '@json-to-office/shared';
 import { createMockTheme } from './helpers';
 import { minimalTheme, vermilionTheme } from '../../templates/themes';
 import { resolveDocxDesignSystem } from '../../themes/design-system';
@@ -414,7 +420,7 @@ describe('components/highcharts', { timeout: 30000 }, () => {
     });
 
     it('throws when export server unavailable', async () => {
-      mockFetch.mockRejectedValueOnce(new Error('ECONNREFUSED'));
+      mockFetch.mockRejectedValue(new Error('ECONNREFUSED'));
 
       const component = {
         name: 'highcharts' as const,
@@ -1091,5 +1097,514 @@ describe('theme typography injection', () => {
       { family: 'Unused', weight: 400, italic: false, data: 'BBBB' },
     ]);
     expect('resources' in request()).toBe(false);
+  });
+});
+
+/**
+ * What a document does to a single-worker export server.
+ *
+ * The walk desugars sibling components with `Promise.all`, so the thing worth
+ * asserting is not how many requests are made but how many are open at once:
+ * an unbounded document posts all fifty charts before the first PNG comes
+ * back, which is exactly the shape that made every one of them time out.
+ */
+describe('bounded chart concurrency', () => {
+  /** A fake export server that records how many requests it holds at once. */
+  function countingExportServer(): {
+    peak: () => number;
+    calls: () => number;
+    handler: () => Promise<{ ok: true; text: () => Promise<string> }>;
+  } {
+    let inFlight = 0;
+    let peak = 0;
+    let calls = 0;
+    return {
+      peak: () => peak,
+      calls: () => calls,
+      handler: async () => {
+        calls++;
+        inFlight++;
+        peak = Math.max(peak, inFlight);
+        // A real render is not instantaneous; without a turn of the event
+        // loop here every request would look serial whatever the cap is.
+        await new Promise((resolve) => setTimeout(resolve, 1));
+        inFlight--;
+        return { ok: true, text: async () => 'AA==' };
+      },
+    };
+  }
+
+  /** `count` charts that differ, so dedupe cannot stand in for the cap. */
+  function documentWithCharts(
+    count: number,
+    serverUrl?: string
+  ): Record<string, unknown> {
+    return {
+      name: 'docx',
+      props: {},
+      children: Array.from({ length: count }, (_, index) => ({
+        name: 'highcharts',
+        props: {
+          options: {
+            chart: { width: 400, height: 300 },
+            series: [{ type: 'column', data: [index, index + 1] }],
+          },
+          ...(serverUrl ? { serverUrl } : {}),
+        },
+      })),
+    };
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // The gate outlives a document by design, so a test that inherited one
+    // from another test would be asserting the wrong cap.
+    resetChartLimiters();
+  });
+
+  it('never opens more than the default four requests at once, over fifty charts', async () => {
+    const server = countingExportServer();
+    mockFetch.mockImplementation(server.handler);
+
+    await desugarExternals(documentWithCharts(50), {
+      theme: createMockTheme(),
+    });
+
+    expect(server.calls()).toBe(50);
+    expect(server.peak()).toBe(4);
+  });
+
+  it('honours a configured cap', async () => {
+    const server = countingExportServer();
+    mockFetch.mockImplementation(server.handler);
+
+    await desugarExternals(documentWithCharts(20), {
+      theme: createMockTheme(),
+      services: { highcharts: { concurrency: 2 } },
+    });
+
+    expect(server.peak()).toBe(2);
+  });
+
+  it('holds the cap across documents rendered together in one process', async () => {
+    const server = countingExportServer();
+    mockFetch.mockImplementation(server.handler);
+
+    await Promise.all([
+      desugarExternals(documentWithCharts(20), { theme: createMockTheme() }),
+      desugarExternals(documentWithCharts(20), { theme: createMockTheme() }),
+      desugarExternals(documentWithCharts(20), { theme: createMockTheme() }),
+    ]);
+
+    expect(server.calls()).toBe(60);
+    expect(server.peak()).toBe(4);
+  });
+
+  it('gives a second export server its own pool', async () => {
+    const perUrl = new Map<string, { inFlight: number; peak: number }>();
+    mockFetch.mockImplementation(async (url: string) => {
+      const state = perUrl.get(url) ?? { inFlight: 0, peak: 0 };
+      perUrl.set(url, state);
+      state.inFlight++;
+      state.peak = Math.max(state.peak, state.inFlight);
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      state.inFlight--;
+      return { ok: true, text: async () => 'AA==' };
+    });
+
+    await Promise.all([
+      desugarExternals(documentWithCharts(20, 'http://charts-a.internal'), {
+        theme: createMockTheme(),
+      }),
+      desugarExternals(documentWithCharts(20, 'http://charts-b.internal'), {
+        theme: createMockTheme(),
+      }),
+    ]);
+
+    expect(perUrl.get('http://charts-a.internal/export')?.peak).toBe(4);
+    expect(perUrl.get('http://charts-b.internal/export')?.peak).toBe(4);
+  });
+});
+
+/**
+ * What a transient export server costs a document.
+ *
+ * A single-worker server restarting, or shedding load with a 429, used to
+ * take the whole document with it: one chart's failure is the document's
+ * failure. A retry is only worth having if it can tell that apart from a
+ * chart the server will refuse however many times it is asked.
+ */
+describe('retrying a chart the export server could not answer', () => {
+  const chart = {
+    options: {
+      chart: { width: 400, height: 300 },
+      series: [{ type: 'column', data: [1, 2, 3] }],
+    },
+  };
+  const ok = { ok: true, text: async () => 'AA==' };
+  const status = (code: number, statusText = 'Boom'): unknown => ({
+    ok: false,
+    status: code,
+    statusText,
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetChartLimiters();
+  });
+
+  it('renders the chart once a retry lands', async () => {
+    mockFetch
+      .mockRejectedValueOnce(new Error('ECONNREFUSED'))
+      .mockResolvedValue(ok);
+
+    const props = await renderChartToImageProps(
+      chart as never,
+      createMockTheme()
+    );
+
+    expect(props.base64).toBe('data:image/png;base64,AA==');
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([429, 500, 503])('retries a %d', async (code) => {
+    mockFetch.mockResolvedValueOnce(status(code)).mockResolvedValue(ok);
+
+    await renderChartToImageProps(chart as never, createMockTheme());
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('gives up after the retry budget, keeping the message it always had', async () => {
+    mockFetch.mockRejectedValue(new Error('ECONNREFUSED'));
+
+    await expect(
+      renderChartToImageProps(chart as never, createMockTheme())
+    ).rejects.toThrow(/not running.*enableServer.*after 3 attempts/s);
+    expect(mockFetch).toHaveBeenCalledTimes(3);
+  });
+
+  it('still reports an exhausted timeout as a service outage', async () => {
+    mockFetch.mockRejectedValue(
+      Object.assign(new Error('aborted'), { name: 'AbortError' })
+    );
+
+    await expect(
+      renderChartToImageProps(chart as never, createMockTheme())
+    ).rejects.toMatchObject({ code: 'SERVICE_UNAVAILABLE' });
+  });
+
+  it('fails a rejected chart payload on the first attempt, verbatim', async () => {
+    mockFetch.mockResolvedValue(status(400, 'Bad Request'));
+
+    await expect(
+      renderChartToImageProps(chart as never, createMockTheme())
+    ).rejects.toThrow('Highcharts export server returned 400: Bad Request');
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([401, 404, 422])('does not retry a %d either', async (code) => {
+    mockFetch.mockResolvedValue(status(code));
+
+    await expect(
+      renderChartToImageProps(chart as never, createMockTheme())
+    ).rejects.toThrow(new RegExp(`returned ${code}`));
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('what the host can dial', () => {
+  const chart = {
+    options: {
+      chart: { width: 400, height: 300 },
+      series: [{ type: 'column', data: [1, 2, 3] }],
+    },
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetChartLimiters();
+  });
+
+  it('aborts at the configured timeout, and names it', async () => {
+    // A server that accepts the connection and never answers is the shape
+    // the abort exists for; without it the render waits forever.
+    mockFetch.mockImplementation(
+      (_url: string, init: { signal: AbortSignal }) =>
+        new Promise((_resolve, reject) => {
+          init.signal.addEventListener('abort', () =>
+            reject(Object.assign(new Error('aborted'), { name: 'AbortError' }))
+          );
+        })
+    );
+
+    await expect(
+      renderChartToImageProps(chart as never, createMockTheme(), {
+        timeoutMs: 20,
+        retries: 0,
+      })
+    ).rejects.toThrow(/timed out after 20ms/);
+  });
+
+  it('takes the retry budget from the config', async () => {
+    mockFetch.mockRejectedValue(new Error('ECONNREFUSED'));
+
+    await expect(
+      renderChartToImageProps(chart as never, createMockTheme(), { retries: 0 })
+    ).rejects.toThrow(/not running/);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+
+    mockFetch.mockClear();
+    await expect(
+      renderChartToImageProps(chart as never, createMockTheme(), { retries: 1 })
+    ).rejects.toThrow(/after 2 attempts/);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('rendering a repeated chart once', () => {
+  const chartProps = (data: number[]): Record<string, unknown> => ({
+    options: {
+      chart: { width: 400, height: 300 },
+      series: [{ type: 'column', data }],
+    },
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetChartLimiters();
+    mockFetch.mockResolvedValue({ ok: true, text: async () => 'AA==' });
+  });
+
+  it('posts one request for a chart that appears three times', async () => {
+    const document = await desugarExternals(
+      {
+        name: 'docx',
+        props: {},
+        children: [
+          { name: 'highcharts', props: chartProps([1, 2, 3]) },
+          { name: 'highcharts', props: chartProps([1, 2, 3]) },
+          { name: 'highcharts', props: chartProps([1, 2, 3]) },
+        ],
+      },
+      { theme: createMockTheme() }
+    );
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    // Every appearance still gets the image, not just the first.
+    for (const child of document.children) {
+      expect(child).toMatchObject({
+        name: 'image',
+        props: { base64: 'data:image/png;base64,AA==' },
+      });
+    }
+  });
+
+  it('keeps charts that differ apart', async () => {
+    await desugarExternals(
+      {
+        name: 'docx',
+        props: {},
+        children: [
+          { name: 'highcharts', props: chartProps([1, 2, 3]) },
+          { name: 'highcharts', props: chartProps([3, 2, 1]) },
+          { name: 'highcharts', props: chartProps([1, 2, 3]) },
+        ],
+      },
+      { theme: createMockTheme() }
+    );
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('renders the same chart again when it is placed at a different width', async () => {
+    // The key is the resolved request body, and the body carries type sized
+    // for the width the image is placed at — so the same series shrunk into
+    // half the measure is a genuinely different PNG, not a cache miss to fix.
+    const document = await desugarExternals(
+      {
+        name: 'docx',
+        props: {},
+        children: [
+          { name: 'highcharts', props: chartProps([1, 2, 3]) },
+          {
+            name: 'highcharts',
+            props: { ...chartProps([1, 2, 3]), width: 200 },
+          },
+        ],
+      },
+      { theme: createMockTheme() }
+    );
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(document.children[0].props).toMatchObject({ width: 400 });
+    expect(document.children[1].props).toMatchObject({ width: 200 });
+  });
+
+  it('does not carry a render across documents', async () => {
+    const document = {
+      name: 'docx',
+      props: {},
+      children: [{ name: 'highcharts', props: chartProps([1, 2, 3]) }],
+    };
+
+    await desugarExternals(document, { theme: createMockTheme() });
+    await desugarExternals(document, { theme: createMockTheme() });
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('chart work the host can see', () => {
+  const chartProps = (data: number[]): Record<string, unknown> => ({
+    options: {
+      chart: { width: 400, height: 300 },
+      series: [{ type: 'column', data }],
+    },
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetChartLimiters();
+    resetChartRequestStats();
+    mockFetch.mockResolvedValue({ ok: true, text: async () => 'AA==' });
+  });
+
+  it('counts what a document asked for and what actually went out', async () => {
+    await desugarExternals(
+      {
+        name: 'docx',
+        props: {},
+        children: [
+          { name: 'highcharts', props: chartProps([1, 2, 3]) },
+          { name: 'highcharts', props: chartProps([1, 2, 3]) },
+          { name: 'highcharts', props: chartProps([3, 2, 1]) },
+        ],
+      },
+      { theme: createMockTheme() }
+    );
+
+    expect(getChartRequestStats()).toMatchObject({
+      collected: 3,
+      unique: 2,
+      retries: 0,
+    });
+  });
+
+  it('shows the export server saturating at the cap', async () => {
+    mockFetch.mockImplementation(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      return { ok: true, text: async () => 'AA==' };
+    });
+
+    await desugarExternals(
+      {
+        name: 'docx',
+        props: {},
+        children: Array.from({ length: 20 }, (_, index) => ({
+          name: 'highcharts',
+          props: chartProps([index, index + 1]),
+        })),
+      },
+      { theme: createMockTheme() }
+    );
+
+    expect(getChartRequestStats().maxInFlight).toBe(4);
+  });
+
+  it('counts the retries a struggling server cost', async () => {
+    mockFetch
+      .mockRejectedValueOnce(new Error('ECONNREFUSED'))
+      .mockRejectedValueOnce(new Error('ECONNREFUSED'))
+      .mockResolvedValue({ ok: true, text: async () => 'AA==' });
+
+    await renderChartToImageProps(
+      chartProps([1, 2, 3]) as never,
+      createMockTheme()
+    );
+
+    expect(getChartRequestStats().retries).toBe(2);
+  });
+});
+
+describe('saying once where the chart data went', () => {
+  const remote = { serverUrl: 'https://charts.example.com', allowRemote: true };
+  const chartProps = (data: number[]): Record<string, unknown> => ({
+    options: {
+      chart: { width: 400, height: 300 },
+      series: [{ type: 'column', data }],
+    },
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetChartLimiters();
+    mockFetch.mockResolvedValue({ ok: true, text: async () => 'AA==' });
+  });
+
+  it('reports one notice for a document of charts on one remote server', async () => {
+    const warnings: GenerationWarning[] = [];
+
+    await desugarExternals(
+      {
+        name: 'docx',
+        props: {},
+        children: Array.from({ length: 10 }, (_, index) => ({
+          name: 'highcharts',
+          props: chartProps([index, index + 1]),
+        })),
+      },
+      { theme: createMockTheme(), services: { highcharts: remote }, warnings }
+    );
+
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0].context).toEqual({
+      code: 'W_HIGHCHARTS_REMOTE_EXPORT',
+      serverUrl: 'https://charts.example.com',
+    });
+  });
+
+  it('still names every remote server the document reached', async () => {
+    const warnings: GenerationWarning[] = [];
+
+    await desugarExternals(
+      {
+        name: 'docx',
+        props: {},
+        children: [
+          {
+            name: 'highcharts',
+            props: {
+              ...chartProps([1, 2]),
+              serverUrl: 'https://a.example.com',
+            },
+          },
+          {
+            name: 'highcharts',
+            props: {
+              ...chartProps([2, 1]),
+              serverUrl: 'https://b.example.com',
+            },
+          },
+          {
+            name: 'highcharts',
+            props: {
+              ...chartProps([3, 4]),
+              serverUrl: 'https://a.example.com',
+            },
+          },
+        ],
+      },
+      {
+        theme: createMockTheme(),
+        services: { highcharts: { allowRemote: true } },
+        warnings,
+      }
+    );
+
+    expect(warnings.map((w) => w.context?.serverUrl)).toEqual([
+      'https://a.example.com',
+      'https://b.example.com',
+    ]);
   });
 });

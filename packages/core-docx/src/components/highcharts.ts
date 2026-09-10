@@ -11,7 +11,6 @@ import { ThemeConfig } from '../styles';
 import { chartPaletteValues, resolveColor } from '../styles/utils/colorUtils';
 import { getPageSetup } from '../styles/utils/layoutUtils';
 import { isNodeEnvironment } from '../utils/environment';
-import { resolveServiceUrl, postJsonToService } from '../utils/serviceClient';
 
 // Import only the types we actually use from shared package
 import type { HighchartsProps } from '@json-to-office/shared-docx';
@@ -25,6 +24,12 @@ import {
   withChartFontFaceCss,
   withChartTypography,
   type ChartTypography,
+  resolveServiceUrl,
+  postJsonToService,
+  chartRequestKey,
+  dedupeChartRequest,
+  recordChartRetry,
+  type ChartRenderCache,
   type HighchartsServiceConfig,
   type RasterizeFontFace,
 } from '@json-to-office/shared';
@@ -41,7 +46,31 @@ export interface ChartGenerationResult {
   height: number;
 }
 
+/**
+ * Per-document memo of chart renders. A report that repeats a figure — the
+ * same series in a summary and again in its section — pays for it once.
+ */
+export type ChartCache = ChartRenderCache<ChartGenerationResult>;
+
 const DEFAULT_EXPORT_SERVER_URL = 'http://localhost:7801';
+
+/**
+ * The export server this chart will actually be posted to.
+ *
+ * Exported because the concurrency gate is keyed by it: `desugarExternals`
+ * has to know which server a chart is bound for before it lets the request
+ * through, and resolving that in two places is how the two would drift.
+ */
+export function effectiveChartServerUrl(
+  props: HighchartsProps,
+  servicesConfig: HighchartsServiceConfig | undefined
+): string {
+  return resolveServiceUrl(
+    props.serverUrl,
+    servicesConfig?.serverUrl,
+    DEFAULT_EXPORT_SERVER_URL
+  );
+}
 
 /**
  * Generate chart using Highcharts Export Server
@@ -56,19 +85,29 @@ export function assertExportServerAllowed(
   warnings: GenerationWarning[] | undefined
 ): void {
   const notice = remoteExportNotice(serverUrl, servicesConfig?.allowRemote);
-  if (notice)
-    warnings?.push({
-      component: 'highcharts',
-      severity: 'warning',
-      message: notice,
-      context: { code: REMOTE_EXPORT_WARNING, serverUrl },
-    });
+  if (!notice || !warnings) return;
+  // The notice is about the destination, not about this chart, so a
+  // fifty-chart document should carry it once — fifty identical copies bury
+  // whatever else the generation had to say.
+  const alreadySaid = warnings.some(
+    (warning) =>
+      warning.context?.code === REMOTE_EXPORT_WARNING &&
+      warning.context?.serverUrl === serverUrl
+  );
+  if (alreadySaid) return;
+  warnings.push({
+    component: 'highcharts',
+    severity: 'warning',
+    message: notice,
+    context: { code: REMOTE_EXPORT_WARNING, serverUrl },
+  });
 }
 
 async function generateChart(
   config: HighchartsProps,
   servicesConfig?: HighchartsServiceConfig,
-  warnings?: GenerationWarning[]
+  warnings?: GenerationWarning[],
+  cache?: ChartCache
 ): Promise<ChartGenerationResult> {
   // Only run in Node.js environments
   if (!isNodeEnvironment()) {
@@ -78,11 +117,7 @@ async function generateChart(
     );
   }
 
-  const serverUrl = resolveServiceUrl(
-    config.serverUrl,
-    servicesConfig?.serverUrl,
-    DEFAULT_EXPORT_SERVER_URL
-  );
+  const serverUrl = effectiveChartServerUrl(config, servicesConfig);
   assertExportServerAllowed(serverUrl, servicesConfig, warnings);
 
   const requestBody: Record<string, unknown> = {
@@ -95,11 +130,27 @@ async function generateChart(
     ...(config.resources ? { resources: config.resources } : {}),
   };
 
+  return dedupeChartRequest(
+    cache,
+    chartRequestKey(serverUrl, requestBody),
+    () => postChart(serverUrl, requestBody, config, servicesConfig)
+  );
+}
+
+async function postChart(
+  serverUrl: string,
+  requestBody: Record<string, unknown>,
+  config: HighchartsProps,
+  servicesConfig: HighchartsServiceConfig | undefined
+): Promise<ChartGenerationResult> {
   const response = await postJsonToService({
     url: serverUrl,
     path: '/export',
     body: requestBody,
     headers: servicesConfig?.headers,
+    timeoutMs: servicesConfig?.timeoutMs,
+    retries: servicesConfig?.retries,
+    onRetry: recordChartRetry,
     serviceLabel: 'Highcharts export server',
     onUnreachable: (url, cause) =>
       `Highcharts Export Server is not running at ${url}. ` +
@@ -296,14 +347,18 @@ export async function renderChartToImageProps(
   theme: ThemeConfig,
   servicesConfig?: HighchartsServiceConfig,
   chartFonts?: readonly RasterizeFontFace[],
-  warnings?: GenerationWarning[]
+  warnings?: GenerationWarning[],
+  cache?: ChartCache
 ): Promise<Record<string, unknown>> {
   const config = withChartFontFaces(
     withThemeTypography(withThemeColors(props, theme), theme),
     theme,
     chartFonts
   );
-  const chart = await generateChart(config, servicesConfig, warnings);
+  // The PNG is shared between identical charts; these props are not. Two
+  // charts can post the same body and still be placed differently, and
+  // `hasConfigDimensions` below reads the component, not the render.
+  const chart = await generateChart(config, servicesConfig, warnings, cache);
 
   const hasConfigDimensions =
     config.width !== undefined || config.height !== undefined;

@@ -38,6 +38,27 @@ export interface HighchartsServiceConfig {
    * public URL; with it, every generation says which URL received the data.
    */
   allowRemote?: boolean;
+  /**
+   * Concurrent requests allowed against this export server (default 4).
+   * A chart is one Puppeteer render, and a self-hosted server usually runs a
+   * single worker, so a document's charts are queued rather than posted all
+   * at once. The cap is per server URL and process-wide: several documents
+   * rendered together share it instead of each opening a pool of their own.
+   */
+  concurrency?: number;
+  /**
+   * Abort a single export request after this many ms (default 30000).
+   * The right value follows the slowest chart the server actually renders,
+   * not the fastest: a queue that clears in forty seconds is a queue, and
+   * aborting it only makes the document fail while the work goes on.
+   */
+  timeoutMs?: number;
+  /**
+   * Retries after the first attempt for a request the server could not
+   * answer — a timeout, a refused connection, a 429 or a 5xx (default 2).
+   * Every other 4xx is about the chart we sent and always fails at once.
+   */
+  retries?: number;
 }
 
 // ============================================================================

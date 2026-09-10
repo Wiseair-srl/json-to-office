@@ -176,7 +176,7 @@ Nothing is drawn locally: json-to-office POSTs one JSON body per `highcharts` co
 
 Nothing else about the document goes: not its text, its other components, its metadata or its theme file. A `chart` (native, office-open) or a `visual` sends nothing anywhere.
 
-Because the body carries the data, **where it goes is opt-in**. An export server the address itself proves private — `localhost`, a loopback, RFC 1918 or link-local address, a unique-local IPv6 address, or a `.local`, `.internal` or `.home.arpa` name — needs nothing. A hostname that DNS decides (`charts`, `charts.corp`) is not guessed at: it takes the same switch as a public one. Any other URL is refused at generation time until you set `services.highcharts.allowRemote: true` (CLI, playground and MCP: `HIGHCHARTS_ALLOW_REMOTE=1`), and once allowed every generation reports `W_HIGHCHARTS_REMOTE_EXPORT` naming the URL that received the chart data — in the generation warnings, and as a warning diagnostic from `jto_generate`. A server that is down is a failed generation, not a skipped figure: the document is not produced without its chart.
+Because the body carries the data, **where it goes is opt-in**. An export server the address itself proves private — `localhost`, a loopback, RFC 1918 or link-local address, a unique-local IPv6 address, or a `.local`, `.internal` or `.home.arpa` name — needs nothing. A hostname that DNS decides (`charts`, `charts.corp`) is not guessed at: it takes the same switch as a public one. Any other URL is refused at generation time until you set `services.highcharts.allowRemote: true` (CLI, playground and MCP: `HIGHCHARTS_ALLOW_REMOTE=1`), and once allowed every generation reports `W_HIGHCHARTS_REMOTE_EXPORT` once per export server it reached, naming the URL that received the chart data — in the generation warnings, and as a warning diagnostic from `jto_generate`. A server that is down is a failed generation, not a skipped figure: the document is not produced without its chart.
 
 ## Pointing at a deployed server
 
@@ -239,6 +239,34 @@ On the CLI, set `HIGHCHARTS_API_KEY` (and optionally `HIGHCHARTS_API_KEY_HEADER`
 export HIGHCHARTS_SERVER_URL=https://charts.example.com
 export HIGHCHARTS_API_KEY=sk-...
 ```
+
+### How hard the server is pushed
+
+One chart is one Puppeteer render, and a self-hosted export server usually runs a single worker. A document's charts are therefore queued rather than posted all at once: at most four requests are in flight per server URL, and the cap is process-wide, so several documents generated together in one process share it instead of each opening a pool of their own. A request the server could not answer — a timeout, a refused connection, a 429 or a 5xx — is retried twice with jittered exponential backoff; a 4xx is about the chart you sent and fails at once.
+
+| Option                            | Default | What it does                                                      |
+| --------------------------------- | ------- | ----------------------------------------------------------------- |
+| `services.highcharts.concurrency` | `4`     | Requests in flight at once against this export server             |
+| `services.highcharts.timeoutMs`   | `30000` | Abort one export request after this long                          |
+| `services.highcharts.retries`     | `2`     | Retries after the first attempt, for a failure the server may fix |
+
+```ts
+await generateAndSaveFromJson(document, 'report.docx', {
+  services: {
+    highcharts: {
+      serverUrl: 'https://charts.example.com',
+      // A server with more workers can take more at once; a slow one that
+      // renders large charts needs longer before an abort is honest.
+      concurrency: 8,
+      timeoutMs: 60000,
+    },
+  },
+});
+```
+
+A chart identical to one already rendered in the same document is requested once and its PNG reused, so a figure that appears in a summary and again in its own section costs one render. Identical means the same request body — the same options, the same theme, and the same placement, since the type in a chart is sized for the width the image is placed at.
+
+`getChartRequestStats()` (from `@json-to-office/core-docx` or `@json-to-office/core-pptx`) reports the cumulative counters behind all of this — `collected` charts, `unique` requests after dedupe, `retries` spent, and `maxInFlight`, the most requests open against an export server at one time. `maxInFlight` sitting at the cap for a whole run says the queue, not the renderer, is what the documents are waiting on; `retries` climbing says the server is shedding work. `resetChartRequestStats()` zeroes them.
 
 ## Theme typography in Highcharts output
 

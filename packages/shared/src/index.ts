@@ -188,6 +188,30 @@ export {
   REMOTE_EXPORT_WARNING,
 } from './utils/serviceUrl';
 
+// HTTP client for the render services (highcharts export, pptx rasterize)
+export {
+  postJsonToService,
+  resolveServiceUrl,
+  SERVICE_UNAVAILABLE_CODE,
+  type PostJsonOptions,
+  type ServiceHeaders,
+} from './utils/serviceClient';
+
+// Bounded concurrency
+export { createLimiter } from './utils/promiseLimiter';
+export {
+  DEFAULT_CHART_CONCURRENCY,
+  chartRequestKey,
+  dedupeChartRequest,
+  getChartRequestStats,
+  limitChartRequest,
+  recordChartRetry,
+  resetChartLimiters,
+  resetChartRequestStats,
+  type ChartRenderCache,
+  type ChartRequestStats,
+} from './utils/chartRequests';
+
 // Semver utilities
 export {
   isValidSemver,

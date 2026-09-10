@@ -29,6 +29,13 @@ export {
   pptxRendererStatuses,
 } from './renderers/registry';
 export { UncompiledComponentError } from './core/generateFromIr';
+
+// Chart export-server counters (bounded concurrency, dedupe, retries)
+export {
+  getChartRequestStats,
+  resetChartRequestStats,
+  type ChartRequestStats,
+} from '@json-to-office/shared';
 export { DEFAULT_GENERATED_AT } from './core/finalizePackage';
 export type { PresentationPackagingOptions } from './core/finalizePackage';
 

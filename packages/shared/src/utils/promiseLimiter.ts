@@ -1,7 +1,7 @@
 /**
  * Minimal promise pool bounding concurrent async operations. Shared by the
- * visual rasterization paths (flattenVisuals, prerasterizeVisuals) to cap
- * concurrent service calls.
+ * visual rasterization paths (flattenVisuals, prerasterizeVisuals) and by the
+ * chart export gate (chartRequests) to cap concurrent service calls.
  */
 export function createLimiter(
   max: number

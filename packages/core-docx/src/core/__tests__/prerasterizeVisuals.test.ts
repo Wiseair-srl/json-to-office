@@ -433,12 +433,14 @@ describe('font forwarding (Area 6)', () => {
     // that retry succeeding latched `fontsRejected` for the REST of the
     // document — every later visual silently rendered with the wrong fonts.
     // Only a 400 (what additionalProperties:false produces) may latch.
+    // The service client retries a 5xx (2 retries), so the first chunk has to
+    // exhaust that budget before it gives up and falls back to per-visual.
     let batchCalls = 0;
     mockFetch.mockImplementation(async (url: string, init: any) => {
       const body = JSON.parse(init.body);
       if (url.endsWith('/rasterize/batch')) {
         batchCalls++;
-        if (batchCalls === 1) {
+        if (batchCalls <= 3) {
           return { ok: false, status: 503, statusText: 'Service Unavailable' };
         }
         return {
@@ -462,10 +464,13 @@ describe('font forwarding (Area 6)', () => {
     const batchBodies = mockFetch.mock.calls
       .filter((c) => (c[0] as string).endsWith('/rasterize/batch'))
       .map((c) => JSON.parse(c[1].body));
-    // A 5xx is not evidence about the body: no fontless batch retry at all.
-    expect(batchBodies).toHaveLength(2);
+    // A 5xx is not evidence about the body: no fontless batch retry at all,
+    // only the client's three plain attempts on the first chunk plus the
+    // second chunk's own.
+    expect(batchBodies).toHaveLength(4);
+    expect(batchBodies.every((b) => b.fonts)).toBe(true);
     // The second chunk must still carry the document's fonts.
-    expect(batchBodies[1].fonts).toEqual(fonts);
+    expect(batchBodies[3].fonts).toEqual(fonts);
     // …and so must the per-visual fallback the failed first chunk took.
     const perVisual = mockFetch.mock.calls.filter(
       (c) => c[0] === 'http://flaky:9000/rasterize'
@@ -539,10 +544,20 @@ describe('font forwarding (Area 6)', () => {
     const perVisualFonts = mockFetch.mock.calls
       .filter((c) => c[0] === 'http://down:9000/rasterize')
       .map((c) => JSON.parse(c[1].body).fonts);
-    // Visual 'a': fonts → 400, fontless retry → 503. The retry failing means
-    // the fonts were never shown to be the problem, so visual 'b' must still
-    // lead with them (a latch would make the third entry `undefined`).
-    expect(perVisualFonts).toEqual([fonts, undefined, fonts, undefined]);
+    // Visual 'a': fonts → 400 (fails fast, a 4xx is about the body), then the
+    // fontless retry → 503 three times, the client's whole budget. The retry
+    // failing means the fonts were never shown to be the problem, so visual
+    // 'b' must still lead with them (a latch would drop that fifth `fonts`).
+    expect(perVisualFonts).toEqual([
+      fonts,
+      undefined,
+      undefined,
+      undefined,
+      fonts,
+      undefined,
+      undefined,
+      undefined,
+    ]);
 
     // Both visuals report the ORIGINAL 400, not the speculative retry's 503.
     expect(map.get(keyOf(doc[0].props))).toEqual({

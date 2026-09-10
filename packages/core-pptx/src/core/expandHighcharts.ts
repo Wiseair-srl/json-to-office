@@ -15,6 +15,13 @@ import {
   REMOTE_EXPORT_WARNING,
   chartFamilyResolver,
   chartPointsPerPixel,
+  chartRequestKey,
+  dedupeChartRequest,
+  limitChartRequest,
+  postJsonToService,
+  recordChartRetry,
+  resolveServiceUrl,
+  type ChartRenderCache,
   withChartFontFaceCss,
   withChartTypography,
   type ChartTypography,
@@ -59,6 +66,9 @@ export async function expandHighchartsComponents(
     services,
     warnings,
     chartFonts,
+    // Per deck: a chart repeated on an agenda slide and again in its section
+    // is one render.
+    chartCache: new Map(),
   };
 
   const slides = await Promise.all(
@@ -82,6 +92,7 @@ interface ExpansionScope {
   services: HighchartsServiceConfig | undefined;
   warnings: PipelineWarning[];
   chartFonts: readonly RasterizeFontFace[] | undefined;
+  chartCache: ChartRenderCache<RenderedChart>;
 }
 
 async function expandList(
@@ -115,19 +126,29 @@ async function expandOne(
   scope: ExpansionScope
 ): Promise<PptxComponentInput> {
   const props = component.props as unknown as PptxHighchartsProps;
-  const chart = await renderChart(
-    withChartFontFaces(
-      withThemeTypography(
-        withThemeColors(props, scope.theme, scope.warnings),
-        scope.theme,
-        scope.slideWidth,
-        scope.warnings
-      ),
-      scope.theme,
-      scope.chartFonts
-    ),
-    scope.services,
-    scope.warnings
+  // Slides expand with `Promise.all`, so without the gate a deck's charts
+  // are all posted at once — the same burst the docx walk used to produce.
+  // The gate is the shared one, keyed by server URL, so a process rendering
+  // a deck and a document together still respects one cap per server.
+  const chart = await limitChartRequest(
+    exportServerUrl(props.serverUrl, scope.services?.serverUrl),
+    scope.services?.concurrency,
+    () =>
+      renderChart(
+        withChartFontFaces(
+          withThemeTypography(
+            withThemeColors(props, scope.theme, scope.warnings),
+            scope.theme,
+            scope.slideWidth,
+            scope.warnings
+          ),
+          scope.theme,
+          scope.chartFonts
+        ),
+        scope.services,
+        scope.warnings,
+        scope.chartCache
+      )
   );
 
   void path;
@@ -157,18 +178,27 @@ function assertExportServerAllowed(
   warnings: PipelineWarning[]
 ): void {
   const notice = remoteExportNotice(serverUrl, services?.allowRemote);
-  if (notice)
-    warnings.push({
-      code: REMOTE_EXPORT_WARNING,
-      component: 'highcharts',
-      message: notice,
-    });
+  if (!notice) return;
+  // Once per deck per destination: the notice is about where the data went,
+  // and a chart-heavy deck repeating it drowns out every other warning. The
+  // message names the URL, so matching on it is matching on the destination.
+  const alreadySaid = warnings.some(
+    (warning) =>
+      warning.code === REMOTE_EXPORT_WARNING && warning.message === notice
+  );
+  if (alreadySaid) return;
+  warnings.push({
+    code: REMOTE_EXPORT_WARNING,
+    component: 'highcharts',
+    message: notice,
+  });
 }
 
 async function renderChart(
   config: PptxHighchartsProps,
   services: HighchartsServiceConfig | undefined,
-  warnings: PipelineWarning[]
+  warnings: PipelineWarning[],
+  cache?: ChartRenderCache<RenderedChart>
 ): Promise<RenderedChart> {
   if (!isNodeEnvironment()) {
     throw new Error(
@@ -189,33 +219,35 @@ async function renderChart(
     ...(config.resources ? { resources: config.resources } : {}),
   };
 
-  const resolvedHeaders =
-    typeof services?.headers === 'function'
-      ? await services.headers(requestBody)
-      : services?.headers;
+  return dedupeChartRequest(
+    cache,
+    chartRequestKey(serverUrl, requestBody),
+    () => postChart(serverUrl, requestBody, config, services)
+  );
+}
 
-  const response = await fetch(`${serverUrl}/export`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...resolvedHeaders },
-    body: JSON.stringify(requestBody),
-  }).catch((error) => {
+async function postChart(
+  serverUrl: string,
+  requestBody: Record<string, unknown>,
+  config: PptxHighchartsProps,
+  services: HighchartsServiceConfig | undefined
+): Promise<RenderedChart> {
+  const response = await postJsonToService({
+    url: serverUrl,
+    path: '/export',
+    body: requestBody,
+    headers: services?.headers,
+    timeoutMs: services?.timeoutMs,
+    retries: services?.retries,
+    onRetry: recordChartRetry,
+    serviceLabel: 'Highcharts export server',
     // The code lets a server route report a missing export server as a
     // dependency outage with this message, not as an internal error.
-    throw Object.assign(
-      new Error(
-        `Highcharts Export Server is not running at ${serverUrl}. ` +
-          'Start it with: npx highcharts-export-server --enableServer true\n' +
-          `Cause: ${error instanceof Error ? error.message : String(error)}`
-      ),
-      { code: 'SERVICE_UNAVAILABLE' }
-    );
+    onUnreachable: (url, cause) =>
+      `Highcharts Export Server is not running at ${url}. ` +
+      'Start it with: npx highcharts-export-server --enableServer true\n' +
+      `Cause: ${cause}`,
   });
-
-  if (!response.ok) {
-    throw new Error(
-      `Highcharts export server returned ${response.status}: ${response.statusText}`
-    );
-  }
 
   return {
     dataUri: `data:image/png;base64,${await response.text()}`,
@@ -224,9 +256,13 @@ async function renderChart(
   };
 }
 
+/**
+ * The export server this chart will actually be posted to. Also what keys the
+ * concurrency gate, so resolving it in two places is what would let a deck
+ * open a second pool against the same server.
+ */
 function exportServerUrl(propsUrl?: string, servicesUrl?: string): string {
-  const raw = propsUrl || servicesUrl || DEFAULT_EXPORT_SERVER_URL;
-  return raw.startsWith('http') ? raw : `http://${raw}`;
+  return resolveServiceUrl(propsUrl, servicesUrl, DEFAULT_EXPORT_SERVER_URL);
 }
 
 /**

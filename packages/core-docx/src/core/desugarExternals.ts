@@ -16,6 +16,7 @@
 import {
   clampVisualDpi,
   DEFAULT_VISUAL_DPI,
+  limitChartRequest,
   type RasterizeFontFace,
   type ServicesConfig,
   type GenerationWarning,
@@ -34,7 +35,11 @@ import {
   visualRasterKey,
   visualToImageProps,
 } from '../components/visual';
-import { renderChartToImageProps } from '../components/highcharts';
+import {
+  effectiveChartServerUrl,
+  renderChartToImageProps,
+  type ChartCache,
+} from '../components/highcharts';
 import { prerasterizeVisuals } from './prerasterizeVisuals';
 import { transformComponents, withNodeIdentity } from './componentTransform';
 
@@ -54,11 +59,16 @@ export interface DesugarExternalsOptions {
 /**
  * Replace every `visual` and `highcharts` in `document` with its image.
  *
- * Visuals are rasterized in one batch first: the document walk is sequential,
- * and without the batch each visual would cost its own service round trip and
- * its own LibreOffice launch — about twenty-five of each for the bundled
- * templates. The batch is only an accelerator, though: anything it misses, or a
- * batch that fails outright, falls back to rasterizing that visual on its own.
+ * Visuals are rasterized in one batch first: without it each visual would cost
+ * its own service round trip and its own LibreOffice launch — about
+ * twenty-five of each for the bundled templates. The batch is only an
+ * accelerator, though: anything it misses, or a batch that fails outright,
+ * falls back to rasterizing that visual on its own.
+ *
+ * The walk resolves sibling components together rather than one at a time, so
+ * charts are not paced by the document's shape and have to be paced
+ * deliberately: each one waits for a slot in its export server's gate, and a
+ * chart identical to one already rendered here reuses that render.
  */
 export async function desugarExternals<T>(
   document: T,
@@ -72,6 +82,10 @@ export async function desugarExternals<T>(
       ...(options.visualFonts ? { fonts: options.visualFonts } : {}),
     }
   ).catch(() => new Map<string, never>());
+
+  // Per document, like the visual pre-pass map: a chart repeated in a summary
+  // and again in its own section is one render, not two.
+  const chartCache: ChartCache = new Map();
 
   return transformComponents(document, async (node) => {
     // A disabled component is filtered out before it renders, so paying a
@@ -95,14 +109,26 @@ export async function desugarExternals<T>(
     }
 
     if (node.name === 'highcharts') {
+      const props = node.props as HighchartsProps;
+      const chartConfig = options.services?.highcharts;
+      // The walk resolves sibling components with `Promise.all`, so every
+      // chart in the document would otherwise be posted at the same instant.
+      // The gate is keyed by the server this chart is bound for, and lives
+      // outside this call, so the cap holds across concurrent documents too.
       return withNodeIdentity(node, {
         name: 'image',
-        props: await renderChartToImageProps(
-          node.props as HighchartsProps,
-          options.theme,
-          options.services?.highcharts,
-          options.chartFonts,
-          options.warnings
+        props: await limitChartRequest(
+          effectiveChartServerUrl(props, chartConfig),
+          chartConfig?.concurrency,
+          () =>
+            renderChartToImageProps(
+              props,
+              options.theme,
+              chartConfig,
+              options.chartFonts,
+              options.warnings,
+              chartCache
+            )
         ),
       });
     }

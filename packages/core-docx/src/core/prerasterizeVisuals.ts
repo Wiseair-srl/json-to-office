@@ -24,6 +24,9 @@ import {
   type PptxRasterizeBatchResult,
   type PptxRasterizeBatchSlideResult,
   type RasterizeFontFace,
+  createLimiter,
+  resolveServiceUrl,
+  postJsonToService,
 } from '@json-to-office/shared';
 import {
   isNativeVisualProps,
@@ -38,8 +41,6 @@ import {
   DEFAULT_RASTERIZE_SERVER_URL,
 } from '../components/visual';
 import { isNodeEnvironment } from '../utils/environment';
-import { createLimiter } from '../utils/promiseLimiter';
-import { resolveServiceUrl, postJsonToService } from '../utils/serviceClient';
 
 /** Bounded concurrency for per-visual fallback rasterizations. */
 const DEFAULT_FALLBACK_CONCURRENCY = 4;
@@ -163,7 +164,7 @@ function toErrorMessage(error: unknown): string {
 }
 
 /**
- * COUPLING: `postJsonToService` (utils/serviceClient.ts) is the only producer
+ * COUPLING: `postJsonToService` (@json-to-office/shared) is the only producer
  * of the errors this inspects, and it encodes a non-2xx as
  * `"<serviceLabel> returned <status>: <statusText>"`. This pattern is the one
  * place that knowledge lives; if that message format changes, change it here
