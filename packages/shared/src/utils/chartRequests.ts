@@ -66,6 +66,15 @@ export function resetChartRequestStats(): void {
   stats.maxInFlight = 0;
 }
 
+/**
+ * Record one chart the document asked for, before anything is deduped or
+ * queued. Counted at the walk rather than inside {@link sendChartRequest} so
+ * `collected - unique` stays the work deduplication saved.
+ */
+export function recordChartCollected(): void {
+  stats.collected++;
+}
+
 /** Record one retry. Wire it to `postJsonToService`'s `onRetry`. */
 export function recordChartRetry(): void {
   stats.retries++;
@@ -97,12 +106,11 @@ function gateFor(serverUrl: string, concurrency: number | undefined): Limit {
  * asking for more. A host that wants a different cap sets the same one
  * everywhere, or calls {@link resetChartLimiters} between runs.
  */
-export function limitChartRequest<T>(
+function limitChartRequest<T>(
   serverUrl: string,
   concurrency: number | undefined,
   fn: () => Promise<T>
 ): Promise<T> {
-  stats.collected++;
   return gateFor(serverUrl, concurrency)(fn);
 }
 
@@ -115,10 +123,7 @@ export function limitChartRequest<T>(
  * per document and holds one entry per *unique* chart — so it costs about
  * what the requests it saves already cost, and it cannot collide.
  */
-export function chartRequestKey(
-  serverUrl: string,
-  requestBody: unknown
-): string {
+function chartRequestKey(serverUrl: string, requestBody: unknown): string {
   return `${serverUrl}\n${JSON.stringify(requestBody)}`;
 }
 
@@ -135,17 +140,52 @@ export type ChartRenderCache<T> = Map<string, Promise<T>>;
  * fifty copies each spend the retry budget is exactly the storm the gate
  * exists to prevent.
  */
-export function dedupeChartRequest<T>(
+function dedupeChartRequest<T>(
   cache: ChartRenderCache<T> | undefined,
   key: string,
   send: () => Promise<T>
 ): Promise<T> {
-  if (!cache) return counted(send);
+  if (!cache) return send();
   const pending = cache.get(key);
   if (pending) return pending;
-  const started = counted(send);
+  const started = send();
   cache.set(key, started);
   return started;
+}
+
+/** One chart's trip to an export server. */
+export interface ChartRequest<T> {
+  /** Per-document memo; omit to render every appearance separately. */
+  cache: ChartRenderCache<T> | undefined;
+  /** Resolved export server URL: keys both the memo and the gate. */
+  serverUrl: string;
+  /** Cap for that server (default {@link DEFAULT_CHART_CONCURRENCY}). */
+  concurrency: number | undefined;
+  /** The body about to be posted; its identity is the memo key. */
+  requestBody: unknown;
+  /** Post it. */
+  send: () => Promise<T>;
+}
+
+/**
+ * Memo, then gate, then counter — and the order is the whole point.
+ *
+ * A chart that the document has already rendered has no request to make, so
+ * it must not sit in the gate holding a slot that a chart with real work to
+ * do could use: four copies of one figure would otherwise fill the default
+ * pool while a single request was in flight. And only what reaches the wire
+ * is counted in flight, so `maxInFlight` means requests open against the
+ * server rather than charts waiting their turn.
+ */
+export function sendChartRequest<T>(request: ChartRequest<T>): Promise<T> {
+  return dedupeChartRequest(
+    request.cache,
+    chartRequestKey(request.serverUrl, request.requestBody),
+    () =>
+      limitChartRequest(request.serverUrl, request.concurrency, () =>
+        counted(request.send)
+      )
+  );
 }
 
 /** One real trip to an export server, counted while it is open. */

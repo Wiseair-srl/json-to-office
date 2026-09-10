@@ -264,7 +264,7 @@ await generateAndSaveFromJson(document, 'report.docx', {
 });
 ```
 
-A chart identical to one already rendered in the same document is requested once and its PNG reused, so a figure that appears in a summary and again in its own section costs one render. Identical means the same request body — the same options, the same theme, and the same placement, since the type in a chart is sized for the width the image is placed at.
+A chart identical to one already rendered in the same document is requested once and its PNG reused, so a figure that appears in a summary and again in its own section costs one render. Identical means the same export server and the same resolved request body — the `options` after the theme's palette and typography have been written into them. Where the component sits on the page is not part of that: two appearances at different positions share one render. The _width_ it is placed at usually is, because the type in a chart is sized for it — the same series shrunk into half the measure is drawn at a different scale, so it is a different PNG.
 
 `getChartRequestStats()` (from `@json-to-office/core-docx` or `@json-to-office/core-pptx`) reports the cumulative counters behind all of this — `collected` charts, `unique` requests after dedupe, `retries` spent, and `maxInFlight`, the most requests open against an export server at one time. `maxInFlight` sitting at the cap for a whole run says the queue, not the renderer, is what the documents are waiting on; `retries` climbing says the server is shedding work. `resetChartRequestStats()` zeroes them.
 

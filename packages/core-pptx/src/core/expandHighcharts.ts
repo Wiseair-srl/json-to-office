@@ -15,12 +15,11 @@ import {
   REMOTE_EXPORT_WARNING,
   chartFamilyResolver,
   chartPointsPerPixel,
-  chartRequestKey,
-  dedupeChartRequest,
-  limitChartRequest,
   postJsonToService,
+  recordChartCollected,
   recordChartRetry,
   resolveServiceUrl,
+  sendChartRequest,
   type ChartRenderCache,
   withChartFontFaceCss,
   withChartTypography,
@@ -126,29 +125,25 @@ async function expandOne(
   scope: ExpansionScope
 ): Promise<PptxComponentInput> {
   const props = component.props as unknown as PptxHighchartsProps;
-  // Slides expand with `Promise.all`, so without the gate a deck's charts
-  // are all posted at once — the same burst the docx walk used to produce.
-  // The gate is the shared one, keyed by server URL, so a process rendering
-  // a deck and a document together still respects one cap per server.
-  const chart = await limitChartRequest(
-    exportServerUrl(props.serverUrl, scope.services?.serverUrl),
-    scope.services?.concurrency,
-    () =>
-      renderChart(
-        withChartFontFaces(
-          withThemeTypography(
-            withThemeColors(props, scope.theme, scope.warnings),
-            scope.theme,
-            scope.slideWidth,
-            scope.warnings
-          ),
-          scope.theme,
-          scope.chartFonts
-        ),
-        scope.services,
-        scope.warnings,
-        scope.chartCache
-      )
+  recordChartCollected();
+  // Slides expand with `Promise.all`, so without a gate a deck's charts are
+  // all posted at once — the same burst the docx walk used to produce. What
+  // paces them is the gate around the service call itself, in
+  // `sendChartRequest`, shared with docx and keyed by server URL.
+  const chart = await renderChart(
+    withChartFontFaces(
+      withThemeTypography(
+        withThemeColors(props, scope.theme, scope.warnings),
+        scope.theme,
+        scope.slideWidth,
+        scope.warnings
+      ),
+      scope.theme,
+      scope.chartFonts
+    ),
+    scope.services,
+    scope.warnings,
+    scope.chartCache
   );
 
   void path;
@@ -219,11 +214,13 @@ async function renderChart(
     ...(config.resources ? { resources: config.resources } : {}),
   };
 
-  return dedupeChartRequest(
+  return sendChartRequest({
     cache,
-    chartRequestKey(serverUrl, requestBody),
-    () => postChart(serverUrl, requestBody, config, services)
-  );
+    serverUrl,
+    concurrency: services?.concurrency,
+    requestBody,
+    send: () => postChart(serverUrl, requestBody, config, services),
+  });
 }
 
 async function postChart(
@@ -232,7 +229,7 @@ async function postChart(
   config: PptxHighchartsProps,
   services: HighchartsServiceConfig | undefined
 ): Promise<RenderedChart> {
-  const response = await postJsonToService({
+  const base64Data = await postJsonToService({
     url: serverUrl,
     path: '/export',
     body: requestBody,
@@ -247,10 +244,11 @@ async function postChart(
       `Highcharts Export Server is not running at ${url}. ` +
       'Start it with: npx highcharts-export-server --enableServer true\n' +
       `Cause: ${cause}`,
+    decode: (response) => response.text(),
   });
 
   return {
-    dataUri: `data:image/png;base64,${await response.text()}`,
+    dataUri: `data:image/png;base64,${base64Data}`,
     widthPx: config.options.chart?.width ?? DEFAULT_CHART_WIDTH_PX,
     heightPx: config.options.chart?.height ?? 720,
   };
