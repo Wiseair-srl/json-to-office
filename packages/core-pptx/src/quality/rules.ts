@@ -1163,6 +1163,401 @@ export const pptxActionTitleRule: QualityRule<
   },
 };
 
+const SIZE_TOLERANCE_PT = 0.25;
+/** How far two title boxes may sit apart before the deck reads as unaligned. */
+const TITLE_DRIFT_TOLERANCE_PT = 2;
+
+function pptxThemeFact(
+  facts: readonly PptxQualityFact[]
+): PptxThemeFact | undefined {
+  return facts.find(
+    (fact): fact is PptxThemeFact => fact.kind === 'pptx/theme'
+  );
+}
+
+/** Authored, patchable sizes: the ones a fix can move. */
+function authoredSizeFacts(
+  facts: readonly PptxQualityFact[]
+): readonly PptxTextFact[] {
+  return textFacts(facts).filter(
+    (fact) => fact.sizePath !== undefined && !fact.generated
+  );
+}
+
+/**
+ * The text facts `pptx/role-drift` reports: authored, away from the theme
+ * size of a style that is painted at more than one size. `pptx/type-scale`
+ * leaves these alone so the two rules never offer two sizes for one pointer.
+ */
+function pptxRoleDriftFacts(
+  facts: readonly PptxQualityFact[],
+  theme: PptxThemeFact | undefined
+): Map<PptxTextFact, { expected: number; sizes: number[] }> {
+  const byStyle = new Map<string, PptxTextFact[]>();
+  for (const fact of textFacts(facts)) {
+    if (fact.styleName === undefined) continue;
+    byStyle.set(fact.styleName, [...(byStyle.get(fact.styleName) ?? []), fact]);
+  }
+  const drifting = new Map<
+    PptxTextFact,
+    { expected: number; sizes: number[] }
+  >();
+  for (const [style, members] of byStyle) {
+    const sizes = [...new Set(members.map((fact) => fact.fontSizePt))].sort(
+      (a, b) => a - b
+    );
+    if (sizes.length < 2) continue;
+    const expected = theme?.roleSizesPt[style];
+    if (expected === undefined) continue;
+    for (const fact of members) {
+      if (
+        fact.sizePath !== undefined &&
+        !fact.generated &&
+        Math.abs(fact.fontSizePt - expected) > SIZE_TOLERANCE_PT
+      )
+        drifting.set(fact, { expected, sizes });
+    }
+  }
+  return drifting;
+}
+
+function nearestSize(
+  size: number,
+  scale: readonly number[]
+): number | undefined {
+  let best: number | undefined;
+  for (const candidate of scale) {
+    if (
+      best === undefined ||
+      Math.abs(candidate - size) < Math.abs(best - size)
+    )
+      best = candidate;
+  }
+  return best;
+}
+
+/**
+ * An authored size the theme never paints: not a named style, not a type role
+ * projected onto one, not the deck default, not a step of its scale. The
+ * theme owns the list, so a custom theme is judged by its own values, and a
+ * size a block compiled from its definition is never reported — the author
+ * has no pointer to patch there. Off until a profile turns it on: a title
+ * slide sets a display size by hand, and only an archetype decides that a
+ * deck must keep to the scale.
+ */
+export const pptxTypeScaleRule: QualityRule<PptxQualityModel, PptxQualityFact> =
+  {
+    id: 'pptx/type-scale',
+    description:
+      'An authored size the theme never paints: not a style, not a type role, not a step of its scale. Off until a profile or policy enables it.',
+    code: QUALITY_CODES.TYPE_OFF_SCALE,
+    category: 'consistency',
+    defaultSeverity: 'warning',
+    defaultCertainty: 'deterministic',
+    formats: ['pptx'],
+    defaultEnabled: false,
+    evaluate: ({ facts }) => {
+      const theme = pptxThemeFact(facts);
+      const scale = theme?.typeScalePt ?? [];
+      if (scale.length === 0) return [];
+      const drifting = pptxRoleDriftFacts(facts, theme);
+      const offScale = authoredSizeFacts(facts).filter(
+        (fact) =>
+          !drifting.has(fact) &&
+          !scale.some(
+            (size) => Math.abs(size - fact.fontSizePt) <= SIZE_TOLERANCE_PT
+          )
+      );
+      // One finding per style and size, patching every pointer together:
+      // snapping one box of a consistently sized style on its own would
+      // leave the style at two sizes and trade this finding for a drift one.
+      const groups = new Map<string, PptxTextFact[]>();
+      for (const fact of offScale) {
+        const key = `${fact.styleName ?? 'default'}@${fact.fontSizePt}`;
+        groups.set(key, [...(groups.get(key) ?? []), fact]);
+      }
+      return [...groups.values()].map((members) => {
+        const [first] = members;
+        const nearest = nearestSize(first.fontSizePt, scale)!;
+        const sizePaths = members.map((fact) => fact.sizePath!);
+        const count =
+          members.length === 1
+            ? ''
+            : ` (${members.length} places, patched together)`;
+        const role = first.styleName ?? 'the deck default';
+        return {
+          path: sizePaths[0],
+          ...(sizePaths.length > 1 && { relatedPaths: sizePaths.slice(1) }),
+          message:
+            `${first.fontSizePt}pt is not a size the ${theme!.themeName} theme paints; ` +
+            `the nearest on its scale is ${nearest}pt${count}.`,
+          suggestion: `Use ${nearest}pt, or drop the size and let "${role}" set it.`,
+          context: { style: first.styleName, scale, paths: sizePaths },
+          evidence: {
+            actual: first.fontSizePt,
+            expected: nearest,
+            unit: 'pt',
+            values: { source: 'theme' },
+          },
+          fixes: sizePaths.map((path) => ({
+            op: 'replace' as const,
+            path,
+            value: nearest,
+          })),
+        };
+      });
+    },
+  };
+
+/**
+ * How many distinct sizes a deck paints, blocks included: the count of what
+ * reaches the slides rather than of what the author typed. Off until a
+ * profile turns it on and sets `maximumSizes` — a theme sets no ceiling of
+ * its own, the ceiling is an archetype convention.
+ */
+export const pptxSizeCountRule: QualityRule<PptxQualityModel, PptxQualityFact> =
+  {
+    id: 'pptx/size-count',
+    description:
+      'More distinct text sizes than maximumSizes allows, blocks included. Off until a profile or policy enables it.',
+    code: QUALITY_CODES.TYPE_SIZE_COUNT,
+    category: 'consistency',
+    defaultSeverity: 'warning',
+    defaultCertainty: 'deterministic',
+    formats: ['pptx'],
+    defaultEnabled: false,
+    defaultParameters: { maximumSizes: 8 },
+    evaluate: ({ facts, configuration, profile }) => {
+      const maximum = numberParameter(
+        configuration.parameters,
+        'maximumSizes',
+        8
+      );
+      const firstPathBySize = new Map<number, string>();
+      for (const fact of textFacts(facts)) {
+        const size = Math.round(fact.fontSizePt * 4) / 4;
+        if (!firstPathBySize.has(size)) firstPathBySize.set(size, fact.path);
+      }
+      if (firstPathBySize.size <= maximum) return [];
+      const sizes = [...firstPathBySize.keys()].sort((a, b) => a - b);
+      return [
+        {
+          path: pptxThemeFact(facts)?.path ?? '/props',
+          relatedPaths: sizes.map((size) => firstPathBySize.get(size)!),
+          message:
+            `The deck paints ${sizes.length} distinct text sizes ` +
+            `(${sizes.join(', ')}pt); the ${profile?.id ?? 'selected'} profile allows ${maximum}.`,
+          suggestion:
+            'Keep to the theme styles — title, heading, body, label, statistic — and drop the ad-hoc sizes.',
+          context: { sizes, maximum },
+          evidence: {
+            actual: sizes.length,
+            expected: maximum,
+            values: { source: 'profile' },
+          },
+        },
+      ];
+    },
+  };
+
+/**
+ * One style at two sizes across the deck: a title, a body preset or a type
+ * role painted at more than one size. The theme's size for the style is the
+ * expected value, and every authored departure from it is reported and
+ * repaired to it. A style that is consistently overridden is not drift. Off
+ * until a profile turns it on, for the same reason as `pptx/type-scale`,
+ * which yields to this rule on any pointer it reports.
+ */
+export const pptxRoleDriftRule: QualityRule<PptxQualityModel, PptxQualityFact> =
+  {
+    id: 'pptx/role-drift',
+    description:
+      'One named style or type role painted at two sizes across the deck; the theme size is the fix. Off until a profile or policy enables it.',
+    code: QUALITY_CODES.TYPE_ROLE_DRIFT,
+    category: 'consistency',
+    defaultSeverity: 'warning',
+    defaultCertainty: 'deterministic',
+    formats: ['pptx'],
+    defaultEnabled: false,
+    evaluate: ({ facts }) => {
+      const theme = pptxThemeFact(facts);
+      const findings: QualityRuleFinding[] = [];
+      for (const [fact, { expected, sizes }] of pptxRoleDriftFacts(
+        facts,
+        theme
+      )) {
+        const keeper = textFacts(facts).find(
+          (member) =>
+            member.styleName === fact.styleName &&
+            Math.abs(member.fontSizePt - expected) <= SIZE_TOLERANCE_PT
+        );
+        const others = sizes.filter((size) => size !== fact.fontSizePt);
+        const sizePath = fact.sizePath!;
+        findings.push({
+          path: sizePath,
+          ...(keeper && { relatedPaths: [keeper.path] }),
+          message:
+            `"${fact.styleName}" is painted at ${fact.fontSizePt}pt here and at ` +
+            `${others.join('pt, ')}pt elsewhere; the theme sets it at ${expected}pt.`,
+          suggestion: `Drop the size so "${fact.styleName}" paints at the theme's ${expected}pt.`,
+          context: { style: fact.styleName, sizes },
+          evidence: {
+            actual: fact.fontSizePt,
+            expected,
+            unit: 'pt',
+            values: { role: fact.styleName, source: 'theme' },
+          },
+          fixes: [{ op: 'replace' as const, path: sizePath, value: expected }],
+        });
+      }
+      return findings;
+    },
+  };
+
+/**
+ * The text a slide leads with, and what kind of slide it leads: an
+ * `actionTitle` slot, grouped by the block that placed it, and a box set in
+ * one of the theme's title styles where the slide was drawn by hand. Titles
+ * are only comparable within a group — a statement slide centres its
+ * assertion on purpose, and it is not drifting from the content slides.
+ */
+function titleGroups(
+  facts: readonly PptxQualityFact[],
+  styles: readonly string[]
+): Map<string, PptxTextFact[]> {
+  const texts = textFacts(facts).filter(
+    (fact) => fact.boxXPt !== undefined && fact.boxYPt !== undefined
+  );
+  const groups = new Map<string, PptxTextFact[]>();
+  const claimed = new Set<PptxTextFact>();
+  const push = (key: string, fact: PptxTextFact): void => {
+    if (claimed.has(fact)) return;
+    claimed.add(fact);
+    groups.set(key, [...(groups.get(key) ?? []), fact]);
+  };
+  for (const slot of facts) {
+    if (
+      slot.kind !== 'pptx/chrome-slot' ||
+      (slot as PptxChromeSlotFact).role !== 'actionTitle'
+    )
+      continue;
+    const chrome = slot as PptxChromeSlotFact;
+    if (chrome.text === undefined) continue;
+    // A block's slot compiles to a box whose own pointer is the invocation,
+    // not the slot: the slot's text on the slot's slide is what identifies it.
+    const painted = texts.find(
+      (fact) =>
+        chrome.path.startsWith(`${fact.slidePath}/`) &&
+        fact.text === chrome.text
+    );
+    if (painted) push(chrome.block, painted);
+  }
+  for (const fact of texts)
+    if (fact.styleName !== undefined && styles.includes(fact.styleName))
+      push(`style:${fact.styleName}`, fact);
+  return groups;
+}
+
+/** The value the most titles agree on, ties broken by the earliest slide. */
+function prevailing(values: readonly number[]): number | undefined {
+  const counts = new Map<number, number>();
+  for (const value of values) counts.set(value, (counts.get(value) ?? 0) + 1);
+  let best: number | undefined;
+  let bestCount = 0;
+  for (const value of values) {
+    const count = counts.get(value)!;
+    if (count > bestCount) {
+      best = value;
+      bestCount = count;
+    }
+  }
+  return best;
+}
+
+/**
+ * Titles of one kind that do not start where the deck's other titles of that
+ * kind start. A theme says nothing about where a title sits — a block
+ * definition or the author places it — so the prevailing edge among the
+ * deck's own titles is the expected value, and the profile is what asks them
+ * to agree. Off until one turns it on.
+ */
+export const pptxTitleDriftRule: QualityRule<
+  PptxQualityModel,
+  PptxQualityFact
+> = {
+  id: 'pptx/title-drift',
+  description:
+    'A slide title away from the left edge or baseline the deck’s other titles of that kind share. Off until a profile or policy enables it.',
+  code: QUALITY_CODES.TITLE_DRIFT,
+  category: 'consistency',
+  defaultSeverity: 'warning',
+  defaultCertainty: 'deterministic',
+  formats: ['pptx'],
+  defaultEnabled: false,
+  defaultParameters: {
+    titleStyles: ['title'],
+    tolerancePt: TITLE_DRIFT_TOLERANCE_PT,
+  },
+  evaluate: ({ facts, configuration }) => {
+    const styles = stringListParameter(configuration.parameters, 'titleStyles');
+    const tolerance = numberParameter(
+      configuration.parameters,
+      'tolerancePt',
+      TITLE_DRIFT_TOLERANCE_PT
+    );
+    const findings: QualityRuleFinding[] = [];
+    for (const [kind, titles] of titleGroups(facts, styles)) {
+      // One title is nothing to compare; with two, the first states the line.
+      if (titles.length < 2) continue;
+      const axes = [
+        {
+          key: 'left edge',
+          prop: 'boxXPt' as const,
+          value: prevailing(titles.map((fact) => fact.boxXPt!)),
+        },
+        {
+          key: 'baseline',
+          prop: 'boxYPt' as const,
+          value: prevailing(titles.map((fact) => fact.boxYPt!)),
+        },
+      ];
+      for (const fact of titles) {
+        const off = axes.filter(
+          (axis) =>
+            axis.value !== undefined &&
+            Math.abs(fact[axis.prop]! - axis.value) > tolerance
+        );
+        if (off.length === 0) continue;
+        const [first] = off;
+        findings.push({
+          path: fact.path,
+          message:
+            `This ${kind.startsWith('style:') ? kind.slice(6) : kind} title sits at ${off
+              .map((axis) => `${axis.key} ${round(fact[axis.prop]!)}pt`)
+              .join(', ')}; the deck's others share ` +
+            `${off.map((axis) => `${axis.key} ${round(axis.value!)}pt`).join(', ')}.`,
+          suggestion:
+            'Place every title of one kind with the same block or the same coordinates, so the deck holds one line down the page.',
+          context: {
+            kind,
+            axes: off.map((axis) => axis.key),
+            slide: fact.slidePath,
+          },
+          evidence: {
+            actual: round(fact[first.prop]!),
+            expected: round(first.value!),
+            unit: 'pt',
+            values: { axis: first.key, source: 'profile' },
+          },
+        });
+      }
+    }
+    return findings;
+  },
+};
+
+const round = (value: number): number => Math.round(value * 10) / 10;
+
 export const PPTX_QUALITY_RULES: QualityRulePack<
   PptxQualityModel,
   PptxQualityFact
@@ -1184,6 +1579,10 @@ export const PPTX_QUALITY_RULES: QualityRulePack<
     pptxSlotBudgetRule,
     pptxRequiredChromeRule,
     pptxActionTitleRule,
+    pptxTypeScaleRule,
+    pptxSizeCountRule,
+    pptxRoleDriftRule,
+    pptxTitleDriftRule,
   ],
 };
 
@@ -1213,6 +1612,13 @@ export const PPTX_QUALITY_PROFILES = {
       },
       'pptx/action-title': { parameters: { maxLines: 2 } },
       'pptx/slide-density': { parameters: { maximumBodyWords: 90 } },
+      'pptx/type-scale': { enabled: true },
+      'pptx/size-count': { enabled: true, parameters: { maximumSizes: 8 } },
+      'pptx/role-drift': { enabled: true },
+      'pptx/title-drift': {
+        enabled: true,
+        parameters: { titleStyles: ['title', 'display'] },
+      },
     },
   },
 } as const satisfies Record<string, QualityProfile>;

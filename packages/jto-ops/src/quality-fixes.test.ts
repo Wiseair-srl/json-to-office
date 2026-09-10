@@ -104,6 +104,19 @@ function consultingReport(children: unknown[]): Record<string, unknown> {
   };
 }
 
+/** A one-slide-per-child deck on the house theme, judged by its own profile. */
+function consultingDeck(children: unknown[]): Record<string, unknown> {
+  return {
+    name: 'pptx',
+    props: {
+      ...CANVAS,
+      theme: 'consulting',
+      qualityProfile: 'consulting-deck',
+    },
+    children: children.map((child) => ({ name: 'slide', children: [child] })),
+  };
+}
+
 const FIXTURES: readonly Fixture[] = [
   {
     id: 'pptx chart without a palette',
@@ -237,6 +250,33 @@ const FIXTURES: readonly Fixture[] = [
       {
         name: 'heading',
         props: { text: 'Two', level: 2, font: { size: 16 } },
+      },
+    ]),
+  },
+  {
+    id: 'pptx text at a size off the theme scale',
+    format: 'pptx',
+    code: 'W_QUALITY_TYPE_OFF_SCALE',
+    document: consultingDeck([
+      {
+        name: 'text',
+        props: { text: 'Body one.', style: 'body', fontSize: 15 },
+      },
+      {
+        name: 'text',
+        props: { text: 'Body two.', style: 'body', fontSize: 15 },
+      },
+    ]),
+  },
+  {
+    id: 'pptx style painted at two sizes',
+    format: 'pptx',
+    code: 'W_QUALITY_TYPE_ROLE_DRIFT',
+    document: consultingDeck([
+      { name: 'text', props: { text: 'One', style: 'heading2' } },
+      {
+        name: 'text',
+        props: { text: 'Two', style: 'heading2', fontSize: 21 },
       },
     ]),
   },
