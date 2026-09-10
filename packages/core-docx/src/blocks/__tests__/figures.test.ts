@@ -91,7 +91,7 @@ describe('figures from the playground template', () => {
   });
 
   it('fails the document when the export server is unreachable', async () => {
-    mockFetch.mockRejectedValueOnce(new Error('ECONNREFUSED'));
+    mockFetch.mockRejectedValue(new Error('ECONNREFUSED'));
     await expect(
       generateBufferWithWarnings(on('consulting', chartFigure('Revenue')))
     ).rejects.toThrow(/not running.*enableServer/s);
