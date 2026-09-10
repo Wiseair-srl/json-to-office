@@ -193,6 +193,9 @@ importers:
       '@json-to-office/quality':
         specifier: workspace:^
         version: link:../quality
+      '@json-to-office/shared':
+        specifier: workspace:^
+        version: link:../shared
     devDependencies:
       '@anthropic-ai/claude-agent-sdk':
         specifier: ^0.3.259

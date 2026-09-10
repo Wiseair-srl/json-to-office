@@ -70,6 +70,8 @@ export interface InstantiateOptions {
   variant?: string;
   theme?: string;
   definitions: Readonly<Record<string, unknown>>;
+  /** The variant's children, reshaped by an outline; its own when omitted. */
+  children?: readonly unknown[];
 }
 
 export interface Instantiated {

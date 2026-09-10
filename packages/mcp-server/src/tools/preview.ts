@@ -87,6 +87,8 @@ import {
 import {
   ContactSheetError,
   buildContactSheet,
+  contactSheetFitsInline,
+  contactSheetShape,
   type ContactSheet,
 } from '../preview/contact-sheet.js';
 import {
@@ -859,19 +861,9 @@ async function deliverContactSheet(
   }));
 
   const pixels = sheet.width * sheet.height;
-  const oversized =
-    sheet.png.length > MAX_INLINE_IMAGE_BYTES ||
-    pixels > MAX_INLINE_SHEET_PIXELS;
-  const fits = args.outputMode !== 'path' && !oversized;
+  const base = contactSheetShape(sheet);
+  const fits = args.outputMode !== 'path' && contactSheetFitsInline(base);
   const overrun = `The contact sheet is ${Math.round(sheet.png.length / 1024)} KB and ${(pixels / 1_000_000).toFixed(1)} megapixels, past the ${Math.round(MAX_INLINE_IMAGE_BYTES / 1024 / 1024)} MB / ${MAX_INLINE_SHEET_PIXELS / 1_000_000} MP ceiling for one inlined image.`;
-  const base = {
-    columns: sheet.columns,
-    rows: sheet.rows,
-    pageCount: sheet.pageCount,
-    width: sheet.width,
-    height: sheet.height,
-    bytes: sheet.png.length,
-  };
 
   if (args.outputMode === 'images' && !fits) {
     return failureFrom([

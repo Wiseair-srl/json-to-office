@@ -57,7 +57,7 @@ describe('jto_preview options', () => {
     expect(structured.diagnostics[0].context.stack).toBeUndefined();
   });
 
-  it('takes the same diagnostic budget jto_validate and jto_generate take', async () => {
+  it('takes the same diagnostic budget every other diagnostic-bearing tool takes', async () => {
     const tools = (await client.listTools()).tools as unknown as Array<{
       name: string;
       inputSchema: { properties?: Record<string, unknown> };
@@ -67,7 +67,12 @@ describe('jto_preview options', () => {
       .map((tool) => tool.name)
       .sort();
 
-    expect(capped).toEqual(['jto_generate', 'jto_preview', 'jto_validate']);
+    expect(capped).toEqual([
+      'jto_critique',
+      'jto_generate',
+      'jto_preview',
+      'jto_validate',
+    ]);
   });
 
   it('refuses an unknown renderer before probing host dependencies', async () => {

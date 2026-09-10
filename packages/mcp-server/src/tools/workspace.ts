@@ -644,6 +644,9 @@ export function register(server: McpServer, deps: ToolDeps): void {
         await guarded(async () => {
           const closed = await deps.workspaces().close(args.handle);
           if (!closed.ok) return closed;
+          // Critique rounds are about a document; releasing the document
+          // releases them (#345).
+          deps.critiques.forget(args.handle);
           return success(
             { handle: closed.handle, closed: closed.closed },
             closed.closed

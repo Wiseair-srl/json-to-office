@@ -63,6 +63,16 @@ export interface InstantiateBlueprintOptions {
   definitions: Readonly<Record<string, JsonBlockDefinition>>;
   /** Metadata values that replace the variant's marked ones. */
   metadata?: Readonly<Record<string, string>>;
+  /**
+   * The variant's children after a caller reshaped them — a deck whose slides
+   * an outline redistributed (#421). The variant's own when omitted.
+   *
+   * They are instantiated in place of the variant's, so the definitions they
+   * invoke and the fill map they produce describe what is actually in the
+   * document. A reshaping that invents a block the blueprint's template does
+   * not define fails here rather than at render time.
+   */
+  children?: readonly unknown[];
 }
 
 export interface InstantiatedBlueprint {
@@ -121,7 +131,9 @@ export function instantiateBlueprint(
     root.format,
     options.variant
   );
-  const children = structuredClone(variant.children) as unknown[];
+  const children = structuredClone(
+    options.children ?? variant.children
+  ) as unknown[];
   const blocks = definitionsFor(children, options.definitions, blueprint);
   const metadata = { ...variant.metadata, ...options.metadata };
   const props: Record<string, unknown> = {

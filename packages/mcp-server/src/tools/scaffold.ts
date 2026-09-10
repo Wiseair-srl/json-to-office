@@ -30,6 +30,7 @@
 
 import {
   readBlockDefinitions,
+  selectVariant,
   type Blueprint,
   type BlueprintFillEntry,
 } from '@json-to-office/shared';
@@ -37,6 +38,8 @@ import type { McpServer } from '@modelcontextprotocol/server';
 
 import type { FormatName } from '../lib/adapters.js';
 import { loadCore } from '../lib/core.js';
+import { COVER_BLOCK, planDeck } from '../scaffold/deck-plan.js';
+import { parseOutline, type Outline } from '../scaffold/outline.js';
 import type { ToolDeps } from '../lib/deps.js';
 import {
   ERROR_CODES,
@@ -136,61 +139,6 @@ const fillEntrySchema = {
   additionalProperties: false,
 };
 
-/** A markdown outline, reduced to what the mapping reads. */
-export interface Outline {
-  title?: string;
-  sections: Array<{
-    heading: string;
-    paragraphs: string[];
-    /** `###` headings under this `##`, in order: the section's sub-headings. */
-    subheadings: string[];
-  }>;
-  /** Paragraphs before the first `##`: no section to put them in. */
-  orphans: string[];
-  /**
-   * A second `#`, a `###` before the first `##`, or any `####` and deeper:
-   * the mapping has no place for them.
-   */
-  skippedHeadings: string[];
-}
-
-export function parseOutline(markdown: string): Outline {
-  const outline: Outline = { sections: [], orphans: [], skippedHeadings: [] };
-  let current: Outline['sections'][number] | undefined;
-  let paragraph: string[] = [];
-  const flush = (): void => {
-    if (paragraph.length > 0)
-      (current?.paragraphs ?? outline.orphans).push(paragraph.join(' '));
-    paragraph = [];
-  };
-  for (const raw of markdown.split(/\r?\n/)) {
-    const line = raw.trim();
-    const heading = line.match(/^(#{1,6})\s+(.+?)\s*#*$/);
-    if (heading) {
-      flush();
-      const [, hashes, text] = heading;
-      if (hashes.length === 2) {
-        current = { heading: text, paragraphs: [], subheadings: [] };
-        outline.sections.push(current);
-      } else if (hashes.length === 1 && outline.title === undefined) {
-        outline.title = text;
-      } else if (hashes.length === 3 && current) {
-        current.subheadings.push(text);
-      } else {
-        outline.skippedHeadings.push(text);
-      }
-      continue;
-    }
-    if (line === '') {
-      flush();
-      continue;
-    }
-    paragraph.push(line);
-  }
-  flush();
-  return outline;
-}
-
 /** The `/children/N` a pointer sits under, for grouping markers by section. */
 function sectionOf(path: string): string | undefined {
   return path.match(/^\/children\/\d+/)?.[0];
@@ -208,6 +156,9 @@ function isHeadingText(
   return owner.found && isRecord(owner.value) && owner.value.name === 'heading';
 }
 
+/** No section was placed ahead of the mapping; shared so none is allocated. */
+const EMPTY: ReadonlySet<number> = new Set();
+
 interface Fill {
   /** The markers still owed, in document order. */
   remaining: BlueprintFillEntry[];
@@ -221,13 +172,29 @@ interface Fill {
  * and return the markers still owed. The order matters once: a title given in
  * both wins from the brief, because a fact beats an outline heading.
  */
-export function applyFacts(
-  document: Record<string, unknown>,
-  fillMap: readonly BlueprintFillEntry[],
-  brief: Readonly<Record<string, string>>,
-  outline: Outline | undefined,
-  format: FormatName = 'docx'
-): Fill {
+export interface ApplyFactsInput {
+  document: Record<string, unknown>;
+  fillMap: readonly BlueprintFillEntry[];
+  brief?: Readonly<Record<string, string>>;
+  outline?: Outline;
+  format?: FormatName;
+  /**
+   * Sections a deck plan already placed (#421). Their slides carry no title
+   * marker any more, so skipping them here is what keeps the sections left
+   * over lined up with the openers left over.
+   */
+  handled?: ReadonlySet<number>;
+}
+
+export function applyFacts(input: ApplyFactsInput): Fill {
+  const {
+    document,
+    fillMap,
+    brief = {},
+    outline,
+    format = 'docx',
+    handled = EMPTY,
+  } = input;
   const done = new Set<string>();
   const diagnostics: Diagnostic[] = [];
   const write = (entry: BlueprintFillEntry, value: string): void => {
@@ -285,25 +252,39 @@ export function applyFacts(
       format === 'docx'
         ? entry.block === 'section-opener' && entry.slot === 'title'
         : entry.kind === 'slot' &&
-          entry.block !== 'cover' &&
+          entry.block !== COVER_BLOCK &&
           (entry.slot === 'title' || entry.slot === 'assertion')
     );
     // A section's markers are the ones between its opener and the next, in
     // fill-map (document) order — the same thing as "the same top-level
     // section" when every opener starts one, and the only reading that works
-    // when a memo keeps three openers in one flowing section.
+    // when a memo keeps three openers in one flowing section. On a deck a
+    // section is a slide, so its markers are the ones on that slide: a plan
+    // that left a filled slide in between must not lend its trackers and
+    // sources to the section before it.
     const position = new Map(fillMap.map((entry, i) => [entry.path, i]));
     const at = (entry: BlueprintFillEntry) => position.get(entry.path) ?? -1;
-    const under = (index: number) => {
-      const from = at(openers[index]);
-      const to = openers[index + 1] ? at(openers[index + 1]) : Infinity;
+    const under = (opener: BlueprintFillEntry, next?: BlueprintFillEntry) => {
+      if (format !== 'docx') {
+        const slide = sectionOf(opener.path);
+        return pending().filter((entry) => sectionOf(entry.path) === slide);
+      }
+      const from = at(opener);
+      const to = next ? at(next) : Infinity;
       return pending().filter((entry) => at(entry) > from && at(entry) < to);
     };
+    // Openers are consumed in order by the sections a plan did not already
+    // place, so an outline that grew one section into three slides still
+    // hands the next section the next slide the author still owes.
+    let cursor = 0;
     outline.sections.forEach((section, index) => {
-      const opener = openers[index];
+      if (handled.has(index)) return;
+      const opener = openers[cursor];
       if (!opener) return;
+      const next = openers[cursor + 1];
+      cursor += 1;
       write(opener, section.heading);
-      const own = under(index);
+      const own = under(opener, next);
       const subheadings = own.filter((entry) => isHeadingText(document, entry));
       const bodies = own.filter((entry) =>
         format === 'docx'
@@ -325,10 +306,10 @@ export function applyFacts(
           )
         );
       }
-      section.paragraphs.forEach((text, i) => {
+      section.lines.forEach((text, i) => {
         if (bodies[i]) write(bodies[i], text);
       });
-      const extra = section.paragraphs.length - bodies.length;
+      const extra = section.lines.length - bodies.length;
       if (extra > 0) {
         diagnostics.push(
           unmapped(
@@ -339,11 +320,14 @@ export function applyFacts(
         );
       }
     });
-    const extraSections = outline.sections.slice(openers.length);
+    const extraSections = outline.sections
+      .filter((_, index) => !handled.has(index))
+      .slice(openers.length);
     if (extraSections.length > 0) {
+      const placed = outline.sections.length - extraSections.length;
       diagnostics.push(
         unmapped(
-          `The outline has ${outline.sections.length} sections and the variant ${openers.length}; ${extraSections.map((s) => `"${s.heading}"`).join(', ')} mapped to nothing.`,
+          `The outline has ${outline.sections.length} sections and the variant ${placed}; ${extraSections.map((s) => `"${s.heading}"`).join(', ')} mapped to nothing.`,
           { headings: extraSections.map((s) => s.heading) }
         )
       );
@@ -403,7 +387,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
     {
       title: 'Scaffold a document from a blueprint',
       description:
-        'The first move for a report: pick a blueprint from jto_discover (or jto://blueprints), name the theme and what you know of the brief, and get back a draft workspace — a handle at revision 1 — plus a fill map listing every `{{…}}` marker still owed: its JSON pointer, kind, budget and the guidance for filling it. The scaffold is schema- and semantic-valid, carries the block definitions it invokes, and names its quality profile, so jto_validate judges it against the archetype from the first call and reports the markers as advisory draft findings with `generationReady: false`; jto_generate refuses until every marker is replaced. Fill slots by pointer with jto_workspace_patch. A brief fact fills props.metadata.<key> and the <key> slot of the cover, running head and memo header (`title` is a memo’s subject); a markdown outline fills the body — `#` is the title, each `##` in order the next section opener (on a deck, the next content slide’s title), each `###` beneath it the next sub-heading, the paragraphs that section’s body text (on a deck, the slide’s text, support or takeaway). Whatever matches nothing is reported.',
+        'The first move for a report: pick a blueprint from jto_discover (or jto://blueprints), name the theme and what you know of the brief, and get back a draft workspace — a handle at revision 1 — plus a fill map listing every `{{…}}` marker still owed: its JSON pointer, kind, budget and the guidance for filling it. The scaffold is schema- and semantic-valid, carries the block definitions it invokes, and names its quality profile, so jto_validate judges it against the archetype from the first call and reports the markers as advisory draft findings with `generationReady: false`; jto_generate refuses until every marker is replaced. Fill slots by pointer with jto_workspace_patch. A brief fact fills props.metadata.<key> and the <key> slot of the cover, running head and memo header (`title` is a memo’s subject); a markdown outline fills the body — `#` is the title, each `##` in order the next section opener (on a deck, the next content slide’s title), each `###` beneath it the next sub-heading, the paragraphs that section’s body text (on a deck, the slide’s text, support or takeaway). On a deck the outline also decides the slides: a section whose bullets are all `Label: figure` measurements becomes KPI rows of at most four in order; a section with more bullets than a slide’s list holds becomes as many slides as it needs, the later ones titled “(cont.)”; a markdown table fills the two-column slide’s evidence column, numeric columns right-aligned; and a `Source:` line fills the source of every slide the section became. Where the variant draws no slide of the shape a section asks for, the section is filled as the variant’s own slide and the answer says so. Whatever matches nothing is reported.',
       annotations: {
         readOnlyHint: false,
         destructiveHint: false,
@@ -441,7 +425,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
           outline: {
             type: 'string',
             description:
-              'A markdown outline. `# Title` fills the title (the brief’s title wins); each `## Heading` fills the next section opener in order; the paragraphs under it fill that section’s body text markers in order. Extra sections or paragraphs are reported.',
+              'A markdown outline. `# Title` fills the title (the brief’s title wins); each `## Heading` fills the next section opener in order; the paragraphs and bullets under it fill that section’s body text markers in order. On a deck, bullets, tables and `Label: figure` measurements also decide how many slides a section becomes and which of the variant’s slides it takes. Extra sections or paragraphs are reported.',
           },
           title: {
             type: 'string',
@@ -555,20 +539,34 @@ export function register(server: McpServer, deps: ToolDeps): void {
             );
           }
 
+          const outline =
+            args.outline !== undefined ? parseOutline(args.outline) : undefined;
+          // A deck's slides are decided before it is instantiated, so the fill
+          // map describes the slides the outline actually asked for rather
+          // than the ones the variant was written with (#421).
+          const { variant } = selectVariant(blueprint, format, args.variant);
+          const plan =
+            format === 'pptx' && outline
+              ? planDeck({
+                  children: variant.children,
+                  outline,
+                  definitions,
+                })
+              : undefined;
           const instantiated = core.instantiate(blueprint, {
             ...(args.variant !== undefined && { variant: args.variant }),
             ...(args.theme !== undefined && { theme: args.theme }),
             definitions,
+            ...(plan && { children: plan.children }),
           });
-          const outline =
-            args.outline !== undefined ? parseOutline(args.outline) : undefined;
-          const fill = applyFacts(
-            instantiated.document,
-            instantiated.fillMap,
-            args.brief ?? {},
-            outline,
-            format
-          );
+          const fill = applyFacts({
+            document: instantiated.document,
+            fillMap: instantiated.fillMap,
+            ...(args.brief !== undefined && { brief: args.brief }),
+            ...(outline !== undefined && { outline }),
+            format,
+            ...(plan && { handled: plan.handled }),
+          });
 
           const title = args.title ?? args.brief?.title ?? outline?.title;
           const created = await deps.workspaces().create({
@@ -598,6 +596,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
             },
             [
               ...(created.warnings ?? []),
+              ...(plan?.diagnostics ?? []),
               ...fill.diagnostics,
               diagnostic(
                 ERROR_CODES.SCAFFOLD_DRAFT,

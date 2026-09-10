@@ -16,6 +16,8 @@
 
 import zlib from 'node:zlib';
 
+import { MAX_INLINE_IMAGE_BYTES, MAX_INLINE_SHEET_PIXELS } from './limits.js';
+
 const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 
 /** Channels per pixel, by PNG colour type. Palette (3) is unsupported. */
@@ -343,6 +345,35 @@ export interface ContactSheet {
   columns: number;
   rows: number;
   pageCount: number;
+}
+
+/** A composed sheet as a result reports it: everything but the pixels. */
+export type ContactSheetShape = Omit<ContactSheet, 'png'> & { bytes: number };
+
+export function contactSheetShape(sheet: ContactSheet): ContactSheetShape {
+  return {
+    columns: sheet.columns,
+    rows: sheet.rows,
+    pageCount: sheet.pageCount,
+    width: sheet.width,
+    height: sheet.height,
+    bytes: sheet.png.length,
+  };
+}
+
+/**
+ * Whether a sheet can ride in one image block.
+ *
+ * Two ceilings, because a sheet can break either: the bytes a client will
+ * carry, and the pixels it will decode before downscaling the thumbnails past
+ * legibility. Asked here rather than at each callsite so `jto_preview` and
+ * `jto_critique` cannot answer it differently.
+ */
+export function contactSheetFitsInline(sheet: ContactSheetShape): boolean {
+  return (
+    sheet.bytes <= MAX_INLINE_IMAGE_BYTES &&
+    sheet.width * sheet.height <= MAX_INLINE_SHEET_PIXELS
+  );
 }
 
 /**
