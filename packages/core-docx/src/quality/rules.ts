@@ -7,7 +7,15 @@ import {
   nearestPaletteToken,
   offPaletteFinding,
   placeholderFinding,
+  DEFAULT_IMAGE_ASPECT_TOLERANCE,
+  driftingSizes,
+  imageAspectFinding,
+  offScaleFindings,
   QUALITY_CODES,
+  roleDriftFindings,
+  sizeCountFinding,
+  type PaintedSize,
+  type TypeVocabulary,
   QualityEngine,
   tableInfoDesignFindings,
   type JsonPatchOperation,
@@ -1008,8 +1016,6 @@ export const docxRunningHeadRule: QualityRule<
 };
 
 /** Quarter of a point: the resolution the schema and Word both keep. */
-const SIZE_TOLERANCE_PT = 0.25;
-
 function themeFact(
   facts: readonly DocxQualityFact[]
 ): DocxThemeFact | undefined {
@@ -1018,73 +1024,33 @@ function themeFact(
   );
 }
 
-function textSizeFacts(
-  facts: readonly DocxQualityFact[]
-): readonly DocxTextSizeFact[] {
-  return facts.filter(
-    (fact): fact is DocxTextSizeFact => fact.kind === 'docx/text-size'
-  );
+/** A report names its roles and paints them on pages. */
+const DOCX_TYPE_VOCABULARY: TypeVocabulary = {
+  subject: 'document',
+  keepTo:
+    'Keep to the theme styles — title, headings, body, label, source — and drop the ad-hoc sizes.',
+};
+
+/** Every size a document paints, in the vocabulary the shared rules speak. */
+function paintedSizes(facts: readonly DocxQualityFact[]): PaintedSize[] {
+  return facts
+    .filter((fact): fact is DocxTextSizeFact => fact.kind === 'docx/text-size')
+    .map((fact) => ({
+      path: fact.path,
+      role: fact.role,
+      fontSizePt: fact.fontSizePt,
+      ...(fact.sizePath !== undefined && { sizePath: fact.sizePath }),
+      generated: fact.generated,
+    }));
 }
 
 /**
- * The text-size facts `docx/role-drift` reports: authored, patchable, and
- * away from the theme size of a role that is painted at more than one size.
- * `docx/type-scale` leaves these alone so the two rules never offer two
- * different sizes for one pointer.
- */
-function roleDriftFacts(
-  facts: readonly DocxQualityFact[],
-  theme: DocxThemeFact | undefined
-): Map<DocxTextSizeFact, { expected: number; sizes: number[] }> {
-  const byRole = new Map<string, DocxTextSizeFact[]>();
-  for (const fact of textSizeFacts(facts)) {
-    byRole.set(fact.role, [...(byRole.get(fact.role) ?? []), fact]);
-  }
-  const drifting = new Map<
-    DocxTextSizeFact,
-    { expected: number; sizes: number[] }
-  >();
-  for (const [role, members] of byRole) {
-    const sizes = [...new Set(members.map((fact) => fact.fontSizePt))].sort(
-      (a, b) => a - b
-    );
-    if (sizes.length < 2) continue;
-    const expected = theme?.roleSizesPt[role];
-    if (expected === undefined) continue;
-    for (const fact of members) {
-      if (
-        fact.sizePath !== undefined &&
-        !fact.generated &&
-        Math.abs(fact.fontSizePt - expected) > SIZE_TOLERANCE_PT
-      )
-        drifting.set(fact, { expected, sizes });
-    }
-  }
-  return drifting;
-}
-
-function nearestSize(
-  size: number,
-  scale: readonly number[]
-): number | undefined {
-  let best: number | undefined;
-  for (const candidate of scale) {
-    if (
-      best === undefined ||
-      Math.abs(candidate - size) < Math.abs(best - size)
-    )
-      best = candidate;
-  }
-  return best;
-}
-
-/**
- * An authored size the theme never paints. The theme owns the list — its
- * styles, its font roles, every step of its scale — so a custom theme is
- * judged by its own values, and a size a block compiled from its definition
- * is never reported: the author has no pointer to patch there. Off until a
- * profile turns it on: an editorial layout on any theme sets display sizes by
- * hand, and only an archetype decides that a document must keep to the scale.
+ * An authored size the theme never paints — not a style, not a font role, not
+ * a step of its scale. The theme owns the list, so a custom theme is judged
+ * by its own values, and a size a block compiled from its definition is never
+ * reported: the author has no pointer to patch there. Off until a profile
+ * turns it on: an editorial layout on any theme sets display sizes by hand,
+ * and only an archetype decides that a document must keep to the scale.
  */
 export const docxTypeScaleRule: QualityRule<DocxQualityModel, DocxQualityFact> =
   {
@@ -1099,64 +1065,23 @@ export const docxTypeScaleRule: QualityRule<DocxQualityModel, DocxQualityFact> =
     defaultEnabled: false,
     evaluate: ({ facts }) => {
       const theme = themeFact(facts);
-      const scale = theme?.typeScalePt ?? [];
-      if (scale.length === 0) return [];
-      const drifting = roleDriftFacts(facts, theme);
-      const offScale = textSizeFacts(facts).filter(
-        (fact) =>
-          fact.sizePath !== undefined &&
-          !fact.generated &&
-          !drifting.has(fact) &&
-          !scale.some(
-            (size) => Math.abs(size - fact.fontSizePt) <= SIZE_TOLERANCE_PT
-          )
+      if (!theme) return [];
+      const sizes = paintedSizes(facts);
+      return offScaleFindings(
+        sizes,
+        theme.typeScalePt,
+        theme.themeName,
+        DOCX_TYPE_VOCABULARY,
+        driftingSizes(sizes, theme.roleSizesPt)
       );
-      // One finding per role and size, patching every pointer together:
-      // snapping one paragraph of a consistently sized role on its own
-      // would leave the role at two sizes, and trade this finding for a
-      // role-drift one.
-      const groups = new Map<string, DocxTextSizeFact[]>();
-      for (const fact of offScale) {
-        const key = `${fact.role}@${fact.fontSizePt}`;
-        groups.set(key, [...(groups.get(key) ?? []), fact]);
-      }
-      return [...groups.values()].map((members) => {
-        const [first] = members;
-        const nearest = nearestSize(first.fontSizePt, scale)!;
-        const sizePaths = members.map((fact) => fact.sizePath!);
-        const count =
-          members.length === 1
-            ? ''
-            : ` (${members.length} places, patched together)`;
-        return {
-          path: sizePaths[0],
-          ...(sizePaths.length > 1 && { relatedPaths: sizePaths.slice(1) }),
-          message:
-            `${first.fontSizePt}pt is not a size the ${theme!.themeName} theme paints; ` +
-            `the nearest on its scale is ${nearest}pt${count}.`,
-          suggestion: `Use ${nearest}pt, or drop the size and let the "${first.role}" style set it.`,
-          context: { role: first.role, scale, paths: sizePaths },
-          evidence: {
-            actual: first.fontSizePt,
-            expected: nearest,
-            unit: 'pt',
-            values: { source: 'theme' },
-          },
-          fixes: sizePaths.map((path) => ({
-            op: 'replace' as const,
-            path,
-            value: nearest,
-          })),
-        };
-      });
     },
   };
 
 /**
  * How many distinct sizes a document paints, blocks included: the count of
  * what reaches the page rather than of what the author typed. Off until a
- * profile turns it on and sets `maximumSizes`: a theme sets no ceiling of
- * its own, the ceiling is an archetype convention.
+ * profile turns it on and sets `maximumSizes`: a theme sets no ceiling of its
+ * own, the ceiling is an archetype convention.
  */
 export const docxSizeCountRule: QualityRule<DocxQualityModel, DocxQualityFact> =
   {
@@ -1170,43 +1095,20 @@ export const docxSizeCountRule: QualityRule<DocxQualityModel, DocxQualityFact> =
     formats: ['docx'],
     defaultEnabled: false,
     defaultParameters: { maximumSizes: 8 },
-    evaluate: ({ facts, configuration, profile }) => {
-      const maximum = numberParameter(
-        configuration.parameters,
-        'maximumSizes',
-        8
-      );
-      const firstPathBySize = new Map<number, string>();
-      for (const fact of textSizeFacts(facts)) {
-        const size = Math.round(fact.fontSizePt * 4) / 4;
-        if (!firstPathBySize.has(size)) firstPathBySize.set(size, fact.path);
-      }
-      if (firstPathBySize.size <= maximum) return [];
-      const sizes = [...firstPathBySize.keys()].sort((a, b) => a - b);
-      return [
-        {
-          path: themeFact(facts)?.path ?? '/props',
-          relatedPaths: sizes.map((size) => firstPathBySize.get(size)!),
-          message:
-            `The document paints ${sizes.length} distinct text sizes ` +
-            `(${sizes.join(', ')}pt); the ${profile?.id ?? 'selected'} profile allows ${maximum}.`,
-          suggestion:
-            'Keep to the theme styles — title, headings, body, label, source — and drop the ad-hoc sizes.',
-          context: { sizes, maximum },
-          evidence: {
-            actual: sizes.length,
-            expected: maximum,
-            values: { source: 'profile' },
-          },
-        },
-      ];
-    },
+    evaluate: ({ facts, configuration, profile }) =>
+      sizeCountFinding(
+        paintedSizes(facts),
+        numberParameter(configuration.parameters, 'maximumSizes', 8),
+        themeFact(facts)?.path ?? '/props',
+        profile?.id,
+        DOCX_TYPE_VOCABULARY
+      ),
   };
 
 /**
  * One role at two sizes: a heading level or a paragraph style that is painted
- * at more than one size across the document. The theme's size for the role
- * is the expected value, and every authored departure from it is reported and
+ * at more than one size across the document. The theme's size for the role is
+ * the expected value, and every authored departure from it is reported and
  * repaired to it. A role that is consistently overridden is not drift. Off
  * until a profile turns it on, for the same reason as `docx/type-scale`,
  * which yields to this rule on any pointer it reports.
@@ -1224,33 +1126,9 @@ export const docxRoleDriftRule: QualityRule<DocxQualityModel, DocxQualityFact> =
     defaultEnabled: false,
     evaluate: ({ facts }) => {
       const theme = themeFact(facts);
-      const findings: QualityRuleFinding[] = [];
-      for (const [fact, { expected, sizes }] of roleDriftFacts(facts, theme)) {
-        const keeper = textSizeFacts(facts).find(
-          (member) =>
-            member.role === fact.role &&
-            Math.abs(member.fontSizePt - expected) <= SIZE_TOLERANCE_PT
-        );
-        const others = sizes.filter((size) => size !== fact.fontSizePt);
-        const sizePath = fact.sizePath!;
-        findings.push({
-          path: sizePath,
-          ...(keeper && { relatedPaths: [keeper.path] }),
-          message:
-            `"${fact.role}" is painted at ${fact.fontSizePt}pt here and at ` +
-            `${others.join('pt, ')}pt elsewhere; the theme sets it at ${expected}pt.`,
-          suggestion: `Drop the size so "${fact.role}" paints at the theme's ${expected}pt.`,
-          context: { role: fact.role, sizes },
-          evidence: {
-            actual: fact.fontSizePt,
-            expected,
-            unit: 'pt',
-            values: { role: fact.role, source: 'theme' },
-          },
-          fixes: [{ op: 'replace' as const, path: sizePath, value: expected }],
-        });
-      }
-      return findings;
+      return theme
+        ? roleDriftFindings(paintedSizes(facts), theme.roleSizesPt)
+        : [];
     },
   };
 
@@ -1261,7 +1139,10 @@ export const docxRoleDriftRule: QualityRule<DocxQualityModel, DocxQualityFact> =
  * ordinary English at the body size — so the finding is `estimated` and its
  * bounds are generous.
  */
-export const docxMeasureRule: QualityRule<DocxQualityModel, DocxQualityFact> = {
+export const docxBodyMeasureRule: QualityRule<
+  DocxQualityModel,
+  DocxQualityFact
+> = {
   id: 'docx/body-measure',
   description:
     'A section whose body copy runs outside the readable measure. Off until a profile or policy enables it.',
@@ -1326,7 +1207,10 @@ export const docxMeasureRule: QualityRule<DocxQualityModel, DocxQualityFact> = {
 };
 
 /** A section that renders nothing, and a section no heading opens. */
-export const docxSectionRule: QualityRule<DocxQualityModel, DocxQualityFact> = {
+export const docxSectionContentRule: QualityRule<
+  DocxQualityModel,
+  DocxQualityFact
+> = {
   id: 'docx/section-content',
   description:
     'A section that renders nothing, or one that carries body copy under no heading. Off until a profile or policy enables it.',
@@ -1397,7 +1281,7 @@ export const docxHeadingKeepNextRule: QualityRule<
 > = {
   id: 'docx/heading-keep-next',
   description:
-    'A heading that is not bound to the content under it, so a page break can strand it. Off until a profile or policy enables it.',
+    'A heading that is not bound to the content under it, so a page break can strand it; the fix sets keepNext on an authored heading. Off until a profile or policy enables it.',
   code: QUALITY_CODES.HEADING_ORPHAN,
   category: 'hierarchy',
   defaultSeverity: 'warning',
@@ -1410,22 +1294,33 @@ export const docxHeadingKeepNextRule: QualityRule<
         (fact): fact is DocxHeadingFact =>
           fact.kind === 'docx/heading' && !fact.keepNext
       )
-      .map((fact) => ({
-        path: fact.headingPath,
-        message:
-          'This heading is not bound to the content under it: a page break can leave it alone at the foot of a page.',
-        suggestion:
-          'Set keepNext on the heading, or give the theme’s heading style keepNext so every level is bound.',
-        context: { level: fact.level },
-        evidence: { values: { source: 'profile' } },
-        fixes: [
-          {
-            op: 'add' as const,
-            path: `${fact.headingPath}/props/keepNext`,
-            value: true,
-          },
-        ],
-      })),
+      .map((fact) => {
+        // The fact is reported at the level the author wrote. A heading a
+        // block compiled reports at the slot instead, and there is no
+        // `props.keepNext` to add there — the definition owns that.
+        const heading = /\/props\/level$/.test(fact.path)
+          ? fact.path.replace(/\/props\/level$/, '')
+          : undefined;
+        return {
+          path: heading ?? fact.path,
+          message:
+            'This heading is not bound to the content under it: a page break can leave it alone at the foot of a page.',
+          suggestion: heading
+            ? 'Set keepNext on the heading, or give the theme’s heading style keepNext so every level is bound.'
+            : 'Give the theme’s heading style keepNext, or set it in the block definition that draws this heading.',
+          context: { level: fact.level },
+          evidence: { values: { source: 'profile' } },
+          ...(heading && {
+            fixes: [
+              {
+                op: 'add' as const,
+                path: `${heading}/props/keepNext`,
+                value: true,
+              },
+            ],
+          }),
+        };
+      }),
 };
 
 /**
@@ -1477,12 +1372,12 @@ export const docxImageAspectRule: QualityRule<
   defaultSeverity: 'warning',
   defaultCertainty: 'deterministic',
   formats: ['docx'],
-  defaultParameters: { tolerance: 0.02 },
+  defaultParameters: { tolerance: DEFAULT_IMAGE_ASPECT_TOLERANCE },
   evaluate: ({ facts, configuration }) => {
     const tolerance = numberParameter(
       configuration.parameters,
       'tolerance',
-      0.02
+      DEFAULT_IMAGE_ASPECT_TOLERANCE
     );
     return facts
       .filter(
@@ -1491,29 +1386,20 @@ export const docxImageAspectRule: QualityRule<
           fact.drawnRatio !== undefined &&
           fact.naturalRatio !== undefined
       )
-      .filter(
-        (fact) =>
-          Math.abs(fact.drawnRatio! - fact.naturalRatio!) / fact.naturalRatio! >
+      .flatMap((fact) => {
+        const finding = imageAspectFinding(
+          {
+            path: fact.path,
+            drawn: fact.drawnRatio!,
+            natural: fact.naturalRatio!,
+          },
+          'page',
           tolerance
-      )
-      .map((fact) => ({
-        path: fact.path,
-        message:
-          `The image is drawn at ${aspect(fact.drawnRatio!)} and the asset is ${aspect(fact.naturalRatio!)}, ` +
-          'so it is stretched on the page.',
-        suggestion:
-          'State one of width and height and let the other follow the asset, or crop the asset to the shape you want.',
-        context: { drawn: fact.drawnRatio, natural: fact.naturalRatio },
-        evidence: {
-          actual: Math.round(fact.drawnRatio! * 1000) / 1000,
-          expected: Math.round(fact.naturalRatio! * 1000) / 1000,
-          values: { source: 'asset' },
-        },
-      }));
+        );
+        return finding ? [finding] : [];
+      });
   },
 };
-
-const aspect = (ratio: number): string => `${Math.round(ratio * 100) / 100}:1`;
 
 /**
  * A document long enough to be navigated, with no contents to navigate it by.
@@ -1586,13 +1472,28 @@ export const DOCX_QUALITY_RULES: QualityRulePack<
     docxTypeScaleRule,
     docxSizeCountRule,
     docxRoleDriftRule,
-    docxMeasureRule,
-    docxSectionRule,
+    docxBodyMeasureRule,
+    docxSectionContentRule,
     docxHeadingKeepNextRule,
     docxFigureLabelRule,
     docxImageAspectRule,
     docxContentsRule,
   ],
+};
+
+/**
+ * 45-90 is book typography, and the bundled themes are not books. Measured
+ * over every bundled theme and both page sizes, a body line runs 97
+ * characters (minimal on A4) to 121 (devportal on LETTER, whose 9.5pt body is
+ * dense on purpose), and #362's blind review shipped documents in that range.
+ * So an archetype judges at 125, which still catches an 8pt body or half-inch
+ * margins, while the low bound still catches a measure set too narrow to read.
+ */
+const REPORT_MEASURE: QualityProfile['rules'] = {
+  'docx/body-measure': {
+    enabled: true,
+    parameters: { maximumCharacters: 125 },
+  },
 };
 
 export const DOCX_QUALITY_PROFILES = {
@@ -1625,17 +1526,7 @@ export const DOCX_QUALITY_PROFILES = {
       'rendered/page-underfilled': { severity: 'warning' },
       // A client report argues numbers: at least one chart or real table.
       'docx/exhibit-required': { enabled: true },
-      // 45-90 is book typography, and the bundled themes are not books.
-      // Measured over every bundled theme and both page sizes, a body line
-      // runs 97 characters (minimal on A4) to 121 (devportal on LETTER,
-      // whose 9.5pt body is dense on purpose), and #362's blind review
-      // shipped documents in that range. So an archetype judges at 125,
-      // which still catches an 8pt body or half-inch margins, while the low
-      // bound still catches a measure set too narrow to read.
-      'docx/body-measure': {
-        enabled: true,
-        parameters: { maximumCharacters: 125 },
-      },
+      ...REPORT_MEASURE,
       'docx/section-content': { enabled: true },
       'docx/heading-keep-next': { enabled: true },
       'docx/figure-label': { enabled: true },
@@ -1677,17 +1568,7 @@ export const DOCX_QUALITY_PROFILES = {
       'rendered/page-underfilled': { severity: 'warning' },
       // A technical report argues from measurements: a runs table, a chart.
       'docx/exhibit-required': { enabled: true },
-      // 45-90 is book typography, and the bundled themes are not books.
-      // Measured over every bundled theme and both page sizes, a body line
-      // runs 97 characters (minimal on A4) to 121 (devportal on LETTER,
-      // whose 9.5pt body is dense on purpose), and #362's blind review
-      // shipped documents in that range. So an archetype judges at 125,
-      // which still catches an 8pt body or half-inch margins, while the low
-      // bound still catches a measure set too narrow to read.
-      'docx/body-measure': {
-        enabled: true,
-        parameters: { maximumCharacters: 125 },
-      },
+      ...REPORT_MEASURE,
       'docx/section-content': { enabled: true },
       'docx/heading-keep-next': { enabled: true },
       'docx/figure-label': { enabled: true },

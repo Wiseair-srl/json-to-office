@@ -671,3 +671,53 @@ const UNIT_MARKER =
 export function hasUnitMarker(label: string): boolean {
   return UNIT_MARKER.test(label);
 }
+
+/**
+ * An image drawn at an aspect the asset does not have. Both formats ask the
+ * same question of a picture and read it from different props — a DOCX image
+ * states `width`/`height` in pixels, a slide image a box in inches — so the
+ * two fact builders resolve the ratios and this decides and words the finding.
+ * A surface where the asset cannot be read supplies no `natural`, and nothing
+ * is reported: a guess about a picture is worse than silence.
+ */
+export interface ImageAspect {
+  path: string;
+  /** The shape the document draws the image at. */
+  drawn: number;
+  /** The shape the asset itself has, where the document carries it. */
+  natural: number;
+}
+
+export const DEFAULT_IMAGE_ASPECT_TOLERANCE = 0.02;
+
+const aspectLabel = (ratio: number): string =>
+  `${Math.round(ratio * 100) / 100}:1`;
+
+export function imageAspectFinding(
+  image: ImageAspect,
+  surface: 'page' | 'slide',
+  tolerance = DEFAULT_IMAGE_ASPECT_TOLERANCE
+): QualityRuleFinding | undefined {
+  if (
+    !Number.isFinite(image.drawn) ||
+    !Number.isFinite(image.natural) ||
+    image.natural <= 0
+  )
+    return undefined;
+  if (Math.abs(image.drawn - image.natural) / image.natural <= tolerance)
+    return undefined;
+  const sides = surface === 'page' ? 'width and height' : 'w and h';
+  return {
+    path: image.path,
+    message:
+      `The image is drawn at ${aspectLabel(image.drawn)} and the asset is ${aspectLabel(image.natural)}, ` +
+      `so it is stretched on the ${surface}.`,
+    suggestion: `State one of ${sides} and let the other follow the asset, or crop the asset to the shape you want.`,
+    context: { drawn: image.drawn, natural: image.natural },
+    evidence: {
+      actual: Math.round(image.drawn * 1000) / 1000,
+      expected: Math.round(image.natural * 1000) / 1000,
+      values: { source: 'asset' },
+    },
+  };
+}

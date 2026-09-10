@@ -713,9 +713,10 @@ function draftRenderedFindings(input: RenderedAnalysisInput): RenderedDraft {
     // either side of the break. A table is grouped by its own pointer, and a
     // row by the index in the cell pointers the inventory wrote.
     // A cell pointer ends at the cell or inside it — `.../cells/2/content`
-    // when the cell is an object rather than a bare string.
+    // when the cell is an object rather than a bare string — and a block's
+    // table reports at the slot that filled it, `.../props/slots/columns/…`.
     const TABLE_CELL =
-      /^(.*)\/props\/columns\/(\d+)\/(?:header|cells\/(\d+))(?:\/.*)?$/;
+      /^(.*)\/props\/(?:slots\/)?columns\/(\d+)\/(?:header|cells\/(\d+))(?:\/.*)?$/;
     const tables = new Map<
       string,
       {

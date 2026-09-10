@@ -123,8 +123,6 @@ export interface DocxHeadingFact extends QualityFact {
    * unbound heading and its first paragraph without a second thought.
    */
   keepNext: boolean;
-  /** The heading node itself; `path` addresses its level, which the outline rule patches. */
-  headingPath: string;
 }
 
 /**
@@ -1586,12 +1584,7 @@ export function prepareDocxQualityDocument(
         path,
         ...(typeof props.alt === 'string' &&
           props.alt.trim() !== '' && { alt: props.alt }),
-        captioned: facts.some(
-          (fact) =>
-            fact.kind === 'docx/text' &&
-            (fact as DocxTextFact).role === 'caption' &&
-            siblingOf(fact.path) === siblingOf(authoredPath(path))
-        ),
+        captioned: isCaptioned(facts, authoredPath(path)),
         ...(drawn !== undefined && { drawnRatio: drawn }),
         ...(natural !== undefined && { naturalRatio: natural }),
       });
@@ -1613,7 +1606,6 @@ export function prepareDocxQualityDocument(
         keepNext:
           props.keepNext === true ||
           (props.keepNext === undefined && styleKeepNext === true),
-        headingPath: path,
         ...(previousHeadingLevel !== undefined && {
           previousLevel: previousHeadingLevel,
         }),
@@ -1750,6 +1742,30 @@ function hasColumnsComponent(node: unknown): boolean {
   if (!rec) return false;
   if (rec.name === 'columns') return true;
   return Object.values(rec).some(hasColumnsComponent);
+}
+
+/**
+ * A caption label, however the caption was drawn: a component's own
+ * `props.caption`, or the paragraph a figure block writes above the source
+ * line — `**Figure {SEQ:figure}.** …`, which the inventory records as body
+ * text at the invocation rather than as a caption of its own.
+ */
+const CAPTION_LABEL = /^\s*(?:\*\*)?\s*(figure|exhibit|table|chart|image)\b/i;
+
+function isCaptioned(
+  facts: readonly DocxQualityFact[],
+  image: string
+): boolean {
+  return facts.some((fact) => {
+    if (fact.kind !== 'docx/text') return false;
+    const text = fact as DocxTextFact;
+    // Beside the image, inside it, or at the block that placed it.
+    const near =
+      siblingOf(text.path) === siblingOf(image) ||
+      text.path.startsWith(`${image}/`) ||
+      image.startsWith(`${text.path}/`);
+    return near && (text.role === 'caption' || CAPTION_LABEL.test(text.text));
+  });
 }
 
 /** The array a pointer sits in, so two siblings compare equal. */
