@@ -24,6 +24,7 @@ import {
   type PptxRasterizeBatchResult,
   type PptxRasterizeBatchSlideResult,
   type RasterizeFontFace,
+  createLimiter,
 } from '@json-to-office/shared';
 import {
   isNativeVisualProps,
@@ -38,7 +39,6 @@ import {
   DEFAULT_RASTERIZE_SERVER_URL,
 } from '../components/visual';
 import { isNodeEnvironment } from '../utils/environment';
-import { createLimiter } from '../utils/promiseLimiter';
 import { resolveServiceUrl, postJsonToService } from '../utils/serviceClient';
 
 /** Bounded concurrency for per-visual fallback rasterizations. */

@@ -16,6 +16,7 @@
 import {
   clampVisualDpi,
   DEFAULT_VISUAL_DPI,
+  limitChartRequest,
   type RasterizeFontFace,
   type ServicesConfig,
   type GenerationWarning,
@@ -34,7 +35,10 @@ import {
   visualRasterKey,
   visualToImageProps,
 } from '../components/visual';
-import { renderChartToImageProps } from '../components/highcharts';
+import {
+  effectiveChartServerUrl,
+  renderChartToImageProps,
+} from '../components/highcharts';
 import { prerasterizeVisuals } from './prerasterizeVisuals';
 import { transformComponents, withNodeIdentity } from './componentTransform';
 
@@ -95,14 +99,25 @@ export async function desugarExternals<T>(
     }
 
     if (node.name === 'highcharts') {
+      const props = node.props as HighchartsProps;
+      const chartConfig = options.services?.highcharts;
+      // The walk resolves sibling components with `Promise.all`, so every
+      // chart in the document would otherwise be posted at the same instant.
+      // The gate is keyed by the server this chart is bound for, and lives
+      // outside this call, so the cap holds across concurrent documents too.
       return withNodeIdentity(node, {
         name: 'image',
-        props: await renderChartToImageProps(
-          node.props as HighchartsProps,
-          options.theme,
-          options.services?.highcharts,
-          options.chartFonts,
-          options.warnings
+        props: await limitChartRequest(
+          effectiveChartServerUrl(props, chartConfig),
+          chartConfig?.concurrency,
+          () =>
+            renderChartToImageProps(
+              props,
+              options.theme,
+              chartConfig,
+              options.chartFonts,
+              options.warnings
+            )
         ),
       });
     }

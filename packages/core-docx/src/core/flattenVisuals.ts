@@ -20,6 +20,7 @@ import {
   type PptxRasterizer,
   type PptxBatchRasterizer,
   type RasterizeFontFace,
+  createLimiter,
 } from '@json-to-office/shared';
 import {
   isNativeVisualProps,
@@ -31,7 +32,6 @@ import {
   visualRasterKey,
   visualToImageProps,
 } from '../components/visual';
-import { createLimiter } from '../utils/promiseLimiter';
 import { transformComponents, withNodeIdentity } from './componentTransform';
 import { prerasterizeVisuals } from './prerasterizeVisuals';
 

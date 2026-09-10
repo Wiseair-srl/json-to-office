@@ -38,6 +38,14 @@ export interface HighchartsServiceConfig {
    * public URL; with it, every generation says which URL received the data.
    */
   allowRemote?: boolean;
+  /**
+   * Concurrent requests allowed against this export server (default 4).
+   * A chart is one Puppeteer render, and a self-hosted server usually runs a
+   * single worker, so a document's charts are queued rather than posted all
+   * at once. The cap is per server URL and process-wide: several documents
+   * rendered together share it instead of each opening a pool of their own.
+   */
+  concurrency?: number;
 }
 
 // ============================================================================
