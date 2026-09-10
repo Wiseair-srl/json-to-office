@@ -415,7 +415,7 @@ describe('components/highcharts', { timeout: 30000 }, () => {
     });
 
     it('throws when export server unavailable', async () => {
-      mockFetch.mockRejectedValueOnce(new Error('ECONNREFUSED'));
+      mockFetch.mockRejectedValue(new Error('ECONNREFUSED'));
 
       const component = {
         name: 'highcharts' as const,
@@ -1218,5 +1218,92 @@ describe('bounded chart concurrency', () => {
 
     expect(perUrl.get('http://charts-a.internal/export')?.peak).toBe(4);
     expect(perUrl.get('http://charts-b.internal/export')?.peak).toBe(4);
+  });
+});
+
+/**
+ * What a transient export server costs a document.
+ *
+ * A single-worker server restarting, or shedding load with a 429, used to
+ * take the whole document with it: one chart's failure is the document's
+ * failure. A retry is only worth having if it can tell that apart from a
+ * chart the server will refuse however many times it is asked.
+ */
+describe('retrying a chart the export server could not answer', () => {
+  const chart = {
+    options: {
+      chart: { width: 400, height: 300 },
+      series: [{ type: 'column', data: [1, 2, 3] }],
+    },
+  };
+  const ok = { ok: true, text: async () => 'AA==' };
+  const status = (code: number, statusText = 'Boom'): unknown => ({
+    ok: false,
+    status: code,
+    statusText,
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetChartLimiters();
+  });
+
+  it('renders the chart once a retry lands', async () => {
+    mockFetch
+      .mockRejectedValueOnce(new Error('ECONNREFUSED'))
+      .mockResolvedValue(ok);
+
+    const props = await renderChartToImageProps(
+      chart as never,
+      createMockTheme()
+    );
+
+    expect(props.base64).toBe('data:image/png;base64,AA==');
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([429, 500, 503])('retries a %d', async (code) => {
+    mockFetch.mockResolvedValueOnce(status(code)).mockResolvedValue(ok);
+
+    await renderChartToImageProps(chart as never, createMockTheme());
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('gives up after the retry budget, keeping the message it always had', async () => {
+    mockFetch.mockRejectedValue(new Error('ECONNREFUSED'));
+
+    await expect(
+      renderChartToImageProps(chart as never, createMockTheme())
+    ).rejects.toThrow(/not running.*enableServer.*after 3 attempts/s);
+    expect(mockFetch).toHaveBeenCalledTimes(3);
+  });
+
+  it('still reports an exhausted timeout as a service outage', async () => {
+    mockFetch.mockRejectedValue(
+      Object.assign(new Error('aborted'), { name: 'AbortError' })
+    );
+
+    await expect(
+      renderChartToImageProps(chart as never, createMockTheme())
+    ).rejects.toMatchObject({ code: 'SERVICE_UNAVAILABLE' });
+  });
+
+  it('fails a rejected chart payload on the first attempt, verbatim', async () => {
+    mockFetch.mockResolvedValue(status(400, 'Bad Request'));
+
+    await expect(
+      renderChartToImageProps(chart as never, createMockTheme())
+    ).rejects.toThrow('Highcharts export server returned 400: Bad Request');
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([401, 404, 422])('does not retry a %d either', async (code) => {
+    mockFetch.mockResolvedValue(status(code));
+
+    await expect(
+      renderChartToImageProps(chart as never, createMockTheme())
+    ).rejects.toThrow(new RegExp(`returned ${code}`));
+    expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 });
