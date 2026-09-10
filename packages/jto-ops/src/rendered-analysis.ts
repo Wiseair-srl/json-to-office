@@ -708,6 +708,107 @@ function draftRenderedFindings(input: RenderedAnalysisInput): RenderedDraft {
         })
       );
     }
+
+    // -- Split table: the header alone at a page foot, or one row alone on
+    // either side of the break. A table is grouped by its own pointer, and a
+    // row by the index in the cell pointers the inventory wrote.
+    // A cell pointer ends at the cell or inside it — `.../cells/2/content`
+    // when the cell is an object rather than a bare string.
+    const TABLE_CELL =
+      /^(.*)\/props\/columns\/(\d+)\/(?:header|cells\/(\d+))(?:\/.*)?$/;
+    const tables = new Map<
+      string,
+      {
+        pages: Map<number, Set<number>>;
+        paths: Map<number, { column: number; path: string }>;
+      }
+    >();
+    for (const match of matches) {
+      if (
+        (match.entry.role !== 'table-header' &&
+          match.entry.role !== 'table-cell') ||
+        match.status !== 'mapped'
+      )
+        continue;
+      const parsed = TABLE_CELL.exec(match.entry.path);
+      if (!parsed) continue;
+      const [, table, column, row] = parsed;
+      // A header carries no row index; -1 orders it above every row.
+      const rowIndex = row === undefined ? -1 : Number(row);
+      const entry = tables.get(table) ?? {
+        pages: new Map<number, Set<number>>(),
+        paths: new Map<number, { column: number; path: string }>(),
+      };
+      for (const occurrence of match.occurrences)
+        for (const part of occurrence.parts) {
+          const rows = entry.pages.get(part.pageIndex) ?? new Set<number>();
+          rows.add(rowIndex);
+          entry.pages.set(part.pageIndex, rows);
+        }
+      // The row's leftmost cell, so a finding always lands on the same
+      // pointer however the matcher happened to order the columns.
+      const held = entry.paths.get(rowIndex);
+      if (!held || Number(column) < held.column)
+        entry.paths.set(rowIndex, {
+          column: Number(column),
+          path: match.entry.path,
+        });
+      tables.set(table, entry);
+    }
+    for (const [table, { pages: onPage, paths }] of tables) {
+      const ordered = [...onPage.keys()].sort((a, b) => a - b);
+      if (ordered.length < 2) continue;
+      const bodyRows = (page: number) =>
+        [...(onPage.get(page) ?? [])].filter((row) => row >= 0);
+      const report = (
+        kind: 'header-alone' | 'orphan-row' | 'widow-row',
+        page: number,
+        path: string,
+        message: string,
+        suggestion: string
+      ) =>
+        findings.push(
+          finding({
+            ruleId: 'rendered/table-split',
+            mapping: 'mapped',
+            page: page + 1,
+            path,
+            message,
+            suggestion,
+            context: { kind, table },
+          })
+        );
+      const firstPage = ordered[0];
+      const lastPage = ordered[ordered.length - 1];
+      if (onPage.get(firstPage)!.has(-1) && bodyRows(firstPage).length === 0) {
+        report(
+          'header-alone',
+          firstPage,
+          paths.get(-1)!.path,
+          `The table's header is the only part of it on page ${firstPage + 1}; its rows start on the next page.`,
+          'Keep the header with its first rows, or move the table so it starts on the next page.'
+        );
+        continue;
+      }
+      const opening = bodyRows(firstPage);
+      const closing = bodyRows(lastPage);
+      if (opening.length === 1)
+        report(
+          'orphan-row',
+          firstPage,
+          paths.get(opening[0])!.path,
+          `The table leaves one row alone at the foot of page ${firstPage + 1}.`,
+          'Keep the table together on one page, or edit the rows above it so the break falls elsewhere.'
+        );
+      else if (closing.length === 1)
+        report(
+          'widow-row',
+          lastPage,
+          paths.get(closing[0])!.path,
+          `The table leaves one row alone at the top of page ${lastPage + 1}.`,
+          'Keep the table together on one page, or edit the rows above it so the break falls elsewhere.'
+        );
+    }
   }
 
   const inventory: Record<MappingStatus, number> = {

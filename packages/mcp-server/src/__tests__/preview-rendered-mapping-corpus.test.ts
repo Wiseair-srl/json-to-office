@@ -8,9 +8,19 @@
  * strings ("Total" in two tables, one sentence twice, a contents page that
  * repeats every heading), ligature-prone words, running chrome around a
  * paragraph that breaks across pages, a family declared with a source that
- * cannot load, a native chart's own titles, and text whose tail never
- * rendered. Each case also states the warning-level findings the pass must
- * report — and, by omission, the ones it must not.
+ * cannot load, a native chart's own titles, a table broken badly across a
+ * page, and text whose tail never rendered. Each case also states the
+ * warning-level findings the pass must report — and, by omission, the ones
+ * it must not.
+ *
+ * Fully clipped text is covered by unit fixtures rather than here, because
+ * LibreOffice has no portable way to produce it: an off-page frame is pulled
+ * back onto the page, a frame taller than its text simply grows, a table cell
+ * breaks a long word rather than clipping it, and a zero-width column renders
+ * its text one character to a line. The one case that does drop text — a
+ * bottom-anchored table-based text box — vanishes on macOS and paginates for
+ * minutes on Linux, so it cannot be a converter fixture. `truncated-frame`
+ * covers the partial clip, which is what LibreOffice does produce.
  *
  * Scoring: an entry is a true positive when the pass maps it and the label
  * says it should, on the page the label names when it names one; a false
@@ -59,6 +69,8 @@ interface Case {
   labels: Record<string, Label>;
   /** Warning-level rendered codes the pass must report, as a set. */
   warnings: string[];
+  /** Information-level rendered codes the pass must report, as a set. */
+  infos?: string[];
 }
 
 const LONG = Array.from(
@@ -288,6 +300,38 @@ const CASES: Case[] = [
     warnings: [],
   },
   {
+    id: 'table-split-across-a-page',
+    // Prose sized so the table starts near the foot of page one and only its
+    // first row fits there: the split the rendered pass is meant to name.
+    document: report([
+      { name: 'heading', props: { text: 'Delivery figures', level: 1 } },
+      {
+        name: 'paragraph',
+        props: {
+          text: Array.from(
+            { length: 48 },
+            (_, i) =>
+              `Line ${i} of the run-up prose that fills the page ahead of the table`
+          ).join('. '),
+        },
+      },
+      table([
+        ['Contracted work delivered', '120'],
+        ['Services delivered', '80'],
+        ['Licences delivered', '60'],
+        ['Support delivered', '40'],
+      ]),
+    ]),
+    labels: {},
+    warnings: [],
+    // The stub second page is a true finding of its own: one row is all that
+    // is on it. Both are listed so neither can vanish unnoticed.
+    infos: [
+      'W_QUALITY_RENDERED_TABLE_SPLIT',
+      'W_QUALITY_RENDERED_PAGE_UNDERFILLED',
+    ],
+  },
+  {
     id: 'truncated-frame',
     document: report([
       {
@@ -405,6 +449,20 @@ describe.skipIf(!RUN)('rendered mapping corpus', () => {
       expect(warnings, JSON.stringify(findings.diagnostics, null, 1)).toEqual(
         [...new Set(c.warnings)].sort()
       );
+      if (c.infos) {
+        const infos = [
+          ...new Set(
+            findings.diagnostics
+              .filter(
+                (d) => d.severity === 'info' && d.certainty === 'rendered'
+              )
+              .map((d) => d.code)
+          ),
+        ].sort();
+        expect(infos, JSON.stringify(findings.diagnostics, null, 1)).toEqual(
+          [...new Set(c.infos)].sort()
+        );
+      }
       expect(findings.summary?.findings.unmapped).toBe(0);
     }, 120_000);
   }

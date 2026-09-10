@@ -26,6 +26,7 @@ export type RenderedRuleId =
   | 'rendered/empty-page'
   | 'rendered/heading-stranded'
   | 'rendered/paragraph-split'
+  | 'rendered/table-split'
   | 'rendered/page-underfilled';
 
 interface RenderedRuleSpec {
@@ -121,6 +122,15 @@ export const RENDERED_QUALITY_RULES: QualityRulePack = {
       description: 'A heading that is the last body line on its page.',
       category: 'composition',
       defaultSeverity: 'warning',
+      formats: ['docx'],
+    }),
+    renderedRule({
+      id: 'rendered/table-split',
+      code: QUALITY_CODES.RENDERED_TABLE_SPLIT,
+      description:
+        'A table broken across a page badly: its header left alone at the foot of a page (`kind: header-alone`), or one row alone on either side of the break (`kind: orphan-row` or `widow-row`).',
+      category: 'composition',
+      defaultSeverity: 'info',
       formats: ['docx'],
     }),
     renderedRule({
