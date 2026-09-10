@@ -174,7 +174,9 @@ describe('figures from the playground template', () => {
       expect(validateDocument(doc).errors).toEqual([]);
       const { buffer, warnings } = await generateBufferWithWarnings(doc);
       expect(warnings).toEqual([]);
-      expect(mockFetch).toHaveBeenCalledTimes(2);
+      // Both chart figures invoke the same block, so their two charts post
+      // the same body and the export server is asked once.
+      expect(mockFetch).toHaveBeenCalledTimes(1);
       const xml = await documentXml(buffer as Buffer);
       expect(xml.match(/SEQ figure \\\* ARABIC/g)).toHaveLength(3);
       const numbers = [...text(xml).matchAll(/\|(\d)\|/g)].map((m) => m[1]);

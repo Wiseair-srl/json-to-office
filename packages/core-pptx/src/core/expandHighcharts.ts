@@ -15,9 +15,12 @@ import {
   REMOTE_EXPORT_WARNING,
   chartFamilyResolver,
   chartPointsPerPixel,
+  chartRequestKey,
+  dedupeChartRequest,
   limitChartRequest,
   postJsonToService,
   resolveServiceUrl,
+  type ChartRenderCache,
   withChartFontFaceCss,
   withChartTypography,
   type ChartTypography,
@@ -62,6 +65,9 @@ export async function expandHighchartsComponents(
     services,
     warnings,
     chartFonts,
+    // Per deck: a chart repeated on an agenda slide and again in its section
+    // is one render.
+    chartCache: new Map(),
   };
 
   const slides = await Promise.all(
@@ -85,6 +91,7 @@ interface ExpansionScope {
   services: HighchartsServiceConfig | undefined;
   warnings: PipelineWarning[];
   chartFonts: readonly RasterizeFontFace[] | undefined;
+  chartCache: ChartRenderCache<RenderedChart>;
 }
 
 async function expandList(
@@ -138,7 +145,8 @@ async function expandOne(
           scope.chartFonts
         ),
         scope.services,
-        scope.warnings
+        scope.warnings,
+        scope.chartCache
       )
   );
 
@@ -180,7 +188,8 @@ function assertExportServerAllowed(
 async function renderChart(
   config: PptxHighchartsProps,
   services: HighchartsServiceConfig | undefined,
-  warnings: PipelineWarning[]
+  warnings: PipelineWarning[],
+  cache?: ChartRenderCache<RenderedChart>
 ): Promise<RenderedChart> {
   if (!isNodeEnvironment()) {
     throw new Error(
@@ -201,6 +210,19 @@ async function renderChart(
     ...(config.resources ? { resources: config.resources } : {}),
   };
 
+  return dedupeChartRequest(
+    cache,
+    chartRequestKey(serverUrl, requestBody),
+    () => postChart(serverUrl, requestBody, config, services)
+  );
+}
+
+async function postChart(
+  serverUrl: string,
+  requestBody: Record<string, unknown>,
+  config: PptxHighchartsProps,
+  services: HighchartsServiceConfig | undefined
+): Promise<RenderedChart> {
   const response = await postJsonToService({
     url: serverUrl,
     path: '/export',

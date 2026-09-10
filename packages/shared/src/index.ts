@@ -201,8 +201,11 @@ export {
 export { createLimiter } from './utils/promiseLimiter';
 export {
   DEFAULT_CHART_CONCURRENCY,
+  chartRequestKey,
+  dedupeChartRequest,
   limitChartRequest,
   resetChartLimiters,
+  type ChartRenderCache,
 } from './utils/chartRequests';
 
 // Semver utilities

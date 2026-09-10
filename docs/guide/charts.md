@@ -264,6 +264,8 @@ await generateAndSaveFromJson(document, 'report.docx', {
 });
 ```
 
+A chart identical to one already rendered in the same document is requested once and its PNG reused, so a figure that appears in a summary and again in its own section costs one render. Identical means the same request body — the same options, the same theme, and the same placement, since the type in a chart is sized for the width the image is placed at.
+
 ## Theme typography in Highcharts output
 
 The chart is a PNG drawn by a browser that has never seen the document, so on its own it would come out in the export server's default face at Highcharts' own sizes — visibly foreign to the prose around it. json-to-office therefore writes the document's typography into the request, beneath whatever the author set:

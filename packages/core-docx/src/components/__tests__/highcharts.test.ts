@@ -1356,3 +1356,96 @@ describe('what the host can dial', () => {
     expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('rendering a repeated chart once', () => {
+  const chartProps = (data: number[]): Record<string, unknown> => ({
+    options: {
+      chart: { width: 400, height: 300 },
+      series: [{ type: 'column', data }],
+    },
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetChartLimiters();
+    mockFetch.mockResolvedValue({ ok: true, text: async () => 'AA==' });
+  });
+
+  it('posts one request for a chart that appears three times', async () => {
+    const document = await desugarExternals(
+      {
+        name: 'docx',
+        props: {},
+        children: [
+          { name: 'highcharts', props: chartProps([1, 2, 3]) },
+          { name: 'highcharts', props: chartProps([1, 2, 3]) },
+          { name: 'highcharts', props: chartProps([1, 2, 3]) },
+        ],
+      },
+      { theme: createMockTheme() }
+    );
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    // Every appearance still gets the image, not just the first.
+    for (const child of document.children) {
+      expect(child).toMatchObject({
+        name: 'image',
+        props: { base64: 'data:image/png;base64,AA==' },
+      });
+    }
+  });
+
+  it('keeps charts that differ apart', async () => {
+    await desugarExternals(
+      {
+        name: 'docx',
+        props: {},
+        children: [
+          { name: 'highcharts', props: chartProps([1, 2, 3]) },
+          { name: 'highcharts', props: chartProps([3, 2, 1]) },
+          { name: 'highcharts', props: chartProps([1, 2, 3]) },
+        ],
+      },
+      { theme: createMockTheme() }
+    );
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('renders the same chart again when it is placed at a different width', async () => {
+    // The key is the resolved request body, and the body carries type sized
+    // for the width the image is placed at — so the same series shrunk into
+    // half the measure is a genuinely different PNG, not a cache miss to fix.
+    const document = await desugarExternals(
+      {
+        name: 'docx',
+        props: {},
+        children: [
+          { name: 'highcharts', props: chartProps([1, 2, 3]) },
+          {
+            name: 'highcharts',
+            props: { ...chartProps([1, 2, 3]), width: 200 },
+          },
+        ],
+      },
+      { theme: createMockTheme() }
+    );
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(document.children[0].props).toMatchObject({ width: 400 });
+    expect(document.children[1].props).toMatchObject({ width: 200 });
+  });
+
+  it('does not carry a render across documents', async () => {
+    const document = {
+      name: 'docx',
+      props: {},
+      children: [{ name: 'highcharts', props: chartProps([1, 2, 3]) }],
+    };
+
+    await desugarExternals(document, { theme: createMockTheme() });
+    await desugarExternals(document, { theme: createMockTheme() });
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+});

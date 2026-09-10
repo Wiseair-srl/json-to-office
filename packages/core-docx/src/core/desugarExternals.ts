@@ -38,6 +38,7 @@ import {
 import {
   effectiveChartServerUrl,
   renderChartToImageProps,
+  type ChartCache,
 } from '../components/highcharts';
 import { prerasterizeVisuals } from './prerasterizeVisuals';
 import { transformComponents, withNodeIdentity } from './componentTransform';
@@ -76,6 +77,10 @@ export async function desugarExternals<T>(
       ...(options.visualFonts ? { fonts: options.visualFonts } : {}),
     }
   ).catch(() => new Map<string, never>());
+
+  // Per document, like the visual pre-pass map: a chart repeated in a summary
+  // and again in its own section is one render, not two.
+  const chartCache: ChartCache = new Map();
 
   return transformComponents(document, async (node) => {
     // A disabled component is filtered out before it renders, so paying a
@@ -116,7 +121,8 @@ export async function desugarExternals<T>(
               options.theme,
               chartConfig,
               options.chartFonts,
-              options.warnings
+              options.warnings,
+              chartCache
             )
         ),
       });

@@ -62,6 +62,48 @@ export function limitChartRequest<T>(
 }
 
 /**
+ * Identity of one chart export request: the server it goes to and the body it
+ * carries.
+ *
+ * The body itself rather than a digest of it. Hashing would pull a Node
+ * builtin into a module the browser bundle includes, and the map this keys is
+ * per document and holds one entry per *unique* chart — so it costs about
+ * what the requests it saves already cost, and it cannot collide.
+ */
+export function chartRequestKey(
+  serverUrl: string,
+  requestBody: unknown
+): string {
+  return `${serverUrl}\n${JSON.stringify(requestBody)}`;
+}
+
+/** Per-document memo of chart renders, keyed by {@link chartRequestKey}. */
+export type ChartRenderCache<T> = Map<string, Promise<T>>;
+
+/**
+ * Render a chart once per document however many times it appears.
+ *
+ * The *promise* is memoized, not the result, so charts that are identical and
+ * concurrent — the normal case, since a document's charts are desugared
+ * together — share one request rather than racing to start several. A failed
+ * render is shared too: the same body would fail the same way, and letting
+ * fifty copies each spend the retry budget is exactly the storm the gate
+ * exists to prevent.
+ */
+export function dedupeChartRequest<T>(
+  cache: ChartRenderCache<T> | undefined,
+  key: string,
+  send: () => Promise<T>
+): Promise<T> {
+  if (!cache) return send();
+  const pending = cache.get(key);
+  if (pending) return pending;
+  const started = send();
+  cache.set(key, started);
+  return started;
+}
+
+/**
  * Forget every gate. For tests, and for a host that reconfigures between
  * runs — never while requests are in flight, which would let the next caller
  * open a second pool alongside them.
