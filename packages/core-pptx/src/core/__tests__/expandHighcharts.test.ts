@@ -22,7 +22,10 @@ import type {
   PresentationComponentDefinition,
   ProcessedPresentation,
 } from '../../types';
-import type { HighchartsServiceConfig } from '@json-to-office/shared';
+import {
+  resetChartLimiters,
+  type HighchartsServiceConfig,
+} from '@json-to-office/shared';
 
 const mockFetch = vi.fn();
 vi.stubGlobal('fetch', mockFetch);
@@ -104,6 +107,7 @@ const CHART_600x400 = { chart: { width: 600, height: 400 } };
 describe('expandHighchartsComponents', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    resetChartLimiters();
     mockFetch.mockResolvedValue({
       ok: true,
       text: vi.fn().mockResolvedValue(FAKE_B64),
@@ -149,23 +153,35 @@ describe('expandHighchartsComponents', () => {
   });
 
   it('throws when export server unavailable', async () => {
-    mockFetch.mockRejectedValueOnce(new Error('ECONNREFUSED'));
+    mockFetch.mockRejectedValue(new Error('ECONNREFUSED'));
 
-    await expect(expand({ options: CHART_600x400 })).rejects.toThrow(
-      /not running.*enableServer/s
-    );
+    await expect(
+      expand({ options: CHART_600x400 }, EMPTY_THEME, { retries: 0 })
+    ).rejects.toThrow(/not running.*enableServer/s);
+  });
+
+  it('reports an unreachable server as a dependency outage, not a defect', async () => {
+    // A server route reads this code to answer 503 rather than 500; the
+    // message and the code both have to survive the move to the shared
+    // client and the retries that now precede the final throw.
+    mockFetch.mockRejectedValue(new Error('ECONNREFUSED'));
+
+    await expect(expand({ options: CHART_600x400 })).rejects.toMatchObject({
+      code: 'SERVICE_UNAVAILABLE',
+      message: expect.stringMatching(/not running.*enableServer/s),
+    });
   });
 
   it('throws on non-ok response', async () => {
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValue({
       ok: false,
       status: 500,
       statusText: 'Internal Server Error',
     });
 
-    await expect(expand({ options: CHART_600x400 })).rejects.toThrow(
-      /returned 500/
-    );
+    await expect(
+      expand({ options: CHART_600x400 }, EMPTY_THEME, { retries: 0 })
+    ).rejects.toThrow(/returned 500/);
   });
 
   it('uses custom serverUrl prop', async () => {
@@ -707,5 +723,120 @@ describe('theme typography injection', () => {
   it('leaves a theme-less expansion byte-identical to before', async () => {
     await expand({ options: CHART_600x400 });
     expect(requestBody().infile).toEqual(CHART_600x400);
+  });
+});
+
+/**
+ * What a deck does to a single-worker export server.
+ *
+ * Slides expand with `Promise.all`, so a fifty-chart deck used to post fifty
+ * requests before the first PNG came back — the same burst the docx walk
+ * produced, and the same 30s abort counting down on every one of them.
+ */
+describe('bounded chart concurrency', () => {
+  /** A fake export server that records how many requests it holds at once. */
+  function countingExportServer(): {
+    peak: () => number;
+    calls: () => number;
+    handler: () => Promise<{ ok: true; text: () => Promise<string> }>;
+  } {
+    let inFlight = 0;
+    let peak = 0;
+    let calls = 0;
+    return {
+      peak: () => peak,
+      calls: () => calls,
+      handler: async () => {
+        calls++;
+        inFlight++;
+        peak = Math.max(peak, inFlight);
+        // A real render is not instantaneous; without a turn of the event
+        // loop here every request would look serial whatever the cap is.
+        await new Promise((resolve) => setTimeout(resolve, 1));
+        inFlight--;
+        return { ok: true, text: async () => FAKE_B64 };
+      },
+    };
+  }
+
+  /** `count` charts spread over `count` slides, each one different. */
+  function deckWithCharts(count: number): ProcessedPresentation {
+    const deck = presentation([], EMPTY_THEME);
+    return {
+      ...deck,
+      slides: Array.from({ length: count }, (_, index) => ({
+        components: [
+          {
+            name: 'highcharts',
+            props: {
+              options: {
+                chart: { width: 600, height: 400 },
+                series: [{ data: [index, index + 1] }],
+              },
+            },
+          } as PptxComponentInput,
+        ],
+      })),
+    };
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetChartLimiters();
+  });
+
+  it('never opens more than the default four requests at once, over fifty charts', async () => {
+    const server = countingExportServer();
+    mockFetch.mockImplementation(server.handler);
+
+    await expandHighchartsComponents(deckWithCharts(50), undefined, []);
+
+    expect(server.calls()).toBe(50);
+    expect(server.peak()).toBe(4);
+  });
+
+  it('honours a configured cap', async () => {
+    const server = countingExportServer();
+    mockFetch.mockImplementation(server.handler);
+
+    await expandHighchartsComponents(
+      deckWithCharts(20),
+      { concurrency: 2 },
+      []
+    );
+
+    expect(server.peak()).toBe(2);
+  });
+
+  it('aborts a wedged server instead of hanging the deck forever', async () => {
+    // Before the move to the shared client this path had no timeout at all:
+    // a server that accepted the connection and never answered held the
+    // render open indefinitely.
+    mockFetch.mockImplementation(
+      (_url: string, init: { signal: AbortSignal }) =>
+        new Promise((_resolve, reject) => {
+          init.signal.addEventListener('abort', () =>
+            reject(Object.assign(new Error('aborted'), { name: 'AbortError' }))
+          );
+        })
+    );
+
+    await expect(
+      expand({ options: CHART_600x400 }, EMPTY_THEME, {
+        timeoutMs: 20,
+        retries: 0,
+      })
+    ).rejects.toThrow(/timed out after 20ms/);
+  });
+
+  it('renders the chart once a retry lands', async () => {
+    mockFetch
+      .mockRejectedValueOnce(new Error('ECONNREFUSED'))
+      .mockResolvedValue({ ok: true, text: async () => FAKE_B64 });
+
+    const { component } = await expand({ options: CHART_600x400 });
+
+    expect(component.props?.base64).toBe(`data:image/png;base64,${FAKE_B64}`);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 });
