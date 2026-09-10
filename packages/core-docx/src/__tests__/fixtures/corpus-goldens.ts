@@ -19,21 +19,21 @@
 
 export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'blocks/figures-consulting':
-    '16b7d37c3a2c686628f3eae9f391ab2164082d4fa04c6bac61428ed99978502a',
+    '38819d948cdb15f3c53514fe394546d58d588ec37f4b46ecaf1eae949f88dbe3',
   'blocks/figures-fallback':
-    '1c947aa29031b9d5a835a54b7ac420561095e23200717a0dcab1b8d4a44697b0',
+    'b9bf8afbe07a269bf749185cb8b08093b43feddb098fa5e44dfcf5653647d0cf',
   'blocks/report-data-consulting':
-    'f0cec199a29bf1f6d43f935c0b96a3a303dfc3aac38bb863417263f6ee6da240',
+    'c2248b73e48731fcf27d983aa559e4f2d27275d679d10d191f7e1b01b92e8e66',
   'blocks/report-data-fallback':
-    '3e454135943d9cfa39831b79abd897c5214d90ba3223701aed076a3e169a9d98',
+    '6f67732028bb3cb3ad5630c1c3b2acbecf85f88897dac88e8afc16100cedc239',
   'blocks/report-chrome-fallback':
-    '9c9091823f18a319ecb4b1185ba8b0185ce126bde88e8c7ee100955bcf0bad32',
+    '19275b66c2126d5c82f2b6872fa4a4b9192e9bb838022b1c8cdf40fcb1a6137c',
   'blocks/report-chrome-consulting':
-    '32ff219e5d3c9a6acf898a4b7f3b5fc05defeaac0e1647c5a0c960490a98475a',
+    'd6254d0f5c51239018f155ad0fd397e50fcdbda031ee412624f6334360457e91',
   'blocks/key-takeaways-fallback':
-    '1abd37c335d7e73ff5461dbc08bd73fc11049aa8c11dfc4e5df210d7db94d6d4',
+    '115089a644b634aa0f606742d49f585ddbd1e70daf8f6abc4e5db9e1ff632be7',
   'blocks/key-takeaways-consulting':
-    '6474a1342916b966c93160571dde3440c25f344566ab4dcfe915586bf886b072',
+    'ac09a8312040588a393da667c6e1d70dd7fe4e08393f11292aaa3011dbeadb63',
   'theme/shared-foundation':
     '65ff601111ac9002b9a34e17efad8efada373bdee737ffca6df272f8306aca32',
   'text/plain':
@@ -81,7 +81,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'text/theme-style-builtin':
     'f2766d54089c5e8c18cae4c5acb3bad28623ab9a034c5ecce4f2d6f9766e3113',
   'text/theme-style-custom':
-    'c62fa305c66b5935e74c9671e6523c82bccc161cb240046d65275a5b3b5c84b9',
+    'b1425ef3774213fbde7f9077d86ea39fa2b7fd481a35aa0020dc7c87ab100704',
   'text/language-override':
     'b288223a0e717bb5bcb41e671a0c902e2c6281e24d8173ae4a10dd557a9cf160',
   'text/no-proof':

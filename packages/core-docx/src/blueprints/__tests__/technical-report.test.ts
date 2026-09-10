@@ -507,7 +507,9 @@ describe.skipIf(!soffice || !pdftotext)('rendered through LibreOffice', () => {
       }
       const memo = (await text('memo')).filter((page) => page.trim());
       expect(memo.length).toBeLessThanOrEqual(3);
-      expect(memo[0]).toMatch(/Technical memo/);
+      // The memo label is painted in the eyebrow role, which the technical
+      // themes set to upper case (#361); `minimal` would keep the authored case.
+      expect(memo[0]).toMatch(/Technical memo/i);
       expect(memo[0].indexOf('To')).toBeLessThan(memo[0].indexOf('From'));
       expect(memo[0]).toContain('the person or group who decides');
       expect(memo[0]).toContain('Recommendation');

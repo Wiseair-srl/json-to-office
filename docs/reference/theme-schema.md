@@ -49,9 +49,47 @@ Canvas keys are `a4`, `letter`, `wide169`, `standard43`. DOCX uses `theme.page.s
 
 Visual recipes the JSON blocks of both formats paint from. No content is inserted by a theme: a recipe says how a block looks once an author places it.
 
-`chrome` optionally contains `runningHead`, `tracker`, `actionTitle`, `keyTakeaways`, `sourceLine`, `confidentialFooter`, `logoSlot`, `cover`. Each recipe accepts `type` (a role name), `color`, `fill`, `rule: { weightPt, color }`, `padPt` and `alignment` (left/center/right). Weights/padding are nonnegative points. Nothing reads these recipes on its own: a [JSON block](/reference/blocks) binds the values it wants with `$theme` pointers such as `/chrome/keyTakeaways/rule/color`, so a theme swap restyles every block that binds them. A `rule.weightPt` of `0` draws no rule.
+`chrome` optionally contains `runningHead`, `tracker`, `actionTitle`, `keyTakeaways`, `sourceLine`, `confidentialFooter`, `logoSlot`, `cover`. Each recipe accepts `type` (a role name), `color`, `fill`, `rule: { weightPt, color }`, `padPt` and `alignment` (left/center/right). Weights/padding are nonnegative points. A recipe reads nothing on its own: a [JSON block](/reference/blocks) binds the values it wants with `$theme` pointers, so a theme swap restyles every block that binds them. A `rule.weightPt` of `0` draws no rule.
 
-`motif` is a single object with required `kind` (none/rule/corner/band), optional `color`, `weightPt` and `placement` (`top`, `bottom`, `left`, `right`, `topLeft`, `topRight`, `bottomLeft`, `bottomRight`). Motif colors are stored for later consumers. Neither schema accepts content requirements.
+`motif` is a single object with required `kind` (none/rule/corner/band), optional `color`, `weightPt` and `placement` (`top`, `bottom`, `left`, `right`, `topLeft`, `topRight`, `bottomLeft`, `bottomRight`). `kind: "none"` resolves to no motif at all, so a composition can ask `{ "$if": { "$theme": "/motif" } }` and draw nothing. Neither schema accepts content requirements.
+
+#### How a recipe layers over a type role
+
+A composition names the role it paints in and lets the recipe override it, with a `$theme` pointer chain — the first pointer that resolves wins:
+
+```json
+{
+  "themeStyle": { "$theme": "/chrome/sourceLine/type", "default": "source" },
+  "font": {
+    "color": {
+      "$theme": ["/chrome/sourceLine/color", "/styles/source/color"],
+      "default": "textMuted"
+    }
+  }
+}
+```
+
+So the recipe wins over the role, the role wins over the literal the composition declares, and a theme that states neither still renders. `themeStyle` brings the role's face, case, tracking, weight and paragraph spacing with it — which is why a block paragraph states no `font.family`. A `themeStyle` naming a style the theme does not define is ignored rather than written into the file.
+
+Retargeting `type` moves face, case, tracking and weight; **size stays with the composition's own role**, because a recipe carries no size and a pointer cannot dereference `type`.
+
+#### What each recipe paints
+
+Rows are the shipped compositions in `client-report-blocks.docx.json`, `technical-report-blocks.docx.json` and `consulting-deck-blocks.pptx.json`. `—` is a field the format's compositions do not draw, with the reason.
+
+| Recipe               | DOCX                                                                                                                                          | PPTX                                                                                                             |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `runningHead`        | `type`/`color` head the chain for the header text, ahead of `tracker`; `rule` is the hairline under it; `alignment` is the header paragraph's | — no page chrome in a deck                                                                                       |
+| `tracker`            | `type`/`color` for the header text when the running head states none                                                                          | `type`/`color`/`alignment` for the slide tracker on every deck block                                             |
+| `actionTitle`        | `color` for the section-opener heading                                                                                                        | `type`/`color` for the title of `action-chart`, `kpi-row`, `two-column` and `statement`                          |
+| `keyTakeaways`       | `type`/`color` for the label, `rule` for the rules that bound it, `padPt` for the gap they keep from the content                              | `type`/`color` for the takeaway label, `rule` for its accent rule in `action-chart` and `statement`              |
+| `sourceLine`         | `type`/`color` for the source line and a data table's notes, `rule` for the hairline above it                                                 | `type`/`color` for the source line on every deck block                                                           |
+| `confidentialFooter` | `type`/`color`/`alignment` for the footer line, `rule` for the hairline above it                                                              | `type`/`color` for the slide footer; `alignment` — a slide footer is placed by frame, not by paragraph alignment |
+| `logoSlot`           | `alignment` for the cover logo                                                                                                                | — a slide logo is placed by frame                                                                                |
+| `cover`              | `type`/`color` for the cover title, `rule` for the rule above it                                                                              | `type`/`color` for the cover title, `rule` for the cover mark                                                    |
+| `motif`              | `kind`/`color`/`weightPt` as the mark at the top edge of the cover                                                                            | the same mark on the cover slide                                                                                 |
+
+`fill` is the one field no shipped composition draws: none of the report or deck blocks paints a filled surface behind text. `rule` is drawn only where a composition has a rule — `tracker`, `actionTitle` and `logoSlot` have none, and no bundled theme sets one there. `placement` is not read: each composition decides where its own mark goes.
 
 ## DOCX theme
 

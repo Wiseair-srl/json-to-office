@@ -479,7 +479,9 @@ describe('binding operands on $each, $if and $count', () => {
     const malformed: JsonBlockDefinition = {
       slots: { items: { type: 'array', items: { type: 'string' } } },
       body: [
-        { $if: { $theme: '/x' }, then: 'x' },
+        // A one-key reference is well formed; a reference carrying anything
+        // else is not, whichever root it names.
+        { $if: { $theme: '/x', default: 'y' }, then: 'x' },
         { $count: { $slot: '/items', default: 0 } },
         { $each: { $slot: '/missing' }, template: 'x' },
       ],
@@ -777,5 +779,98 @@ describe('slot budgets as facts', () => {
       '/children/0/props/slots/text',
     ]);
     expect(budgets[0]).toMatchObject({ words: 3, maxWords: 2 });
+  });
+});
+
+describe('$theme pointer chains', () => {
+  const chained = (pointers: string[] | string, fallback?: unknown) => ({
+    name: 'docx',
+    props: {
+      blocks: {
+        line: {
+          slots: { text: { type: 'string' } },
+          body: [
+            {
+              name: 'paragraph',
+              props: {
+                text: { $slot: '/text' },
+                font: {
+                  color:
+                    fallback === undefined
+                      ? { $theme: pointers }
+                      : { $theme: pointers, default: fallback },
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+    children: [{ name: 'block', props: { ref: 'line', slots: { text: 'x' } } }],
+  });
+  const colorOf = (document: unknown, theme: unknown) =>
+    (
+      new JsonBlockEvaluator((document as any).props.blocks, {
+        format: 'docx',
+        theme,
+      }).expand(document) as any
+    ).children[0].children[0].props.font.color;
+
+  it('takes the first pointer that resolves', () => {
+    const theme = {
+      chrome: { sourceLine: { color: 'accent' } },
+      styles: { source: { color: 'textMuted' } },
+    };
+    expect(
+      colorOf(
+        chained(['/chrome/sourceLine/color', '/styles/source/color']),
+        theme
+      )
+    ).toBe('accent');
+  });
+  it('falls through to the next pointer when the first is absent', () => {
+    const theme = { chrome: {}, styles: { source: { color: 'textMuted' } } };
+    expect(
+      colorOf(
+        chained(['/chrome/sourceLine/color', '/styles/source/color']),
+        theme
+      )
+    ).toBe('textMuted');
+  });
+  it('uses the declared default when no pointer resolves', () => {
+    expect(
+      colorOf(
+        chained(
+          ['/chrome/sourceLine/color', '/styles/source/color'],
+          'textPrimary'
+        ),
+        {}
+      )
+    ).toBe('textPrimary');
+  });
+  it('reports the whole chain when nothing resolves and no default is declared', () => {
+    expect(() =>
+      colorOf(chained(['/chrome/sourceLine/color', '/styles/source/color']), {})
+    ).toThrow(/\/chrome\/sourceLine\/color, \/styles\/source\/color/);
+  });
+  it('rejects an empty chain at definition validation', () => {
+    const issues = validateBlockDefinitions({
+      line: {
+        slots: {},
+        body: [{ name: 'paragraph', props: { text: { $theme: [] } } }],
+      },
+    });
+    expect(issues.map((i) => i.code)).toContain('block_invalid_binding');
+  });
+  it('rejects a chain entry that is not a pointer', () => {
+    const issues = validateBlockDefinitions({
+      line: {
+        slots: {},
+        body: [
+          { name: 'paragraph', props: { text: { $theme: ['/a', 'accent'] } } },
+        ],
+      },
+    });
+    expect(issues.map((i) => i.code)).toContain('block_invalid_binding');
   });
 });

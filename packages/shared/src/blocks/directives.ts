@@ -11,6 +11,16 @@ export const BLOCK_DIRECTIVES = {
   $measure: { keys: ['$measure', 'fraction', 'unit'], result: 'number' },
 } as const;
 export type BlockDirective = keyof typeof BLOCK_DIRECTIVES;
-/** Roots a `$if`/`$each`/`$count` operand may name instead of a slot pointer. */
-export const BLOCK_OPERAND_ROOTS = ['$item', '$slot', '$context'] as const;
+/**
+ * Roots a `$if`/`$each`/`$count` operand may name instead of a slot pointer.
+ * `$theme` is here so a composition can draw an optional recipe field only
+ * when the theme sets one — a takeaways box tinted only by a theme that asks
+ * for a fill, a cover motif only on a theme that declares one.
+ */
+export const BLOCK_OPERAND_ROOTS = [
+  '$item',
+  '$slot',
+  '$context',
+  '$theme',
+] as const;
 export type BlockOperandRoot = (typeof BLOCK_OPERAND_ROOTS)[number];

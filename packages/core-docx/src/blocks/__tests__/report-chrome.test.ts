@@ -265,9 +265,22 @@ describe.skipIf(!soffice || !pdftotext)('rendered through LibreOffice', () => {
         expect(cover, theme).not.toMatch(/\d\s*\/\s*\d/);
         body.forEach((page, i) => {
           const label = `${theme} page ${i + 2}`;
-          expect(page, label).toContain('Annual review');
+          // The running head is painted in the theme's tracker role, which on
+          // every extended theme sets `case: upper` — so the header is read
+          // case-insensitively, and the case itself is asserted below.
+          expect(page.toLowerCase(), label).toContain('annual review');
           expect(page, label).toContain('Confidential');
           expect(page, label).toContain('September 2026');
+          // #361: the tracker role's `case` reaches the header. `minimal`
+          // declares no roles, so its header keeps the authored case.
+          expect(
+            page.includes(
+              THEME_CONFIG[theme].typography?.roles?.tracker?.case === 'upper'
+                ? 'ANNUAL REVIEW'
+                : 'Annual review'
+            ),
+            `${label}: tracker case`
+          ).toBe(true);
           expect(page, label).toMatch(new RegExp(`\\b${i + 2}\\s*/\\s*2\\b`));
           // Letter-spaced display headings (vermilion) come out of pdftotext
           // with spaces inside words, so compare without whitespace.

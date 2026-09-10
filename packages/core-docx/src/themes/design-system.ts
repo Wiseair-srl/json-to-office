@@ -1,5 +1,6 @@
 import {
   designCanvas,
+  resolveMotif,
   resolveTypeRoles,
   validateDesignColors,
 } from '@json-to-office/shared';
@@ -9,7 +10,9 @@ import type { ThemeConfig } from '../styles';
 /** Materialize visual tokens before either pipeline reads style/layout defaults. */
 export function resolveDocxDesignSystem(theme: ThemeConfig): ThemeConfig {
   validateDesignColors(theme, getThemeColors(theme));
-  if (!theme.typography && !theme.spacing) return theme;
+  const motif = resolveMotif(theme.motif);
+  if (!theme.typography && !theme.spacing)
+    return motif === theme.motif ? theme : withMotif(theme, motif);
   const canvas = designCanvas('docx', theme.page.size);
   const roles = resolveTypeRoles(theme, canvas, theme.fonts.body.size ?? 11);
   const styles: Record<string, object> = { ...theme.styles };
@@ -49,7 +52,7 @@ export function resolveDocxDesignSystem(theme: ThemeConfig): ThemeConfig {
   const space = theme.spacing?.canvas?.[canvas];
   const safe = space?.safeAreaIn;
   return {
-    ...theme,
+    ...withMotif(theme, motif),
     styles,
     page: {
       ...theme.page,
@@ -65,4 +68,15 @@ export function resolveDocxDesignSystem(theme: ThemeConfig): ThemeConfig {
       },
     },
   };
+}
+
+/** `motif` present only when the theme declares one other than `none`. */
+function withMotif(
+  theme: ThemeConfig,
+  motif: ThemeConfig['motif']
+): ThemeConfig {
+  if (motif !== undefined) return { ...theme, motif };
+  const rest = { ...theme };
+  delete rest.motif;
+  return rest;
 }

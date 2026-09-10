@@ -67,6 +67,31 @@
                 }
               },
               {
+                "$if": {
+                  "$theme": "/motif"
+                },
+                "then": {
+                  "name": "shape",
+                  "props": {
+                    "type": "line",
+                    "x": "0%",
+                    "y": "0%",
+                    "w": "16%",
+                    "h": 0,
+                    "line": {
+                      "color": {
+                        "$theme": "/motif/color",
+                        "default": "accent"
+                      },
+                      "width": {
+                        "$theme": "/motif/weightPt",
+                        "default": 3
+                      }
+                    }
+                  }
+                }
+              },
+              {
                 "name": "shape",
                 "props": {
                   "type": "line",
@@ -122,7 +147,10 @@
                   "text": {
                     "$slot": "/title"
                   },
-                  "style": "title",
+                  "style": {
+                    "$theme": "/chrome/cover/type",
+                    "default": "title"
+                  },
                   "fontSize": {
                     "$theme": "/styles/title/fontSize",
                     "default": 32
@@ -135,6 +163,13 @@
                   "fit": {
                     "maxLines": 3,
                     "shrink": [28, 24]
+                  },
+                  "color": {
+                    "$theme": [
+                      "/chrome/cover/color",
+                      "/styles/display/fontColor"
+                    ],
+                    "default": "text"
                   }
                 }
               },
@@ -171,7 +206,10 @@
                     "text": {
                       "$slot": "/confidentiality"
                     },
-                    "style": "footer",
+                    "style": {
+                      "$theme": "/chrome/confidentialFooter/type",
+                      "default": "footer"
+                    },
                     "fontSize": {
                       "$theme": "/styles/footer/fontSize",
                       "default": 9
@@ -179,7 +217,14 @@
                     "x": "0%",
                     "y": "96%",
                     "w": "50%",
-                    "h": "4%"
+                    "h": "4%",
+                    "color": {
+                      "$theme": [
+                        "/chrome/confidentialFooter/color",
+                        "/styles/footer/fontColor"
+                      ],
+                      "default": "text2"
+                    }
                   }
                 }
               }
@@ -241,7 +286,10 @@
                     "text": {
                       "$slot": "/tracker"
                     },
-                    "style": "tracker",
+                    "style": {
+                      "$theme": "/chrome/tracker/type",
+                      "default": "tracker"
+                    },
                     "fontSize": {
                       "$theme": "/styles/tracker/fontSize",
                       "default": 10
@@ -250,7 +298,17 @@
                     "y": "0%",
                     "w": "30%",
                     "h": "4.5%",
-                    "align": "right"
+                    "align": {
+                      "$theme": "/chrome/tracker/alignment",
+                      "default": "right"
+                    },
+                    "color": {
+                      "$theme": [
+                        "/chrome/tracker/color",
+                        "/styles/tracker/fontColor"
+                      ],
+                      "default": "text2"
+                    }
                   }
                 }
               },
@@ -260,7 +318,10 @@
                   "text": {
                     "$slot": "/title"
                   },
-                  "style": "display",
+                  "style": {
+                    "$theme": "/chrome/actionTitle/type",
+                    "default": "display"
+                  },
                   "fontSize": {
                     "$theme": "/styles/display/fontSize",
                     "default": 28
@@ -273,6 +334,13 @@
                   "fit": {
                     "maxLines": 2,
                     "shrink": [24, 22]
+                  },
+                  "color": {
+                    "$theme": [
+                      "/chrome/actionTitle/color",
+                      "/styles/display/fontColor"
+                    ],
+                    "default": "text"
                   }
                 }
               },
@@ -338,7 +406,10 @@
                     "name": "text",
                     "props": {
                       "text": "Takeaway",
-                      "style": "eyebrow",
+                      "style": {
+                        "$theme": "/chrome/keyTakeaways/type",
+                        "default": "eyebrow"
+                      },
                       "fontSize": {
                         "$theme": "/styles/eyebrow/fontSize",
                         "default": 10
@@ -347,7 +418,14 @@
                       "x": "71%",
                       "y": "31%",
                       "w": "29%",
-                      "h": "4.5%"
+                      "h": "4.5%",
+                      "color": {
+                        "$theme": [
+                          "/chrome/keyTakeaways/color",
+                          "/styles/eyebrow/fontColor"
+                        ],
+                        "default": "accent"
+                      }
                     }
                   },
                   {
@@ -399,7 +477,10 @@
                       "text": {
                         "$slot": "/source"
                       },
-                      "style": "source",
+                      "style": {
+                        "$theme": "/chrome/sourceLine/type",
+                        "default": "source"
+                      },
                       "fontSize": {
                         "$theme": "/styles/source/fontSize",
                         "default": 9
@@ -407,7 +488,14 @@
                       "x": "0%",
                       "y": "94.5%",
                       "w": "75%",
-                      "h": "5%"
+                      "h": "5%",
+                      "color": {
+                        "$theme": [
+                          "/chrome/sourceLine/color",
+                          "/styles/source/fontColor"
+                        ],
+                        "default": "text2"
+                      }
                     }
                   }
                 ]
@@ -416,7 +504,10 @@
                 "name": "text",
                 "props": {
                   "text": "{PAGE_NUMBER} / {PAGE_COUNT}",
-                  "style": "footer",
+                  "style": {
+                    "$theme": "/chrome/confidentialFooter/type",
+                    "default": "footer"
+                  },
                   "fontSize": {
                     "$theme": "/styles/footer/fontSize",
                     "default": 9
@@ -425,7 +516,14 @@
                   "y": "96%",
                   "w": "12%",
                   "h": "4%",
-                  "align": "right"
+                  "align": "right",
+                  "color": {
+                    "$theme": [
+                      "/chrome/confidentialFooter/color",
+                      "/styles/footer/fontColor"
+                    ],
+                    "default": "text2"
+                  }
                 }
               }
             ]
@@ -509,7 +607,10 @@
                     "text": {
                       "$slot": "/tracker"
                     },
-                    "style": "tracker",
+                    "style": {
+                      "$theme": "/chrome/tracker/type",
+                      "default": "tracker"
+                    },
                     "fontSize": {
                       "$theme": "/styles/tracker/fontSize",
                       "default": 10
@@ -518,7 +619,17 @@
                     "y": "0%",
                     "w": "30%",
                     "h": "4.5%",
-                    "align": "right"
+                    "align": {
+                      "$theme": "/chrome/tracker/alignment",
+                      "default": "right"
+                    },
+                    "color": {
+                      "$theme": [
+                        "/chrome/tracker/color",
+                        "/styles/tracker/fontColor"
+                      ],
+                      "default": "text2"
+                    }
                   }
                 }
               },
@@ -528,7 +639,10 @@
                   "text": {
                     "$slot": "/title"
                   },
-                  "style": "display",
+                  "style": {
+                    "$theme": "/chrome/actionTitle/type",
+                    "default": "display"
+                  },
                   "fontSize": {
                     "$theme": "/styles/display/fontSize",
                     "default": 28
@@ -541,6 +655,13 @@
                   "fit": {
                     "maxLines": 2,
                     "shrink": [24, 22]
+                  },
+                  "color": {
+                    "$theme": [
+                      "/chrome/actionTitle/color",
+                      "/styles/display/fontColor"
+                    ],
+                    "default": "text"
                   }
                 }
               },
@@ -702,7 +823,10 @@
                       "text": {
                         "$slot": "/source"
                       },
-                      "style": "source",
+                      "style": {
+                        "$theme": "/chrome/sourceLine/type",
+                        "default": "source"
+                      },
                       "fontSize": {
                         "$theme": "/styles/source/fontSize",
                         "default": 9
@@ -710,7 +834,14 @@
                       "x": "0%",
                       "y": "94.5%",
                       "w": "75%",
-                      "h": "5%"
+                      "h": "5%",
+                      "color": {
+                        "$theme": [
+                          "/chrome/sourceLine/color",
+                          "/styles/source/fontColor"
+                        ],
+                        "default": "text2"
+                      }
                     }
                   }
                 ]
@@ -719,7 +850,10 @@
                 "name": "text",
                 "props": {
                   "text": "{PAGE_NUMBER} / {PAGE_COUNT}",
-                  "style": "footer",
+                  "style": {
+                    "$theme": "/chrome/confidentialFooter/type",
+                    "default": "footer"
+                  },
                   "fontSize": {
                     "$theme": "/styles/footer/fontSize",
                     "default": 9
@@ -728,7 +862,14 @@
                   "y": "96%",
                   "w": "12%",
                   "h": "4%",
-                  "align": "right"
+                  "align": "right",
+                  "color": {
+                    "$theme": [
+                      "/chrome/confidentialFooter/color",
+                      "/styles/footer/fontColor"
+                    ],
+                    "default": "text2"
+                  }
                 }
               }
             ]
@@ -798,7 +939,10 @@
                     "text": {
                       "$slot": "/tracker"
                     },
-                    "style": "tracker",
+                    "style": {
+                      "$theme": "/chrome/tracker/type",
+                      "default": "tracker"
+                    },
                     "fontSize": {
                       "$theme": "/styles/tracker/fontSize",
                       "default": 10
@@ -807,7 +951,17 @@
                     "y": "0%",
                     "w": "30%",
                     "h": "4.5%",
-                    "align": "right"
+                    "align": {
+                      "$theme": "/chrome/tracker/alignment",
+                      "default": "right"
+                    },
+                    "color": {
+                      "$theme": [
+                        "/chrome/tracker/color",
+                        "/styles/tracker/fontColor"
+                      ],
+                      "default": "text2"
+                    }
                   }
                 }
               },
@@ -817,7 +971,10 @@
                   "text": {
                     "$slot": "/title"
                   },
-                  "style": "display",
+                  "style": {
+                    "$theme": "/chrome/actionTitle/type",
+                    "default": "display"
+                  },
                   "fontSize": {
                     "$theme": "/styles/display/fontSize",
                     "default": 28
@@ -830,6 +987,13 @@
                   "fit": {
                     "maxLines": 2,
                     "shrink": [24, 22]
+                  },
+                  "color": {
+                    "$theme": [
+                      "/chrome/actionTitle/color",
+                      "/styles/display/fontColor"
+                    ],
+                    "default": "text"
                   }
                 }
               },
@@ -970,7 +1134,10 @@
                       "text": {
                         "$slot": "/source"
                       },
-                      "style": "source",
+                      "style": {
+                        "$theme": "/chrome/sourceLine/type",
+                        "default": "source"
+                      },
                       "fontSize": {
                         "$theme": "/styles/source/fontSize",
                         "default": 9
@@ -978,7 +1145,14 @@
                       "x": "0%",
                       "y": "94.5%",
                       "w": "75%",
-                      "h": "5%"
+                      "h": "5%",
+                      "color": {
+                        "$theme": [
+                          "/chrome/sourceLine/color",
+                          "/styles/source/fontColor"
+                        ],
+                        "default": "text2"
+                      }
                     }
                   }
                 ]
@@ -987,7 +1161,10 @@
                 "name": "text",
                 "props": {
                   "text": "{PAGE_NUMBER} / {PAGE_COUNT}",
-                  "style": "footer",
+                  "style": {
+                    "$theme": "/chrome/confidentialFooter/type",
+                    "default": "footer"
+                  },
                   "fontSize": {
                     "$theme": "/styles/footer/fontSize",
                     "default": 9
@@ -996,7 +1173,14 @@
                   "y": "96%",
                   "w": "12%",
                   "h": "4%",
-                  "align": "right"
+                  "align": "right",
+                  "color": {
+                    "$theme": [
+                      "/chrome/confidentialFooter/color",
+                      "/styles/footer/fontColor"
+                    ],
+                    "default": "text2"
+                  }
                 }
               }
             ]
@@ -1044,7 +1228,10 @@
                     "text": {
                       "$slot": "/tracker"
                     },
-                    "style": "tracker",
+                    "style": {
+                      "$theme": "/chrome/tracker/type",
+                      "default": "tracker"
+                    },
                     "fontSize": {
                       "$theme": "/styles/tracker/fontSize",
                       "default": 10
@@ -1053,7 +1240,17 @@
                     "y": "0%",
                     "w": "30%",
                     "h": "4.5%",
-                    "align": "right"
+                    "align": {
+                      "$theme": "/chrome/tracker/alignment",
+                      "default": "right"
+                    },
+                    "color": {
+                      "$theme": [
+                        "/chrome/tracker/color",
+                        "/styles/tracker/fontColor"
+                      ],
+                      "default": "text2"
+                    }
                   }
                 }
               },
@@ -1083,7 +1280,10 @@
                   "text": {
                     "$slot": "/assertion"
                   },
-                  "style": "display",
+                  "style": {
+                    "$theme": "/chrome/actionTitle/type",
+                    "default": "display"
+                  },
                   "fontSize": {
                     "$theme": "/styles/display/fontSize",
                     "default": 28
@@ -1096,6 +1296,13 @@
                   "fit": {
                     "maxLines": 3,
                     "shrink": [24, 22]
+                  },
+                  "color": {
+                    "$theme": [
+                      "/chrome/actionTitle/color",
+                      "/styles/display/fontColor"
+                    ],
+                    "default": "text"
                   }
                 }
               },
@@ -1127,7 +1334,10 @@
                 "name": "text",
                 "props": {
                   "text": "{PAGE_NUMBER} / {PAGE_COUNT}",
-                  "style": "footer",
+                  "style": {
+                    "$theme": "/chrome/confidentialFooter/type",
+                    "default": "footer"
+                  },
                   "fontSize": {
                     "$theme": "/styles/footer/fontSize",
                     "default": 9
@@ -1136,7 +1346,14 @@
                   "y": "96%",
                   "w": "12%",
                   "h": "4%",
-                  "align": "right"
+                  "align": "right",
+                  "color": {
+                    "$theme": [
+                      "/chrome/confidentialFooter/color",
+                      "/styles/footer/fontColor"
+                    ],
+                    "default": "text2"
+                  }
                 }
               }
             ]

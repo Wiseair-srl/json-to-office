@@ -10,17 +10,17 @@
       "components": {
         "block": 17,
         "columns": 1,
-        "divider": 7,
+        "divider": 8,
         "docx": 1,
         "heading": 1,
         "highcharts": 1,
         "image": 1,
         "list": 2,
-        "paragraph": 20,
+        "paragraph": 24,
         "section": 3,
         "statistic": 1,
-        "table": 1,
-        "text-box": 1
+        "table": 2,
+        "text-box": 2
       },
       "slots": {
         "alt-text": 1,
@@ -30,11 +30,11 @@
       },
       "externalAssets": ["media/client-report-blocks/delivery-model.png"],
       "externalFonts": [],
-      "hash": "ea1e1a869e994e319242559e3d1ad68a10b70e6739e281e45659f034d624ffb2",
+      "hash": "1e2aad6ad9d8248d008b768911096039ff185944e5b1536e4db90e45dbf99b87",
       "bytes": {
-        "document": 46927,
-        "gzipped": 6040,
-        "thumbnail": 31041
+        "document": 56215,
+        "gzipped": 6845,
+        "thumbnail": 31973
       }
     },
     {
@@ -49,7 +49,7 @@
         "chart": 2,
         "group": 9,
         "pptx": 1,
-        "shape": 9,
+        "shape": 10,
         "slide": 6,
         "table": 1,
         "text": 27
@@ -61,11 +61,11 @@
       },
       "externalAssets": [],
       "externalFonts": [],
-      "hash": "91f0f1b2eacc9ed694a9ba2d4fa7da3c6e482137cdcf4087d2c681b0502c1ae2",
+      "hash": "75112ad3c921f06fff4377e5fecb9f52e1768b169019ee7b8bdec472add76808",
       "bytes": {
-        "document": 45117,
-        "gzipped": 5301,
-        "thumbnail": 28824
+        "document": 53018,
+        "gzipped": 5672,
+        "thumbnail": 28924
       }
     },
     {
@@ -349,14 +349,14 @@
       "pages": 4,
       "components": {
         "block": 16,
-        "divider": 8,
+        "divider": 9,
         "docx": 1,
         "heading": 3,
         "highcharts": 1,
         "list": 2,
-        "paragraph": 31,
-        "table": 1,
-        "text-box": 1,
+        "paragraph": 35,
+        "table": 2,
+        "text-box": 2,
         "toc": 1
       },
       "slots": {
@@ -366,11 +366,11 @@
       },
       "externalAssets": [],
       "externalFonts": [],
-      "hash": "81c4309cf54c874a9b7e5ec76d5e58bc1db57f554af7c6b6a62bd332a8a8a13b",
+      "hash": "718e70b8285c082a47805651a6d7e8f909fcdc2c93f878391089b2459d5fe92b",
       "bytes": {
-        "document": 51844,
-        "gzipped": 6823,
-        "thumbnail": 63486
+        "document": 60939,
+        "gzipped": 7597,
+        "thumbnail": 65681
       }
     },
     {

@@ -275,11 +275,24 @@ function slotDescriptorAt(
 /** Directives whose value is an operand rather than a plain pointer. */
 const OPERAND_DIRECTIVES = ['$if', '$each', '$count'];
 interface BlockOperand {
-  root: BlockOperandRoot | '$theme';
+  root: BlockOperandRoot;
   pointer: string;
 }
 const isPointer = (value: unknown): value is string =>
   typeof value === 'string' && (value === '' || value.startsWith('/'));
+/**
+ * `$theme` alone may name several pointers, tried in order. A chrome recipe
+ * overrides the type role it is drawn in — `["/chrome/sourceLine/color",
+ * "/styles/source/color"]` reads "the recipe's colour, else the role's" —
+ * which no single pointer can say, and which every other directive, reading
+ * one authored value, has no use for.
+ */
+const themePointerChain = (value: unknown): string[] | undefined =>
+  isPointer(value)
+    ? [value]
+    : Array.isArray(value) && value.length > 0 && value.every(isPointer)
+      ? (value as string[])
+      : undefined;
 /**
  * Read a directive's operand. A plain pointer reads a slot (for `$slot`,
  * `$item`, `$theme` and `$context` it is the directive's own root); for
@@ -357,15 +370,19 @@ function checkTemplate(
       // context — so a repeat can walk the current item's own array and a
       // condition can test one of its fields.
       const operand = blockOperand(value[key], key);
-      if (!operand)
+      const chain =
+        key === '$theme' ? themePointerChain(value[key]) : undefined;
+      if (!operand && !chain)
         issues.push({
           path,
           code: 'block_invalid_binding',
           message: OPERAND_DIRECTIVES.includes(key)
             ? `${key} takes a slot pointer such as /items, or one reference: ${BLOCK_OPERAND_ROOTS.map((root) => `{ "${root}": ... }`).join(', ')}.`
-            : 'Bindings use JSON Pointers, e.g. /title.',
+            : key === '$theme'
+              ? 'Bindings use a JSON Pointer, e.g. /styles/source/size, or a non-empty array of them tried in order.'
+              : 'Bindings use JSON Pointers, e.g. /title.',
         });
-      else if (operand.root === '$slot') {
+      else if (operand?.root === '$slot') {
         const descriptor = slotDescriptorAt(slots, operand.pointer);
         if (!descriptor)
           issues.push({
@@ -694,7 +711,7 @@ export class JsonBlockEvaluator {
    * attributed the same way whichever directive carries it.
    */
   private reference(
-    root: BlockOperandRoot | '$theme',
+    root: BlockOperandRoot,
     pointer: string,
     env: BlockEnvironment
   ): { value: unknown; source: string } {
@@ -779,12 +796,20 @@ export class JsonBlockEvaluator {
       const key = ['$slot', '$item', '$theme', '$context'].find(
         (k) => k in value
       )!;
-      const pointer = value[key] as string;
-      const { value: found, source } = this.reference(
-        key as BlockOperandRoot | '$theme',
-        pointer,
-        env
-      );
+      // Only `$theme` may name a chain; every other root reads one pointer.
+      const chain =
+        (key === '$theme' ? themePointerChain(value[key]) : undefined) ?? [];
+      const pointer = (chain[0] ?? value[key]) as string;
+      let found: unknown;
+      let source = env.source;
+      for (const candidate of chain.length ? chain : [pointer]) {
+        const read = this.reference(key as BlockOperandRoot, candidate, env);
+        source = read.source;
+        if (read.value !== undefined) {
+          found = read.value;
+          break;
+        }
+      }
       this.sourceMap[out] = source;
       let result: unknown =
         found !== undefined ? structuredClone(found) : undefined;
@@ -800,7 +825,7 @@ export class JsonBlockEvaluator {
         return fail(
           definitionPath,
           'block_unknown_theme_binding',
-          `Theme value '${pointer}' is missing; declare a fallback or use an existing token.`
+          `Theme value '${chain.length > 1 ? chain.join(', ') : pointer}' is missing; declare a fallback or use an existing token.`
         );
       // A component slot takes its placement and styling defaults from the
       // definition: `props` are merged beneath the slot value's own props.

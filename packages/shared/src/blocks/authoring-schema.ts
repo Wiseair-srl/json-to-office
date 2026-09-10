@@ -22,13 +22,26 @@ const pointer = (description: string): Schema => ({
   pattern: '^(|/.*)$',
   description,
 });
+/** A pointer, or a non-empty list of pointers tried in order. `$theme` only. */
+const pointerChain = (description: string): Schema => ({
+  anyOf: [
+    pointer(description),
+    {
+      type: 'array',
+      minItems: 1,
+      items: pointer(description),
+      description,
+    },
+  ],
+  description,
+});
 const referenceDescriptions = (format: OfficeFormat) => ({
   $slot:
     'Read a named input slot by JSON Pointer, e.g. /title or /client/name.',
   $item:
     'Read the current $each entry by JSON Pointer. Use an empty string for the whole entry or /title for a property.',
   $theme:
-    'Read the active theme by JSON Pointer, e.g. /colors/primary. A missing value requires a default.',
+    'Read the active theme by JSON Pointer, e.g. /colors/primary, or by a list of pointers tried in order, e.g. ["/chrome/sourceLine/color", "/styles/source/color"] — the chrome recipe if the theme sets one, else the type role. A missing value requires a default.',
   $context:
     format === 'pptx'
       ? 'Read deck or slide context by JSON Pointer, e.g. /document/title, /slide/width or /slide/index.'
@@ -269,7 +282,10 @@ export function createBlockAuthoringSchema(
         case '$context':
           specs[directive] = object(
             {
-              [directive]: pointer(references[directive]),
+              [directive]:
+                directive === '$theme'
+                  ? pointerChain(references[directive])
+                  : pointer(references[directive]),
               default: describe(
                 value(),
                 'Fallback value or binding used only when the referenced value is missing. Null, false and empty values do not trigger it.'
@@ -291,7 +307,7 @@ export function createBlockAuthoringSchema(
           specs[directive] = object(
             {
               $if: operand(
-                'Test a slot by JSON Pointer, e.g. /subtitle, or a reference such as { "$item": "/numeric" }. Missing, null, false, empty text and empty arrays select else; zero selects then.'
+                'Test a slot by JSON Pointer, e.g. /subtitle, or a reference such as { "$item": "/numeric" } or { "$theme": "/chrome/keyTakeaways/fill" }. Missing, null, false, empty text and empty arrays select else; zero selects then.'
               ),
               then: describe(
                 branch(),
@@ -309,7 +325,7 @@ export function createBlockAuthoringSchema(
           specs[directive] = object(
             {
               $each: operand(
-                'Repeat template for each entry in an array slot, e.g. /items, or in an array of the current entry, { "$item": "/cells" }. Read the current entry with $item.'
+                'Repeat template for each entry in an array slot, e.g. /items, or in an array named by a reference, { "$item": "/cells" } or { "$theme": "/palette/chart" }. Read the current entry with $item.'
               ),
               template: describe(
                 item(),

@@ -1,4 +1,7 @@
-import { prepareDocxQualityDocument } from '@json-to-office/core-docx';
+import {
+  prepareDocxQualityDocument,
+  themes as docxThemes,
+} from '@json-to-office/core-docx';
 import { pptxThemes } from '@json-to-office/core-pptx';
 import { describe, it, expect } from 'vitest';
 import * as fs from 'fs';
@@ -54,14 +57,21 @@ describe('bundled playground templates', () => {
         file.endsWith('.docx.json') && json.props?.blocks
           ? prepareDocxQualityDocument(json).model.context.document
           : json;
-      // A deck on a built-in theme by name draws in that theme's families,
-      // which the document itself never spells out.
-      const themeFonts =
-        file.endsWith('.pptx.json') && typeof json.props?.theme === 'string'
-          ? Object.values(pptxThemes[json.props.theme]?.fonts ?? {}).filter(
+      // A document on a built-in theme by name draws in that theme's
+      // families, which it never spells out itself — and since #361 the block
+      // templates spell out none at all: a paragraph names the type role and
+      // the role's face decides the family.
+      const named =
+        typeof json.props?.theme === 'string' ? json.props.theme : undefined;
+      const themeFonts = !named
+        ? []
+        : file.endsWith('.pptx.json')
+          ? Object.values(pptxThemes[named]?.fonts ?? {}).filter(
               (family): family is string => typeof family === 'string'
             )
-          : [];
+          : Object.values(docxThemes[named]?.fonts ?? {})
+              .map((font) => (font as { family?: string })?.family)
+              .filter((family): family is string => typeof family === 'string');
       const names = [
         ...new Set([...collect(json), ...collect(expanded), ...themeFonts]),
       ];
