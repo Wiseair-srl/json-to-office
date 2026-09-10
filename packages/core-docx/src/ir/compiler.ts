@@ -1151,7 +1151,7 @@ function compileParagraph(
     );
   }
 
-  const styleId = paragraphStyleId(props.themeStyle);
+  const styleId = definedParagraphStyleId(props.themeStyle, ctx.theme);
   if (styleId && !ctx.styleIds.has(styleId)) ctx.styleIds.add(styleId);
 
   const children = compileRuns(props, text, ctx, path);
@@ -3481,6 +3481,37 @@ function paragraphStyleId(themeStyle: unknown): string | undefined {
   if (heading) return `JTD_HeadingText${heading[1]}`;
   return themeStyle;
 }
+
+/**
+ * A style id only when the theme actually defines it. A `themeStyle` naming a
+ * type role — the way a block says "this line is the source line" — resolves
+ * to nothing on a theme that declares no roles, and a `w:pStyle` pointing at a
+ * style that is not in styles.xml is worse than none: LibreOffice drops the
+ * paragraph's direct spacing along with the missing style. The paragraph's own
+ * run and spacing props are the documented fallback.
+ */
+function definedParagraphStyleId(
+  themeStyle: unknown,
+  theme: ThemeConfig
+): string | undefined {
+  const id = paragraphStyleId(themeStyle);
+  if (id === undefined) return undefined;
+  if (ALWAYS_EMITTED_PARAGRAPH_STYLE_IDS.has(id)) return id;
+  const styles = theme.styles as Record<string, unknown> | undefined;
+  const name = themeStyle as string;
+  return styles && (styles[name] ?? styles[name.toLowerCase()])
+    ? id
+    : undefined;
+}
+/** Ids `createDocumentStyles` writes for every theme, defined or not. */
+const ALWAYS_EMITTED_PARAGRAPH_STYLE_IDS = new Set([
+  'Normal',
+  'Title',
+  'Subtitle',
+  'Header',
+  'Footer',
+  ...Array.from({ length: 6 }, (_, i) => `JTD_HeadingText${i + 1}`),
+]);
 
 function customOutlineLevel(
   themeStyle: unknown,

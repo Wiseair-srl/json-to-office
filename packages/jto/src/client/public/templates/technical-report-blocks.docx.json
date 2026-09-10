@@ -11,7 +11,7 @@
     },
     "blocks": {
       "cover": {
-        "description": "A themed title page; optional subtitle, logo and metadata collapse when omitted.",
+        "description": "A themed title page: the theme motif at the top edge, the title a third of the way down, and the metadata band pinned to the foot of the text area. The band floats, so give the cover a section of its own — content that flows past the foot of the page would run under it.",
         "slots": {
           "title": {
             "type": "string",
@@ -28,19 +28,19 @@
           "client": {
             "type": "string",
             "oneLine": true,
-            "maxWords": 8,
+            "maxWords": 6,
             "required": false
           },
           "date": {
             "type": "string",
             "oneLine": true,
-            "maxWords": 6,
+            "maxWords": 3,
             "required": false
           },
           "confidentiality": {
             "type": "string",
             "oneLine": true,
-            "maxWords": 8,
+            "maxWords": 4,
             "required": false
           },
           "logo": {
@@ -51,7 +51,67 @@
           {
             "$if": "/logo",
             "then": {
-              "$slot": "/logo"
+              "$slot": "/logo",
+              "props": {
+                "alignment": {
+                  "$theme": "/chrome/logoSlot/alignment",
+                  "default": "left"
+                }
+              }
+            }
+          },
+          {
+            "$if": {
+              "$theme": "/motif"
+            },
+            "then": {
+              "name": "divider",
+              "props": {
+                "width": "22%",
+                "thickness": {
+                  "$theme": "/motif/weightPt",
+                  "default": 3
+                },
+                "color": {
+                  "$theme": "/motif/color",
+                  "default": "accent"
+                },
+                "spacing": {
+                  "before": 0,
+                  "after": 10
+                }
+              }
+            }
+          },
+          {
+            "$if": "/client",
+            "then": {
+              "name": "paragraph",
+              "props": {
+                "text": {
+                  "$slot": "/client"
+                },
+                "themeStyle": "eyebrow",
+                "font": {
+                  "size": {
+                    "$theme": "/styles/eyebrow/size",
+                    "default": 9
+                  },
+                  "color": {
+                    "$theme": "/styles/eyebrow/color",
+                    "default": "accent"
+                  },
+                  "bold": {
+                    "$theme": "/styles/eyebrow/bold",
+                    "default": true
+                  }
+                },
+                "spacing": {
+                  "before": 0,
+                  "after": 0
+                },
+                "keepNext": true
+              }
             }
           },
           {
@@ -61,7 +121,7 @@
               "spacing": {
                 "before": {
                   "$measure": "height",
-                  "fraction": 0.22,
+                  "fraction": 0.3,
                   "unit": "pt"
                 },
                 "after": 0
@@ -80,42 +140,8 @@
                 "default": "borderPrimary"
               },
               "spacing": {
-                "before": 4,
-                "after": 6
-              }
-            }
-          },
-          {
-            "$if": "/client",
-            "then": {
-              "name": "paragraph",
-              "props": {
-                "text": {
-                  "$slot": "/client"
-                },
-                "font": {
-                  "family": {
-                    "$theme": "/fonts/body/family",
-                    "default": "Calibri"
-                  },
-                  "size": {
-                    "$theme": "/styles/eyebrow/size",
-                    "default": 9
-                  },
-                  "bold": {
-                    "$theme": "/styles/eyebrow/bold",
-                    "default": true
-                  },
-                  "color": {
-                    "$theme": "/styles/eyebrow/color",
-                    "default": "accent"
-                  }
-                },
-                "spacing": {
-                  "before": 0,
-                  "after": 4
-                },
-                "keepNext": true
+                "before": 0,
+                "after": 7
               }
             }
           },
@@ -125,31 +151,31 @@
               "text": {
                 "$slot": "/title"
               },
-              "spacing": {
-                "before": 0,
-                "after": 10
+              "themeStyle": {
+                "$theme": "/chrome/cover/type",
+                "default": "display"
               },
               "font": {
-                "family": {
-                  "$theme": "/fonts/body/family",
-                  "default": "Calibri"
-                },
                 "size": {
                   "$theme": "/styles/display/size",
                   "default": 26
+                },
+                "color": {
+                  "$theme": ["/chrome/cover/color", "/styles/display/color"],
+                  "default": "textPrimary"
                 },
                 "bold": {
                   "$theme": "/styles/display/bold",
                   "default": true
                 },
-                "color": {
-                  "$theme": "/styles/display/color",
-                  "default": "textPrimary"
-                },
                 "lineSpacing": {
                   "type": "multiple",
-                  "value": 1.1
+                  "value": 1.05
                 }
+              },
+              "spacing": {
+                "before": 0,
+                "after": 10
               },
               "keepNext": true
             }
@@ -162,101 +188,284 @@
                 "text": {
                   "$slot": "/subtitle"
                 },
+                "themeStyle": "subtitle",
                 "font": {
-                  "family": {
-                    "$theme": "/fonts/body/family",
-                    "default": "Calibri"
-                  },
                   "size": {
                     "$theme": "/styles/subtitle/size",
                     "default": 13
+                  },
+                  "color": {
+                    "$theme": "/styles/subtitle/color",
+                    "default": "textSecondary"
                   },
                   "bold": {
                     "$theme": "/styles/subtitle/bold",
                     "default": false
                   },
-                  "color": {
-                    "$theme": "/styles/subtitle/color",
-                    "default": "textPrimary"
-                  },
                   "lineSpacing": {
                     "type": "multiple",
-                    "value": 1.1
+                    "value": 1.15
                   }
                 },
                 "spacing": {
                   "before": 0,
-                  "after": 6
+                  "after": 0
                 },
                 "keepNext": true
               }
             }
           },
           {
-            "$if": "/date",
-            "then": {
-              "name": "paragraph",
-              "props": {
-                "text": {
-                  "$slot": "/date"
+            "name": "text-box",
+            "props": {
+              "width": "100%",
+              "floating": {
+                "horizontalPosition": {
+                  "relative": "margin",
+                  "align": "left"
                 },
-                "font": {
-                  "family": {
-                    "$theme": "/fonts/body/family",
-                    "default": "Calibri"
-                  },
-                  "size": {
-                    "$theme": "/styles/label/size",
-                    "default": 9
-                  },
-                  "bold": {
-                    "$theme": "/styles/label/bold",
-                    "default": false
-                  },
-                  "color": {
-                    "$theme": "/styles/label/color",
-                    "default": "textPrimary"
+                "verticalPosition": {
+                  "relative": "margin",
+                  "offset": "93%"
+                },
+                "wrap": {
+                  "type": "none"
+                }
+              },
+              "style": {
+                "padding": {
+                  "top": 6,
+                  "bottom": 0,
+                  "left": 0,
+                  "right": 0
+                },
+                "border": {
+                  "top": {
+                    "style": "solid",
+                    "width": 0.5,
+                    "color": {
+                      "$theme": "/palette/rule",
+                      "default": "borderPrimary"
+                    }
                   }
-                },
-                "spacing": {
-                  "before": 0,
-                  "after": 4
                 }
               }
-            }
-          },
-          {
-            "$if": "/confidentiality",
-            "then": {
-              "name": "paragraph",
-              "props": {
-                "text": {
-                  "$slot": "/confidentiality"
-                },
-                "font": {
-                  "family": {
-                    "$theme": "/fonts/body/family",
-                    "default": "Calibri"
-                  },
-                  "size": {
-                    "$theme": "/styles/label/size",
-                    "default": 9
-                  },
-                  "bold": {
-                    "$theme": "/styles/label/bold",
-                    "default": false
-                  },
-                  "color": {
-                    "$theme": "/styles/label/color",
-                    "default": "textPrimary"
-                  }
-                },
-                "spacing": {
-                  "before": 0,
-                  "after": 2
+            },
+            "children": [
+              {
+                "name": "table",
+                "props": {
+                  "width": 100,
+                  "hideBorders": true,
+                  "columns": [
+                    {
+                      "width": "33.3%",
+                      "cellDefaults": {
+                        "padding": {
+                          "left": 0,
+                          "right": 10,
+                          "top": 0,
+                          "bottom": 0
+                        }
+                      },
+                      "cells": [
+                        {
+                          "content": {
+                            "name": "paragraph",
+                            "props": {
+                              "text": {
+                                "$if": "/client",
+                                "then": "Prepared for",
+                                "else": ""
+                              },
+                              "themeStyle": "eyebrow",
+                              "font": {
+                                "size": {
+                                  "$theme": "/styles/eyebrow/size",
+                                  "default": 8
+                                },
+                                "bold": true,
+                                "color": "textMuted"
+                              },
+                              "spacing": {
+                                "before": 0,
+                                "after": 2
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "content": {
+                            "name": "paragraph",
+                            "props": {
+                              "text": {
+                                "$slot": "/client",
+                                "default": ""
+                              },
+                              "themeStyle": "label",
+                              "font": {
+                                "size": {
+                                  "$theme": "/styles/label/size",
+                                  "default": 9
+                                },
+                                "color": {
+                                  "$theme": "/styles/label/color",
+                                  "default": "textPrimary"
+                                },
+                                "bold": {
+                                  "$theme": "/styles/label/bold",
+                                  "default": false
+                                }
+                              },
+                              "spacing": {
+                                "before": 0,
+                                "after": 0
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "width": "33.3%",
+                      "cellDefaults": {
+                        "padding": {
+                          "left": 0,
+                          "right": 10,
+                          "top": 0,
+                          "bottom": 0
+                        }
+                      },
+                      "cells": [
+                        {
+                          "content": {
+                            "name": "paragraph",
+                            "props": {
+                              "text": {
+                                "$if": "/date",
+                                "then": "Date",
+                                "else": ""
+                              },
+                              "themeStyle": "eyebrow",
+                              "font": {
+                                "size": {
+                                  "$theme": "/styles/eyebrow/size",
+                                  "default": 8
+                                },
+                                "bold": true,
+                                "color": "textMuted"
+                              },
+                              "spacing": {
+                                "before": 0,
+                                "after": 2
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "content": {
+                            "name": "paragraph",
+                            "props": {
+                              "text": {
+                                "$slot": "/date",
+                                "default": ""
+                              },
+                              "themeStyle": "label",
+                              "font": {
+                                "size": {
+                                  "$theme": "/styles/label/size",
+                                  "default": 9
+                                },
+                                "color": {
+                                  "$theme": "/styles/label/color",
+                                  "default": "textPrimary"
+                                },
+                                "bold": {
+                                  "$theme": "/styles/label/bold",
+                                  "default": false
+                                }
+                              },
+                              "spacing": {
+                                "before": 0,
+                                "after": 0
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "width": "33.3%",
+                      "cellDefaults": {
+                        "padding": {
+                          "left": 0,
+                          "right": 0,
+                          "top": 0,
+                          "bottom": 0
+                        }
+                      },
+                      "cells": [
+                        {
+                          "content": {
+                            "name": "paragraph",
+                            "props": {
+                              "text": {
+                                "$if": "/confidentiality",
+                                "then": "Classification",
+                                "else": ""
+                              },
+                              "themeStyle": "eyebrow",
+                              "font": {
+                                "size": {
+                                  "$theme": "/styles/eyebrow/size",
+                                  "default": 8
+                                },
+                                "bold": true,
+                                "color": "textMuted"
+                              },
+                              "spacing": {
+                                "before": 0,
+                                "after": 2
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "content": {
+                            "name": "paragraph",
+                            "props": {
+                              "text": {
+                                "$slot": "/confidentiality",
+                                "default": ""
+                              },
+                              "themeStyle": "label",
+                              "font": {
+                                "size": {
+                                  "$theme": "/styles/label/size",
+                                  "default": 9
+                                },
+                                "color": {
+                                  "$theme": "/styles/label/color",
+                                  "default": "textPrimary"
+                                },
+                                "bold": {
+                                  "$theme": "/styles/label/bold",
+                                  "default": false
+                                }
+                              },
+                              "spacing": {
+                                "before": 0,
+                                "after": 0
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
                 }
               }
-            }
+            ]
           }
         ]
       },
@@ -302,10 +511,6 @@
                   }
                 },
                 "font": {
-                  "family": {
-                    "$theme": "/fonts/body/family",
-                    "default": "Calibri"
-                  },
                   "size": {
                     "$theme": "/styles/tracker/size",
                     "default": 8
@@ -315,13 +520,28 @@
                     "default": false
                   },
                   "color": {
-                    "$theme": "/styles/tracker/color",
+                    "$theme": [
+                      "/chrome/runningHead/color",
+                      "/chrome/tracker/color",
+                      "/styles/tracker/color"
+                    ],
                     "default": "textMuted"
                   }
                 },
                 "spacing": {
                   "before": 0,
                   "after": 0
+                },
+                "themeStyle": {
+                  "$theme": [
+                    "/chrome/runningHead/type",
+                    "/chrome/tracker/type"
+                  ],
+                  "default": "tracker"
+                },
+                "alignment": {
+                  "$theme": "/chrome/runningHead/alignment",
+                  "default": "right"
                 }
               }
             },
@@ -384,10 +604,6 @@
                   "keepEmpty": true
                 },
                 "font": {
-                  "family": {
-                    "$theme": "/fonts/body/family",
-                    "default": "Calibri"
-                  },
                   "size": {
                     "$theme": "/styles/footer/size",
                     "default": 8
@@ -397,7 +613,10 @@
                     "default": false
                   },
                   "color": {
-                    "$theme": "/styles/footer/color",
+                    "$theme": [
+                      "/chrome/confidentialFooter/color",
+                      "/styles/footer/color"
+                    ],
                     "default": "textMuted"
                   }
                 },
@@ -421,6 +640,14 @@
                 "spacing": {
                   "before": 0,
                   "after": 0
+                },
+                "themeStyle": {
+                  "$theme": "/chrome/confidentialFooter/type",
+                  "default": "footer"
+                },
+                "alignment": {
+                  "$theme": "/chrome/confidentialFooter/alignment",
+                  "default": "left"
                 }
               }
             }
@@ -453,10 +680,6 @@
                   "$slot": "/number"
                 },
                 "font": {
-                  "family": {
-                    "$theme": "/fonts/body/family",
-                    "default": "Calibri"
-                  },
                   "size": {
                     "$theme": "/styles/eyebrow/size",
                     "default": 9
@@ -477,7 +700,8 @@
                     "default": 12
                   },
                   "after": 0
-                }
+                },
+                "themeStyle": "eyebrow"
               }
             }
           },
@@ -492,6 +716,15 @@
                 "$if": "/number",
                 "then": {
                   "before": 0
+                }
+              },
+              "font": {
+                "color": {
+                  "$theme": [
+                    "/chrome/actionTitle/color",
+                    "/styles/heading1/color"
+                  ],
+                  "default": "primary"
                 }
               }
             }
@@ -535,7 +768,10 @@
               },
               "spacing": {
                 "before": 4,
-                "after": 6
+                "after": {
+                  "$theme": "/chrome/keyTakeaways/padPt",
+                  "default": 6
+                }
               }
             }
           },
@@ -546,10 +782,6 @@
                 "$slot": "/label"
               },
               "font": {
-                "family": {
-                  "$theme": "/fonts/body/family",
-                  "default": "Calibri"
-                },
                 "size": {
                   "$theme": "/styles/label/size",
                   "default": 9
@@ -559,11 +791,18 @@
                   "default": true
                 },
                 "color": {
-                  "$theme": "/styles/label/color",
+                  "$theme": [
+                    "/chrome/keyTakeaways/color",
+                    "/styles/label/color"
+                  ],
                   "default": "textPrimary"
                 }
               },
-              "keepNext": true
+              "keepNext": true,
+              "themeStyle": {
+                "$theme": "/chrome/keyTakeaways/type",
+                "default": "label"
+              }
             }
           },
           {
@@ -586,7 +825,10 @@
                 "default": "borderPrimary"
               },
               "spacing": {
-                "before": 4,
+                "before": {
+                  "$theme": "/chrome/keyTakeaways/padPt",
+                  "default": 6
+                },
                 "after": 6
               }
             }
@@ -640,10 +882,6 @@
                     "$slot": "/label"
                   },
                   "font": {
-                    "family": {
-                      "$theme": "/fonts/body/family",
-                      "default": "Calibri"
-                    },
                     "size": {
                       "$theme": "/styles/label/size",
                       "default": 9
@@ -661,7 +899,8 @@
                     "before": 0,
                     "after": 2
                   },
-                  "keepNext": true
+                  "keepNext": true,
+                  "themeStyle": "label"
                 }
               },
               {
@@ -762,10 +1001,6 @@
                 "$slot": "/title"
               },
               "font": {
-                "family": {
-                  "$theme": "/fonts/body/family",
-                  "default": "Calibri"
-                },
                 "size": {
                   "$theme": "/styles/label/size",
                   "default": 9
@@ -783,7 +1018,8 @@
                 "before": 8,
                 "after": 4
               },
-              "keepNext": true
+              "keepNext": true,
+              "themeStyle": "label"
             }
           },
           {
@@ -880,10 +1116,6 @@
                   "$slot": "/notes"
                 },
                 "font": {
-                  "family": {
-                    "$theme": "/fonts/body/family",
-                    "default": "Calibri"
-                  },
                   "size": {
                     "$theme": "/styles/source/size",
                     "default": 8
@@ -893,13 +1125,20 @@
                     "default": false
                   },
                   "color": {
-                    "$theme": "/styles/source/color",
+                    "$theme": [
+                      "/chrome/sourceLine/color",
+                      "/styles/source/color"
+                    ],
                     "default": "textMuted"
                   }
                 },
                 "spacing": {
                   "before": 4,
                   "after": 0
+                },
+                "themeStyle": {
+                  "$theme": "/chrome/sourceLine/type",
+                  "default": "source"
                 }
               }
             }
@@ -934,9 +1173,12 @@
           {
             "name": "divider",
             "props": {
-              "thickness": 0.5,
+              "thickness": {
+                "$theme": "/chrome/sourceLine/rule/weightPt",
+                "default": 0.5
+              },
               "color": {
-                "$theme": "/palette/rule",
+                "$theme": ["/chrome/sourceLine/rule/color", "/palette/rule"],
                 "default": "borderPrimary"
               },
               "spacing": {
@@ -952,10 +1194,6 @@
                 "$slot": "/text"
               },
               "font": {
-                "family": {
-                  "$theme": "/fonts/body/family",
-                  "default": "Calibri"
-                },
                 "size": {
                   "$theme": "/styles/source/size",
                   "default": 8
@@ -965,13 +1203,20 @@
                   "default": false
                 },
                 "color": {
-                  "$theme": "/styles/source/color",
+                  "$theme": [
+                    "/chrome/sourceLine/color",
+                    "/styles/source/color"
+                  ],
                   "default": "textMuted"
                 }
               },
               "spacing": {
                 "before": 0,
                 "after": 8
+              },
+              "themeStyle": {
+                "$theme": "/chrome/sourceLine/type",
+                "default": "source"
               }
             }
           }
@@ -1000,10 +1245,6 @@
                 ]
               },
               "font": {
-                "family": {
-                  "$theme": "/fonts/body/family",
-                  "default": "Calibri"
-                },
                 "size": {
                   "$theme": "/styles/label/size",
                   "default": 9
@@ -1018,7 +1259,8 @@
                 "before": 4,
                 "after": 2
               },
-              "keepNext": true
+              "keepNext": true,
+              "themeStyle": "label"
             }
           }
         ]
@@ -1075,10 +1317,6 @@
                   "$slot": "/takeaway"
                 },
                 "font": {
-                  "family": {
-                    "$theme": "/fonts/body/family",
-                    "default": "Calibri"
-                  },
                   "color": {
                     "$theme": "/styles/quote/color",
                     "default": "textSecondary"
@@ -1144,10 +1382,6 @@
                     "$slot": "/title"
                   },
                   "font": {
-                    "family": {
-                      "$theme": "/fonts/body/family",
-                      "default": "Calibri"
-                    },
                     "size": {
                       "$theme": "/styles/label/size",
                       "default": 9
@@ -1162,7 +1396,8 @@
                     "before": 0,
                     "after": 4
                   },
-                  "keepNext": true
+                  "keepNext": true,
+                  "themeStyle": "label"
                 }
               },
               {
@@ -1230,10 +1465,6 @@
                 "$slot": "/label"
               },
               "font": {
-                "family": {
-                  "$theme": "/fonts/body/family",
-                  "default": "Calibri"
-                },
                 "size": {
                   "$theme": "/styles/eyebrow/size",
                   "default": 9
@@ -1251,7 +1482,8 @@
                 "before": 0,
                 "after": 4
               },
-              "keepNext": true
+              "keepNext": true,
+              "themeStyle": "eyebrow"
             }
           },
           {
@@ -1261,10 +1493,6 @@
                 "$slot": "/subject"
               },
               "font": {
-                "family": {
-                  "$theme": "/fonts/body/family",
-                  "default": "Calibri"
-                },
                 "size": {
                   "$theme": "/styles/heading1/size",
                   "default": 16
@@ -1282,7 +1510,8 @@
                 "before": 0,
                 "after": 10
               },
-              "keepNext": true
+              "keepNext": true,
+              "themeStyle": "heading1"
             }
           },
           {

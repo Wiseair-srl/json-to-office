@@ -347,8 +347,14 @@ describe('the cover and statement blocks', () => {
       ).document as any;
       return expanded.children[0].children[0].children[0].children as any[];
     };
+    // consulting declares a motif, so the first shape is the top-edge mark
+    // and the second is the cover rule (#361).
     const bare = cover({});
-    expect(bare.map((child: any) => child.name)).toEqual(['shape', 'text']);
+    expect(bare.map((child: any) => child.name)).toEqual([
+      'shape',
+      'shape',
+      'text',
+    ]);
     const full = cover({
       client: 'Acme',
       date: 'May 2026',
@@ -357,9 +363,10 @@ describe('the cover and statement blocks', () => {
     expect(full.map((child: any) => child.name)).toEqual([
       'image',
       'shape',
+      'shape',
       'text',
       'text',
     ]);
-    expect(full[2].props.text).toBe('Acme · May 2026');
+    expect(full[3].props.text).toBe('Acme · May 2026');
   });
 });

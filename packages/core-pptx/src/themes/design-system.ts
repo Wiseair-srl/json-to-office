@@ -1,5 +1,6 @@
 import {
   designCanvas,
+  resolveMotif,
   resolveTypeRoles,
   validateDesignColors,
 } from '@json-to-office/shared';
@@ -12,7 +13,9 @@ export function resolvePptxDesignSystem(
   height = 7.5
 ): PptxThemeConfig {
   validateDesignColors(theme, theme.colors);
-  if (!theme.typography) return theme;
+  const motif = resolveMotif(theme.motif);
+  if (!theme.typography)
+    return motif === theme.motif ? theme : withMotif(theme, motif);
   const canvas = designCanvas('pptx', { width, height });
   const roles = resolveTypeRoles(theme, canvas, theme.defaults.fontSize);
   const styles = { ...theme.styles };
@@ -41,7 +44,18 @@ export function resolvePptxDesignSystem(
       ...styles[key],
     };
   }
-  return { ...theme, styles };
+  return { ...withMotif(theme, motif), styles };
+}
+
+/** `motif` present only when the theme declares one other than `none`. */
+function withMotif(
+  theme: PptxThemeConfig,
+  motif: PptxThemeConfig['motif']
+): PptxThemeConfig {
+  if (motif !== undefined) return { ...theme, motif };
+  const rest = { ...theme };
+  delete rest.motif;
+  return rest;
 }
 
 export function designGrid(

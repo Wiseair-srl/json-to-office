@@ -181,7 +181,7 @@
     },
     "actionTitle": {
       "type": "display",
-      "color": "primary"
+      "color": "accent"
     },
     "keyTakeaways": {
       "type": "label",
@@ -210,7 +210,7 @@
     },
     "cover": {
       "type": "display",
-      "color": "primary",
+      "color": "accent",
       "rule": {
         "weightPt": 4,
         "color": "accent"

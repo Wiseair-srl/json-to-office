@@ -321,6 +321,17 @@ export function capsFormatting(textCase: 'none' | 'upper' | 'smallCaps'): {
     : { smallCaps: textCase === 'smallCaps' };
 }
 
+/**
+ * `none` is a theme saying it has no motif, so the resolved theme carries
+ * none: a composition asks `$if { "$theme": "/motif" }` and draws nothing,
+ * instead of every block having to know that one `kind` means "skip me".
+ */
+export function resolveMotif(
+  motif: DesignSystem['motif']
+): DesignSystem['motif'] | undefined {
+  return motif && motif.kind !== 'none' ? motif : undefined;
+}
+
 export function resolveTypeRoles(
   system: DesignSystem,
   canvas: DesignCanvas,
