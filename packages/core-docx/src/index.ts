@@ -40,6 +40,13 @@ export {
   type VisualPrepassStats,
 } from './core/prerasterizeVisuals';
 
+// Chart export-server counters (bounded concurrency, dedupe, retries)
+export {
+  getChartRequestStats,
+  resetChartRequestStats,
+  type ChartRequestStats,
+} from '@json-to-office/shared';
+
 // Legacy class-based API is now removed - use functional API above
 
 // Runtime exports (only type guards and functions)

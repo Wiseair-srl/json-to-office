@@ -203,9 +203,13 @@ export {
   DEFAULT_CHART_CONCURRENCY,
   chartRequestKey,
   dedupeChartRequest,
+  getChartRequestStats,
   limitChartRequest,
+  recordChartRetry,
   resetChartLimiters,
+  resetChartRequestStats,
   type ChartRenderCache,
+  type ChartRequestStats,
 } from './utils/chartRequests';
 
 // Semver utilities

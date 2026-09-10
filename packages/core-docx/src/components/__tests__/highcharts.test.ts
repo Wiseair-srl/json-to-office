@@ -9,7 +9,11 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { isValidThemeConfig } from '@json-to-office/shared-docx';
-import { resetChartLimiters } from '@json-to-office/shared';
+import {
+  getChartRequestStats,
+  resetChartLimiters,
+  resetChartRequestStats,
+} from '@json-to-office/shared';
 import { createMockTheme } from './helpers';
 import { minimalTheme, vermilionTheme } from '../../templates/themes';
 import { resolveDocxDesignSystem } from '../../themes/design-system';
@@ -1447,5 +1451,77 @@ describe('rendering a repeated chart once', () => {
     await desugarExternals(document, { theme: createMockTheme() });
 
     expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('chart work the host can see', () => {
+  const chartProps = (data: number[]): Record<string, unknown> => ({
+    options: {
+      chart: { width: 400, height: 300 },
+      series: [{ type: 'column', data }],
+    },
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetChartLimiters();
+    resetChartRequestStats();
+    mockFetch.mockResolvedValue({ ok: true, text: async () => 'AA==' });
+  });
+
+  it('counts what a document asked for and what actually went out', async () => {
+    await desugarExternals(
+      {
+        name: 'docx',
+        props: {},
+        children: [
+          { name: 'highcharts', props: chartProps([1, 2, 3]) },
+          { name: 'highcharts', props: chartProps([1, 2, 3]) },
+          { name: 'highcharts', props: chartProps([3, 2, 1]) },
+        ],
+      },
+      { theme: createMockTheme() }
+    );
+
+    expect(getChartRequestStats()).toMatchObject({
+      collected: 3,
+      unique: 2,
+      retries: 0,
+    });
+  });
+
+  it('shows the export server saturating at the cap', async () => {
+    mockFetch.mockImplementation(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      return { ok: true, text: async () => 'AA==' };
+    });
+
+    await desugarExternals(
+      {
+        name: 'docx',
+        props: {},
+        children: Array.from({ length: 20 }, (_, index) => ({
+          name: 'highcharts',
+          props: chartProps([index, index + 1]),
+        })),
+      },
+      { theme: createMockTheme() }
+    );
+
+    expect(getChartRequestStats().maxInFlight).toBe(4);
+  });
+
+  it('counts the retries a struggling server cost', async () => {
+    mockFetch
+      .mockRejectedValueOnce(new Error('ECONNREFUSED'))
+      .mockRejectedValueOnce(new Error('ECONNREFUSED'))
+      .mockResolvedValue({ ok: true, text: async () => 'AA==' });
+
+    await renderChartToImageProps(
+      chartProps([1, 2, 3]) as never,
+      createMockTheme()
+    );
+
+    expect(getChartRequestStats().retries).toBe(2);
   });
 });

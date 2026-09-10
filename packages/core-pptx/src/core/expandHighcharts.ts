@@ -19,6 +19,7 @@ import {
   dedupeChartRequest,
   limitChartRequest,
   postJsonToService,
+  recordChartRetry,
   resolveServiceUrl,
   type ChartRenderCache,
   withChartFontFaceCss,
@@ -230,6 +231,7 @@ async function postChart(
     headers: services?.headers,
     timeoutMs: services?.timeoutMs,
     retries: services?.retries,
+    onRetry: recordChartRetry,
     serviceLabel: 'Highcharts export server',
     // The code lets a server route report a missing export server as a
     // dependency outage with this message, not as an internal error.
