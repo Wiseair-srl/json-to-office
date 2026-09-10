@@ -840,3 +840,57 @@ describe('bounded chart concurrency', () => {
     expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('rendering a repeated chart once', () => {
+  const chartProps = (data: number[]): Record<string, unknown> => ({
+    options: { chart: { width: 600, height: 400 }, series: [{ data }] },
+  });
+
+  function deck(propsList: Record<string, unknown>[]): ProcessedPresentation {
+    return presentation(
+      propsList.map(
+        (props) => ({ name: 'highcharts', props }) as PptxComponentInput
+      ),
+      EMPTY_THEME
+    );
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetChartLimiters();
+    mockFetch.mockResolvedValue({ ok: true, text: async () => FAKE_B64 });
+  });
+
+  it('posts one request for a chart that appears three times', async () => {
+    const { presentation: expanded } = await expandHighchartsComponents(
+      deck([chartProps([1, 2]), chartProps([1, 2]), chartProps([1, 2])]),
+      undefined,
+      []
+    );
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    for (const component of expanded.slides[0].components) {
+      expect(component).toMatchObject({
+        name: 'image',
+        props: { base64: `data:image/png;base64,${FAKE_B64}` },
+      });
+    }
+  });
+
+  it('keeps charts that differ apart', async () => {
+    await expandHighchartsComponents(
+      deck([chartProps([1, 2]), chartProps([2, 1]), chartProps([1, 2])]),
+      undefined,
+      []
+    );
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not carry a render across decks', async () => {
+    await expandHighchartsComponents(deck([chartProps([1, 2])]), undefined, []);
+    await expandHighchartsComponents(deck([chartProps([1, 2])]), undefined, []);
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+});

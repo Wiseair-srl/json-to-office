@@ -26,6 +26,9 @@ import {
   type ChartTypography,
   resolveServiceUrl,
   postJsonToService,
+  chartRequestKey,
+  dedupeChartRequest,
+  type ChartRenderCache,
   type HighchartsServiceConfig,
   type RasterizeFontFace,
 } from '@json-to-office/shared';
@@ -41,6 +44,12 @@ export interface ChartGenerationResult {
   width: number;
   height: number;
 }
+
+/**
+ * Per-document memo of chart renders. A report that repeats a figure — the
+ * same series in a summary and again in its section — pays for it once.
+ */
+export type ChartCache = ChartRenderCache<ChartGenerationResult>;
 
 const DEFAULT_EXPORT_SERVER_URL = 'http://localhost:7801';
 
@@ -87,7 +96,8 @@ export function assertExportServerAllowed(
 async function generateChart(
   config: HighchartsProps,
   servicesConfig?: HighchartsServiceConfig,
-  warnings?: GenerationWarning[]
+  warnings?: GenerationWarning[],
+  cache?: ChartCache
 ): Promise<ChartGenerationResult> {
   // Only run in Node.js environments
   if (!isNodeEnvironment()) {
@@ -110,6 +120,19 @@ async function generateChart(
     ...(config.resources ? { resources: config.resources } : {}),
   };
 
+  return dedupeChartRequest(
+    cache,
+    chartRequestKey(serverUrl, requestBody),
+    () => postChart(serverUrl, requestBody, config, servicesConfig)
+  );
+}
+
+async function postChart(
+  serverUrl: string,
+  requestBody: Record<string, unknown>,
+  config: HighchartsProps,
+  servicesConfig: HighchartsServiceConfig | undefined
+): Promise<ChartGenerationResult> {
   const response = await postJsonToService({
     url: serverUrl,
     path: '/export',
@@ -313,14 +336,18 @@ export async function renderChartToImageProps(
   theme: ThemeConfig,
   servicesConfig?: HighchartsServiceConfig,
   chartFonts?: readonly RasterizeFontFace[],
-  warnings?: GenerationWarning[]
+  warnings?: GenerationWarning[],
+  cache?: ChartCache
 ): Promise<Record<string, unknown>> {
   const config = withChartFontFaces(
     withThemeTypography(withThemeColors(props, theme), theme),
     theme,
     chartFonts
   );
-  const chart = await generateChart(config, servicesConfig, warnings);
+  // The PNG is shared between identical charts; these props are not. Two
+  // charts can post the same body and still be placed differently, and
+  // `hasConfigDimensions` below reads the component, not the render.
+  const chart = await generateChart(config, servicesConfig, warnings, cache);
 
   const hasConfigDimensions =
     config.width !== undefined || config.height !== undefined;
