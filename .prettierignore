@@ -5,3 +5,9 @@ THIRD-PARTY-NOTICES.md
 # system prompt we send by ~4% and changes the authoring style the model is
 # shown by example. These files are product behaviour, not code style.
 packages/jto/src/server/prompts/
+
+# Recorded regression inputs: documents an eval run produced, kept byte for
+# byte as it wrote them so the defect they showed is the defect they still
+# show. Reformatting them would not change what they render, but it would
+# stop them being the recorded artefact.
+packages/design-evals/src/__fixtures__/regressions/

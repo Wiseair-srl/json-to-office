@@ -2,105 +2,8 @@
   "name": "docx",
   "props": {
     "theme": "consulting",
-    "metadata": {
-      "title": "Client performance report"
-    },
+    "qualityProfile": "client-report",
     "blocks": {
-      "key-takeaways": {
-        "description": "Executive conclusions with bounded one-line takeaways. Copy and adapt this document-local example.",
-        "slots": {
-          "label": {
-            "type": "string",
-            "oneLine": true,
-            "maxWords": 8,
-            "required": false,
-            "default": "Key takeaways"
-          },
-          "items": {
-            "type": "array",
-            "required": true,
-            "minItems": 3,
-            "maxItems": 5,
-            "items": {
-              "type": "string",
-              "oneLine": true,
-              "maxWords": 25,
-              "required": true
-            }
-          }
-        },
-        "body": [
-          {
-            "name": "divider",
-            "props": {
-              "thickness": {
-                "$theme": "/chrome/keyTakeaways/rule/weightPt",
-                "default": 1.5
-              },
-              "color": {
-                "$theme": "/chrome/keyTakeaways/rule/color",
-                "default": "borderPrimary"
-              },
-              "spacing": {
-                "before": 4,
-                "after": 6
-              }
-            }
-          },
-          {
-            "name": "paragraph",
-            "props": {
-              "text": {
-                "$slot": "/label"
-              },
-              "font": {
-                "family": {
-                  "$theme": "/fonts/body/family",
-                  "default": "Calibri"
-                },
-                "size": {
-                  "$theme": "/styles/label/size",
-                  "default": 9
-                },
-                "bold": {
-                  "$theme": "/styles/label/bold",
-                  "default": true
-                },
-                "color": {
-                  "$theme": "/styles/label/color",
-                  "default": "textPrimary"
-                }
-              },
-              "keepNext": true
-            }
-          },
-          {
-            "name": "list",
-            "props": {
-              "items": {
-                "$slot": "/items"
-              }
-            }
-          },
-          {
-            "name": "divider",
-            "props": {
-              "thickness": {
-                "$theme": "/chrome/keyTakeaways/rule/weightPt",
-                "default": 0.5
-              },
-              "color": {
-                "$theme": "/chrome/keyTakeaways/rule/color",
-                "default": "borderPrimary"
-              },
-              "spacing": {
-                "before": 4,
-                "after": 6
-              }
-            }
-          }
-        ]
-      },
       "cover": {
         "description": "A themed title page; optional subtitle, logo and metadata collapse when omitted.",
         "slots": {
@@ -351,84 +254,19 @@
           }
         ]
       },
-      "section-opener": {
-        "description": "A numbered section heading. The number opens the section, so it carries the gap that separates one section from the next and the heading under it carries none: the pair reads as one unit rather than the number trailing the section that ended.",
-        "slots": {
-          "number": {
-            "type": "string",
-            "oneLine": true,
-            "maxWords": 3,
-            "required": false
-          },
-          "title": {
-            "type": "string",
-            "oneLine": true,
-            "maxWords": 12,
-            "required": true
-          }
-        },
-        "body": [
-          {
-            "$if": "/number",
-            "then": {
-              "name": "paragraph",
-              "props": {
-                "text": {
-                  "$slot": "/number"
-                },
-                "font": {
-                  "family": {
-                    "$theme": "/fonts/body/family",
-                    "default": "Calibri"
-                  },
-                  "size": {
-                    "$theme": "/styles/eyebrow/size",
-                    "default": 9
-                  },
-                  "bold": {
-                    "$theme": "/styles/eyebrow/bold",
-                    "default": true
-                  },
-                  "color": {
-                    "$theme": "/styles/eyebrow/color",
-                    "default": "accent"
-                  }
-                },
-                "keepNext": true,
-                "spacing": {
-                  "before": {
-                    "$theme": "/styles/heading1/spacing/before",
-                    "default": 12
-                  },
-                  "after": 0
-                }
-              }
-            }
-          },
-          {
-            "name": "heading",
-            "props": {
-              "text": {
-                "$slot": "/title"
-              },
-              "level": 1,
-              "spacing": {
-                "$if": "/number",
-                "then": {
-                  "before": 0
-                }
-              }
-            }
-          }
-        ]
-      },
       "running-head": {
-        "description": "Document title in the header and confidentiality, page fields and date in the footer, inherited by every later section; those sections continue on the page.",
+        "description": "Document title/section tracker and page fields, inherited by subsequent sections.",
         "slots": {
           "title": {
             "type": "string",
             "oneLine": true,
             "maxWords": 6,
+            "required": false
+          },
+          "tracker": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 3,
             "required": false
           },
           "confidentiality": {
@@ -457,11 +295,24 @@
               "name": "paragraph",
               "props": {
                 "text": {
-                  "$slot": "/title",
-                  "default": {
-                    "$context": "/document/title",
-                    "default": ""
-                  }
+                  "$join": [
+                    {
+                      "$slot": "/title",
+                      "default": {
+                        "$context": "/document/title",
+                        "default": ""
+                      }
+                    },
+                    {
+                      "$context": "/section/tracker",
+                      "default": {
+                        "$slot": "/tracker",
+                        "default": ""
+                      }
+                    }
+                  ],
+                  "separator": "\t",
+                  "keepEmpty": true
                 },
                 "font": {
                   "family": {
@@ -481,6 +332,15 @@
                     "default": "textMuted"
                   }
                 },
+                "tabStops": [
+                  {
+                    "type": "right",
+                    "position": {
+                      "$measure": "width",
+                      "unit": "twip"
+                    }
+                  }
+                ],
                 "spacing": {
                   "before": 0,
                   "after": 0
@@ -589,6 +449,173 @@
           ]
         }
       },
+      "section-opener": {
+        "description": "A numbered section heading which sets the general section tracker.",
+        "slots": {
+          "number": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 3,
+            "required": false
+          },
+          "title": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 12,
+            "required": true
+          },
+          "tracker": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 3,
+            "required": false
+          }
+        },
+        "section": {
+          "tracker": {
+            "$slot": "/tracker",
+            "default": {
+              "$slot": "/title"
+            }
+          }
+        },
+        "body": [
+          {
+            "$if": "/number",
+            "then": {
+              "name": "paragraph",
+              "props": {
+                "text": {
+                  "$slot": "/number"
+                },
+                "font": {
+                  "family": {
+                    "$theme": "/fonts/body/family",
+                    "default": "Calibri"
+                  },
+                  "size": {
+                    "$theme": "/styles/eyebrow/size",
+                    "default": 9
+                  },
+                  "bold": {
+                    "$theme": "/styles/eyebrow/bold",
+                    "default": true
+                  },
+                  "color": {
+                    "$theme": "/styles/eyebrow/color",
+                    "default": "accent"
+                  }
+                },
+                "keepNext": true
+              }
+            }
+          },
+          {
+            "name": "heading",
+            "props": {
+              "text": {
+                "$slot": "/title"
+              },
+              "level": 1
+            }
+          }
+        ]
+      },
+      "key-takeaways": {
+        "description": "Executive conclusions with bounded one-line takeaways. Copy and adapt this document-local example.",
+        "slots": {
+          "label": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 8,
+            "required": false,
+            "default": "Key takeaways"
+          },
+          "items": {
+            "type": "array",
+            "required": true,
+            "minItems": 3,
+            "maxItems": 5,
+            "items": {
+              "type": "string",
+              "oneLine": true,
+              "maxWords": 25,
+              "required": true
+            }
+          }
+        },
+        "body": [
+          {
+            "name": "divider",
+            "props": {
+              "thickness": {
+                "$theme": "/chrome/keyTakeaways/rule/weightPt",
+                "default": 1.5
+              },
+              "color": {
+                "$theme": "/chrome/keyTakeaways/rule/color",
+                "default": "borderPrimary"
+              },
+              "spacing": {
+                "before": 4,
+                "after": 6
+              }
+            }
+          },
+          {
+            "name": "paragraph",
+            "props": {
+              "text": {
+                "$slot": "/label"
+              },
+              "font": {
+                "family": {
+                  "$theme": "/fonts/body/family",
+                  "default": "Calibri"
+                },
+                "size": {
+                  "$theme": "/styles/label/size",
+                  "default": 9
+                },
+                "bold": {
+                  "$theme": "/styles/label/bold",
+                  "default": true
+                },
+                "color": {
+                  "$theme": "/styles/label/color",
+                  "default": "textPrimary"
+                }
+              },
+              "keepNext": true
+            }
+          },
+          {
+            "name": "list",
+            "props": {
+              "items": {
+                "$slot": "/items"
+              }
+            }
+          },
+          {
+            "name": "divider",
+            "props": {
+              "thickness": {
+                "$theme": "/chrome/keyTakeaways/rule/weightPt",
+                "default": 0.5
+              },
+              "color": {
+                "$theme": "/chrome/keyTakeaways/rule/color",
+                "default": "borderPrimary"
+              },
+              "spacing": {
+                "before": 4,
+                "after": 6
+              }
+            }
+          }
+        ]
+      },
       "source-line": {
         "description": "A hairline and a source line in the source role, under a figure or a table. The data blocks invoke it; copy it to add a source to anything else.",
         "slots": {
@@ -682,7 +709,11 @@
                 },
                 "trend": {
                   "type": "string",
-                  "enum": ["up", "down", "neutral"],
+                  "enum": [
+                    "up",
+                    "down",
+                    "neutral"
+                  ],
                   "description": "Direction glyph drawn before the delta."
                 }
               }
@@ -750,90 +781,133 @@
           }
         ]
       },
-      "callout": {
-        "description": "An aside set off by a hairline rule down its left edge: a short label over up to sixty words of text. No fill, so it reads as a note beside the argument rather than a box in it.",
+      "figure-caption": {
+        "description": "The numbered caption under a figure: **Figure N.** and the text, N being a Word SEQ field over the figure sequence. chart-figure and figure invoke it, so charts and images number together.",
         "slots": {
-          "label": {
-            "type": "string",
-            "oneLine": true,
-            "maxWords": 6,
-            "default": "Note"
-          },
           "text": {
             "type": "string",
             "required": true,
-            "maxWords": 60
+            "oneLine": true,
+            "maxWords": 20
           }
         },
         "body": [
           {
-            "name": "text-box",
+            "name": "paragraph",
             "props": {
-              "width": "100%",
-              "style": {
-                "padding": {
-                  "top": 2,
-                  "bottom": 2,
-                  "left": 10,
-                  "right": 0
-                },
-                "border": {
-                  "left": {
-                    "style": "solid",
-                    "width": 0.75,
-                    "color": {
-                      "$theme": "/palette/rule",
-                      "default": "borderPrimary"
-                    }
+              "text": {
+                "$join": [
+                  "**Figure {SEQ:figure}.** ",
+                  {
+                    "$slot": "/text"
                   }
-                }
-              }
-            },
-            "children": [
-              {
-                "name": "paragraph",
-                "props": {
-                  "text": {
-                    "$slot": "/label"
-                  },
-                  "font": {
-                    "family": {
-                      "$theme": "/fonts/body/family",
-                      "default": "Calibri"
-                    },
-                    "size": {
-                      "$theme": "/styles/label/size",
-                      "default": 9
-                    },
-                    "bold": {
-                      "$theme": "/styles/label/bold",
-                      "default": true
-                    },
-                    "color": {
-                      "$theme": "/styles/label/color",
-                      "default": "textPrimary"
-                    }
-                  },
-                  "spacing": {
-                    "before": 0,
-                    "after": 2
-                  },
-                  "keepNext": true
+                ]
+              },
+              "font": {
+                "family": {
+                  "$theme": "/fonts/body/family",
+                  "default": "Calibri"
+                },
+                "size": {
+                  "$theme": "/styles/label/size",
+                  "default": 9
+                },
+                "bold": false,
+                "color": {
+                  "$theme": "/styles/label/color",
+                  "default": "textPrimary"
                 }
               },
-              {
-                "name": "paragraph",
-                "props": {
-                  "text": {
-                    "$slot": "/text"
+              "spacing": {
+                "before": 4,
+                "after": 2
+              },
+              "keepNext": true
+            }
+          }
+        ]
+      },
+      "chart-figure": {
+        "description": "A numbered, sourced chart: the chart itself (highcharts through the export server, or a native chart on the office-open renderer), a caption that says what it shows, an optional takeaway beneath, and the source line the report cites. The source is required; the figure number is a Word SEQ field.",
+        "slots": {
+          "chart": {
+            "type": "component",
+            "required": true,
+            "description": "A highcharts or chart component. Put the unit in the value-axis title: Revenue (€m)."
+          },
+          "caption": {
+            "type": "string",
+            "required": true,
+            "oneLine": true,
+            "maxWords": 20,
+            "description": "What the chart shows, as a statement: Revenue by quarter, 2026."
+          },
+          "takeaway": {
+            "type": "string",
+            "maxWords": 30,
+            "role": "takeaway",
+            "description": "The one sentence the reader should leave with."
+          },
+          "source": {
+            "type": "string",
+            "required": true,
+            "maxWords": 20,
+            "role": "source"
+          }
+        },
+        "body": [
+          {
+            "$slot": "/chart"
+          },
+          {
+            "name": "block",
+            "props": {
+              "ref": "figure-caption",
+              "slots": {
+                "text": {
+                  "$slot": "/caption"
+                }
+              }
+            }
+          },
+          {
+            "$if": "/takeaway",
+            "then": {
+              "name": "paragraph",
+              "props": {
+                "text": {
+                  "$slot": "/takeaway"
+                },
+                "font": {
+                  "family": {
+                    "$theme": "/fonts/body/family",
+                    "default": "Calibri"
                   },
-                  "spacing": {
-                    "before": 0,
-                    "after": 0
+                  "color": {
+                    "$theme": "/styles/quote/color",
+                    "default": "textSecondary"
+                  }
+                },
+                "spacing": {
+                  "before": 0,
+                  "after": 2
+                }
+              }
+            }
+          },
+          {
+            "$if": "/source",
+            "then": {
+              "name": "block",
+              "props": {
+                "ref": "source-line",
+                "slots": {
+                  "text": {
+                    "$slot": "/source"
                   }
                 }
               }
-            ]
+            }
           }
         ]
       },
@@ -1077,184 +1151,90 @@
           }
         ]
       },
-      "figure-caption": {
-        "description": "The numbered caption under a figure: **Figure N.** and the text, N being a Word SEQ field over the figure sequence. chart-figure and figure invoke it, so charts and images number together.",
+      "callout": {
+        "description": "An aside set off by a hairline rule down its left edge: a short label over up to sixty words of text. No fill, so it reads as a note beside the argument rather than a box in it.",
         "slots": {
+          "label": {
+            "type": "string",
+            "oneLine": true,
+            "maxWords": 6,
+            "default": "Note"
+          },
           "text": {
             "type": "string",
             "required": true,
-            "oneLine": true,
-            "maxWords": 20
+            "maxWords": 60
           }
         },
         "body": [
           {
-            "name": "paragraph",
+            "name": "text-box",
             "props": {
-              "text": {
-                "$join": [
-                  "**Figure {SEQ:figure}.** ",
-                  {
-                    "$slot": "/text"
+              "width": "100%",
+              "style": {
+                "padding": {
+                  "top": 2,
+                  "bottom": 2,
+                  "left": 10,
+                  "right": 0
+                },
+                "border": {
+                  "left": {
+                    "style": "solid",
+                    "width": 0.75,
+                    "color": {
+                      "$theme": "/palette/rule",
+                      "default": "borderPrimary"
+                    }
                   }
-                ]
-              },
-              "font": {
-                "family": {
-                  "$theme": "/fonts/body/family",
-                  "default": "Calibri"
-                },
-                "size": {
-                  "$theme": "/styles/label/size",
-                  "default": 9
-                },
-                "bold": false,
-                "color": {
-                  "$theme": "/styles/label/color",
-                  "default": "textPrimary"
-                }
-              },
-              "spacing": {
-                "before": 4,
-                "after": 2
-              },
-              "keepNext": true
-            }
-          }
-        ]
-      },
-      "chart-figure": {
-        "description": "A numbered, sourced chart: the chart itself (highcharts through the export server, or a native chart on the office-open renderer), a caption that says what it shows, an optional takeaway beneath, and the source line the report cites. The source is required; the figure number is a Word SEQ field.",
-        "slots": {
-          "chart": {
-            "type": "component",
-            "required": true,
-            "description": "A highcharts or chart component. Put the unit in the value-axis title: Revenue (€m)."
-          },
-          "caption": {
-            "type": "string",
-            "required": true,
-            "oneLine": true,
-            "maxWords": 20,
-            "description": "What the chart shows, as a statement: Revenue by quarter, 2026."
-          },
-          "takeaway": {
-            "type": "string",
-            "maxWords": 30,
-            "role": "takeaway",
-            "description": "The one sentence the reader should leave with."
-          },
-          "source": {
-            "type": "string",
-            "required": true,
-            "maxWords": 20,
-            "role": "source"
-          }
-        },
-        "body": [
-          {
-            "$slot": "/chart"
-          },
-          {
-            "name": "block",
-            "props": {
-              "ref": "figure-caption",
-              "slots": {
-                "text": {
-                  "$slot": "/caption"
                 }
               }
-            }
-          },
-          {
-            "$if": "/takeaway",
-            "then": {
-              "name": "paragraph",
-              "props": {
-                "text": {
-                  "$slot": "/takeaway"
-                },
-                "font": {
-                  "family": {
-                    "$theme": "/fonts/body/family",
-                    "default": "Calibri"
+            },
+            "children": [
+              {
+                "name": "paragraph",
+                "props": {
+                  "text": {
+                    "$slot": "/label"
                   },
-                  "color": {
-                    "$theme": "/styles/quote/color",
-                    "default": "textSecondary"
-                  }
-                },
-                "spacing": {
-                  "before": 0,
-                  "after": 2
+                  "font": {
+                    "family": {
+                      "$theme": "/fonts/body/family",
+                      "default": "Calibri"
+                    },
+                    "size": {
+                      "$theme": "/styles/label/size",
+                      "default": 9
+                    },
+                    "bold": {
+                      "$theme": "/styles/label/bold",
+                      "default": true
+                    },
+                    "color": {
+                      "$theme": "/styles/label/color",
+                      "default": "textPrimary"
+                    }
+                  },
+                  "spacing": {
+                    "before": 0,
+                    "after": 2
+                  },
+                  "keepNext": true
                 }
-              }
-            }
-          },
-          {
-            "$if": "/source",
-            "then": {
-              "name": "block",
-              "props": {
-                "ref": "source-line",
-                "slots": {
+              },
+              {
+                "name": "paragraph",
+                "props": {
                   "text": {
-                    "$slot": "/source"
+                    "$slot": "/text"
+                  },
+                  "spacing": {
+                    "before": 0,
+                    "after": 0
                   }
                 }
               }
-            }
-          }
-        ]
-      },
-      "figure": {
-        "description": "A numbered image with a caption and an optional source line. The image keeps its own width and alt text; the figure number is a Word SEQ field shared with chart-figure.",
-        "slots": {
-          "image": {
-            "type": "component",
-            "required": true,
-            "description": "An image or visual component. Give it alt text and a width."
-          },
-          "caption": {
-            "type": "string",
-            "required": true,
-            "oneLine": true,
-            "maxWords": 20
-          },
-          "source": {
-            "type": "string",
-            "maxWords": 20,
-            "role": "source"
-          }
-        },
-        "body": [
-          {
-            "$slot": "/image"
-          },
-          {
-            "name": "block",
-            "props": {
-              "ref": "figure-caption",
-              "slots": {
-                "text": {
-                  "$slot": "/caption"
-                }
-              }
-            }
-          },
-          {
-            "$if": "/source",
-            "then": {
-              "name": "block",
-              "props": {
-                "ref": "source-line",
-                "slots": {
-                  "text": {
-                    "$slot": "/source"
-                  }
-                }
-              }
-            }
+            ]
           }
         ]
       },
@@ -1334,23 +1314,28 @@
           }
         ]
       }
+    },
+    "metadata": {
+      "title": "Bridgeway FM / Solent Services Integration Assessment",
+      "author": "Corporate Development & Integration Management Office",
+      "company": "Bridgeway FM Steering Committee",
+      "date": "8 September 2026"
     }
   },
   "children": [
     {
       "name": "section",
-      "props": {},
       "children": [
         {
           "name": "block",
           "props": {
             "ref": "cover",
             "slots": {
-              "title": "Growth improved as delivery became more reliable",
-              "subtitle": "Quarterly client performance review",
-              "client": "Example client",
-              "date": "September 2026",
-              "confidentiality": "Confidential"
+              "title": "Bridgeway FM / Solent Services Integration Assessment",
+              "subtitle": "Depot and Dispatch Consolidation — Steering Committee Briefing",
+              "client": "Bridgeway FM Steering Committee",
+              "date": "8 September 2026",
+              "confidentiality": "Strictly Confidential — Steering Committee Only"
             }
           }
         }
@@ -1358,15 +1343,14 @@
     },
     {
       "name": "section",
-      "props": {},
       "children": [
         {
           "name": "block",
           "props": {
             "ref": "running-head",
             "slots": {
-              "confidentiality": "Confidential",
-              "date": "September 2026"
+              "confidentiality": "Strictly Confidential",
+              "date": "8 September 2026"
             }
           }
         },
@@ -1376,7 +1360,8 @@
             "ref": "section-opener",
             "slots": {
               "number": "01",
-              "title": "Delivery improvements supported growth"
+              "title": "Executive Summary",
+              "tracker": "Summary"
             }
           }
         },
@@ -1386,17 +1371,11 @@
             "ref": "key-takeaways",
             "slots": {
               "items": [
-                "Revenue grew as more contracted work reached completion.",
-                "On-time delivery improved following clearer weekly ownership.",
-                "Next quarter should prioritize retention and recurring revenue."
+                "Customer overlap is 31% and depot overlap is 12 of 41 sites, concentrating both risk and near-term synergy in the same accounts.",
+                "Identified synergy is EUR 8.2m annually, but 40% (EUR 3.3m) requires one shared dispatch system that neither company has budgeted.",
+                "Recommendation: capture the EUR 4.9m system-independent synergy within 18 months while approving dispatch migration funding now, in parallel."
               ]
             }
-          }
-        },
-        {
-          "name": "paragraph",
-          "props": {
-            "text": "The report designs above are ordinary JSON definitions in this document. Edit their slots or composition in the playground; the engine has no built-in cover or takeaways implementation."
           }
         },
         {
@@ -1406,54 +1385,34 @@
             "slots": {
               "items": [
                 {
-                  "value": "8.8",
-                  "unit": " €m",
-                  "label": "Revenue year to date",
-                  "delta": "+16.9%",
-                  "trend": "up"
-                },
-                {
-                  "value": "94",
+                  "value": "31",
                   "unit": "%",
-                  "label": "Client retention",
-                  "delta": "+2 pts",
-                  "trend": "up"
+                  "label": "Customer overlap"
                 },
                 {
-                  "value": "11",
-                  "unit": " days",
-                  "label": "Median time to deliver",
-                  "delta": "−3 days",
-                  "trend": "down"
+                  "value": "12/41",
+                  "label": "Overlapping depots"
+                },
+                {
+                  "value": "8.2",
+                  "unit": "€m",
+                  "label": "Total annual synergy"
                 }
               ],
-              "source": "Source: quarterly operating review, 2026."
+              "source": "Integration Management Office synergy model, September 2026"
             }
           }
         },
         {
-          "name": "block",
+          "name": "paragraph",
           "props": {
-            "ref": "callout",
-            "slots": {
-              "label": "How to read the deltas",
-              "text": "Deltas compare the first three quarters of 2026 with the same period of 2025. Retention counts contracts renewed within thirty days of their term; late renewals are excluded from both years."
-            }
+            "text": "Bridgeway FM has completed the acquisition of Solent Services, a facilities-management competitor roughly a third its size. This assessment sets out the integration sequence, the six-month milestones the steering committee should track, and the cost of delay on the one decision that most determines the outcome: when to migrate both companies onto a single dispatch system. The recommended path is to bank the customer- and depot-level synergies that do not require system change within the first two quarters, while securing budget approval for dispatch migration in parallel. Deferring that migration decision by a year does not simply delay 40% of the synergy — it compounds against a shrinking window in which the overlap is easiest to rationalise."
           }
         }
       ]
     },
     {
       "name": "section",
-      "props": {
-        "page": {
-          "size": "LETTER",
-          "margins": {
-            "left": 720,
-            "right": 720
-          }
-        }
-      },
       "children": [
         {
           "name": "block",
@@ -1461,46 +1420,15 @@
             "ref": "section-opener",
             "slots": {
               "number": "02",
-              "title": "Focus the next quarter on retention"
-            }
-          }
-        },
-        {
-          "name": "block",
-          "props": {
-            "ref": "data-table",
-            "slots": {
-              "title": "Revenue and retention by segment, 2026 to date",
-              "labelHeader": "Segment",
-              "labels": [
-                "Enterprise",
-                "Mid-market",
-                "Public sector",
-                "All segments"
-              ],
-              "columns": [
-                {
-                  "header": "Revenue (€m)",
-                  "cells": ["4.2", "2.7", "1.9", "8.8"]
-                },
-                {
-                  "header": "Growth (%)",
-                  "cells": ["21.0", "14.5", "9.8", "16.9"]
-                },
-                {
-                  "header": "Retention (%)",
-                  "cells": ["96", "93", "91", "94"]
-                }
-              ],
-              "notes": "Growth is year on year on the same nine months. Retention counts contracts renewed within thirty days of their term.",
-              "source": "Source: quarterly operating review, 2026."
+              "title": "Overlap and Synergy Baseline",
+              "tracker": "Baseline"
             }
           }
         },
         {
           "name": "paragraph",
           "props": {
-            "text": "The inherited running header carries the document title and this section’s page width; the section continues on the page. Page numbers are native Word fields."
+            "text": "The two customer bases overlap by 31%, concentrated in accounts served from both networks; these are the relationships most exposed to service confusion during integration and the first place a competitor will attack. Depot overlap is narrower but still material at 12 of the combined 41 sites, and it is these twelve sites that carry the near-term property and headcount synergy. Total identified synergy is EUR 8.2 million annually. Sixty percent, EUR 4.9 million, is available within eighteen months through depot consolidation, procurement harmonisation and back-office de-duplication alone. The remaining 40%, EUR 3.3 million, is only realised once both companies dispatch from one system — and neither company's current-year budget funds that migration. Left unaddressed, this is not a timing risk; it is a synergy the plan currently cannot deliver."
           }
         },
         {
@@ -1522,51 +1450,283 @@
                       "text": null
                     },
                     "xAxis": {
-                      "categories": ["Q1", "Q2", "Q3", "Q4"]
+                      "categories": [
+                        "System-independent (0–18 mo)",
+                        "Dispatch-dependent"
+                      ]
                     },
                     "yAxis": {
-                      "min": 0,
                       "title": {
-                        "text": "Revenue (€m)"
+                        "text": "Annual synergy (EUR m)"
                       }
-                    },
-                    "legend": {
-                      "enabled": false
                     },
                     "series": [
                       {
-                        "name": "Revenue",
-                        "data": [1.9, 2.4, 2.7, 3.1]
+                        "name": "Annual synergy, EUR m",
+                        "data": [
+                          4.9,
+                          3.3
+                        ]
                       }
-                    ],
-                    "credits": {
-                      "enabled": false
-                    }
+                    ]
                   }
                 }
               },
-              "caption": "Revenue by quarter, 2026",
-              "takeaway": "Each quarter outgrew the last as delivery stabilised; the fourth quarter alone matched the first half of 2025.",
-              "source": "Source: quarterly operating review, 2026."
+              "caption": "EUR 4.9m of synergy needs no system change; EUR 3.3m depends on dispatch migration.",
+              "takeaway": "The dispatch-dependent tranche is unbudgeted today and gates 40% of total synergy until both companies share one dispatch system.",
+              "source": "Integration Management Office synergy model, September 2026"
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Depot overlap is the more tractable problem: leases and headcount decisions are already under active review, so the 12 overlapping sites can be consolidated on a clear timetable. Customer overlap has no equivalent forcing function — it depends entirely on how consistently both companies serve shared accounts while two dispatch systems remain in place, which is precisely the exposure the recommended sequence is designed to shorten."
+          }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "section-opener",
+            "slots": {
+              "number": "03",
+              "title": "Recommended Integration Sequence",
+              "tracker": "Sequence"
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Phase 0, months 0 to 3, stabilises the combined entity: retain key account managers in the overlap accounts, freeze depot closures until lease and headcount obligations are mapped, and stand up a joint integration management office reporting to this committee. Phase 1, months 3 to 9, executes the synergies that do not depend on system change: consolidate the 12 overlapping depots into the stronger site in each pair, harmonise supplier contracts across the combined depot network, and unify back-office functions. This phase is expected to deliver the bulk of the EUR 4.9 million first-tranche synergy. Phase 2, months 6 to 15, runs in parallel once budget is approved: select and migrate both companies onto a single dispatch system, starting with the 12 overlap depots where the case is strongest and the disruption most contained. Phase 3, from month 15, extends the unified system to the remaining depots and completes synergy capture."
+          }
+        },
+        {
+          "name": "block",
+          "props": {
+            "ref": "data-table",
+            "slots": {
+              "title": "Synergy delivery by integration phase, EUR m",
+              "labelHeader": "Phase",
+              "labels": [
+                "Phase 0: Stabilise",
+                "Phase 1: Quick wins",
+                "Phase 2–3: Migration"
+              ],
+              "columns": [
+                {
+                  "header": "Months",
+                  "cells": [
+                    "0–3",
+                    "3–9",
+                    "6–15+"
+                  ],
+                  "numeric": false
+                },
+                {
+                  "header": "Synergy (€m)",
+                  "cells": [
+                    "0.0",
+                    "4.9",
+                    "3.3"
+                  ]
+                }
+              ],
+              "source": "Integration Management Office synergy model, September 2026"
             }
           }
         },
         {
           "name": "block",
           "props": {
-            "ref": "figure",
+            "ref": "callout",
             "slots": {
-              "image": {
-                "name": "image",
-                "props": {
-                  "path": "media/client-report-blocks/delivery-model.png",
-                  "width": "100%",
-                  "alt": "Four delivery stages in sequence: intake, weekly ownership, delivery and renewal; ownership and delivery are shaded as the stages that changed"
-                }
-              },
-              "caption": "The delivery model, with the two stages that changed this year",
-              "source": "Source: operating handbook, 2026 edition."
+              "label": "Unbudgeted dependency",
+              "text": "The EUR 3.3m dispatch-dependent tranche assumes a single shared dispatch system is selected and funded within Phase 1; it is not included in either company's current-year budget, and any slippage in vendor selection or funding approval delays this tranche one-for-one."
             }
+          }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "section-opener",
+            "slots": {
+              "number": "04",
+              "title": "Six-Month Milestones",
+              "tracker": "Milestones"
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "The milestones below give the steering committee fixed checkpoints across the first eighteen months, each tied to a synergy tranche or a go/no-go decision rather than to activity alone."
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Milestone schedule, months 6–18",
+            "font": {
+              "family": "Calibri",
+              "size": 10.5,
+              "bold": true,
+              "color": "textPrimary"
+            },
+            "spacing": {
+              "before": 8,
+              "after": 4
+            },
+            "keepNext": true
+          }
+        },
+        {
+          "name": "table",
+          "props": {
+            "width": 100,
+            "repeatHeaderOnPageBreak": true,
+            "columns": [
+              {
+                "width": "14%",
+                "header": {
+                  "content": "Checkpoint"
+                },
+                "cells": [
+                  {
+                    "content": "Month 6"
+                  },
+                  {
+                    "content": "Month 12"
+                  },
+                  {
+                    "content": "Month 18"
+                  }
+                ]
+              },
+              {
+                "header": {
+                  "content": "Milestone"
+                },
+                "cells": [
+                  {
+                    "content": "Depot consolidation plans signed for all 12 overlap depots; dispatch system vendor selected; migration budget approved by the steering committee."
+                  },
+                  {
+                    "content": "8 of 12 overlap depots consolidated; procurement and back-office harmonisation complete; dispatch migration piloted at 2 depots."
+                  },
+                  {
+                    "content": "Remaining 4 overlap depots consolidated; dispatch migration live across all 12 overlap depots; EUR 4.9m system-independent synergy in full run-rate."
+                  }
+                ]
+              },
+              {
+                "width": "22%",
+                "header": {
+                  "content": "Gate / decision"
+                },
+                "cells": [
+                  {
+                    "content": "Go/no-go: fund and launch dispatch migration"
+                  },
+                  {
+                    "content": "Go/no-go: extend migration to remaining depots"
+                  },
+                  {
+                    "content": "Review: confirm trajectory of the EUR 3.3m dependent synergy"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "block",
+          "props": {
+            "ref": "source-line",
+            "slots": {
+              "text": "Integration Management Office milestone tracker, September 2026"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "section-opener",
+            "slots": {
+              "number": "05",
+              "title": "Cost of Deferring the Dispatch Migration",
+              "tracker": "Deferral"
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Deferring the migration decision by a year defers the EUR 3.3 million dispatch-dependent tranche by the same year at minimum — a direct EUR 3.3 million cash cost — but the real exposure is larger. The 12-depot overlap is easiest to consolidate now, while account ownership, staffing and lease terms are still being actively renegotiated; a year of dual dispatch entrenches two operating rhythms in the same depots and raises the eventual migration cost and disruption."
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "The 31% customer overlap is the group's highest-risk asset during any delay: accounts served inconsistently by two dispatch systems for an extra year are the accounts most likely to churn to a competitor who can already offer one point of contact. Twelve months of deferral also means twelve more months in which the migration has no budget line, no vendor selected and no owner — the plan does not fail on the day it is deferred, it fails on the day someone finally asks why it was never funded."
+          }
+        },
+        {
+          "name": "block",
+          "props": {
+            "ref": "callout",
+            "slots": {
+              "label": "One-year deferral cost",
+              "text": "At minimum, EUR 3.3m of annual synergy delayed a further year; a wider gap between dual dispatch operating rhythms at the 12 overlap depots; and a full year in which the 31% customer overlap is exposed to a competitor offering one point of contact."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "section",
+      "children": [
+        {
+          "name": "block",
+          "props": {
+            "ref": "section-opener",
+            "slots": {
+              "number": "06",
+              "title": "Recommendation to the Steering Committee",
+              "tracker": "Recommendation"
+            }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "The committee is asked to approve, at this sitting, the sequence and the funding that closes the one gap standing between this plan and the full EUR 8.2 million synergy:"
+          }
+        },
+        {
+          "name": "list",
+          "props": {
+            "format": "decimal",
+            "items": [
+              "Approve the Phase 0 stabilisation actions, effective immediately.",
+              "Approve a funded budget line for dispatch system migration, with vendor selection to begin in Phase 1.",
+              "Adopt the six-month milestone schedule as the basis of the committee's ongoing oversight of this integration."
+            ]
           }
         },
         {

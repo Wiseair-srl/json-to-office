@@ -30,11 +30,11 @@
       },
       "externalAssets": ["media/client-report-blocks/delivery-model.png"],
       "externalFonts": [],
-      "hash": "34ae5fcb2828d33b4d0f607f2b4c28c1e46c1051c84f5005aa39cf1558e30c6c",
+      "hash": "ea1e1a869e994e319242559e3d1ad68a10b70e6739e281e45659f034d624ffb2",
       "bytes": {
-        "document": 46333,
-        "gzipped": 5916,
-        "thumbnail": 30565
+        "document": 46927,
+        "gzipped": 6040,
+        "thumbnail": 31041
       }
     },
     {
@@ -366,11 +366,11 @@
       },
       "externalAssets": [],
       "externalFonts": [],
-      "hash": "676a4acf538db454469c24bc6eb61cfc797480e4893ba603317b5f4bec0dbaf0",
+      "hash": "81c4309cf54c874a9b7e5ec76d5e58bc1db57f554af7c6b6a62bd332a8a8a13b",
       "bytes": {
-        "document": 51250,
-        "gzipped": 6709,
-        "thumbnail": 63922
+        "document": 51844,
+        "gzipped": 6823,
+        "thumbnail": 63486
       }
     },
     {

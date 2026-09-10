@@ -141,7 +141,40 @@ const chrome = (buffer: Buffer) => {
   );
 };
 
+const CLIENT_TEMPLATE = JSON.parse(
+  readFileSync(
+    new URL(
+      '../../../../jto/src/client/public/templates/client-report-blocks.docx.json',
+      import.meta.url
+    ),
+    'utf8'
+  )
+);
+
 describe('the technical-report blueprint', () => {
+  // The two report templates carry their own copies of the architecture
+  // blocks, so a change to one is a change that has to be made twice. This
+  // is the guard that says so: edit it only to record a definition the two
+  // archetypes deliberately differ on, never to let a drift pass.
+  it('keeps every block it shares with the client report identical to it', () => {
+    const client = readBlockDefinitions(CLIENT_TEMPLATE);
+    const shared = Object.keys(definitions).filter((ref) => ref in client);
+    expect(shared.sort()).toEqual([
+      'callout',
+      'chart-figure',
+      'cover',
+      'data-table',
+      'figure-caption',
+      'footnotes',
+      'key-takeaways',
+      'running-head',
+      'section-opener',
+      'source-line',
+    ]);
+    for (const ref of shared)
+      expect(definitions[ref], ref).toEqual(client[ref]);
+  });
+
   it('is a registered, schema-valid plan with a data-heavy, a narrative and a memo variant', () => {
     expect(Object.keys(DOCX_BLUEPRINTS)).toEqual([
       'client-report',

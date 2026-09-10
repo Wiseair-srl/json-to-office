@@ -599,9 +599,18 @@ function draftRenderedFindings(input: RenderedAnalysisInput): RenderedDraft {
           }
         }
       }
-      const section = owner
+      // A last page belongs to the section that closes the document, which
+      // is not always the section its text was authored in: the notes are
+      // painted from source slots the sections that cited them own, so the
+      // text furthest down a stub last page names a section near the front.
+      // The repair is a page break in the closing section, so that is the
+      // pointer the finding carries — but only when the page mapped at all,
+      // since `mapping` still says whether the words on it were owned.
+      const owned = owner
         ? /^\/children\/\d+/.exec(owner.path)?.[0]
         : undefined;
+      const section =
+        owned && last ? closingSection(input.inventory) ?? owned : owned;
       findings.push(
         finding({
           ruleId: 'rendered/page-underfilled',
@@ -612,7 +621,7 @@ function draftRenderedFindings(input: RenderedAnalysisInput): RenderedDraft {
             ? `Page ${pageIndex + 1}, the last, is ${Math.round(fill * 100)}% filled: only the tail of the document reached it.`
             : `Page ${pageIndex + 1} is ${Math.round(fill * 100)}% filled: its content stops ${Math.round(footerTop - bottom)}pt above the footer and the next page begins anyway.`,
           suggestion: last
-            ? 'Keep the notes and sources with the paragraph before them, or tighten the page before so the document closes on a designed page rather than a stub.'
+            ? 'Set `pageBreak: true` on this section — or on the one before it, when this section already starts a page — so the closing argument and its notes share one designed page instead of the last page taking only their tail, then re-preview. Keeping the notes with the paragraph above them moves the tail, not the page.'
             : 'Merge this section into its neighbour, or give the page the table or chart its argument owes. Do not pad it with prose: a short section on its own page reads as unfinished, a padded one reads as filler.',
           evidence: {
             summary: 'Share of the body area the page paints, header to footer',
@@ -736,6 +745,26 @@ let engine: QualityEngine | undefined;
 function renderedEngine(): QualityEngine {
   engine ??= new QualityEngine(RENDERED_QUALITY_RULES.rules);
   return engine;
+}
+
+/**
+ * The top-level section that closes the document: the highest `/children/n`
+ * any authored string sits under. Read off the inventory because the
+ * analysis never sees the document — the inventory is in document order and
+ * every entry carries the pointer it was written at.
+ */
+function closingSection(
+  inventory: readonly RenderedTextEntry[]
+): string | undefined {
+  let highest: number | undefined;
+  for (const entry of inventory) {
+    if (entry.repeats) continue;
+    const index = /^\/children\/(\d+)/.exec(entry.path)?.[1];
+    if (index === undefined) continue;
+    const value = Number(index);
+    if (highest === undefined || value > highest) highest = value;
+  }
+  return highest === undefined ? undefined : `/children/${highest}`;
 }
 
 /**

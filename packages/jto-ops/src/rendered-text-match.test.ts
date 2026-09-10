@@ -230,6 +230,63 @@ describe('assignInventory', () => {
     expect([...chromeWords]).toEqual(['0:2', '1:2']);
   });
 
+  it('leaves a numeric table row that flowed into the band in the body', () => {
+    // The last rows of a table break into the bottom fifth of the page. The
+    // label wraps beside them, so each numeric row sits on a row of its own
+    // and reads as digits alone — but it is content, not the page number
+    // painted below it. Geometry measured off a client report whose cost
+    // table lost three cells this way.
+    const flowed = [
+      page([word('Intro', 72, 300), word('2', 300, 792, 6, 10.6)]),
+      page([
+        word('Additional', 72, 693.4, 42, 10.6),
+        word('recruiting', 116, 693.4, 39, 10.6),
+        word('0.45', 328, 698.85, 18, 10.6),
+        word('2.2', 510, 698.85, 13, 10.6),
+        word('capacity', 72, 704.3, 35, 10.6),
+        word('3', 300, 792, 6, 10.6),
+      ]),
+    ];
+    const { matches, chromeWords } = assignInventory(flowed, [
+      { path: '/f', text: '{PAGE}', repeats: true },
+      { path: '/i', text: 'Intro' },
+      { path: '/l', text: 'Additional recruiting capacity' },
+      { path: '/c', text: '0.45' },
+    ]);
+    expect(matches.map((m) => [m.entry.path, m.status])).toEqual([
+      ['/f', 'skipped'],
+      ['/i', 'mapped'],
+      ['/l', 'mapped'],
+      ['/c', 'mapped'],
+    ]);
+    // Only the two bare page numbers are chrome.
+    expect([...chromeWords].sort()).toEqual(['0:1', '1:5']);
+  });
+
+  it('leaves a lone digit row the rest of the report never repeats in the body', () => {
+    // A section opener's number sits alone under the running head, inside
+    // the top band. Nothing at its height on any other page is a page
+    // number, so it stays where it was written.
+    const opener = [
+      page([
+        word('Report', 72, 33.8, 60, 9.7),
+        word('01', 72, 70.4, 12, 9.7),
+        word('Opening', 72, 107.7, 45, 9.7),
+      ]),
+      page([
+        word('Report', 72, 33.8, 60, 9.7),
+        word('Continued', 72, 107.7, 50, 9.7),
+      ]),
+    ];
+    const { chromeWords } = assignInventory(opener, [
+      { path: '/h', text: 'Report', repeats: true },
+      { path: '/n', text: '018' },
+      { path: '/o', text: 'Opening' },
+      { path: '/c', text: 'Continued' },
+    ]);
+    expect(chromeWords.has('0:1')).toBe(false);
+  });
+
   it('keeps chrome out of the body: a footer word never claims a body row', () => {
     const pagesWithBody = [
       page([
@@ -377,6 +434,121 @@ describe('readingOrder', () => {
       findOccurrences(index, needleSegments('Item91 segment margin'))
     ).toHaveLength(1);
   });
+  // Two cells poppler ran together: the padding between the columns is
+  // 5pt on a 10.6pt line — under half a line — so the row comes out as one
+  // fragment spanning both. Geometry measured off a client report whose
+  // third column lost every cell to the second.
+  const tightColumns = [
+    // The wide cell's first line, reaching 419, then the narrow cell's.
+    word('Depot', 135, 369, 40, 10.6),
+    word('consolidation', 178, 369, 60, 10.6),
+    word('for', 241, 369, 20, 10.6),
+    word('overlap', 264, 369, 45, 10.6),
+    word('depots;', 312, 369, 38, 10.6),
+    word('dispatch', 353, 369, 66, 10.6),
+    word('Go/no-go:', 424, 369, 42, 10.6),
+    word('fund', 469, 369, 18, 10.6),
+    // The next line of each cell; here the gap is 6pt and poppler split it.
+    word('system', 135, 380, 30, 10.6),
+    word('approved', 168, 380, 60, 10.6),
+    word('by', 231, 380, 15, 10.6),
+    word('the', 249, 380, 18, 10.6),
+    word('steering', 270, 380, 40, 10.6),
+    word('committee', 313, 380, 45, 10.6),
+    word('and', 361, 380, 20, 10.6),
+    word('budget', 384, 380, 34, 10.6),
+    word('launch', 424, 380, 28, 10.6),
+    word('dispatch', 455, 380, 35, 10.6),
+    // Each cell's last line.
+    word('committee.', 135, 391, 47, 10.6),
+    word('migration', 424, 391, 39, 10.6),
+  ];
+  it('parts two cells poppler ran together at a gap the row cannot spare', () => {
+    const order = readingOrder(tightColumns).map((i) => tightColumns[i].text);
+    expect(order.slice(-5)).toEqual([
+      'Go/no-go:',
+      'fund',
+      'launch',
+      'dispatch',
+      'migration',
+    ]);
+    const index = indexDocument([page(tightColumns)]);
+    expect(
+      findOccurrences(
+        index,
+        needleSegments('Go/no-go: fund launch dispatch migration')
+      )
+    ).toHaveLength(1);
+    expect(
+      findOccurrences(
+        index,
+        needleSegments(
+          'Depot consolidation for overlap depots; dispatch system approved by the steering committee and budget committee.'
+        )
+      )
+    ).toHaveLength(1);
+  });
+
+  it('parts a wrapped label from the value centred between its lines', () => {
+    // One label column and one value column. The label wraps, the value is
+    // centred against the wrap, and so every row here carries a single
+    // fragment: the block is a block because the rows resolve into two
+    // columns, not because any one row holds two cells.
+    const centred = [
+      word('Retention', 72, 123.8, 45, 10.6),
+      word('programme', 120, 123.8, 50, 10.6),
+      word('0.45', 400, 129.3, 18, 10.6),
+      word('for', 72, 134.7, 12, 10.6),
+      word('everyone', 87, 134.7, 40, 10.6),
+    ];
+    expect(readingOrder(centred).map((i) => centred[i].text)).toEqual([
+      'Retention',
+      'programme',
+      'for',
+      'everyone',
+      '0.45',
+    ]);
+    const index = indexDocument([page(centred)]);
+    expect(
+      findOccurrences(index, needleSegments('Retention programme for everyone'))
+    ).toHaveLength(1);
+    expect(findOccurrences(index, needleSegments('0.45'))).toHaveLength(1);
+  });
+
+  it('leaves justified prose whole, however wide its spaces are stretched', () => {
+    // Justification stretches every space of a line alike, so a stretched
+    // line's widest space is still its own median: the rule that parts
+    // cells at a gap the row cannot account for must not part a line of
+    // prose. Line one is stretched to 4pt spaces on a 10.6pt line — past a
+    // third of it, which is the floor — and line two is set at 2.6pt.
+    const justified = [
+      word('Revenue', 72, 100, 45, 10.6),
+      word('grew', 121, 100, 25, 10.6),
+      word('across', 150, 100, 35, 10.6),
+      word('every', 189, 100, 30, 10.6),
+      word('region', 72, 111, 35, 10.6),
+      word('in', 109.6, 111, 12, 10.6),
+      word('the', 124.2, 111, 18, 10.6),
+      word('period.', 72, 122, 32, 10.6),
+    ];
+    expect(readingOrder(justified).map((i) => justified[i].text)).toEqual([
+      'Revenue',
+      'grew',
+      'across',
+      'every',
+      'region',
+      'in',
+      'the',
+      'period.',
+    ]);
+    expect(
+      findOccurrences(
+        indexDocument([page(justified)]),
+        needleSegments('Revenue grew across every region in the period.')
+      )
+    ).toHaveLength(1);
+  });
+
   it('keeps a rotated axis title in the order poppler gave it', () => {
     const axis = [
       word('Item68', 88, 534, 11, 38),

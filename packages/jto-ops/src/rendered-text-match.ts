@@ -173,58 +173,114 @@ export function readingOrder(words: readonly PdfTextWord[]): number[] {
   return order;
 }
 
-function uprightOrder(
+/** Middle value of a non-empty list, for a row's typical word gap. */
+function median(values: readonly number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = sorted.length >> 1;
+  return sorted.length % 2 === 1
+    ? sorted[mid]
+    : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+/** A row of text: the words that share it, and the box they fill. */
+interface TextRow {
+  words: number[];
+  yMin: number;
+  yMax: number;
+}
+
+/**
+ * The given words grouped into the rows they are read on, top down. The
+ * reading order and the page-number sweep ask the same question of a page,
+ * so they ask it once.
+ */
+function groupRows(
   words: readonly PdfTextWord[],
   indices: readonly number[]
-): number[] {
-  const rows: number[][] = [];
+): TextRow[] {
+  const rows: TextRow[] = [];
   const byY = [...indices].sort(
     (a, b) => words[a].yMin - words[b].yMin || words[a].xMin - words[b].xMin
   );
   for (const i of byY) {
+    const word = words[i];
     const row = rows[rows.length - 1];
-    if (row && sameRow(words[row[0]], words[i])) row.push(i);
-    else rows.push([i]);
+    if (row && sameRow(words[row.words[0]], word)) {
+      row.words.push(i);
+      row.yMin = Math.min(row.yMin, word.yMin);
+      row.yMax = Math.max(row.yMax, word.yMax);
+    } else rows.push({ words: [i], yMin: word.yMin, yMax: word.yMax });
   }
+  return rows;
+}
+
+function uprightOrder(
+  words: readonly PdfTextWord[],
+  indices: readonly number[]
+): number[] {
+  const grouped = groupRows(words, indices);
+  const rows = grouped.map((row) => row.words);
   const fragmentsOf = (row: number[]): RowFragment[] => {
     const sorted = [...row].sort((a, b) => words[a].xMin - words[b].xMin);
+    // A space is a quarter of the size; half a line's height is two of
+    // them, and a cell gap on a 23-point figure is more than that. Tight
+    // cell padding puts less than that between two columns, though, and
+    // then poppler runs the two cells into one fragment and the column
+    // they belong to cannot be told. So a gap the row's own spaces cannot
+    // account for parts cells as well: within a row a word space holds to
+    // its median within a hundredth — justification stretches every space
+    // of a line alike — while a cell boundary is close to twice it.
+    const gaps = sorted.slice(1).map((i, n) => {
+      const height = words[i].yMax - words[i].yMin;
+      const gap = words[i].xMin - words[sorted[n]].xMax;
+      return { gap, height, wide: gap > height / 2 };
+    });
+    const spaces = gaps.filter((g) => !g.wide).map((g) => g.gap);
+    const typical = spaces.length > 1 ? median(spaces) : undefined;
+    const isCellBoundary = (n: number): boolean => {
+      const g = gaps[n - 1];
+      return (
+        g.wide ||
+        (typical !== undefined &&
+          g.gap > g.height / 3 &&
+          g.gap >= typical * 1.5)
+      );
+    };
     const out: RowFragment[] = [];
-    for (const i of sorted) {
+    sorted.forEach((i, n) => {
       const last = out[out.length - 1];
       const w = words[i];
-      // A space is a quarter of the size; half a line's height is two of
-      // them, and a cell gap on a 23-point figure is more than that.
-      const height = w.yMax - w.yMin;
-      if (last && w.xMin - last.xMax <= height / 2) {
+      if (last && !isCellBoundary(n)) {
         last.words.push(i);
         last.xMax = Math.max(last.xMax, w.xMax);
       } else out.push({ xMin: w.xMin, xMax: w.xMax, words: [i] });
-    }
+    });
     return out;
   };
   const fragments = rows.map(fragmentsOf);
-  const boxes = rows.map((row) => ({
-    yMin: Math.min(...row.map((i) => words[i].yMin)),
-    yMax: Math.max(...row.map((i) => words[i].yMax)),
-  }));
+  const boxes = grouped;
 
   // Rows less than a line apart or overlapping (a cell centred beside a
   // wrapped label; DejaVu's wrapped lines sit two thirds of a line apart)
   // belong to one cluster. Columns are the x-intervals its fragments
   // fall in, merged where they overlap, so a right-aligned cell's shorter
-  // second line joins its first. A fragment across two columns is prose
-  // under the table: it closes the cluster and opens the next.
+  // second line joins its first. A cluster that resolves into more than
+  // one column is a table and reads column by column — a single value
+  // centred between the two lines of the label beside it parts them
+  // exactly as a row of several cells does, and no row of that block has
+  // to hold two fragments for the block to exist. A fragment across two
+  // columns is prose under the table: it closes the cluster and opens
+  // the next.
   interface Column {
     xMin: number;
     xMax: number;
     fragments: RowFragment[];
   }
   const order: number[] = [];
-  let cluster: { rows: number[]; columns: Column[]; multi: boolean } | null =
-    null;
+  let cluster: { rows: number[]; columns: Column[] } | null = null;
   const flush = (): void => {
     if (!cluster) return;
-    if (!cluster.multi) {
+    if (cluster.columns.length < 2) {
       for (const r of cluster.rows)
         for (const f of fragments[r]) order.push(...f.words);
     } else {
@@ -251,9 +307,8 @@ function uprightOrder(
       cluster !== null &&
       fragments[r].some((f) => overlapping(cluster!.columns, f).length > 1);
     if (!adjacent || wide) flush();
-    if (!cluster) cluster = { rows: [], columns: [], multi: false };
+    if (!cluster) cluster = { rows: [], columns: [] };
     cluster.rows.push(r);
-    if (fragments[r].length > 1) cluster.multi = true;
     for (const f of fragments[r]) {
       const hit = overlapping(cluster.columns, f)[0];
       if (hit) {
@@ -527,6 +582,62 @@ function chromeOccurrences<
   );
 }
 
+/**
+ * The rows that are page numbers: digits alone in a band, and chrome rather
+ * than content that flowed there.
+ *
+ * A footer that is nothing but the field renders as a bare number with no
+ * repeating text to claim it, so it needs a rule of its own. The band is a
+ * generous fifth of the page, though, and body content reaches into it: a
+ * table's numeric row lands there on whatever page the table breaks on,
+ * and a numeric cell claimed as chrome loses its own occurrence and reads
+ * as never rendered.
+ *
+ * Two things tell chrome from content, both geometry. A page number stands
+ * apart — the page margin separates it from the body, so no unclaimed row
+ * lies within a line of it, while a table row has its wrapped label or its
+ * neighbouring rows right against it. And a page number recurs: the
+ * renderer paints one at the same height on every page, which content that
+ * merely flowed into the band on one page does not. A single-page document
+ * has nothing to recur against, so there the first test stands alone.
+ */
+function pageNumberRows(
+  pages: readonly PdfTextPage[],
+  claimed: ReadonlySet<string>
+): { pageIndex: number; box: { yMin: number; yMax: number } }[] {
+  const hits: { pageIndex: number; box: TextRow }[] = [];
+  pages.forEach((page, pageIndex) => {
+    const rows = groupRows(
+      page.words,
+      page.words.map((_, i) => i)
+    );
+    const free = rows.map((row) =>
+      row.words.some((i) => !claimed.has(`${pageIndex}:${i}`))
+    );
+    rows.forEach((row, r) => {
+      if (!free[r] || !inChromeBand(page, row)) return;
+      if (!row.words.every((i) => PAGE_NUMBER_ROW.test(page.words[i].text)))
+        return;
+      const line = row.yMax - row.yMin;
+      const attached = rows.some(
+        (other, o) =>
+          o !== r &&
+          free[o] &&
+          Math.max(other.yMin - row.yMax, row.yMin - other.yMax) < line
+      );
+      if (!attached) hits.push({ pageIndex, box: row });
+    });
+  });
+  if (pages.length < 2) return hits;
+  return hits.filter((hit) =>
+    hits.some(
+      (other) =>
+        other.pageIndex !== hit.pageIndex &&
+        Math.abs(other.box.yMin - hit.box.yMin) <= CHROME_ROW_TOLERANCE_PT
+    )
+  );
+}
+
 export interface InventoryAssignment<T extends InventoryEntry> {
   matches: InventoryMatch<T>[];
   /** `pageIndex:word` keys of every word chrome claimed — whole rows. */
@@ -590,18 +701,8 @@ export function assignInventory<T extends InventoryEntry>(
       });
     }
   }
-  // A row of digits alone in a band is a page number, whatever its footer
-  // said around it — including a footer that was nothing but the field.
-  pages.forEach((page, pageIndex) => {
-    page.words.forEach((word, i) => {
-      if (chromeWords.has(`${pageIndex}:${i}`)) return;
-      if (!inChromeBand(page, word)) return;
-      const row = page.words.filter((w) => sameRow(w, word));
-      if (row.every((w) => PAGE_NUMBER_ROW.test(w.text))) {
-        claimRow(pageIndex, word);
-      }
-    });
-  });
+  for (const row of pageNumberRows(pages, chromeWords))
+    claimRow(row.pageIndex, row.box);
 
   const body = indexDocument(pages, chromeWords);
   /** Stream offset → the entry that claimed the occurrence there. */
