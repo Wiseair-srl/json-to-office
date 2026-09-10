@@ -1,6 +1,6 @@
 {
   "name": "@json-to-office/quality",
-  "version": "4.5.0",
+  "version": "6.2.0",
   "description": "Format-agnostic document quality contracts, rule engine and policy resolution",
   "type": "module",
   "main": "dist/index.js",
