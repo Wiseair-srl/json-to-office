@@ -167,7 +167,7 @@
                   "color": {
                     "$theme": [
                       "/chrome/cover/color",
-                      "/styles/display/fontColor"
+                      "/styles/title/fontColor"
                     ],
                     "default": "text"
                   }

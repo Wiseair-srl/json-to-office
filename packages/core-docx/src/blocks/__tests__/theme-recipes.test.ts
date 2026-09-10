@@ -19,7 +19,7 @@ import { describe, it, expect } from 'vitest';
 import { validateDocument } from '@json-to-office/shared-docx';
 import { generateBufferWithWarnings } from '../../core/generator';
 import { resolveDocxDesignSystem } from '../../themes/design-system';
-import { expandBlocks } from '../index';
+import { expandBlocks, toAuthoredPointer } from '../index';
 import { consultingTheme, minimalTheme } from '../../styles';
 import type { ThemeConfig } from '../../styles';
 import { block, example, on } from './example';
@@ -43,6 +43,7 @@ function mutate(
   return copy as ThemeConfig;
 }
 
+/** The playground report's definitions, expanded on `theme` in one section. */
 const expandOn = (theme: ThemeConfig, ...blocks: unknown[]) => {
   const doc = example();
   doc.children = [{ name: 'section', children: blocks }];
@@ -62,6 +63,7 @@ function nodes(expanded: any): any[] {
   walk(expanded.document.children);
   return out;
 }
+/** The node a slot value ended up in, found by the text it carries. */
 const withText = (expanded: any, text: string) =>
   nodes(expanded).find((node) => node.props?.text === text);
 
@@ -305,6 +307,7 @@ describe('theme chrome recipes reach the page', () => {
 });
 
 describe('the theme motif', () => {
+  /** Every rule a bare cover draws on `theme`, motif first. */
   const covers = (theme: ThemeConfig) =>
     nodes(expandOn(theme, block('cover', { title: 'Title' }))).filter(
       (node) => node.name === 'divider'
@@ -322,6 +325,29 @@ describe('the theme motif', () => {
   it('is absent when the theme declares kind none', () => {
     const none = mutate(consultingTheme, '/motif', { kind: 'none' });
     expect(covers(none).map((d) => d.props.width)).toEqual([undefined]);
+  });
+});
+
+describe('source maps stay authored-slot based', () => {
+  it('maps a recipe-styled paragraph back to the slot that filled it', () => {
+    const doc = example();
+    doc.children = [
+      {
+        name: 'section',
+        children: [block('source-line', { text: 'Company filings' })],
+      },
+    ];
+    const expanded = expandBlocks(doc, resolved(consultingTheme)) as any;
+    // The paragraph now carries a themeStyle and a chained colour; neither is
+    // authored, and neither may displace the slot the text came from.
+    const paragraph = withText(expanded, 'Company filings');
+    expect(paragraph.props.themeStyle).toBe('source');
+    expect(
+      toAuthoredPointer(
+        expanded.sourceMap,
+        '/children/0/children/0/children/1/props/text'
+      )
+    ).toBe('/children/0/children/0/props/slots/text');
   });
 });
 
