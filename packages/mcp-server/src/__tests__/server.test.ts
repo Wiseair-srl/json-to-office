@@ -72,6 +72,7 @@ describe('tool surface', () => {
       'jto_validate',
       'jto_generate',
       'jto_preview',
+      'jto_critique',
       'jto_docx_diff',
       'jto_workspace_create',
       'jto_workspace_inspect',

@@ -405,11 +405,40 @@ describe('protocol eras', () => {
       expect(result.serverInfo).toMatchObject({ name: 'json-to-office' });
       expect(result.capabilities.tools).toBeDefined();
       expect(result.capabilities.resources).toBeDefined();
+      expect(result.capabilities.prompts).toBeDefined();
       // The server's own prompt, which is how a client learns the working rules.
       expect(result.instructions).toContain('jto_validate');
 
       const listed = await server.call('tools/list');
       expect((listed.result as any).tools.length).toBeGreaterThan(5);
+    },
+    CONNECT_TIMEOUT_MS
+  );
+
+  it(
+    'serves the three entry-point prompts over the wire, arguments and all (#348)',
+    async () => {
+      const opened = await session();
+      const listed = await opened.client.listPrompts();
+      expect(listed.prompts.map((prompt) => prompt.name).sort()).toEqual([
+        'deck-from-outline',
+        'design-brief',
+        'report-from-notes',
+      ]);
+      const rendered = await opened.client.getPrompt({
+        name: 'deck-from-outline',
+        arguments: {
+          outline: '## The quarter in numbers\n- Churn: 3.1%\n- NPS: 62',
+        },
+      });
+      const text = rendered.messages
+        .map((entry) =>
+          entry.content.type === 'text' ? entry.content.text : ''
+        )
+        .join('\n');
+      expect(text).toContain('jto_scaffold');
+      expect(text).toContain('Churn: 3.1%');
+      expect(text).toContain('consulting-deck');
     },
     CONNECT_TIMEOUT_MS
   );

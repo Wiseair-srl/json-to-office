@@ -17,7 +17,12 @@ import type {
   QualityRule,
 } from '@json-to-office/quality';
 import { RENDERED_QUALITY_RULES } from '@json-to-office/jto-ops';
-import type { Blueprint } from '@json-to-office/shared';
+import {
+  RUBRIC,
+  SHIPPING_QUESTION,
+  type Blueprint,
+  type RubricLevel,
+} from '@json-to-office/shared';
 
 import type { FormatName } from './adapters.js';
 import { loadCore } from './core.js';
@@ -77,6 +82,11 @@ export interface DesignGuide {
   blueprints: GuideBlueprint[];
   /** Whole designed documents, distinct from blocks and blueprints. */
   templates: GuideTemplate[];
+  /**
+   * What "good" means, the same table `jto_critique` returns and the
+   * evaluation judge is prompted from (#345).
+   */
+  rubric: { levels: RubricLevel[]; shippingQuestion: string };
   /** The same data, rendered to read. */
   markdown: string;
 }
@@ -251,7 +261,7 @@ export function renderDesignGuide(
       '',
       '## Blueprints',
       '',
-      'Archetypes as data; `jto_scaffold` turns one into a draft workspace with a fill map.',
+      'Archetypes as data; `jto_scaffold` turns one into a draft workspace with a fill map. A markdown outline fills that draft: `#` the title, each `##` the next section (on a deck, the next content slide), the paragraphs and bullets beneath it the body. On a deck the outline also shapes the slides — bullets past a list’s length become consecutive slides, a table fills a two-column slide’s evidence column, and bullets that read `Label: figure` become KPI rows.',
       '',
       guide.blueprints
         .map(
@@ -276,6 +286,18 @@ export function renderDesignGuide(
         .join('\n')
     );
   }
+  sections.push(
+    '',
+    '## Rubric',
+    '',
+    'What the levels mean, and the question the target is stated against. A higher level never compensates for a failure below it. `jto_critique` returns this same table with the evidence to judge against it.',
+    '',
+    guide.rubric.levels
+      .map((entry) => `${entry.level}. **${entry.name}** — ${entry.bar}`)
+      .join('\n'),
+    '',
+    guide.rubric.shippingQuestion
+  );
   sections.push(
     '',
     '## Workflow',
@@ -329,6 +351,7 @@ export async function designGuide(format: FormatName): Promise<DesignGuide> {
       'the block catalogue',
       ...(blueprints.length ? ['the blueprints'] : []),
       'the template gallery',
+      'the rubric',
     ],
     themes: await themeDescriptions(format),
     profiles,
@@ -336,6 +359,10 @@ export async function designGuide(format: FormatName): Promise<DesignGuide> {
     blocks,
     blueprints,
     templates,
+    rubric: {
+      levels: RUBRIC.map((entry) => ({ ...entry })),
+      shippingQuestion: SHIPPING_QUESTION,
+    },
   };
   return { ...body, markdown: renderDesignGuide(body) };
 }

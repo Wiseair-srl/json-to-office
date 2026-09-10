@@ -8,6 +8,7 @@
 
 import { getAdapter, type FormatAdapter, type FormatName } from './adapters.js';
 import { MAX_INLINE_ARTIFACT_BYTES } from './artifacts.js';
+import { createCritiqueLog, type CritiqueLog } from './critique-log.js';
 import { createOutputRoot, type OutputRoot } from './output-root.js';
 import { SERVER_VERSION } from './version.js';
 import { getWorkspaceStore, type WorkspaceStore } from './workspace-store.js';
@@ -41,6 +42,13 @@ export interface ToolDeps {
   workspacePersistence?: WorkspacePersistence;
   /** Ceiling for `outputMode: 'base64'`, in bytes. */
   maxInlineArtifactBytes: number;
+  /**
+   * The connection's critique rounds (#345).
+   *
+   * Scoped like the workspaces it keys on: a round belongs to one agent
+   * looking at one document, and nothing about it outlives the connection.
+   */
+  critiques: CritiqueLog;
 }
 
 export interface CreateToolDepsOptions {
@@ -54,6 +62,7 @@ export interface CreateToolDepsOptions {
   env?: NodeJS.ProcessEnv;
   serverVersion?: string;
   workspaces?: () => WorkspaceStore;
+  critiques?: CritiqueLog;
   getAdapter?: (format: FormatName) => FormatAdapter;
   maxInlineArtifactBytes?: number;
 }
@@ -81,5 +90,6 @@ export function createToolDeps(options: CreateToolDepsOptions = {}): ToolDeps {
     ...(workspacePersistence !== undefined && { workspacePersistence }),
     maxInlineArtifactBytes:
       options.maxInlineArtifactBytes ?? MAX_INLINE_ARTIFACT_BYTES,
+    critiques: options.critiques ?? createCritiqueLog(),
   };
 }

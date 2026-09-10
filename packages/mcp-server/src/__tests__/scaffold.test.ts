@@ -6,7 +6,7 @@
  * it generation-ready. The stdio suite proves the same lifecycle on the wire.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, afterEach, beforeAll, afterAll } from 'vitest';
 import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
@@ -17,8 +17,10 @@ import { Client } from '@modelcontextprotocol/client';
 import { createServer } from '../server.js';
 import { createToolDeps } from '../lib/deps.js';
 import { createOutputRoot } from '../lib/output-root.js';
-import { applyFacts, parseOutline } from '../tools/scaffold.js';
+import { applyFacts } from '../tools/scaffold.js';
+import { parseOutline } from '../scaffold/outline.js';
 import { contentFor } from './fixtures/scaffold.js';
+import { probePreviewDependencies } from '../preview/dependencies.js';
 import type { BlueprintFillEntry } from '@json-to-office/shared';
 
 let scratch: string;
@@ -68,6 +70,29 @@ async function scaffold(args: Record<string, unknown>) {
 }
 
 const codes = (out: Envelope) => out.diagnostics.map((d) => d.code);
+
+/**
+ * Handles the deck suites open, released between tests.
+ *
+ * A connection holds sixteen workspaces at once, which is generous for an
+ * agent and tight for a suite that scaffolds a deck per example.
+ */
+const opened: string[] = [];
+const track = (out: Envelope): string => {
+  const handle = (out.workspace as { handle: string }).handle;
+  opened.push(handle);
+  return handle;
+};
+
+async function releaseOpened(): Promise<void> {
+  await Promise.all(
+    opened
+      .splice(0)
+      .map((handle) =>
+        client.callTool({ name: 'jto_workspace_close', arguments: { handle } })
+      )
+  );
+}
 
 beforeAll(async () => {
   scratch = await fs.mkdtemp(path.join(os.tmpdir(), 'jto-mcp-scaffold-'));
@@ -378,12 +403,12 @@ describe('the brief and the outline', () => {
         },
       ],
     };
-    const fill = applyFacts(
+    const fill = applyFacts({
       document,
       fillMap,
-      { title: 'From the brief' },
-      parseOutline('# From the outline\n## One\nFirst.\n\nSecond.')
-    );
+      brief: { title: 'From the brief' },
+      outline: parseOutline('# From the outline\n## One\nFirst.\n\nSecond.'),
+    });
     expect(document.props.metadata.title).toBe('From the brief');
     expect(fill.remaining).toEqual([]);
     expect(fill.filled).toBe(3);
@@ -416,12 +441,15 @@ describe('the brief and the outline', () => {
         {
           heading: 'One',
           paragraphs: ['Body.', 'Still in One.'],
+          lines: ['Body.', 'Still in One.'],
+          bullets: [],
+          tables: [],
           subheadings: ['Method'],
         },
       ],
     });
     const document = { props: { metadata: {} }, children: [] };
-    const fill = applyFacts(document, [], {}, outline);
+    const fill = applyFacts({ document, fillMap: [], outline });
     expect(fill.filled).toBe(0);
     expect(fill.diagnostics.map((d) => [d.code, d.context])).toEqual([
       ['W_OUTLINE_UNMAPPED', { headings: ['Title'] }],
@@ -648,6 +676,381 @@ describe('scaffolding a consulting deck', () => {
     expect(validated.profileId).toBe('consulting-deck');
     expect(validated.generationReady).toBe(false);
   });
+});
+
+describe('an outline that asks for more than the variant drew', () => {
+  afterEach(releaseOpened);
+  const deck = async (outline: string, variant = 'data-heavy') => {
+    const out = await call('jto_scaffold', {
+      format: 'pptx',
+      blueprint: 'consulting-deck',
+      variant,
+      outline,
+    });
+    track(out);
+    return out;
+  };
+  const slides = async (handle: string) => {
+    const { document } = (await call('jto_workspace_inspect', {
+      handle,
+      includeDocument: true,
+    })) as { document: any };
+    return document.children.map((slide: any) => ({
+      ref: slide.children[0].props.ref as string,
+      slots: slide.children[0].props.slots as Record<string, any>,
+    }));
+  };
+
+  it('promotes a section of measurements to KPI rows, splitting evenly and keeping units, deltas, order and the source', async () => {
+    const out = await deck(
+      [
+        '## The quarter in numbers',
+        'Source: operating review, September 2026.',
+        '',
+        '- Revenue: €4.2M (+12%)',
+        '- Churn: 3.1% (−0.4)',
+        '- NPS: 62 (+4)',
+        '- Margin: 41 pts',
+        '- Headcount: 128',
+      ].join('\n')
+    );
+    expect(out.ok).toBe(true);
+    const deckSlides = await slides(
+      (out.workspace as { handle: string }).handle
+    );
+    // Five measurements into rows of at most four become three and two, so no
+    // slide carries a lone number; the deck grew by exactly one slide.
+    expect(deckSlides.slice(1, 3).map((s) => s.ref)).toEqual([
+      'kpi-row',
+      'kpi-row',
+    ]);
+    expect(deckSlides[1].slots.title).toBe('The quarter in numbers');
+    expect(deckSlides[2].slots.title).toBe('The quarter in numbers (cont.)');
+    expect(deckSlides[1].slots.items).toEqual([
+      { value: '€4.2', unit: 'M', label: 'Revenue', delta: '+12%' },
+      { value: '3.1', unit: '%', label: 'Churn', delta: '−0.4' },
+      { value: '62', label: 'NPS', delta: '+4' },
+    ]);
+    expect(deckSlides[2].slots.items).toEqual([
+      { value: '41', unit: 'pts', label: 'Margin' },
+      { value: '128', label: 'Headcount' },
+    ]);
+    // The source line is a fact of the brief, not a bullet to place: it fills
+    // the source slot of every slide the section became.
+    expect(deckSlides[1].slots.source).toBe(
+      'Source: operating review, September 2026.'
+    );
+    expect(deckSlides[2].slots.source).toBe(
+      'Source: operating review, September 2026.'
+    );
+    // Nothing else moved: the tracker is still owed on both.
+    expect(deckSlides[1].slots.tracker).toMatch(/^\{\{/);
+    expect(
+      out.diagnostics.filter((d) => d.code === 'W_OUTLINE_TRANSFORMED')
+    ).toEqual([
+      expect.objectContaining({
+        severity: 'info',
+        context: { shape: 'kpi', slides: 2 },
+      }),
+    ]);
+  });
+
+  it('splits a long bullet list across consecutive slides in order', async () => {
+    const bullets = [
+      'Delivery stabilised in April',
+      'Named owners closed the gap',
+      'Escalations fell every month',
+      'Two accounts expanded scope',
+      'One renewal moved earlier',
+      'Support load halved',
+      'No account churned',
+    ];
+    const out = await deck(
+      ['## What changed', ...bullets.map((b) => `- ${b}`)].join('\n')
+    );
+    const deckSlides = await slides(
+      (out.workspace as { handle: string }).handle
+    );
+    // A list of five takes seven bullets across two slides as four and three.
+    expect(deckSlides[1].slots.bullets).toEqual(bullets.slice(0, 4));
+    expect(deckSlides[2].slots.bullets).toEqual(bullets.slice(4));
+    expect(deckSlides[1].slots.title).toBe('What changed');
+    expect(deckSlides[2].slots.title).toBe('What changed (cont.)');
+    expect(deckSlides.map((s) => s.ref).slice(0, 3)).toEqual([
+      'cover',
+      'two-column',
+      'two-column',
+    ]);
+  });
+
+  it('maps an outline table into a two-column slide, right-aligning the columns that are numbers', async () => {
+    const out = await deck(
+      [
+        '## Segments diverged',
+        'Enterprise carried the quarter.',
+        '',
+        '| Segment | Revenue (€m) | Growth |',
+        '| --- | --- | --- |',
+        '| Enterprise | 4.2 | 12% |',
+        '| Mid-market | 1.8 | 3% |',
+        '| SMB | 0.6 | −2% |',
+      ].join('\n'),
+      'narrative'
+    );
+    const deckSlides = await slides(
+      (out.workspace as { handle: string }).handle
+    );
+    expect(deckSlides[1].ref).toBe('two-column');
+    expect(deckSlides[1].slots.title).toBe('Segments diverged');
+    expect(deckSlides[1].slots.content).toMatchObject({ name: 'table' });
+    expect(deckSlides[1].slots.content.props.rows).toEqual([
+      [
+        'Segment',
+        { text: 'Revenue (€m)', align: 'right' },
+        { text: 'Growth', align: 'right' },
+      ],
+      [
+        'Enterprise',
+        { text: '4.2', align: 'right' },
+        { text: '12%', align: 'right' },
+      ],
+      [
+        'Mid-market',
+        { text: '1.8', align: 'right' },
+        { text: '3%', align: 'right' },
+      ],
+      ['SMB', { text: '0.6', align: 'right' }, { text: '−2%', align: 'right' }],
+    ]);
+  });
+
+  it('leaves a section the variant has no slide for exactly as it was, and says which shape it wanted', async () => {
+    // `narrative` draws no KPI row, so measurements stay a section like any
+    // other rather than becoming a shape the deck cannot hold.
+    const out = await deck(
+      ['## The quarter in numbers', '- Churn: 3.1%', '- NPS: 62'].join('\n'),
+      'narrative'
+    );
+    const deckSlides = await slides(
+      (out.workspace as { handle: string }).handle
+    );
+    expect(deckSlides.map((s) => s.ref)).toEqual([
+      'cover',
+      'statement',
+      'two-column',
+      'two-column',
+      'action-chart',
+      'two-column',
+      'statement',
+    ]);
+    expect(deckSlides[1].slots.assertion).toBe('The quarter in numbers');
+    expect(
+      out.diagnostics.find(
+        (d) => d.code === 'W_OUTLINE_UNMAPPED' && d.context?.shape === 'kpi'
+      )
+    ).toBeDefined();
+    expect(codes(out)).not.toContain('W_OUTLINE_TRANSFORMED');
+  });
+
+  it('keeps the sections after a transformed one on the slides they would have had', async () => {
+    const out = await deck(
+      [
+        '## The quarter in numbers',
+        '- Churn: 3.1%',
+        '- NPS: 62',
+        '- Margin: 41 pts',
+        '- Revenue: 4.2',
+        '- Headcount: 128',
+        '## Delivery stabilised',
+        'Escalations fell every month after April.',
+      ].join('\n')
+    );
+    const deckSlides = await slides(
+      (out.workspace as { handle: string }).handle
+    );
+    // Two KPI slides, then the section that follows takes the slide it would
+    // have taken had the first section fitted one.
+    expect(deckSlides.map((s) => s.ref)).toEqual([
+      'cover',
+      'kpi-row',
+      'kpi-row',
+      'action-chart',
+      'action-chart',
+      'action-chart',
+      'two-column',
+      'statement',
+    ]);
+    expect(deckSlides[3].slots.title).toBe('Delivery stabilised');
+    expect(deckSlides[3].slots.takeaway).toBe(
+      'Escalations fell every month after April.'
+    );
+  });
+
+  it('stays a draft the fill map still describes, and validates as one', async () => {
+    const out = await deck(
+      [
+        '## What changed',
+        '- One',
+        '- Two',
+        '- Three',
+        '- Four',
+        '- Five',
+        '- Six',
+      ].join('\n')
+    );
+    const handle = (out.workspace as { handle: string }).handle;
+    const fillMap = out.fillMap as BlueprintFillEntry[];
+    const inspected = await call('jto_workspace_inspect', {
+      handle,
+      paths: fillMap.map((entry) => entry.path),
+    });
+    expect(inspected.missingPaths).toEqual([]);
+    // Titles and bullets are written; what the block still requires — the
+    // section label, the evidence column and its source — is still owed, and
+    // every pointer that names it resolves.
+    expect(
+      new Set(
+        fillMap
+          .filter((entry) => /^\/children\/[12]\//.test(entry.path))
+          .map((entry) => entry.slot)
+      )
+    ).toEqual(new Set(['tracker', 'content', 'source']));
+    const validated = (await call('jto_validate', {
+      format: 'pptx',
+      handle,
+    })) as any;
+    expect(validated.valid).toBe(true);
+    expect(validated.profileId).toBe('consulting-deck');
+    expect(validated.generationReady).toBe(false);
+
+    const patched = await call('jto_workspace_patch', {
+      handle,
+      baseRevision: 1,
+      operations: fillMap.map((entry) => ({
+        op: 'replace',
+        path: entry.path,
+        value: contentFor(entry),
+      })),
+    });
+    expect(patched.ok).toBe(true);
+    const ready = (await call('jto_validate', {
+      format: 'pptx',
+      handle,
+    })) as any;
+    expect(ready.generationReady).toBe(true);
+  });
+});
+
+/** One outline that asks for all three transformations at once. */
+const READOUT = [
+  '# Q3 client readout',
+  '## The quarter in numbers',
+  'Source: operating review, September 2026.',
+  '',
+  '- Revenue: €4.2M (+12%)',
+  '- Churn: 3.1% (−0.4)',
+  '- NPS: 62 (+4)',
+  '- Margin: 41 pts',
+  '- Headcount: 128',
+  '## What changed',
+  '- Delivery stabilised in April',
+  '- Named owners closed the gap',
+  '- Escalations fell every month',
+  '- Two accounts expanded scope',
+  '- One renewal moved earlier',
+  '- Support load halved',
+  '## Segments diverged',
+  '| Segment | Revenue (€m) | Growth |',
+  '| --- | --- | --- |',
+  '| Enterprise | 4.2 | 12% |',
+  '| Mid-market | 1.8 | 3% |',
+].join('\n');
+
+const previewable = await probePreviewDependencies();
+const canRender =
+  previewable.libreoffice.available && previewable.pdftoppm.available;
+
+describe('a transformed deck is still a deck', () => {
+  afterEach(releaseOpened);
+  it.each(['data-heavy', 'narrative'])(
+    'fills, validates and generates the %s variant from one readout outline',
+    async (variant) => {
+      const out = await call('jto_scaffold', {
+        format: 'pptx',
+        blueprint: 'consulting-deck',
+        variant,
+        brief: { client: 'Example client', date: 'September 2026' },
+        outline: READOUT,
+      });
+      expect(out.ok).toBe(true);
+      const handle = track(out);
+      const fillMap = out.fillMap as BlueprintFillEntry[];
+
+      const drafted = (await call('jto_validate', {
+        format: 'pptx',
+        handle,
+      })) as any;
+      expect(drafted.valid).toBe(true);
+      expect(drafted.generationReady).toBe(false);
+
+      await call('jto_workspace_patch', {
+        handle,
+        baseRevision: 1,
+        operations: fillMap.map((entry) => ({
+          op: 'replace',
+          path: entry.path,
+          value: contentFor(entry),
+        })),
+      });
+      const ready = (await call('jto_validate', {
+        format: 'pptx',
+        handle,
+      })) as any;
+      expect(ready.generationReady).toBe(true);
+
+      const generated = await call('jto_generate', { format: 'pptx', handle });
+      expect(generated.ok).toBe(true);
+    },
+    30_000
+  );
+
+  it.skipIf(!canRender).each(['data-heavy', 'narrative'])(
+    'renders every slide the %s outline asked for (needs LibreOffice + poppler)',
+    async (variant) => {
+      const out = await call('jto_scaffold', {
+        format: 'pptx',
+        blueprint: 'consulting-deck',
+        variant,
+        outline: READOUT,
+      });
+      const handle = track(out);
+      await call('jto_workspace_patch', {
+        handle,
+        baseRevision: 1,
+        operations: (out.fillMap as BlueprintFillEntry[]).map((entry) => ({
+          op: 'replace',
+          path: entry.path,
+          value: contentFor(entry),
+        })),
+      });
+      const preview = (await call('jto_preview', {
+        format: 'pptx',
+        handle,
+        outputMode: 'path',
+      })) as any;
+      expect(preview.ok).toBe(true);
+      // Every slide the plan emitted reaches the page: the deck the outline
+      // asked for and the deck LibreOffice draws are the same length.
+      const { document } = (await call('jto_workspace_inspect', {
+        handle,
+        includeDocument: true,
+      })) as { document: { children: unknown[] } };
+      expect(preview.totalPages).toBe(document.children.length);
+      // And it is longer than the variant on its own, because the outline
+      // asked for slides the variant did not draw.
+      expect(preview.totalPages).toBeGreaterThan(7);
+    },
+    180_000
+  );
 });
 
 describe('draft to generation-ready', () => {

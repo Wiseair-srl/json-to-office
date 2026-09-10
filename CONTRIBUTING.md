@@ -58,7 +58,7 @@ We use [Conventional Commits](https://www.conventionalcommits.org/):
 
 ```
 packages/
-  shared/        # Format-agnostic schemas and validation
+  shared/        # Format-agnostic schemas, validation, blueprints and the rubric
   shared-docx/   # DOCX-specific schemas
   shared-pptx/   # PPTX-specific schemas
   core-docx/     # DOCX generation engine

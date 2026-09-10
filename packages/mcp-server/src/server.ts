@@ -21,9 +21,11 @@ import { register as registerScaffold } from './tools/scaffold.js';
 import { register as registerValidate } from './tools/validate.js';
 import { register as registerGenerate } from './tools/generate.js';
 import { register as registerPreview } from './tools/preview.js';
+import { register as registerCritique } from './tools/critique.js';
 import { register as registerDiff } from './tools/diff.js';
 import { register as registerWorkspace } from './tools/workspace.js';
 import { register as registerResources } from './resources/index.js';
+import { register as registerPrompts } from './prompts/index.js';
 
 /**
  * The server's own prompt, surfaced to the client at initialize.
@@ -51,7 +53,7 @@ Design workflow — theme, structure, fill, check, ship:
 1. THEME. Pick one with jto_discover — each entry says what it looks like and when to use it — and set it on the document root. A document that names no theme inherits defaults nobody chose, and that is what generic output looks like.
 2. STRUCTURE. Choose the archetype before the content. For a report, jto_scaffold is the first move: name a blueprint from jto_discover, the theme and the facts of the brief, and it opens a draft workspace with every section and block in place and a fill map of the slots still owed. Where no blueprint fits, decide the sections or slides explicitly rather than growing the document node by node.
 3. FILL. Write content into that structure — by fill-map pointer with jto_workspace_patch when you scaffolded. Prefer named styles and theme colour tokens over raw sizes and hex, so a theme swap restyles the whole document instead of half of it. Every component's design note in jto_discover says what good use of it looks like.
-4. CHECK. jto_validate after each edit, then jto_preview when the question is visual. jto_preview with contactSheet: true tiles every page into one image — the way to see whether the deck holds together.
+4. CHECK. jto_validate after each edit, then jto_preview when the question is visual. jto_preview with contactSheet: true tiles every page into one image — the way to see whether the deck holds together. When the question is whether it is good enough to send, jto_critique inspect renders the evidence and the rubric for you to judge, and jto_critique record files that verdict against the exact revision you saw; three recorded iterate rounds is the limit.
 5. SHIP. jto_generate. It refuses a document that still carries an unfilled {{…}} scaffold slot; jto_validate says generationReady when none remains.
 
 Working rules:
@@ -69,7 +71,7 @@ export function createServer(deps: ToolDeps): McpServer {
   const server = new McpServer(
     { name: SERVER_NAME, version: deps.serverVersion },
     {
-      capabilities: { tools: {}, resources: {} },
+      capabilities: { tools: {}, resources: {}, prompts: {} },
       instructions: SERVER_INSTRUCTIONS,
     }
   );
@@ -81,9 +83,11 @@ export function createServer(deps: ToolDeps): McpServer {
   registerValidate(server, deps);
   registerGenerate(server, deps);
   registerPreview(server, deps);
+  registerCritique(server, deps);
   registerDiff(server, deps);
   registerWorkspace(server, deps);
   registerResources(server, deps);
+  registerPrompts(server, deps);
 
   return server;
 }

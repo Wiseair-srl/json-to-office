@@ -111,13 +111,14 @@ Pin a version by asking for one — `npx -y @json-to-office/mcp-server@1.0.0` �
 4. **`jto_validate`** after each edit, not once at the end. Diagnostics are path-addressed, so a pointer is a patch target.
 5. **Repair** — `jto_workspace_patch` at the pointers the diagnostics named, or fix the inline JSON.
 6. **`jto_preview`** whenever the question is visual: did the table overflow, did the title wrap, is the slide crowded. It is an iteration step, not a final check.
-7. **`jto_generate`** for the real file. `jto_docx_diff` when someone needs to see what changed.
+7. **`jto_critique`** when the question is whether it is good enough to send: `inspect` renders the evidence and the rubric, `record` files the verdict you formed against the exact revision you saw. Three recorded iterate rounds is the limit.
+8. **`jto_generate`** for the real file. `jto_docx_diff` when someone needs to see what changed.
 
 `jto_workspace_snapshot` before a restructuring you could not cleanly undo.
 
 ## Tools
 
-Fourteen tools, in the order `tools/list` reports them.
+Fifteen tools, in the order `tools/list` reports them.
 
 | Tool                     | Purpose                                                                                                |
 | ------------------------ | ------------------------------------------------------------------------------------------------------ |
@@ -128,6 +129,7 @@ Fourteen tools, in the order `tools/list` reports them.
 | `jto_validate`           | Path-addressed diagnostics for a document, mirroring the gate generation applies.                      |
 | `jto_generate`           | Renders to a real `.docx`/`.pptx`, with render warnings alongside the artifact.                        |
 | `jto_preview`            | Renders selected pages to PNG, inline as images or written under the output root.                      |
+| `jto_critique`           | Renders evidence and the rubric to judge against, then records that verdict against a revision.        |
 | `jto_docx_diff`          | A redline `.docx` with native Word tracked changes, plus a summary of what could not be tracked.       |
 | `jto_workspace_create`   | Hold a document server-side; returns a handle and revision 1.                                          |
 | `jto_workspace_inspect`  | Read a whole document, or only the JSON Pointers you name.                                             |
@@ -174,7 +176,9 @@ The first move for a report. A [blueprint](https://wiseair-srl.github.io/json-to
 
 **Out** — `workspace` (a handle at revision 1); `blueprint` `{id, variant, theme, profile, definitions, blocks[]}`; `fillMap[]` `{path, marker, guidance, kind, block?, slot?, type?, maxWords?, maxLength?, oneLine?, required?}`, every marker still owed in document order, each `path` resolving at that revision; `filled` (markers the brief and outline wrote).
 
-The mapping is small enough to state. A brief fact fills `props.metadata.<key>` (`client` also fills `company`) and the `<key>` slot of the document's chrome — the cover and the running head — never a body block, where `title` means something else; a key that matches nothing is reported as `W_BRIEF_UNUSED`. An outline's `# Heading` is the title (the brief's wins), each `## Heading` in order fills the next section opener, and the paragraphs beneath it fill that section's body text markers in order; sections or paragraphs the variant has no room for, text before the first `##`, a second `#` and any deeper heading are reported as `W_OUTLINE_UNMAPPED` and nothing is dropped silently. Every scaffold answers with `W_SCAFFOLD_DRAFT` saying how many markers remain.
+The mapping is small enough to state. A brief fact fills `props.metadata.<key>` (`client` also fills `company`) and the `<key>` slot of the document's chrome — the cover and the running head — never a body block, where `title` means something else; a key that matches nothing is reported as `W_BRIEF_UNUSED`. An outline's `# Heading` is the title (the brief's wins), each `## Heading` in order fills the next section opener, and the paragraphs and bullets beneath it fill that section's body text markers in order; sections or paragraphs the variant has no room for, text before the first `##`, a second `#` and any deeper heading are reported as `W_OUTLINE_UNMAPPED` and nothing is dropped silently.
+
+On a deck the outline also decides the slides, in three ways and no others. A section whose bullets all read `Label: figure` — `Churn: 3.1%`, `Margin: 41 pts (+3.2)` — becomes rows of measurements, split evenly at the KPI block's own item ceiling so no slide carries a lone number. A section with more bullets than a slide's list holds becomes as many slides as it needs, in order, the later ones titled "(cont.)". A markdown table fills the evidence column of a two-column slide, with the columns whose body cells are all numbers right-aligned, and a `Source:` line fills the source of every slide the section became. Each is reported as `W_OUTLINE_TRANSFORMED`. Every slide is a structural clone of one the variant already drew, so the block definitions and their dependencies stay the blueprint's; where the variant draws no slide of the shape a section asks for, the section is filled as the variant's own slide and `W_OUTLINE_UNMAPPED` says which shape was wanted. Every scaffold answers with `W_SCAFFOLD_DRAFT` saying how many markers remain.
 
 The scaffold is schema- and semantic-valid, carries the block definitions it invokes and their dependencies under `props.blocks` (nothing is looked up at render time), and names its profile in `props.qualityProfile`, so `jto_validate` judges it against the archetype from the first call: the markers come back as advisory `W_QUALITY_SCAFFOLD_MARKER` findings with `ok: true` and `generationReady: false`. `jto_generate` refuses while any marker remains, naming every one by pointer. Patch each `fillMap[].path` with `jto_workspace_patch` (pass `baseRevision` to make the write conditional), and `jto_validate` reports `generationReady: true`.
 
@@ -207,6 +211,20 @@ Warnings the render emitted arrive as warning-severity diagnostics in the same e
 Inlined pages ride in image content blocks, not in the structured output — they follow the text block in page order and correspond to the `pages[]` entries whose `delivery` is `image`. `auto` inlines when the payload fits the client-safe budget (at most 10 pages, 2 MB per page, 8 MB total) and writes files otherwise; `images` refuses instead of falling back; `path` always writes.
 
 The pixels come from LibreOffice, not from Microsoft Office. Line breaks, pagination, font substitution and chart rasterization can differ from what Word or PowerPoint does on the recipient's machine — a strong indication of layout, not the final document.
+
+### `jto_critique`
+
+Workspace only: a critique is about a revision, so there has to be one.
+
+**In** — `action` (`inspect` | `record`, required); `handle` (required); `format` (the workspace's own when omitted); `revision`; `evidencePages` (0–4, default 4); and for `record`: `runId`, `verdict` (`ship` | `iterate`), `rationale`, `level` (1–5, optional).
+
+**Out (inspect)** — `run` `{id, handle, revision, round, roundsRemaining}`, `rubric` `{levels[], shippingQuestion}`, `contactSheet`, `evidence[]` `{page, reason, findings, delivery, artifact}`, `rendered` (the rendered pass's summary), `totalPages`, `dpi`, `renderer`. The rendered pass's findings ride in `diagnostics` with certainty `rendered`. The sheet and the chosen pages come back as image content blocks, sheet first; every page is written under the output root either way, so the evidence is reachable whatever the inline budget allows.
+
+**Out (record)** — `record` `{runId, handle, revision, verdict, rationale, level?, recordedAt}`, `rounds`, `roundsRemaining`, `stop`.
+
+The server does not judge — the model in the conversation does. What the server owns is the count, and it owns it strictly: only `record` creates a round, re-sending the same `runId` returns the round already filed rather than a second one (`W_CRITIQUE_DUPLICATE`), and a verdict about a revision the workspace has since moved past is refused with `E_STALE_REVISION` rather than filed against a document nobody saw. Three recorded `iterate` rounds is the limit; the third answers with a stop recommendation. None of it gates `jto_generate`.
+
+Needs LibreOffice and poppler, like `jto_preview`.
 
 ### `jto_docx_diff`
 
@@ -269,6 +287,18 @@ The same catalogues, for clients that read resources. URIs are stable.
 | `jto://schema/pptx/theme`    | The same for `.pptx`.                                                                                                 |
 
 All `application/json`. The document schemas are megabytes — prefer `jto_describe_component` unless you genuinely need the whole thing. Tools and resources are generated from the same registries, and a drift test fails the build if they disagree.
+
+## Prompts
+
+Three entry points into the loop above, for clients that offer prompts. They are a convenience, not a second home for the workflow: each renders one user message that lands on `jto_scaffold` and walks the same fill → validate → look → judge → ship path, naming the blueprints and themes the cores actually ship rather than a copy that could drift.
+
+| Prompt              | Arguments                                 | What it renders                                                                               |
+| ------------------- | ----------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `design-brief`      | `subject`\*, `audience`, `format`         | The six lines a document is designed against, then the archetype and theme to build it with.  |
+| `report-from-notes` | `notes`\*, `client`, `title`, `blueprint` | Rough notes restructured as a markdown outline, then scaffolded as a report.                  |
+| `deck-from-outline` | `outline`\*, `client`, `variant`          | An outline scaffolded as a deck, naming the three transformations the outline itself decides. |
+
+\* required.
 
 ## Preview requirements
 
@@ -344,6 +374,10 @@ The cores name their generation warnings in a dialect of their own too — bare 
 | `W_SCAFFOLD_DRAFT`                 | A scaffold opened; the message says how many markers are still owed.                                        |
 | `W_BRIEF_UNUSED`                   | A brief key matched no metadata field or chrome slot of the variant.                                        |
 | `W_OUTLINE_UNMAPPED`               | An outline section or paragraph found no opener or body slot to fill.                                       |
+| `W_OUTLINE_TRANSFORMED`            | An outline section became slides of a shape the variant did not draw it with.                               |
+| `E_CRITIQUE_RUN_UNKNOWN`           | `jto_critique record` named a run this connection never opened.                                             |
+| `W_CRITIQUE_DUPLICATE`             | A verdict was already filed for this run; the retry changed nothing and did not count.                      |
+| `W_CRITIQUE_STOP`                  | The rounds are spent, or the verdict was to ship.                                                           |
 | `W_PATH_NOT_FOUND`                 | A pointer a read asked for does not resolve in that revision.                                               |
 | `W_SNAPSHOT_NOT_PINNED`            | A snapshot was exported but not pinned: the workspace budget is full.                                       |
 | `W_WORKSPACE_NOT_PERSISTED`        | The edit applied, but the revision did not reach the workspace directory.                                   |

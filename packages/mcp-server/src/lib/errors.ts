@@ -139,6 +139,14 @@ export const ERROR_CODES = {
   BRIEF_UNUSED: 'W_BRIEF_UNUSED',
   /** An outline heading or paragraph found no opener or body slot to fill. */
   OUTLINE_UNMAPPED: 'W_OUTLINE_UNMAPPED',
+  /** An outline section became slides of a different shape than the variant's own. */
+  OUTLINE_TRANSFORMED: 'W_OUTLINE_TRANSFORMED',
+  /** `jto_critique record` named a run this connection never opened. */
+  CRITIQUE_RUN_UNKNOWN: 'E_CRITIQUE_RUN_UNKNOWN',
+  /** A verdict was already filed for this run; the retry changed nothing. */
+  CRITIQUE_DUPLICATE: 'W_CRITIQUE_DUPLICATE',
+  /** The recorded rounds are spent, or the verdict was to ship. */
+  CRITIQUE_STOP: 'W_CRITIQUE_STOP',
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
