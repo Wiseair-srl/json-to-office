@@ -35,6 +35,7 @@ import {
 } from './statistics.js';
 import {
   definitionHash,
+  PAGE_DEFECT_CODES,
   ships,
   SHIPPING_QUESTIONS,
   STATUS_QUO_DEFINITION,
@@ -166,8 +167,12 @@ export interface EvidenceSet {
     format: string;
     outcome: 'completed' | 'failed';
   }>;
-  /** `reanalysis.json` runs: every completed run's facts under the current analyzer. */
-  reanalysis: Readonly<
+  /**
+   * `facts.json` runs: every completed run's findings, either re-analysed by
+   * the analyzer in this tree (fresh artifacts, whose sheets it also rendered)
+   * or as recorded when the artifact was judged (see `recordedFacts`).
+   */
+  facts: Readonly<
     Record<string, { qualityByCode: Readonly<Record<string, number>> }>
   >;
   /** Each question's sitting over the set, by run label. */
@@ -181,7 +186,7 @@ export interface EvidenceSet {
 
 /**
  * The rows a definition is scored on: every labelled artifact, joined to its
- * run, its re-analysed facts and whatever each sitting answered.
+ * run, its facts and whatever each sitting answered.
  *
  * Strict on purpose. A label that names no run, or a completed run with no
  * fresh facts, is a broken join — scoring around it would quietly shrink the
@@ -198,10 +203,10 @@ export function buildEvidence(
     if (!set || !run) {
       throw new Error(`No set holds the labelled artifact ${entry.artifact}.`);
     }
-    const facts = set.reanalysis[run.label];
+    const facts = set.facts[run.label];
     if (run.outcome === 'completed' && !facts) {
       throw new Error(
-        `${entry.artifact} completed but was never re-analysed; run \`pnpm shipping reanalyze\` on its set first.`
+        `${entry.artifact} completed but its set's facts.json has no entry for it; run \`pnpm shipping reanalyze\` or \`pnpm shipping recorded-facts\` on the set first.`
       );
     }
     const verdicts: EvidenceRow['verdicts'] = {};
@@ -221,6 +226,46 @@ export function buildEvidence(
       verdicts,
     };
   });
+}
+
+/**
+ * Facts as they stood when an artifact was judged.
+ *
+ * A document is not a fixed picture: the engine that renders it moves. The
+ * checkpoint sets were judged on sheets rendered before sections flowed, and
+ * re-rendering those documents today paginates them differently — so facts
+ * re-analysed now would describe pages nobody looked at. For a calibration
+ * artifact the facts are therefore the run's recorded findings, with its page
+ * defects taken from one measurement made on the judged renders
+ * (`baselines/2026-09-08-page-fill-measure.json`), replacing whatever page
+ * codes the run recorded under whichever rule was current that day.
+ */
+export function recordedFacts(
+  runs: ReadonlyArray<{
+    label: string;
+    qualityByCode: Readonly<Record<string, number>>;
+  }>,
+  pageFill: Readonly<Record<string, { underfilled: number }>>
+): Record<string, { qualityByCode: Record<string, number> }> {
+  const facts: Record<string, { qualityByCode: Record<string, number> }> = {};
+  for (const run of runs) {
+    const measured = pageFill[run.label];
+    if (!measured) {
+      throw new Error(
+        `The page-fill measure has no entry for ${run.label}; recorded facts need one for every run.`
+      );
+    }
+    const qualityByCode = Object.fromEntries(
+      Object.entries(run.qualityByCode).filter(
+        ([code]) => !PAGE_DEFECT_CODES.includes(code)
+      )
+    );
+    if (measured.underfilled > 0) {
+      qualityByCode.W_QUALITY_RENDERED_PAGE_UNDERFILLED = measured.underfilled;
+    }
+    facts[run.label] = { qualityByCode };
+  }
+  return facts;
 }
 
 export interface Confusion {
