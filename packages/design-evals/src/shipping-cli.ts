@@ -9,9 +9,14 @@
  *
  *   pnpm shipping reanalyze <set-dir>
  *     Recompute every completed run's facts with the analyzer in this tree and
- *     write `<set-dir>/reanalysis.json`. Rules changed between the recorded
- *     sets; a definition that reads page defects must read them from one
- *     analyzer, for calibration and verification alike.
+ *     write `<set-dir>/facts.json`. For fresh artifacts, whose sheets this
+ *     tree also renders.
+ *
+ *   pnpm shipping recorded-facts <set-dir> --page-fill <file> --page-fill-set <key>
+ *     Write `<set-dir>/facts.json` from what was recorded when the set was
+ *     judged: the run's findings, and its page defects from one page-fill
+ *     measurement of the judged renders. For calibration artifacts, which
+ *     today's engine would paginate differently.
  *
  *   pnpm shipping calibrate --set <id>=<dir>… --human <file>… --out <file>
  *     Score every candidate definition on the human-labelled artifacts, with
@@ -39,6 +44,7 @@ import {
   humanJudgments,
   humanRepeatability,
   labelArtifacts,
+  recordedFacts,
   scoreDefinition,
   verifyDefinition,
   type EvidenceSet,
@@ -159,14 +165,64 @@ async function reanalyze(dir: string, repoRoot: string): Promise<number> {
     };
     line(`  ${run.label}: ${metrics.pages} page(s)`);
   }
-  const out = path.join(dir, 'reanalysis.json');
+  const out = path.join(dir, 'facts.json');
   await fs.writeFile(
     out,
     JSON.stringify(
       {
+        source: 'reanalysis',
         analyzedAt: new Date().toISOString(),
         gitSha: gitState(repoRoot).sha,
         runs,
+      },
+      null,
+      2
+    )
+  );
+  line(out);
+  return 0;
+}
+
+async function recorded(dir: string, argv: readonly string[]): Promise<number> {
+  const pageFillFile = one(argv, 'page-fill');
+  const pageFillSet = one(argv, 'page-fill-set');
+  if (!pageFillFile || !pageFillSet) {
+    line(
+      'usage: pnpm shipping recorded-facts <set-dir> --page-fill <file> --page-fill-set <key>'
+    );
+    return 1;
+  }
+  const measure = await readJson<{
+    sets: Record<string, { runs: Record<string, { underfilled: number }> }>;
+  }>(pageFillFile);
+  const measured = measure.sets[pageFillSet];
+  if (!measured) {
+    line(`${pageFillFile} has no set "${pageFillSet}".`);
+    return 1;
+  }
+  const scorecard = await readJson<{
+    runs: Array<
+      RecordedRun & { outcome: string; qualityByCode: Record<string, number> }
+    >;
+  }>(path.join(dir, 'scorecard.json'));
+  const runs = comparableRuns(scorecard.runs)
+    .filter(
+      (run) => (run as unknown as { outcome: string }).outcome === 'completed'
+    )
+    .map((run) => ({
+      label: run.label,
+      qualityByCode: (
+        run as unknown as { qualityByCode: Record<string, number> }
+      ).qualityByCode,
+    }));
+  const out = path.join(dir, 'facts.json');
+  await fs.writeFile(
+    out,
+    JSON.stringify(
+      {
+        source: 'recorded',
+        pageFill: { file: path.basename(pageFillFile), set: pageFillSet },
+        runs: recordedFacts(runs, measured.runs),
       },
       null,
       2
@@ -188,9 +244,10 @@ function parseSets(
 }
 
 async function loadEvidenceSet(id: string, dir: string): Promise<EvidenceSet> {
-  const reanalysis = await readJson<{
+  const facts = await readJson<{
+    source?: string;
     runs: Record<string, { qualityByCode: Record<string, number> }>;
-  }>(path.join(dir, 'reanalysis.json'));
+  }>(path.join(dir, 'facts.json'));
   const sittings: EvidenceSet['sittings'] = {};
   for (const question of Object.keys(
     SHIPPING_QUESTIONS
@@ -226,7 +283,7 @@ async function loadEvidenceSet(id: string, dir: string): Promise<EvidenceSet> {
   return {
     id,
     runs: await setRuns(dir),
-    reanalysis: reanalysis.runs,
+    facts: facts.runs,
     sittings,
   };
 }
@@ -433,6 +490,13 @@ export async function main(argv: readonly string[]): Promise<number> {
       return rest[0]
         ? reanalyze(path.resolve(rest[0]), repoRoot)
         : (line('usage: pnpm shipping reanalyze <set-dir>'), 1);
+    case 'recorded-facts':
+      return rest[0]
+        ? recorded(path.resolve(rest[0]), rest.slice(1))
+        : (line(
+            'usage: pnpm shipping recorded-facts <set-dir> --page-fill <file> --page-fill-set <key>'
+          ),
+          1);
     case 'calibrate':
       return calibrate(rest, repoRoot);
     case 'freeze':
@@ -440,7 +504,9 @@ export async function main(argv: readonly string[]): Promise<number> {
     case 'verify':
       return verify(rest, repoRoot);
     default:
-      line('usage: pnpm shipping <sheets|reanalyze|calibrate|freeze|verify> …');
+      line(
+        'usage: pnpm shipping <sheets|reanalyze|recorded-facts|calibrate|freeze|verify> …'
+      );
       return 1;
   }
 }

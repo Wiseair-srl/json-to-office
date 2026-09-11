@@ -76,7 +76,9 @@ Calibrating, freezing and verifying one:
 
 ```bash
 # Calibration set: the checkpoint artifacts Paolo has judged (96 verdicts).
-pnpm shipping reanalyze evals-out/checkpoint-before     # facts under this tree's analyzer
+# Facts as recorded when they were judged: today's engine paginates them differently.
+pnpm shipping recorded-facts evals-out/checkpoint-before \
+  --page-fill baselines/2026-09-08-page-fill-measure.json --page-fill-set checkpoint-before
 pnpm rejudge evals-out/checkpoint-before --question v1 --out evals-out/checkpoint-before/sitting-v1.json
 pnpm rejudge evals-out/checkpoint-before --question v2 --out evals-out/checkpoint-before/sitting-v2.json
 # … the same for checkpoint-after and checkpoint-after-5, in one sitting …
@@ -92,7 +94,7 @@ pnpm shipping freeze --calibration baselines/<date>-shipping-calibration.json \
 # Verification set: fresh artifacts on briefs no calibration artifact shares.
 pnpm evals -- --set shipping-verification --out evals-out/shipping-verification   # no --judge
 pnpm shipping sheets evals-out/shipping-verification
-pnpm shipping reanalyze evals-out/shipping-verification
+pnpm shipping reanalyze evals-out/shipping-verification     # fresh artifacts: today's analyzer
 pnpm rejudge evals-out/shipping-verification --question <frozen question> \
   --out evals-out/shipping-verification/sitting-<question>.json
 pnpm shipping verify --definition baselines/shipping-definition.json \

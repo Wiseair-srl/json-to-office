@@ -12,6 +12,7 @@ import {
   humanRepeatability,
   labelArtifacts,
   loadShippingSemantics,
+  recordedFacts,
   scoreDefinition,
   verifyDefinition,
   type EvidenceRow,
@@ -287,7 +288,7 @@ describe('assembling evidence', () => {
         outcome: 'failed' as const,
       },
     ],
-    reanalysis: {
+    facts: {
       'cr-a#1': { qualityByCode: { W_QUALITY_RENDERED_PAGE_UNDERFILLED: 1 } },
       'cr-a#2': { qualityByCode: { W_QUALITY_RENDERED_CLIP: 1 } },
     },
@@ -334,9 +335,47 @@ describe('assembling evidence', () => {
     expect(() => buildEvidence([set], stray)).toThrow(/after\/cr-z#1/);
   });
 
-  it('refuses a completed run nobody re-analysed, since its facts would be stale', () => {
-    const missing = { ...set, reanalysis: {} };
-    expect(() => buildEvidence([missing], labels)).toThrow(/re-analys/);
+  it('refuses a completed run with no facts, rather than scoring it as clean', () => {
+    const missing = { ...set, facts: {} };
+    expect(() => buildEvidence([missing], labels)).toThrow(/facts/);
+  });
+});
+
+describe('facts as they were when an artifact was judged', () => {
+  const runs: Array<{ label: string; qualityByCode: Record<string, number> }> =
+    [
+      {
+        label: 'cr-a#1',
+        qualityByCode: {
+          W_QUALITY_RENDERED_CLIP: 1,
+          W_QUALITY_RENDERED_EMPTY_PAGE: 2,
+          W_QUALITY_RENDERED_PAGE_UNDERFILLED: 5,
+        },
+      },
+      { label: 'cr-a#2', qualityByCode: {} },
+    ];
+
+  it('keeps the recorded findings and takes page defects from the page-fill measure alone', () => {
+    expect(
+      recordedFacts(runs, {
+        'cr-a#1': { underfilled: 2 },
+        'cr-a#2': { underfilled: 0 },
+      })
+    ).toEqual({
+      'cr-a#1': {
+        qualityByCode: {
+          W_QUALITY_RENDERED_CLIP: 1,
+          W_QUALITY_RENDERED_PAGE_UNDERFILLED: 2,
+        },
+      },
+      'cr-a#2': { qualityByCode: {} },
+    });
+  });
+
+  it('refuses a run the measure never saw', () => {
+    expect(() => recordedFacts(runs, { 'cr-a#1': { underfilled: 0 } })).toThrow(
+      /cr-a#2/
+    );
   });
 });
 
