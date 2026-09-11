@@ -350,6 +350,7 @@ export interface ContactSheet {
 /** A composed sheet as a result reports it: everything but the pixels. */
 export type ContactSheetShape = Omit<ContactSheet, 'png'> & { bytes: number };
 
+/** Describe a composed sheet without carrying its pixels into a payload. */
 export function contactSheetShape(sheet: ContactSheet): ContactSheetShape {
   return {
     columns: sheet.columns,
