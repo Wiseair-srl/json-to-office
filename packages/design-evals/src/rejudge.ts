@@ -247,7 +247,10 @@ export async function rejudge(options: RejudgeOptions): Promise<RejudgeReport> {
     }
   }
 
-  const agreement = summarise(runs);
+  // The recorded verdicts answered the original question; a sitting that
+  // asked another one is a different instrument, not a repeat of it.
+  const agreement =
+    (options.question ?? 'v1') === 'v1' ? summarise(runs) : undefined;
   return {
     source: options.scorecardPath,
     judgeModel: options.judgeModel,
