@@ -35,6 +35,7 @@ import { analyzeDocument } from './analyze.js';
 import { assignments, runWithInkLines, type Line } from './cli-lines.js';
 import { briefsById, developmentCorpusDir, loadCorpus } from './corpus.js';
 import {
+  checkDelivery,
   desktopAccounting,
   desktopEvents,
   loopUsage,
@@ -100,6 +101,8 @@ async function importSessions(
       out: { type: 'string' },
       model: { type: 'string' },
       run: { type: 'string', multiple: true },
+      exclude: { type: 'string', multiple: true },
+      intervened: { type: 'string', multiple: true },
       'app-version': { type: 'string' },
       skill: { type: 'string' },
     },
@@ -113,22 +116,48 @@ async function importSessions(
   }));
   if (!journalFile || !out || !model || mappings.length === 0) {
     line(
-      'usage: pnpm desktop import --journal <file> --run <brief>=<session>… --model <id> [--app-version <v>] [--skill <dir>] --out <dir>'
+      'usage: pnpm desktop import --journal <file> --run <brief>=<session>… --model <id> [--exclude <session>=<why>…] [--intervened <brief or brief#n>…] [--app-version <v>] [--skill <dir>] --out <dir>'
     );
     return 1;
   }
+  const excluded = new Map(assignments(values.exclude, 'exclude'));
+  const intervened = new Set(values.intervened ?? []);
   const appVersion = values['app-version'];
-  const skillDir = values.skill;
-  const skill = skillDir ? await loadSkill(skillDir) : undefined;
+  const skill = values.skill ? await loadSkill(values.skill) : undefined;
   const journal = parseJournal(await fs.readFile(journalFile, 'utf8'));
-  const corpus = await loadCorpus(developmentCorpusDir(), 'development');
-  const briefs = briefsById(
-    corpus,
-    mappings.map((mapping) => mapping.briefId)
+
+  // Every session that did something is either a run or an exclusion with a
+  // reason: an abandoned attempt dropped quietly would shrink the denominator.
+  const mapped = new Set(mappings.map((mapping) => mapping.session));
+  const unaccounted = journal.sessions.filter(
+    (session) =>
+      session.calls.length > 0 &&
+      !mapped.has(session.id) &&
+      !excluded.has(session.id)
   );
+  if (unaccounted.length > 0) {
+    line(
+      `${unaccounted.length} journalled session(s) made calls and map to no brief: ${unaccounted
+        .map((session) => `${session.id} (${session.calls.length} calls)`)
+        .join(
+          ', '
+        )}. Map each with --run <brief>=<session>, or --exclude <session>=<why>.`
+    );
+    return 1;
+  }
+
+  const corpus = await loadCorpus(developmentCorpusDir(), 'development');
+  const briefs = briefsById(corpus, [
+    ...new Set(mappings.map((mapping) => mapping.briefId)),
+  ]);
   const shipping = await loadShippingSemantics(
     path.join(repoRoot, 'packages/design-evals/baselines')
   );
+  const perBrief = new Map<string, number>();
+  for (const mapping of mappings) {
+    perBrief.set(mapping.briefId, (perBrief.get(mapping.briefId) ?? 0) + 1);
+  }
+  const seen = new Map<string, number>();
 
   const runs: RunMetrics[] = [];
   for (const mapping of mappings) {
@@ -136,10 +165,16 @@ async function importSessions(
     const session = journal.sessions.find(
       (entry) => entry.id === mapping.session
     );
-    if (!session)
+    if (!session) {
       throw new Error(`The journal has no session ${mapping.session}.`);
+    }
+    // Labelled the way the runner labels repeats, so the sets line up.
+    const pass = (seen.get(brief.id) ?? 0) + 1;
+    seen.set(brief.id, pass);
+    const label =
+      (perBrief.get(brief.id) ?? 1) > 1 ? `${brief.id}#${pass}` : brief.id;
     const accounting = desktopAccounting(session);
-    const runDir = path.join(out, 'runs', brief.id);
+    const runDir = path.join(out, 'runs', label);
     await fs.mkdir(runDir, { recursive: true });
     await fs.writeFile(
       path.join(runDir, 'transcript.json'),
@@ -157,15 +192,17 @@ async function importSessions(
         2
       )
     );
-    const partial = {
+    const partial: Partial<RunMetrics> = {
       iterations: accounting.iterations,
       toolCalls: accounting.toolCalls,
       environmentFailures: accounting.environmentFailures,
       wallMs: accounting.wallMs,
       cost: { inputTokens: 0, outputTokens: 0, usageComplete: false },
+      // Desktop reports none of these to anyone: unknown, never zero.
+      unobservable: ['turns', 'tokens', 'foreignTools'],
     };
 
-    const delivery: Record<string, unknown> = { ...accounting.delivered };
+    let delivery: Record<string, unknown> = { ...accounting.delivered };
     let run: RunMetrics;
     if (!accounting.delivered) {
       run = failedRun(
@@ -178,23 +215,23 @@ async function importSessions(
       );
     } else {
       const text = await fs.readFile(accounting.delivered.documentFile, 'utf8');
-      const digest = createHash('sha256').update(text).digest('hex');
-      delivery.documentVerified =
-        digest === accounting.delivered.documentSha256;
-      try {
-        const stat = await fs.stat(accounting.delivered.artifact ?? '');
-        delivery.artifactExists = true;
-        delivery.artifactBytesMatch = stat.size === accounting.delivered.bytes;
-      } catch {
-        delivery.artifactExists = false;
-      }
-      if (!delivery.documentVerified) {
-        run = failedRun(
-          brief.id,
-          brief.format,
-          'the delivered document does not match the digest the server recorded',
-          partial
-        );
+      const artifact = await readArtifact(accounting.delivered.artifact);
+      const checked = checkDelivery({
+        documentText: text,
+        documentSha256: accounting.delivered.documentSha256,
+        artifact,
+        expected: {
+          ...(accounting.delivered.bytes !== undefined && {
+            bytes: accounting.delivered.bytes,
+          }),
+          ...(accounting.delivered.artifactSha256 !== undefined && {
+            artifactSha256: accounting.delivered.artifactSha256,
+          }),
+        },
+      });
+      delivery = { ...delivery, ...checked };
+      if (checked.failure) {
+        run = failedRun(brief.id, brief.format, checked.failure, partial);
       } else {
         const document = JSON.parse(text) as unknown;
         await fs.writeFile(
@@ -208,19 +245,15 @@ async function importSessions(
           rendered.sheet.png
         );
         run = {
-          briefId: brief.id,
-          format: brief.format,
+          ...failedRun(brief.id, brief.format, '', partial),
           outcome: 'completed',
           ...documentMetrics({
             diagnostics: measured.diagnostics,
             pages: measured.pages,
           }),
           pageCountSource: measured.pageCountSource,
-          turns: 0,
-          foreignTools: [],
-          retries: 0,
-          ...partial,
         };
+        delete run.failure;
       }
     }
     runs.push(run);
@@ -235,47 +268,56 @@ async function importSessions(
           ...(appVersion && { appVersion }),
           delivery,
           loop: accounting.loop,
-          // Desktop does not report these to anyone; recorded as unknown, not zero.
-          unobservable: ['turns', 'tokens', 'foreignTools'],
+          intervened: intervened.has(label) || intervened.has(brief.id),
+          unobservable: partial.unobservable,
         },
         null,
         2
       )
     );
     line(
-      `  ${brief.id} <- ${session.id}: ${run.outcome}${run.failure ? ` (${run.failure})` : ''}, ` +
+      `  ${label} <- ${session.id}: ${run.outcome}${run.failure ? ` (${run.failure})` : ''}, ` +
         `${run.iterations} iteration(s), ${run.toolCalls} call(s)`
     );
   }
 
   const { SERVER_INSTRUCTIONS } = await import('@json-to-office/mcp-server');
+  const manifest = buildManifest({
+    repoRoot,
+    model,
+    modelParameters: { host: 'claude-desktop' },
+    serverInstructions: SERVER_INSTRUCTIONS,
+    ...(skill !== undefined && { skill }),
+    mode: skill ? 'assisted' : 'cold',
+    maxRetries: 0,
+    agentSdkVersion: `claude-desktop ${appVersion ?? 'unrecorded'}`,
+  });
+  const sessionsUsed = mappings.map(
+    (mapping) =>
+      journal.sessions.find((entry) => entry.id === mapping.session)!.facts
+  );
+  const serverBuilds = [
+    ...new Set(sessionsUsed.map((facts) => facts.serverBuild ?? 'unrecorded')),
+  ];
   const scorecard = buildScorecard({
     runs,
     manifest: {
-      ...buildManifest({
-        repoRoot,
-        model,
-        modelParameters: { host: 'claude-desktop' },
-        serverInstructions: SERVER_INSTRUCTIONS,
-        ...(skill !== undefined && { skill }),
-        mode: skill ? 'assisted' : 'cold',
-        maxRetries: 0,
-        agentSdkVersion: `claude-desktop ${appVersion ?? 'unrecorded'}`,
-      }),
+      ...manifest,
       host: {
         kind: 'claude-desktop',
         ...(appVersion && { appVersion }),
         journal: path.resolve(journalFile),
         serverVersions: [
           ...new Set(
-            mappings.map((mapping) => {
-              const facts = journal.sessions.find(
-                (entry) => entry.id === mapping.session
-              )?.facts;
-              return facts?.server?.version ?? 'unrecorded';
-            })
+            sessionsUsed.map((facts) => facts.server?.version ?? 'unrecorded')
           ),
         ],
+        serverBuilds,
+        // The same build on both hosts is the first matched condition.
+        matchedBuild:
+          manifest.serverBuild !== undefined &&
+          serverBuilds.every((build) => build === manifest.serverBuild),
+        excluded: Object.fromEntries(excluded),
       },
     },
     corpus: {
@@ -293,8 +335,30 @@ async function importSessions(
     path.join(out, 'scorecard.json'),
     JSON.stringify(scorecard, null, 2)
   );
+  if (!scorecard.manifest.host?.matchedBuild) {
+    line(
+      'WARNING: the Desktop sessions ran a different server build from this tree — rebuild the commit they used before comparing with headless runs'
+    );
+  }
   line(path.join(out, 'scorecard.json'));
   return 0;
+}
+
+/** The delivered file as it is now: whether it exists, its size and digest. */
+async function readArtifact(
+  file: string | undefined
+): Promise<{ exists: boolean; bytes?: number; sha256?: string }> {
+  if (!file) return { exists: false };
+  try {
+    const bytes = await fs.readFile(file);
+    return {
+      exists: true,
+      bytes: bytes.length,
+      sha256: createHash('sha256').update(bytes).digest('hex'),
+    };
+  } catch {
+    return { exists: false };
+  }
 }
 
 /** A set's runs as the comparison reads them, with the shared sitting when there is one. */
@@ -320,6 +384,18 @@ async function hostRuns(dir: string, repoRoot: string): Promise<HostRun[]> {
       path.join(dir, 'runs', run.label, 'transcript.json')
     );
     const verdict = sitting[run.label] ?? run.judge;
+    let intervened = false;
+    try {
+      intervened =
+        (
+          await readJson<{ intervened?: boolean }>(
+            path.join(dir, 'runs', run.label, 'desktop.json')
+          )
+        ).intervened === true;
+    } catch (error) {
+      // Only an imported Desktop run has a desktop.json; a headless one never does.
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+    }
     const decision = ships(semantics.definition, {
       outcome: run.outcome,
       qualityByCode: run.qualityByCode,
@@ -339,6 +415,7 @@ async function hostRuns(dir: string, repoRoot: string): Promise<HostRun[]> {
       loop: loopUsage(events),
       ...(verdict && { level: verdict.level }),
       ...(decision !== undefined && { ships: decision }),
+      ...(intervened && { intervened }),
     });
   }
   return runs;

@@ -45,6 +45,12 @@ export interface RunManifest {
    * only evidence that anything was wrong was a mtime.
    */
   treeStableDuringRun: boolean;
+  /**
+   * SHA-256 of `packages/mcp-server/dist/cli.js`: the build the agent talked
+   * to. A journalled Desktop session records the same digest of the script its
+   * host started, which is how the two hosts are shown to have run one build.
+   */
+  serverBuild?: string;
   packageVersions: Record<string, string>;
   agentSdkVersion: string;
   /** The exact model identifier the runs were made with. */
@@ -82,6 +88,12 @@ export interface RunManifest {
     appVersion?: string;
     journal: string;
     serverVersions: string[];
+    /** `serverBuild` of each session's server, as its journal recorded it. */
+    serverBuilds?: string[];
+    /** True when every session ran the build this tree's manifest names. */
+    matchedBuild?: boolean;
+    /** Sessions left out of the set, each with the reason given. */
+    excluded?: Record<string, string>;
   };
   os: { platform: string; release: string; arch: string };
   node: string;
@@ -320,6 +332,20 @@ export function endpointClass(
   return 'hosted';
 }
 
+function serverBuildOf(repoRoot: string): { serverBuild?: string } {
+  try {
+    return {
+      serverBuild: createHash('sha256')
+        .update(
+          readFileSync(path.join(repoRoot, 'packages/mcp-server/dist/cli.js'))
+        )
+        .digest('hex'),
+    };
+  } catch {
+    return {};
+  }
+}
+
 export function buildManifest(input: ManifestInput): RunManifest {
   const git = gitState(input.repoRoot);
   const packages = [
@@ -344,6 +370,7 @@ export function buildManifest(input: ManifestInput): RunManifest {
     buildFingerprint: fingerprint,
     treeStableDuringRun:
       atStart.gitSha === git.sha && atStart.buildFingerprint === fingerprint,
+    ...serverBuildOf(input.repoRoot),
     packageVersions: Object.fromEntries(
       packages.map((name) => [
         `@json-to-office/${name}`,

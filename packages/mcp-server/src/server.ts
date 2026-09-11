@@ -8,6 +8,9 @@
  * info, then discovery, then the authoring loop, then workspaces.
  */
 
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+
 import { McpServer } from '@modelcontextprotocol/server';
 import type { McpServerFactory } from '@modelcontextprotocol/server';
 
@@ -75,6 +78,25 @@ Document defects come back as structured diagnostics with ok: false, not as erro
  * journaled without anyone remembering to. The handler's own result is what
  * the client receives either way — the journal only reads it.
  */
+/**
+ * Which build is answering: the entry script and a digest of it, so a
+ * journalled session can be matched to the headless run of the same build.
+ */
+function serverBuild(): { serverEntry?: string; serverBuild?: string } {
+  const entry = process.argv[1];
+  if (!entry) return {};
+  try {
+    return {
+      serverEntry: entry,
+      serverBuild: createHash('sha256')
+        .update(readFileSync(entry))
+        .digest('hex'),
+    };
+  } catch {
+    return { serverEntry: entry };
+  }
+}
+
 function journalTools(server: McpServer, deps: ToolDeps): void {
   const journal = deps.journal;
   if (!journal) return;
@@ -90,6 +112,15 @@ function journalTools(server: McpServer, deps: ToolDeps): void {
     // The host a chart would be posted to, as `jto_info` reads it: which export
     // server answered is part of what the session measured.
     exportServerHost: serviceUrl(highchartsServerUrl())?.host ?? 'unparseable',
+    ...serverBuild(),
+    previewPaths: {
+      ...(process.env.LIBREOFFICE_PATH && {
+        libreoffice: process.env.LIBREOFFICE_PATH,
+      }),
+      ...(process.env.PDFTOPPM_PATH && {
+        pdftoppm: process.env.PDFTOPPM_PATH,
+      }),
+    },
   });
   const source = {
     async readRevision(handle: string, revision: number) {

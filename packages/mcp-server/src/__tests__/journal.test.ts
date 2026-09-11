@@ -12,6 +12,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { createHash } from 'crypto';
 import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
@@ -111,6 +112,7 @@ describe('run journal', () => {
       server: { name: 'json-to-office', version: '9.9.9-test' },
     });
     expect(session.session).toMatch(/^s-[0-9a-f]{8}$/);
+    expect(session.serverBuild).toMatch(/^[0-9a-f]{64}$/);
     expect(info).toMatchObject({
       type: 'call',
       session: session.session,
@@ -194,9 +196,17 @@ describe('run journal', () => {
         },
       ],
     });
-    const fromHandle = await ok('jto_generate', { format: 'docx', handle });
+    const fromHandle = await ok('jto_generate', {
+      format: 'docx',
+      handle,
+      filename: 'from-handle.docx',
+    });
     const inline = docx('Sent inline.');
-    await ok('jto_generate', { format: 'docx', document: inline });
+    await ok('jto_generate', {
+      format: 'docx',
+      document: inline,
+      filename: 'inline.docx',
+    });
 
     const generations = (await lines()).filter(
       (line) => line.tool === 'jto_generate'
@@ -221,6 +231,11 @@ describe('run journal', () => {
       'Accepted revision.'
     );
     expect(byHandle.delivered.sha256).toMatch(/^[0-9a-f]{64}$/);
+    expect(byHandle.delivered.artifactSha256).toBe(
+      createHash('sha256')
+        .update(await fs.readFile(fromHandle.artifact.path))
+        .digest('hex')
+    );
 
     expect(byValue.result.source).toEqual({ origin: 'inline' });
     expect(
