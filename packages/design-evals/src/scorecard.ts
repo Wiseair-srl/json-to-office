@@ -64,6 +64,10 @@ export interface ScorecardTotals {
   renderedFindingsUnmapped: number;
   /** Runs that reached for a tool outside the server. Should be 0 in a cold set. */
   contaminated: number;
+  /** Runs whose host could show outside tools at all; `contaminated` is out of these. */
+  contaminationObserved: number;
+  /** What some run's host could not report, so its aggregate excludes that run. */
+  unobservable?: string[];
   /** Runs that met a render-environment failure (see `RunRecord.environmentFailures`). */
   environmentFailures: number;
   medianIterations: number;
@@ -193,6 +197,13 @@ function hasIntegrityDefect(run: RunMetrics): boolean {
 
 export function totals(runs: readonly RunMetrics[]): ScorecardTotals {
   const completed = runs.filter((run) => run.outcome === 'completed');
+  const observes = (
+    run: RunMetrics,
+    field: 'turns' | 'tokens' | 'foreignTools'
+  ): boolean => !run.unobservable?.includes(field);
+  const unobservable = [
+    ...new Set(runs.flatMap((run) => run.unobservable ?? [])),
+  ].sort();
   const clean = runs.filter(buildsClean);
   const defective = runs.filter(hasIntegrityDefect);
   const usd = runs
@@ -216,14 +227,21 @@ export function totals(runs: readonly RunMetrics[]): ScorecardTotals {
       0
     ),
     withPlaceholderLeak: runs.filter((run) => run.placeholderLeaks > 0).length,
-    contaminated: runs.filter((run) => run.foreignTools.length > 0).length,
+    contaminated: runs.filter(
+      (run) => observes(run, 'foreignTools') && run.foreignTools.length > 0
+    ).length,
+    contaminationObserved: runs.filter((run) => observes(run, 'foreignTools'))
+      .length,
+    ...(unobservable.length > 0 && { unobservable }),
     environmentFailures: runs.filter(
       (run) => (run.environmentFailures ?? []).length > 0
     ).length,
     // Over completed runs: the median number of edits a run that produced
     // nothing took is not a number about iteration.
     medianIterations: median(completed.map((run) => run.iterations)),
-    medianTurns: median(completed.map((run) => run.turns)),
+    medianTurns: median(
+      completed.filter((run) => observes(run, 'turns')).map((run) => run.turns)
+    ),
     medianPages: median(completed.map((run) => run.pages)),
     totalToolCalls: runs.reduce((sum, run) => sum + run.toolCalls, 0),
     totalInputTokens: runs.reduce((sum, run) => sum + run.cost.inputTokens, 0),

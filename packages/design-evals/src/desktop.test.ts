@@ -1,8 +1,11 @@
+import { createHash } from 'node:crypto';
+
 import { describe, expect, it } from 'vitest';
 
 import { JOURNAL_VERSION } from '@json-to-office/mcp-server';
 
 import {
+  checkDelivery,
   desktopAccounting,
   desktopEvents,
   parseJournal,
@@ -214,5 +217,55 @@ describe('a Desktop session, measured like a headless run', () => {
       },
     ]);
     expect(desktopAccounting(idle).toolCalls).toBe(0);
+  });
+});
+
+describe('checking what a Desktop session delivered', () => {
+  const text = '{"name":"docx"}';
+  const digest = createHash('sha256').update(text).digest('hex');
+
+  it('passes a document that matches its digest and a file that matches its own', () => {
+    expect(
+      checkDelivery({
+        documentText: text,
+        documentSha256: digest,
+        artifact: { exists: true, bytes: 10, sha256: 'f'.repeat(64) },
+        expected: { bytes: 10, artifactSha256: 'f'.repeat(64) },
+      })
+    ).toEqual({
+      documentVerified: true,
+      artifactExists: true,
+      artifactVerified: true,
+    });
+  });
+
+  it('fails a run whose file is gone, or changed after it was generated', () => {
+    expect(
+      checkDelivery({
+        documentText: text,
+        documentSha256: digest,
+        artifact: { exists: false },
+        expected: { bytes: 10 },
+      }).failure
+    ).toMatch(/missing/);
+    expect(
+      checkDelivery({
+        documentText: text,
+        documentSha256: digest,
+        artifact: { exists: true, bytes: 10, sha256: 'e'.repeat(64) },
+        expected: { bytes: 10, artifactSha256: 'f'.repeat(64) },
+      }).failure
+    ).toMatch(/changed/);
+  });
+
+  it('fails a run whose kept document is not the one the server recorded', () => {
+    expect(
+      checkDelivery({
+        documentText: `${text} `,
+        documentSha256: digest,
+        artifact: { exists: true, bytes: 10 },
+        expected: { bytes: 10 },
+      }).failure
+    ).toMatch(/digest/);
   });
 });

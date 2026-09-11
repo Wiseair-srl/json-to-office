@@ -100,7 +100,7 @@ pnpm rejudge evals-out/shipping-verification --question <frozen question> \
 pnpm shipping verify --definition baselines/shipping-definition.json \
   --set verification=evals-out/shipping-verification \
   --human baselines/<date>-human-shipping-verification.json \
-  --out baselines/shipping-verification.json
+  --record baselines/shipping-verification.json
 ```
 
 Three rules keep the number honest. **One label per artifact**: an artifact
@@ -109,9 +109,20 @@ judged twice with the same answer carries it; one judged both ways is
 reported on its own. **Allocation by brief**: calibration and verification
 share no brief, and kappa's interval is resampled by brief, not by document.
 **Freeze, then verify**: the frozen file carries a hash of the definition and
-of its question's wording; verification, and every later scorecard, refuse a
-definition whose hash no longer matches. The target is Cohen's kappa ≥ 0.5 on
-the verification set; a miss is recorded as a miss.
+of the whole prompt its judge reads; verification, and every later scorecard,
+refuse a definition whose hash no longer matches. Verification also refuses
+an artifact from a calibration brief, and verdicts whose `readAt` (when they
+left the review page) is not after the freeze. The record is append-only: a
+set that verified one definition can never verify another, and the same
+definition tries again on it only with `--supersede "<why>"`, both attempts
+kept. The target is Cohen's kappa ≥ 0.5 on the verification set; a miss is
+recorded as a miss.
+
+Both raters judge the contact sheet, whose pages are thumbnails: "after
+reading the argument" means as far as the sheet shows it (the reviewer can
+open the sheet at full size; the judge sees it as one image). The page-defect
+term is the rubric's own first level — "nothing … empty" — measured by the
+rendered pass rather than guessed.
 
 ## Claude Desktop against the headless runner (#422)
 
@@ -157,10 +168,28 @@ journal makes the Desktop side measurable the same way.
    (`pnpm rejudge … --question <q> --out <dir>/sitting-<q>.json`), then
    `pnpm desktop compare --desktop evals-out/desktop-pairs --headless evals-out/headless-pairs --out baselines/<date>-desktop-vs-headless.md`.
 
+Every journalled session that made a call is either mapped to a brief
+(`--run <brief>=<session>`; two sessions on one brief become `<brief>#1`,
+`#2`) or excluded with a reason (`--exclude <session>=<why>`), so an abandoned
+attempt stays in the record. `--intervened <brief>` marks a run where the
+reviewer answered the agent.
+
 What Desktop does not report — turns, tokens, and any tool the model reached
-outside the server — is recorded as unobservable on each imported run, not as
-zero. The delivered document is checked against the digest the server
-recorded when it generated it, and the artifact against its size.
+outside the server — is marked unobservable on each imported run, and the
+scorecard's aggregates leave those runs out rather than reading a zero. The
+delivered document is checked against the digest the server recorded when it
+generated it, and the file against the digest of its bytes; a file that is
+gone or changed makes the run a failure. Each session records a digest of the
+server script it ran, and the import checks it against this tree's build.
+
+Known differences the comparison cannot remove, reported beside it: headless
+runs inline the skill into the system prompt while Desktop loads it when it
+triggers; headless retries a failed session once, Desktop does not; and a
+Desktop run can be interrupted by a person.
+
+Run the Desktop half after the verification review (#409), not before: the
+deck briefs here are also verification briefs, and seeing a Desktop document
+first would expose the reviewer to them before judging.
 
 ## Brief sets
 

@@ -107,6 +107,12 @@ export interface RunMetrics extends DocumentMetrics {
    */
   judge?: RunJudgement;
   /**
+   * What the host that authored the run does not report — Claude Desktop
+   * gives no turns, no tokens, and no view of tools outside this server
+   * (#422). An aggregate leaves such a run out instead of reading its zero.
+   */
+  unobservable?: Array<'turns' | 'tokens' | 'foreignTools'>;
+  /**
    * Whether the run ships under the scorecard's shipping definition (#409).
    * Derived by the scorecard, never by the runner; absent when the definition
    * needs a verdict the run does not have.

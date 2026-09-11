@@ -109,7 +109,12 @@ describe('compareHosts', () => {
 
   it('renders a table a reader can check by brief', () => {
     const markdown = hostComparisonMarkdown(compareHosts(desktop, headless));
-    expect(markdown).toContain('| cr-a | docx |');
-    expect(markdown).toMatch(/Desktop.*headless/is);
+    expect(markdown).toContain(
+      '| cr-a | docx | Desktop | L4 ship | 1 | 14 | yes |'
+    );
+    expect(markdown).toContain(
+      '| cr-a | docx | headless | L4 ship · L3 · L4 ship |'
+    );
+    expect(markdown).toMatch(/\| intervened \|/);
   });
 });

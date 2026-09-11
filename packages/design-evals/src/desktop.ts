@@ -16,6 +16,8 @@
  * import records them as such rather than as zero.
  */
 
+import { createHash } from 'node:crypto';
+
 import type {
   JournalCallLine,
   JournalSessionLine,
@@ -168,6 +170,8 @@ export interface DesktopAccounting {
     revision?: number;
     documentFile: string;
     documentSha256: string;
+    /** The file's digest when the server recorded one. */
+    artifactSha256?: string;
   };
   /** How much of the authoring loop the session actually walked. */
   loop: {
@@ -217,6 +221,9 @@ export function desktopAccounting(
           }),
           documentFile: final.delivered.file,
           documentSha256: final.delivered.sha256,
+          ...(final.delivered.artifactSha256 !== undefined && {
+            artifactSha256: final.delivered.artifactSha256,
+          }),
         }
       : undefined;
 
@@ -297,4 +304,49 @@ export function summarizeSessions(journal: ParsedJournal): Array<{
       }),
     };
   });
+}
+
+/**
+ * Whether a Desktop session delivered what the server recorded delivering.
+ *
+ * The kept document must hash to the digest written when it was generated,
+ * and the file must still be where the server put it — with the digest the
+ * server recorded, when it recorded one, else the size. Any miss makes the
+ * run a failed one: a file nobody can show is not a delivery.
+ */
+export function checkDelivery(input: {
+  documentText: string;
+  documentSha256: string;
+  artifact: { exists: boolean; bytes?: number; sha256?: string };
+  expected: { bytes?: number; artifactSha256?: string };
+}): {
+  documentVerified: boolean;
+  artifactExists: boolean;
+  artifactVerified?: boolean;
+  failure?: string;
+} {
+  const documentVerified =
+    createHash('sha256').update(input.documentText).digest('hex') ===
+    input.documentSha256;
+  const artifactExists = input.artifact.exists;
+  const artifactVerified = !artifactExists
+    ? false
+    : input.expected.artifactSha256 !== undefined
+      ? input.artifact.sha256 === input.expected.artifactSha256
+      : input.expected.bytes !== undefined
+        ? input.artifact.bytes === input.expected.bytes
+        : undefined;
+  const failure = !documentVerified
+    ? 'the delivered document does not match the digest the server recorded'
+    : !artifactExists
+      ? 'the delivered file is missing'
+      : artifactVerified === false
+        ? 'the delivered file changed after it was generated'
+        : undefined;
+  return {
+    documentVerified,
+    artifactExists,
+    ...(artifactVerified !== undefined && { artifactVerified }),
+    ...(failure && { failure }),
+  };
 }

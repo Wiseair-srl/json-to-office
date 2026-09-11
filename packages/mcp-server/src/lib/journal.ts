@@ -247,6 +247,11 @@ export interface JournalSessionLine {
   outputRoot: string;
   workspaceRoot?: string;
   exportServerHost?: string;
+  /** The script the host started, and a digest of it: which build answered. */
+  serverEntry?: string;
+  serverBuild?: string;
+  /** Preview binaries as configured, when they were. */
+  previewPaths?: { libreoffice?: string; pdftoppm?: string };
 }
 
 /** The document a successful generation delivered, kept beside the journal. */
@@ -258,6 +263,8 @@ export interface JournalDelivered {
   /** Present when the generation read a workspace revision. */
   handle?: string;
   revision?: number;
+  /** The delivered file's digest, so it can be checked byte for byte later. */
+  artifactSha256?: string;
 }
 
 /** One finished tool call. */
@@ -440,14 +447,14 @@ async function deliveredDocument(
   keep: (document: unknown) => Promise<JournalDelivered | undefined>
 ): Promise<JournalDelivered | undefined> {
   const summary = isRecord(payload.source) ? payload.source : undefined;
+  let kept: JournalDelivered | undefined;
   if (
     summary?.origin === 'inline' &&
     isRecord(args) &&
     args.document !== undefined
   ) {
-    return keep(args.document);
-  }
-  if (
+    kept = await keep(args.document);
+  } else if (
     summary?.origin === 'workspace' &&
     typeof summary.handle === 'string' &&
     typeof summary.revision === 'number'
@@ -457,10 +464,34 @@ async function deliveredDocument(
       summary.revision
     );
     if (document === undefined) return undefined;
-    const kept = await keep(document);
-    return (
-      kept && { ...kept, handle: summary.handle, revision: summary.revision }
-    );
+    const stored = await keep(document);
+    kept = stored && {
+      ...stored,
+      handle: summary.handle,
+      revision: summary.revision,
+    };
+  }
+  if (!kept) return undefined;
+  const artifactSha256 = await artifactDigest(payload.artifact);
+  return { ...kept, ...(artifactSha256 && { artifactSha256 }) };
+}
+
+/** The delivered file's bytes, hashed: read from its path, or decoded inline. */
+async function artifactDigest(artifact: unknown): Promise<string | undefined> {
+  if (!isRecord(artifact)) return undefined;
+  try {
+    if (artifact.mode === 'path' && typeof artifact.path === 'string') {
+      return sha256Bytes(await fs.readFile(artifact.path));
+    }
+    if (artifact.mode === 'base64' && typeof artifact.base64 === 'string') {
+      return sha256Bytes(Buffer.from(artifact.base64, 'base64'));
+    }
+  } catch {
+    // A file that cannot be read now is one the importer will find missing.
   }
   return undefined;
+}
+
+function sha256Bytes(bytes: Buffer): string {
+  return createHash('sha256').update(bytes).digest('hex');
 }

@@ -258,3 +258,21 @@ describe('buildScorecard', () => {
     expect(scorecard.runs.map((entry) => entry.briefId)).toEqual(['a', 'b']);
   });
 });
+
+describe('what a host cannot report', () => {
+  it('leaves unobservable turns and tools out of their aggregates instead of counting zeros', () => {
+    const summary = totals([
+      run({ briefId: 'a', turns: 10 }),
+      run({ briefId: 'b', turns: 30 }),
+      run({
+        briefId: 'c',
+        turns: 0,
+        foreignTools: [],
+        unobservable: ['turns', 'tokens', 'foreignTools'],
+      }),
+    ]);
+    expect(summary.medianTurns).toBe(20);
+    expect(summary.unobservable).toEqual(['foreignTools', 'tokens', 'turns']);
+    expect(summary.contaminationObserved).toBe(2);
+  });
+});

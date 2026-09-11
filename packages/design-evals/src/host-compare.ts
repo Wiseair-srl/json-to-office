@@ -27,6 +27,8 @@ export interface HostRun {
   /** The shared sitting's verdict, when both sets were judged in one. */
   level?: number;
   ships?: boolean;
+  /** A person stepped into the session (Desktop only: headless has nobody). */
+  intervened?: boolean;
 }
 
 export interface HostSummary {
@@ -43,6 +45,7 @@ export interface HostSummary {
   /** Runs the definition ships; failed runs count as not shipped. */
   ships: number;
   medianLevel: number;
+  intervened: number;
 }
 
 export interface HostComparison {
@@ -76,6 +79,7 @@ function summarize(runs: readonly HostRun[]): HostSummary {
     medianLevel: median(
       runs.flatMap((run) => (run.level === undefined ? [] : [run.level]))
     ),
+    intervened: runs.filter((run) => run.intervened).length,
   };
 }
 
@@ -107,7 +111,7 @@ export function compareHosts(
   return { briefs, byFormat };
 }
 
-const cell = (runs: readonly HostRun[], read: (run: HostRun) => string) =>
+const list = (runs: readonly HostRun[], read: (run: HostRun) => string) =>
   runs.length === 0 ? '—' : runs.map(read).join(' · ');
 
 const verdict = (run: HostRun) =>
@@ -115,26 +119,36 @@ const verdict = (run: HostRun) =>
     ? 'failed'
     : `L${run.level ?? '?'}${run.ships ? ' ship' : ''}`;
 
-/** The comparison as a reader checks it: one row per brief, then per format. */
+const mark = (value: boolean) => (value ? 'yes' : 'no');
+
+/** The comparison as a reader checks it: brief by brief and host by host, then per format. */
 export function hostComparisonMarkdown(comparison: HostComparison): string {
   const lines = [
-    '| brief | format | Desktop: verdict | headless: verdict | Desktop: iterations | headless: iterations | Desktop: critique recorded | headless: critique recorded |',
-    '| --- | --- | --- | --- | --- | --- | --- | --- |',
-    ...comparison.briefs.map(
-      (entry) =>
-        `| ${entry.briefId} | ${entry.format} | ${cell(entry.desktop, verdict)} | ${cell(entry.headless, verdict)} | ${cell(entry.desktop, (run) => String(run.iterations))} | ${cell(entry.headless, (run) => String(run.iterations))} | ${cell(entry.desktop, (run) => String(run.loop.critiqueRecords))} | ${cell(entry.headless, (run) => String(run.loop.critiqueRecords))} |`
-    ),
-    '',
-    '| format | host | runs | delivered | integrity defect | page defects | median iterations | contact sheet | critique recorded | ships | median level |',
-    '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+    '| brief | format | host | verdict | iterations | tool calls | scaffolded | contact sheet | critique recorded | integrity defect | page defects | environment failures | intervened |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
   ];
+  for (const entry of comparison.briefs) {
+    for (const [host, runs] of [
+      ['Desktop', entry.desktop],
+      ['headless', entry.headless],
+    ] as const) {
+      lines.push(
+        `| ${entry.briefId} | ${entry.format} | ${host} | ${list(runs, verdict)} | ${list(runs, (run) => String(run.iterations))} | ${list(runs, (run) => String(run.toolCalls))} | ${list(runs, (run) => mark(run.loop.scaffolded))} | ${list(runs, (run) => String(run.loop.contactSheets))} | ${list(runs, (run) => String(run.loop.critiqueRecords))} | ${list(runs, (run) => mark(run.integrityDefect))} | ${list(runs, (run) => String(run.pageDefects))} | ${list(runs, (run) => String(run.environmentFailures))} | ${list(runs, (run) => mark(run.intervened === true))} |`
+      );
+    }
+  }
+  lines.push(
+    '',
+    '| format | host | runs | delivered | integrity defect | page defects | environment failure | median iterations | median tool calls | scaffolded | contact sheet | critique recorded | ships | median level | intervened |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |'
+  );
   for (const [format, hosts] of Object.entries(comparison.byFormat)) {
     for (const [host, summary] of [
       ['Desktop', hosts.desktop],
       ['headless', hosts.headless],
     ] as const) {
       lines.push(
-        `| ${format} | ${host} | ${summary.runs} | ${summary.delivered} | ${summary.withIntegrityDefect} | ${summary.withPageDefects} | ${summary.medianIterations} | ${summary.contactSheet} | ${summary.recordedCritique} | ${summary.ships} | ${summary.medianLevel} |`
+        `| ${format} | ${host} | ${summary.runs} | ${summary.delivered} | ${summary.withIntegrityDefect} | ${summary.withPageDefects} | ${summary.withEnvironmentFailure} | ${summary.medianIterations} | ${summary.medianToolCalls} | ${summary.scaffolded} | ${summary.contactSheet} | ${summary.recordedCritique} | ${summary.ships} | ${summary.medianLevel} | ${summary.intervened} |`
       );
     }
   }

@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { promises as fs } from 'node:fs';
 import os from 'node:os';
@@ -115,6 +117,13 @@ describe('buildManifest', () => {
       mode: 'assisted',
     });
     expect(assisted.skillFiles).toHaveLength(2);
+  });
+
+  it('identifies the server build by the digest of its entry script', () => {
+    const entry = path.join(repoRoot, 'packages/mcp-server/dist/cli.js');
+    expect(manifest.serverBuild).toBe(
+      createHash('sha256').update(readFileSync(entry)).digest('hex')
+    );
   });
 
   it('reports the package versions this run was made with', () => {
