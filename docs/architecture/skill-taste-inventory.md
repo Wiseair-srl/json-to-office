@@ -15,12 +15,14 @@ Four dispositions, and nothing is dropped without one.
 **Source.** Skill 3.2.0 as published in the Wiseair skills store (the
 version the 2026-09-05 assisted baseline measured; `SKILL.md` sha256
 `c699b732c2c983d93b60fe4bdb6750a9078b8941040803e478a8253c4c58436d`): `SKILL.md`,
-six taste files, two cheat-sheets, the theme guide, `preflight.py`, the
+seven taste files, two cheat-sheets, the theme guide, `preflight.py`, the
 template library and its two scripts, and `evals/evals.json` — 130 KB of
 prose and scripts beside 4 MB of vendored templates.
 
-**Product.** `@json-to-office/mcp-server` 6.4.0, read the way an agent reads
-it: the server instructions, `jto_discover` and its design notes,
+**Product.** `@json-to-office/mcp-server` 6.4.0 — which already carries the
+controls #424 waits on: the consistency and content rules of #332 and #347
+shipped in PR #435, critique inspect and record (#345) in PR #437, though
+the first two issues are still open — read the way an agent reads it: the server instructions, `jto_discover` and its design notes,
 `jto://guide/design/<format>` (themes, profiles, rules, blocks, blueprints,
 rubric), `jto://themes`, the three prompts.
 
@@ -115,7 +117,7 @@ A replacement counts only if it was observed. Three kinds of evidence:
 | Ignoring `W_QUALITY_*` because the schema passed | product     | Server instructions: treat design findings as defects.                        |
 | Skipping the pre-flight                          | dropped     | See `preflight.py` above.                                                     |
 | Authoring from `{}`                              | product     | `jto_scaffold`                                                                |
-| Dangling image paths                             | gap         | Silent at validate; generation fails as `E_INTERNAL`. Task filed.             |
+| Dangling image paths                             | gap         | Silent at validate; generation fails as `E_INTERNAL`. Follow-up proposed.     |
 
 ## assets/taste/gotchas.md
 
@@ -133,7 +135,7 @@ A replacement counts only if it was observed. Three kinds of evidence:
 | Hex prefix: `#` in DOCX, bare in PPTX                                    | product     | Theme tokens are the rule (`W_QUALITY_OFF_PALETTE`); the schema states each surface's form.                                                                                          |
 | `visual` needs a rasterizer; units in inches; PPTX colours inside        | product     | `jto_info.previewDependencies`; `jto_describe_component visual`.                                                                                                                     |
 | PPTX canvas defaults to 4:3                                              | product     | `W_QUALITY_CANVAS_UNSPECIFIED` / `…_CANVAS_LEGACY` (verified); the deck blueprint declares 13.333 × 7.5.                                                                             |
-| Theme file `name` must match `props.theme`                               | gap         | A name matching nothing is silent at validate; generate warns `W_THEME_NOT_FOUND` and falls back. Task filed.                                                                        |
+| Theme file `name` must match `props.theme`                               | gap         | A name matching nothing is silent at validate; generate warns `W_THEME_NOT_FOUND` and falls back. Follow-up proposed.                                                                |
 | `color` on text, `fontColor` on shapes                                   | product     | Schema refuses `fontColor` on text (verified).                                                                                                                                       |
 | No `transparency` on text                                                | product     | Schema (verified).                                                                                                                                                                   |
 | Grid or absolute, never both                                             | gap         | Accepted silently (verified). Blocks place by frame, so only free-form slides can meet it; recorded.                                                                                 |
@@ -147,7 +149,7 @@ A replacement counts only if it was observed. Three kinds of evidence:
 | No lorem ipsum; real numbers                                             | product     | `W_QUALITY_PLACEHOLDER_TEXT` (verified).                                                                                                                                             |
 | Placeholder images from placehold.co                                     | dropped     | A network dependency the product does not want in documents.                                                                                                                         |
 | Keep diacritics and elision apostrophes                                  | workflow    | Content fidelity, not taste; the skill keeps one line on writing the user's language faithfully.                                                                                     |
-| A missing image kills the render                                         | gap         | As above; task filed.                                                                                                                                                                |
+| A missing image kills the render                                         | gap         | As above; follow-up proposed.                                                                                                                                                        |
 
 ## assets/taste/typography.md
 
@@ -185,7 +187,7 @@ A replacement counts only if it was observed. Three kinds of evidence:
 | No 3D, glow or gradients                 | product     | `W_QUALITY_CHART_3D` (verified).                                                                                                                                 |
 | Bar axis from zero                       | product     | `W_QUALITY_CHART_AXIS_BASELINE`.                                                                                                                                 |
 | A takeaway, not a label, above the chart | product     | `chart-figure` and `action-chart` blocks; `W_QUALITY_CHROME_MISSING` for an empty takeaway or source under the archetype profiles; `W_QUALITY_CHART_ANNOTATION`. |
-| Legend only for several series           | dropped     | Renderer default.                                                                                                                                                |
+| Legend only for several series           | gap         | The house deck theme draws a legend on every native chart (`chart.showLegend: true`), a single series included, and Highcharts shows one by default. Recorded.   |
 
 ## assets/taste/slide-composition.md and layout-system.md
 
@@ -223,15 +225,17 @@ A replacement counts only if it was observed. Three kinds of evidence:
 
 ## The gaps, in one place
 
-| Gap                                                   | What happens to it                                                               |
-| ----------------------------------------------------- | -------------------------------------------------------------------------------- |
-| Unknown theme name silent at validate                 | Filed as a follow-up task: report it at validate, as generate already does.      |
-| Missing local image silent at validate; `E_INTERNAL`  | Same task: report it at validate, and give generation's failure a document code. |
-| Grid and absolute placement on one PPTX node          | Recorded. Only free-form slides can meet it; blocks place by frame.              |
-| Tabular figures; italic numerals                      | Accepted: no schema field, and the house faces set lining figures.               |
-| Speaker notes                                         | Recorded; no brief asks for a presented deck.                                    |
-| Units once in a table header; cells wrapping 4+ lines | Recorded; candidates for the information-design rules when a brief shows them.   |
-| Invoice, pricing and quote archetypes                 | Accepted: out of the v1 archetypes (spec decision 16).                           |
+A "follow-up" here is a task proposed in the session that wrote this ledger; none is a GitHub issue until someone files it.
+
+| Gap                                                   | What happens to it                                                                    |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Unknown theme name silent at validate                 | Follow-up proposed: report it at validate, as generate already does.                  |
+| Missing local image silent at validate; `E_INTERNAL`  | Same follow-up: report it at validate, and give generation's failure a document code. |
+| Grid and absolute placement on one PPTX node          | Recorded. Only free-form slides can meet it; blocks place by frame.                   |
+| Tabular figures; italic numerals                      | Accepted: no schema field, and the house faces set lining figures.                    |
+| Speaker notes                                         | Recorded; no brief asks for a presented deck.                                         |
+| Units once in a table header; cells wrapping 4+ lines | Recorded; candidates for the information-design rules when a brief shows them.        |
+| Invoice, pricing and quote archetypes                 | Accepted: out of the v1 archetypes (spec decision 16).                                |
 
 ## The Wiseair extended-theme decision
 
@@ -251,7 +255,8 @@ What the decision commits to, and what it does not:
 
 - **No Wiseair theme in this repository** (spec decision 14). The theme lives
   with the design-system skill, which owns the brand.
-- **The theme reaches the server by value.** The option as chosen named
+- **The theme reaches the server by value — proposed, awaiting Paolo's
+  confirmation.** The option as chosen named
   `themePath`, which today reaches `jto_generate`, `jto_preview`,
   `jto_docx_diff` and `jto_discover` but not `jto_validate`, `jto_critique`,
   `jto_scaffold` or the workspace tools — so the rules would judge a brand
@@ -266,7 +271,7 @@ What the decision commits to, and what it does not:
   new accent passes, the old one is off-palette. One defect found doing so:
   the palette rule also lints the inline theme's own `componentDefaults`
   (`/props/theme/componentDefaults/chart/valGridLine/color`), which the named
-  theme never triggers; filed as a follow-up task.
+  theme never triggers; proposed as a follow-up.
 - **The skill tracks the served theme schema.** `jto://schema/docx/theme` and
   `jto://schema/pptx/theme` are the contract a brand theme is validated
   against; a major release that changes them is a breaking change the brand

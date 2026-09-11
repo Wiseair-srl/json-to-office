@@ -643,13 +643,16 @@ delivered prerequisite neither blocks report integration nor closes early.
 | 28  | Phase 2: docx blocks, then five pptx layouts, same phase                                                      |
 | 29  | Themes style consulting chrome; blueprints/profiles decide required presence and content                      |
 | 30  | No PR gate on the scorecard                                                                                   |
-| 31  | Design-system skill emits a full extended theme, carried by value (decided 2026-09-11, #424)                  |
+| 31  | Design-system skill emits a full extended theme (decided 2026-09-11, #424); by value, pending confirmation    |
 
 Decision 31, taken 2026-09-11: the Wiseair design-system skill emits a full
-extended theme for both formats, not a token overlay. It reaches the server
-inside the document (PPTX `props.theme` already accepts a theme object; DOCX
-theme-by-value is the product work it creates) and no Wiseair theme enters
-this repository. Rationale and evidence in
+extended theme for both formats, not a token overlay, and no Wiseair theme
+enters this repository. The option Paolo chose named `themePath` as the
+carrier; the inventory proposes carrying it inside the document instead
+(PPTX `props.theme` already accepts a theme object; DOCX theme-by-value is
+the product work), because `themePath` reaches neither `jto_validate` nor
+`jto_critique` and a Desktop skill's files are not on the server's disk —
+that part awaits Paolo's confirmation. Rationale and evidence in
 [`skill-taste-inventory.md`](./skill-taste-inventory.md#the-wiseair-extended-theme-decision).
 
 Deferred decisions: a server-side API judge (only if self-critique underperforms on the scorecard);
