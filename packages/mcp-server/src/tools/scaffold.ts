@@ -166,12 +166,7 @@ interface Fill {
   diagnostics: Diagnostic[];
 }
 
-/**
- * Write the brief and the outline into the document — in place, since the
- * document is about to be handed to the store and nothing else holds it —
- * and return the markers still owed. The order matters once: a title given in
- * both wins from the brief, because a fact beats an outline heading.
- */
+/** What `applyFacts` writes, and where it writes it. */
 export interface ApplyFactsInput {
   document: Record<string, unknown>;
   fillMap: readonly BlueprintFillEntry[];
@@ -186,6 +181,12 @@ export interface ApplyFactsInput {
   handled?: ReadonlySet<number>;
 }
 
+/**
+ * Write the brief and the outline into the document — in place, since the
+ * document is about to be handed to the store and nothing else holds it —
+ * and return the markers still owed. The order matters once: a title given in
+ * both wins from the brief, because a fact beats an outline heading.
+ */
 export function applyFacts(input: ApplyFactsInput): Fill {
   const {
     document,

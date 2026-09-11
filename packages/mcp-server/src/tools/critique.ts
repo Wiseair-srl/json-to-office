@@ -385,6 +385,14 @@ const RUBRIC_DATA = {
   shippingQuestion: SHIPPING_QUESTION,
 };
 
+/**
+ * Render the revision and put the evidence in front of the model.
+ *
+ * One render, at the readable DPI: the contact sheet is composed from those
+ * pages downscaled, so judging the whole document and reading one page of it
+ * cost one conversion rather than two. Every page is written under the output
+ * root whatever the inline budget allows, so the evidence is always reachable.
+ */
 async function inspect(
   args: CritiqueInput,
   deps: ToolDeps,
@@ -596,6 +604,14 @@ export function choosePages(
   return [...flagged, ...rest].slice(0, Math.max(0, wanted));
 }
 
+/**
+ * File a verdict against the run that produced it.
+ *
+ * Everything here is about making the round count mean something: a run this
+ * connection never opened, a run belonging to another workspace, a revision
+ * the run did not inspect, and a workspace that has moved on since are all
+ * refused; the same run recorded twice is the round already filed.
+ */
 async function recordVerdict(
   args: CritiqueInput,
   deps: ToolDeps
@@ -700,6 +716,11 @@ async function recordVerdict(
   };
 }
 
+/**
+ * What to do next, as the agent should read it: ship it, spend another round,
+ * or stop revising because three rounds is where subjective polish stops
+ * converging. Advice — nothing here refuses a later patch or generation.
+ */
 function stopNote(
   record: CritiqueRecord,
   rounds: number,

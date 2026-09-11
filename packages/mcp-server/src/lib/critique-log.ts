@@ -84,6 +84,10 @@ export interface CritiqueLog {
   forget(handle: string): void;
 }
 
+/**
+ * A log for one connection. Nothing is shared between connections, and nothing
+ * survives one, because a round belongs to an agent looking at a document.
+ */
 export function createCritiqueLog(): CritiqueLog {
   const runs = new Map<string, CritiqueRun>();
   const records = new Map<string, CritiqueRecord>();

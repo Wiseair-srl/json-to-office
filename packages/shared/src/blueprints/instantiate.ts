@@ -121,6 +121,15 @@ export function selectVariant(
   return { id, variant };
 }
 
+/**
+ * Turn a blueprint into a draft document and the fill map of what it still
+ * owes.
+ *
+ * The variant's children are copied — or the reshaped ones a caller passes as
+ * `options.children` — and only the definitions they invoke come with them,
+ * dependencies included. The fill map is computed from the document as built,
+ * so every pointer in it resolves in the document returned beside it.
+ */
 export function instantiateBlueprint(
   blueprint: Blueprint,
   options: InstantiateBlueprintOptions,

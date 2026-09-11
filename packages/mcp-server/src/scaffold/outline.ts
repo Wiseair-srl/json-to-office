@@ -57,11 +57,16 @@ const TABLE_ROW = /^\s{0,3}\|(.*)$/;
 /** `|---|:--:|` and friends: the row that makes the one above a header. */
 const TABLE_DELIMITER = /^[\s|]*:?-{1,}:?(?:\s*\|\s*:?-{1,}:?)*[\s|]*$/;
 
+/** The cells of one table row; the outer pipes are optional in GFM. */
 function cells(line: string): string[] {
   const trimmed = line.trim().replace(/^\|/, '').replace(/\|$/, '');
   return trimmed.split('|').map((cell) => cell.trim());
 }
 
+/**
+ * Read an outline. Everything it has no place for is collected, not dropped,
+ * so `jto_scaffold` can report it rather than silently losing a paragraph.
+ */
 export function parseOutline(markdown: string): Outline {
   const outline: Outline = { sections: [], orphans: [], skippedHeadings: [] };
   let current: OutlineSection | undefined;

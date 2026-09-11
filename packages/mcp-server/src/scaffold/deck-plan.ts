@@ -149,6 +149,13 @@ interface Content {
   tables: OutlineTable[];
 }
 
+/**
+ * Read a section as content, with the source line lifted out of it.
+ *
+ * A `Source:` line is a fact about where the numbers came from, not a bullet
+ * to place — and leaving it among the bullets would stop a section of pure
+ * measurements from reading as one.
+ */
 function contentOf(section: OutlineSection): Content {
   const source = section.lines.find((line) => SOURCE_LINE.test(line));
   const keep = (line: string) => line !== source;
@@ -189,11 +196,13 @@ function invocationOf(slide: unknown): Record<string, unknown> | undefined {
   return isRecord(block) ? block : undefined;
 }
 
+/** The slots of the block a slide invokes, when it invokes one. */
 function slotsOf(slide: unknown): Record<string, unknown> | undefined {
   const props = invocationOf(slide)?.props;
   return isRecord(props) && isRecord(props.slots) ? props.slots : undefined;
 }
 
+/** The name of the block a slide invokes, when it invokes one. */
 function refOf(slide: unknown): string | undefined {
   const props = invocationOf(slide)?.props;
   return isRecord(props) && typeof props.ref === 'string'
@@ -207,6 +216,10 @@ function contentIs(slide: unknown, name: string): boolean {
   return isRecord(content) && content.name === name;
 }
 
+/**
+ * Whether a slide can be the donor for a shape — whether it holds the slot the
+ * shape fills. `none` fits anything, because it changes nothing.
+ */
 function fits(slide: unknown, shape: Shape): boolean {
   if (shape === 'none') return true;
   return slotsOf(slide) !== undefined && SHAPES[shape].holds(slide);
@@ -253,6 +266,14 @@ export interface PlanDeckInput {
   definitions: Readonly<Record<string, JsonBlockDefinition>>;
 }
 
+/**
+ * Reshape a variant's slides to the deck the outline asked for.
+ *
+ * Runs before instantiation, so the fill map that comes back describes the
+ * slides that exist rather than the ones the variant was written with. Returns
+ * the reshaped children, the sections it placed in full — which the ordinal
+ * mapping must then skip — and what it could not place.
+ */
 export function planDeck(input: PlanDeckInput): DeckPlan {
   const children = structuredClone(input.children) as unknown[];
   const handled = new Set<number>();
@@ -372,17 +393,21 @@ function fill(
 
   let taken = 0;
   /** Whether every slide took the heading; a donor with no title takes none. */
-  let titled = true;
+  let titled = groups.length > 0;
   const nodes = groups.map((size, group) => {
     const node = structuredClone(donor);
     const slots = slotsOf(node);
-    if (!slots) return node;
+    if (!slots) {
+      titled = false;
+      return node;
+    }
     // A split section says the same thing on each of its slides; the later
     // ones say so, rather than repeating the heading as if it were new.
     const heading =
       group === 0 ? section.heading : `${section.heading} (cont.)`;
     if (typeof slots.title === 'string') slots.title = heading;
     else if (typeof slots.assertion === 'string') slots.assertion = heading;
+    else titled = false;
     if (content.source !== undefined && typeof slots.source === 'string')
       slots.source = content.source;
 
@@ -392,8 +417,17 @@ function fill(
       slots.bullets = content.bullets.slice(taken, taken + size);
     taken += size;
 
-    // The section's table goes on the slide the reader meets first.
-    if (group === 0 && content.tables.length > 0 && isRecord(slots.content))
+    // The section's table goes on the slide the reader meets first, and only
+    // into a component that is a table: a donor reached through the fallback
+    // may hold the shape's list beside a chart, and writing rows into that
+    // would invent structure the blueprint never drew. The same question the
+    // spare-table diagnostic below asks, so the two cannot disagree.
+    if (
+      group === 0 &&
+      content.tables.length > 0 &&
+      contentIs(node, 'table') &&
+      isRecord(slots.content)
+    )
       setTable(slots.content, content.tables[0]);
     if (group === 0 && prose && content.paragraphs.length > 0)
       slots.text = content.paragraphs[0];
@@ -422,6 +456,13 @@ function fill(
   return { nodes, diagnostics, titled };
 }
 
+/**
+ * A measurement as a KPI item.
+ *
+ * A unit or a delta the bullet did not state is left out rather than written
+ * empty: the whole `items` array is replaced, so an absent key is simply an
+ * absent optional slot, where an empty string would be a blank the block draws.
+ */
 function kpiItem(fact: NumericFact): Record<string, string> {
   return {
     value: fact.value,
@@ -464,6 +505,7 @@ function isNumber(cell: string): boolean {
   );
 }
 
+/** Outline content this could not place: reported at the slide, never dropped. */
 function unmapped(
   message: string,
   context: Record<string, unknown>,
