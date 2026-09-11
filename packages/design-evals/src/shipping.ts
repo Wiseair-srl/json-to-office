@@ -4,8 +4,8 @@
  * The programme's headline target is stated against one decision — would the
  * document be sent unchanged — and until now that decision was whatever the
  * judge answered to one sentence. Measured against Paolo it was far stricter
- * than he is: on the exhibit-rule set it shipped 8 of 24 where he shipped 22,
- * and across all his judgments its agreement with him was barely above chance.
+ * than Paolo: on the exhibit-rule set it shipped 8 of 24 where Paolo shipped
+ * 22, and across every human judgment its agreement was barely above chance.
  * So the decision becomes a definition that can be read, calibrated, frozen
  * and then checked on documents nobody tuned it on.
  *

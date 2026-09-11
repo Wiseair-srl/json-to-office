@@ -136,3 +136,22 @@ export {
   type AgentRunOptions,
   type AgentToolUse,
 } from './agent.js';
+export {
+  desktopAccounting,
+  desktopEvents,
+  loopUsage,
+  parseJournal,
+  READABLE_JOURNAL_VERSION,
+  summarizeSessions,
+  type DesktopAccounting,
+  type JournalSessionRecord,
+  type LoopUsage,
+  type ParsedJournal,
+} from './desktop.js';
+export {
+  compareHosts,
+  hostComparisonMarkdown,
+  type HostComparison,
+  type HostRun,
+  type HostSummary,
+} from './host-compare.js';

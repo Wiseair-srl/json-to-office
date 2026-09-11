@@ -1,0 +1,28 @@
+{
+  "id": "desktop-headless-pairs",
+  "purpose": "The paired briefs #422 runs on both hosts — once in Claude Desktop by hand, three times headless on the same server build and skill — to find out where the headless runner stands in for Desktop and where it does not. Two client reports and two decks, so both authoring workflows are exercised end to end: brief, scaffold, fill, validate, preview, critique, generate. No human ship verdict is collected on these artifacts; they calibrate the host, not the judge.",
+  "repeat": 3,
+  "covers": ["client-report", "consulting-deck", "chart-labels", "long-text"],
+  "briefs": [
+    {
+      "id": "cr-market-entry-nordics",
+      "covers": ["client-report", "chart-labels"],
+      "why": "The widest chart labels in the corpus and two payback cases: the report workflow's chart path, which depends on the export server on both hosts."
+    },
+    {
+      "id": "cr-post-merger-integration",
+      "covers": ["client-report", "long-text"],
+      "why": "A timeline argued in prose beside synergy figures: the report workflow's long-text path, where page fill and the stub last page have been the recurring defects."
+    },
+    {
+      "id": "cd-growth-strategy-readout",
+      "covers": ["consulting-deck", "chart-labels"],
+      "why": "A high-density board readout: the deck workflow with charts, KPI rows and the outline promotions the scaffold performs."
+    },
+    {
+      "id": "cd-sustainability-roadmap",
+      "covers": ["consulting-deck", "long-text"],
+      "why": "A low-density roadmap to 2030: the deck workflow where a statement or two-column slide carries prose rather than numbers."
+    }
+  ]
+}

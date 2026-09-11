@@ -60,6 +60,106 @@ constant across comparisons. Compare the new chart/table rules against a
 matched run without them; cold versus assisted alone does not measure a PR's
 effect. Keep the sealed acceptance corpus for final acceptance.
 
+## What "would ship" means (#409)
+
+`judge.wouldShip` is computed under a named **shipping definition**, and the
+scorecard says which (`judge.shipping`: id, hash, and whether it passed
+independent verification). A definition combines at most four facts every run
+already carries: the judge's answer to a named shipping question, a floor on
+its rubric level, the absence of an integrity defect, and a ceiling on pages
+the rendered pass found empty or under-filled (`src/shipping.ts`). Until a
+definition is frozen it is the status quo — the judge's own answer to the
+original question — and until one passes verification the binary rate is
+**advisory**: read `excellent` (level ≥ 4) beside it.
+
+Calibrating, freezing and verifying one:
+
+```bash
+# Calibration set: the checkpoint artifacts Paolo has judged (96 verdicts).
+pnpm shipping reanalyze evals-out/checkpoint-before     # facts under this tree's analyzer
+pnpm rejudge evals-out/checkpoint-before --question v1 --out evals-out/checkpoint-before/sitting-v1.json
+pnpm rejudge evals-out/checkpoint-before --question v2 --out evals-out/checkpoint-before/sitting-v2.json
+# … the same for checkpoint-after and checkpoint-after-5, in one sitting …
+pnpm shipping calibrate \
+  --set before=evals-out/checkpoint-before --set after=evals-out/checkpoint-after \
+  --set after-exhibits=evals-out/checkpoint-after-5 \
+  --human baselines/2026-09-08-human-checkpoint-verdicts.json \
+  --human baselines/2026-09-09-human-checkpoint-verdicts-round2.json \
+  --out baselines/<date>-shipping-calibration.json
+pnpm shipping freeze --calibration baselines/<date>-shipping-calibration.json \
+  --out baselines/shipping-definition.json
+
+# Verification set: fresh artifacts on briefs no calibration artifact shares.
+pnpm evals -- --set shipping-verification --out evals-out/shipping-verification   # no --judge
+pnpm shipping sheets evals-out/shipping-verification
+pnpm shipping reanalyze evals-out/shipping-verification
+pnpm rejudge evals-out/shipping-verification --question <frozen question> \
+  --out evals-out/shipping-verification/sitting-<question>.json
+pnpm shipping verify --definition baselines/shipping-definition.json \
+  --set verification=evals-out/shipping-verification \
+  --human baselines/<date>-human-shipping-verification.json \
+  --out baselines/shipping-verification.json
+```
+
+Three rules keep the number honest. **One label per artifact**: an artifact
+judged twice with the same answer carries it; one judged both ways is
+`unstable`, counted and left out, and the reviewer's agreement across rounds is
+reported on its own. **Allocation by brief**: calibration and verification
+share no brief, and kappa's interval is resampled by brief, not by document.
+**Freeze, then verify**: the frozen file carries a hash of the definition and
+of its question's wording; verification, and every later scorecard, refuse a
+definition whose hash no longer matches. The target is Cohen's kappa ≥ 0.5 on
+the verification set; a miss is recorded as a miss.
+
+## Claude Desktop against the headless runner (#422)
+
+The headless runner stands in for Claude Desktop in every scorecard. To find
+out how well, the same briefs (`briefs/sets/desktop-headless-pairs.json`) run
+on both hosts against one server build and one skill, and the server's run
+journal makes the Desktop side measurable the same way.
+
+1. Build the server at the commit under test:
+   `pnpm turbo build --filter=@json-to-office/mcp-server...`.
+2. Point Claude Desktop's `json-to-office` entry at that build, with the journal
+   on. In `claude_desktop_config.json`:
+
+   ```json
+   {
+     "command": "node",
+     "args": ["<repo>/packages/mcp-server/dist/cli.js"],
+     "env": {
+       "JTO_MCP_JOURNAL": "<dir>/journal.jsonl",
+       "JTO_MCP_WORKSPACE_DIR": "<dir>/workspaces",
+       "JTO_MCP_OUTPUT_DIR": "<dir>/out",
+       "HIGHCHARTS_SERVER_URL": "http://localhost:7801"
+     }
+   }
+   ```
+
+3. Match the conditions the headless side will use: the same skill enabled
+   (the workflow-only `json-to-office` 4.0.0, nothing older), the same model
+   (`claude-sonnet-5`), and no other connector enabled in the conversation, so
+   no tool outside the server can be reached. Check the export server is
+   healthy (`curl localhost:7801/health`).
+4. For each brief: quit and reopen Claude Desktop, so the brief meets a fresh
+   server exactly as a headless run does; start a new conversation; paste the
+   output of `pnpm desktop prompt <brief>`; let it run to the end. If it stops
+   to ask something, answer once, "Proceed without asking", and note it — a
+   headless run has nobody to ask.
+5. Import: `pnpm desktop sessions --journal <dir>/journal.jsonl` lists the
+   sessions; map each to its brief and run
+   `pnpm desktop import --journal <dir>/journal.jsonl --run <brief>=<session>… --model claude-sonnet-5 --app-version <Desktop version> --skill <skill dir> --out evals-out/desktop-pairs`.
+6. Headless, same commit and skill:
+   `pnpm evals -- --set desktop-headless-pairs --skill <skill dir> --out evals-out/headless-pairs`.
+7. Judge both sets in one sitting with the frozen definition's question
+   (`pnpm rejudge … --question <q> --out <dir>/sitting-<q>.json`), then
+   `pnpm desktop compare --desktop evals-out/desktop-pairs --headless evals-out/headless-pairs --out baselines/<date>-desktop-vs-headless.md`.
+
+What Desktop does not report — turns, tokens, and any tool the model reached
+outside the server — is recorded as unobservable on each imported run, not as
+zero. The delivered document is checked against the digest the server
+recorded when it generated it, and the artifact against its size.
+
 ## Brief sets
 
 `briefs/sets/<id>.json` names a fixed selection with the reason each brief is
