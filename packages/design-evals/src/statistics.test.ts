@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { bootstrapKappa, cohensKappa, rawAgreement } from './statistics.js';
+import {
+  bootstrapKappa,
+  clusterBootstrapKappa,
+  cohensKappa,
+  rawAgreement,
+} from './statistics.js';
 
 const pairs = (rows: Array<[boolean, boolean]>) =>
   rows.map(([a, b]) => ({ a, b }));
@@ -119,5 +124,46 @@ describe('bootstrapKappa', () => {
     const width = (report: typeof wide) =>
       report.interval ? report.interval.high - report.interval.low : 0;
     expect(width(wide)).toBeGreaterThan(width(narrow));
+  });
+});
+
+describe('clusterBootstrapKappa', () => {
+  // Six briefs, four documents each, every document of a brief rated alike:
+  // twenty-four ratings that carry six independent observations.
+  const clustered = [
+    [true, true],
+    [false, false],
+    [true, false],
+    [false, false],
+    [true, true],
+    [false, true],
+  ].flatMap(([a, b], brief) =>
+    Array.from({ length: 4 }, () => ({ a, b, cluster: `brief-${brief}` }))
+  );
+
+  it('reports the same point estimate as the plain kappa, and how many clusters it stands on', () => {
+    const report = clusterBootstrapKappa(clustered, { resamples: 400 });
+    expect(report.kappa).toBeCloseTo(cohensKappa(clustered), 10);
+    expect(report.n).toBe(24);
+    expect(report.clusters).toBe(6);
+  });
+
+  it('is wider than a bootstrap that treats every rating as independent', () => {
+    const width = (report: { interval?: { low: number; high: number } }) =>
+      report.interval ? report.interval.high - report.interval.low : 0;
+    const byBrief = clusterBootstrapKappa(clustered, { resamples: 800 });
+    const naive = bootstrapKappa(clustered, { resamples: 800 });
+    expect(width(byBrief)).toBeGreaterThan(width(naive));
+  });
+
+  it('is reproducible under a seed', () => {
+    expect(
+      clusterBootstrapKappa(clustered, { resamples: 300 }).interval
+    ).toEqual(clusterBootstrapKappa(clustered, { resamples: 300 }).interval);
+  });
+
+  it('answers without an interval on a single cluster', () => {
+    const one = clustered.map((rating) => ({ ...rating, cluster: 'only' }));
+    expect(clusterBootstrapKappa(one).interval).toBeUndefined();
   });
 });

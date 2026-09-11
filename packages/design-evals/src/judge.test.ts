@@ -19,6 +19,7 @@ import {
 import { JudgeError, judgeDocument, judgePair, parseJson } from './judge.js';
 import type { Brief } from './corpus.js';
 import { RUBRIC, rubricPrompt, SHIPPING_QUESTION } from './rubric.js';
+import { SHIPPING_QUESTIONS } from './shipping.js';
 
 const BRIEF: Brief = {
   id: 'sample-brief',
@@ -53,6 +54,13 @@ describe('rubricPrompt', () => {
   it('states that a lower failure outranks a higher success', () => {
     expect(rubricPrompt()).toMatch(/NEVER compensates/);
   });
+
+  it('asks the shipping question it is given in place of the original', () => {
+    const prompt = rubricPrompt(SHIPPING_QUESTIONS.v2);
+    expect(prompt).toContain(SHIPPING_QUESTIONS.v2);
+    expect(prompt).not.toContain(SHIPPING_QUESTION);
+    for (const level of RUBRIC) expect(prompt).toContain(level.bar);
+  });
 });
 
 describe('judgeDocument', () => {
@@ -69,6 +77,24 @@ describe('judgeDocument', () => {
     });
     expect(result.verdict).toMatchObject({ level: 4, wouldShip: true });
     expect(result).toMatchObject({ inputTokens: 900, outputTokens: 120 });
+  });
+
+  it('puts the chosen shipping question to the judge', async () => {
+    let system = '';
+    await judgeDocument({
+      brief: BRIEF,
+      sheet: SHEET,
+      question: SHIPPING_QUESTIONS.v2,
+      call: async (input) => {
+        system = input.system;
+        return {
+          value: { level: 3, wouldShip: true, genericness: 2, rationale: 'x' },
+          inputTokens: 1,
+          outputTokens: 1,
+        };
+      },
+    });
+    expect(system).toContain(SHIPPING_QUESTIONS.v2);
   });
 
   it('gives the judge the brief, so level 4 can be assessed at all', async () => {

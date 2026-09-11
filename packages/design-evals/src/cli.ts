@@ -37,6 +37,8 @@ import { loadSkill, type LoadedSkill } from './skill.js';
 import type { RunMetrics } from './metrics.js';
 import { runBrief } from './runner.js';
 import { buildScorecard } from './scorecard.js';
+import { loadShippingSemantics } from './shipping-calibration.js';
+import { SHIPPING_QUESTIONS } from './shipping.js';
 
 const DEFAULT_MODEL = 'claude-sonnet-5';
 const DEFAULT_JUDGE_MODEL = 'claude-opus-5';
@@ -248,12 +250,22 @@ export async function main(argv: readonly string[]): Promise<number> {
     `${briefs.length} brief(s), ${options.mode}, model ${options.model} -> ${options.outDir}`
   );
 
+  // The shipping definition decides both the question the judge is asked and
+  // how the scorecard reads its answers (#409). The status quo until one is
+  // frozen under baselines/.
+  const shipping = await loadShippingSemantics(
+    path.join(root, 'packages/design-evals/baselines')
+  );
+
   // One judge for the whole set, so every document is scored by the same
   // model with the same rubric.
   const judge =
     options.judgeModel === undefined
       ? undefined
-      : makeJudge(options.judgeModel);
+      : makeJudge(
+          options.judgeModel,
+          SHIPPING_QUESTIONS[shipping.definition.question]
+        );
 
   const runs: RunMetrics[] = [];
   const started = Date.now();
@@ -335,6 +347,7 @@ export async function main(argv: readonly string[]): Promise<number> {
     archetypes: Object.fromEntries(
       briefs.map((brief) => [brief.id, brief.archetype])
     ),
+    shipping,
   });
 
   const scorecardPath = path.join(options.outDir, 'scorecard.json');
@@ -377,9 +390,14 @@ export async function main(argv: readonly string[]): Promise<number> {
     line(
       `judge: median level ${scorecard.judge.medianLevel}, ` +
         `${scorecard.judge.wouldShip}/${totals.runs} would ship ` +
-        `(${(scorecard.judge.wouldShipRate * 100).toFixed(0)}%), ` +
+        `(${(scorecard.judge.wouldShipRate * 100).toFixed(0)}%) under ${scorecard.judge.shipping.definition}, ` +
         `median genericness ${scorecard.judge.medianGenericness}`
     );
+    if (!scorecard.judge.shipping.verified) {
+      line(
+        '  shipping is advisory: its definition has not passed independent verification (#409); read excellent (level >= 4) beside it'
+      );
+    }
   }
   line(
     `${totals.buildsClean}/${totals.runs} build clean ` +
@@ -448,7 +466,7 @@ if (invokedDirectly) {
  * one contact sheet, every page — and keeps the sheet next to the run, because
  * a verdict nobody can go back and check is not evidence of anything.
  */
-function makeJudge(model: string) {
+function makeJudge(model: string, question: string) {
   // The agent SDK by default, so the judge runs on the same credential the
   // author did — including a claude.ai subscription, where there is no API key
   // to find. `--judge-api` opts into the direct SDK for a host that has one.
@@ -468,6 +486,7 @@ function makeJudge(model: string) {
       brief: input.brief,
       sheet: { png: rendered.sheet.png, label: input.brief.id },
       call: vision,
+      question,
     });
     return judged.verdict;
   };

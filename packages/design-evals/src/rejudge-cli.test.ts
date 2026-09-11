@@ -29,6 +29,8 @@ describe('runsDirArgument', () => {
       ['--briefs', 'a,b', 'runs/foo'],
       ['--judge', 'claude-opus-5', 'runs/foo'],
       ['--scorecard', 'out/sc.json', '--briefs', 'a,b', 'runs/foo'],
+      ['--question', 'v2', 'runs/foo'],
+      ['--out', 'sitting/v2.json', 'runs/foo'],
     ]) {
       expect(runsDirArgument(argv), argv.join(' ')).toBe('runs/foo');
     }

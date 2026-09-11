@@ -28,6 +28,7 @@ import { developmentCorpusDir, loadCorpus, selectBriefs } from './corpus.js';
 import { agentVision, anthropicVision, judgeDocument } from './judge.js';
 import type { KappaReport } from './statistics.js';
 import { bootstrapKappa, type Rating } from './statistics.js';
+import { SHIPPING_QUESTIONS, type ShippingQuestionId } from './shipping.js';
 
 /** One document, judged twice. */
 export interface RejudgedRun {
@@ -44,6 +45,8 @@ export interface RejudgeReport {
   /** The set that was re-judged. */
   source: string;
   judgeModel: string;
+  /** The shipping question the judge was asked; absent on reports older than #409 (`v1`). */
+  question?: ShippingQuestionId;
   judgedAt: string;
   runs: RejudgedRun[];
   /** Self-agreement, per rubric field. Absent when nothing could be compared. */
@@ -176,6 +179,8 @@ export interface RejudgeOptions {
   useApiKey: boolean;
   briefs?: string;
   corpusDir?: string;
+  /** The shipping question to ask (#409); the original one by default. */
+  question?: ShippingQuestionId;
   onProgress?: (message: string) => void;
 }
 
@@ -220,6 +225,7 @@ export async function rejudge(options: RejudgeOptions): Promise<RejudgeReport> {
         brief,
         sheet: { png, label: record.label },
         call,
+        question: SHIPPING_QUESTIONS[options.question ?? 'v1'],
       });
       runs.push({
         briefId: record.briefId,
@@ -245,6 +251,7 @@ export async function rejudge(options: RejudgeOptions): Promise<RejudgeReport> {
   return {
     source: options.scorecardPath,
     judgeModel: options.judgeModel,
+    question: options.question ?? 'v1',
     judgedAt: new Date().toISOString(),
     runs,
     ...(agreement && { agreement }),

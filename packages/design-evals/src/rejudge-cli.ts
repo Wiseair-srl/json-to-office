@@ -4,9 +4,16 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
 import { rejudge, type RejudgedRun } from './rejudge.js';
+import { SHIPPING_QUESTIONS, type ShippingQuestionId } from './shipping.js';
 
 /** Options that take a value, so their value is never read as the runs dir. */
-const VALUED_OPTIONS = ['scorecard', 'judge', 'briefs'] as const;
+const VALUED_OPTIONS = [
+  'scorecard',
+  'judge',
+  'briefs',
+  'question',
+  'out',
+] as const;
 type ValuedOption = (typeof VALUED_OPTIONS)[number];
 
 /**
@@ -80,7 +87,16 @@ export async function main(
 ): Promise<number> {
   const positional = runsDirArgument(argv);
   if (!positional) {
-    line('usage: pnpm rejudge <runs-dir> [--scorecard <path>] [--briefs a,b]');
+    line(
+      'usage: pnpm rejudge <runs-dir> [--scorecard <path>] [--briefs a,b] [--question v1|v2] [--out <file>]'
+    );
+    return 1;
+  }
+  const question = value(argv, 'question') ?? 'v1';
+  if (!(question in SHIPPING_QUESTIONS)) {
+    line(
+      `--question names one of ${Object.keys(SHIPPING_QUESTIONS).join(', ')}, not "${question}".`
+    );
     return 1;
   }
   const runsDir = path.resolve(positional, 'runs');
@@ -95,10 +111,14 @@ export async function main(
     ...(value(argv, 'briefs') !== undefined && {
       briefs: value(argv, 'briefs') as string,
     }),
+    question: question as ShippingQuestionId,
     onProgress: (message) => line(message),
   });
 
-  const out = path.resolve(positional, 'rejudge.json');
+  const out = path.resolve(
+    value(argv, 'out') ?? path.join(positional, 'rejudge.json')
+  );
+  await fs.mkdir(path.dirname(out), { recursive: true });
   await fs.writeFile(out, JSON.stringify(report, null, 2));
 
   line('');

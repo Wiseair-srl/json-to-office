@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { buildScorecard, median, totals } from './scorecard.js';
 import { failedRun, type RunMetrics } from './metrics.js';
+import {
+  CANDIDATE_DEFINITIONS,
+  definitionHash,
+  STATUS_QUO_DEFINITION,
+} from './shipping.js';
 import type { RunManifest } from './manifest.js';
 
 function run(overrides: Partial<RunMetrics> = {}): RunMetrics {
@@ -168,6 +173,52 @@ describe('buildScorecard', () => {
       wouldShipRate: 0.5,
       medianLevel: 2.5,
     });
+  });
+
+  it('says which shipping definition its wouldShip was computed under', () => {
+    const judged = buildScorecard({
+      ...base,
+      runs: [
+        run({
+          briefId: 'a',
+          judge: { level: 4, wouldShip: true, genericness: 1, rationale: 'x' },
+        }),
+      ],
+    });
+    expect(judged.judge?.shipping).toEqual({
+      definition: STATUS_QUO_DEFINITION.id,
+      hash: definitionHash(STATUS_QUO_DEFINITION),
+      verified: false,
+    });
+  });
+
+  it('ships by the frozen definition when one is given, not by the judge answer', () => {
+    const excellentClean = CANDIDATE_DEFINITIONS.find(
+      (definition) => definition.id === 'excellent-clean'
+    )!;
+    const scorecard = buildScorecard({
+      ...base,
+      shipping: { definition: excellentClean, verified: true },
+      runs: [
+        // The judge would not send it, the definition would: level 4, clean.
+        run({
+          briefId: 'a',
+          judge: { level: 4, wouldShip: false, genericness: 1, rationale: 'x' },
+        }),
+        // The judge would, the definition would not: a rendered clip.
+        run({
+          briefId: 'b',
+          qualityByCode: { W_QUALITY_RENDERED_CLIP: 1 },
+          judge: { level: 5, wouldShip: true, genericness: 1, rationale: 'x' },
+        }),
+      ],
+    });
+    expect(scorecard.judge).toMatchObject({
+      wouldShip: 1,
+      wouldShipRate: 0.5,
+      shipping: { definition: 'excellent-clean', verified: true },
+    });
+    expect(scorecard.runs.map((entry) => entry.ships)).toEqual([true, false]);
   });
 
   it('does not score a judge outage as a level-1 document', () => {
