@@ -1,0 +1,175 @@
+{
+  "id": "shipping-verification",
+  "purpose": "The independent verification set for #409's frozen shipping definition: every development brief outside the eight client-report-checkpoint briefs, whose 72 artifacts and 96 human verdicts are the calibration set. Paolo has given no ship verdict on any artifact of these briefs, and every artifact run here is new, so none can leak from calibration into verification. The judge has seen these briefs' Phase 0 baseline documents (server 2.0.0 cold, skill 3.2.0 assisted), which belong to neither set. Run once each on a fixed revision with no judge; the sheets are judged, by Paolo and by the frozen definition, only after the definition is frozen.",
+  "repeat": 1,
+  "covers": [
+    "client-report",
+    "technical-report",
+    "consulting-deck",
+    "density-low",
+    "density-medium",
+    "density-high"
+  ],
+  "briefs": [
+    {
+      "id": "cr-customer-churn-diagnosis",
+      "covers": ["client-report", "density-high"],
+      "why": "Churn diagnosis for a subscription fitness business — a high-density client-report (docx); no human ship verdict exists for any of its artifacts."
+    },
+    {
+      "id": "cr-digital-channel-shift",
+      "covers": ["client-report", "density-medium"],
+      "why": "Digital channel shift for a regional insurer — a medium-density client-report (docx); no human ship verdict exists for any of its artifacts."
+    },
+    {
+      "id": "cr-procurement-savings",
+      "covers": ["client-report", "density-high"],
+      "why": "Indirect procurement savings assessment — a high-density client-report (docx); no human ship verdict exists for any of its artifacts."
+    },
+    {
+      "id": "cr-store-network-rationalisation",
+      "covers": ["client-report", "density-high"],
+      "why": "Store network rationalisation for a specialty retailer — a high-density client-report (docx); no human ship verdict exists for any of its artifacts."
+    },
+    {
+      "id": "cr-supply-resilience",
+      "covers": ["client-report", "density-medium"],
+      "why": "Supply resilience review after a single-source failure — a medium-density client-report (docx); no human ship verdict exists for any of its artifacts."
+    },
+    {
+      "id": "tr-accessibility-audit",
+      "covers": ["technical-report", "density-medium"],
+      "why": "Accessibility audit of the customer portal — a medium-density technical-report (docx); no human ship verdict exists for any of its artifacts."
+    },
+    {
+      "id": "tr-api-gateway-migration",
+      "covers": ["technical-report", "density-medium"],
+      "why": "Migration assessment: moving to a managed API gateway — a medium-density technical-report (docx); no human ship verdict exists for any of its artifacts."
+    },
+    {
+      "id": "tr-build-pipeline-audit",
+      "covers": ["technical-report", "density-low"],
+      "why": "Audit of the build and release pipeline — a low-density technical-report (docx); no human ship verdict exists for any of its artifacts."
+    },
+    {
+      "id": "tr-capacity-forecast",
+      "covers": ["technical-report", "density-high"],
+      "why": "Infrastructure capacity forecast — a high-density technical-report (docx); no human ship verdict exists for any of its artifacts."
+    },
+    {
+      "id": "tr-data-retention-policy",
+      "covers": ["technical-report", "density-low"],
+      "why": "Data retention and deletion policy — a low-density technical-report (docx); no human ship verdict exists for any of its artifacts."
+    },
+    {
+      "id": "tr-incident-postmortem-db",
+      "covers": ["technical-report", "density-high"],
+      "why": "Post-incident report: primary database failover — a high-density technical-report (docx); no human ship verdict exists for any of its artifacts."
+    },
+    {
+      "id": "tr-load-test-results",
+      "covers": ["technical-report", "density-high"],
+      "why": "Load test results ahead of a seasonal peak — a high-density technical-report (docx); no human ship verdict exists for any of its artifacts."
+    },
+    {
+      "id": "tr-memo-vendor-selection",
+      "covers": ["technical-report", "density-low"],
+      "why": "Technical memo: message broker selection — a low-density technical-report (docx); no human ship verdict exists for any of its artifacts."
+    },
+    {
+      "id": "tr-observability-standard",
+      "covers": ["technical-report", "density-medium"],
+      "why": "Observability standard for backend services — a medium-density technical-report (docx); no human ship verdict exists for any of its artifacts."
+    },
+    {
+      "id": "tr-schema-migration-plan",
+      "covers": ["technical-report", "density-medium"],
+      "why": "Plan for a zero-downtime schema migration — a medium-density technical-report (docx); no human ship verdict exists for any of its artifacts."
+    },
+    {
+      "id": "tr-security-review-auth",
+      "covers": ["technical-report", "density-medium"],
+      "why": "Security review of the authentication service — a medium-density technical-report (docx); no human ship verdict exists for any of its artifacts."
+    },
+    {
+      "id": "cd-capital-allocation",
+      "covers": ["consulting-deck", "density-high"],
+      "why": "Capital allocation review — a high-density consulting-deck (pptx); no human ship verdict exists for any of its artifacts."
+    },
+    {
+      "id": "cd-competitive-response",
+      "covers": ["consulting-deck", "density-high"],
+      "why": "Competitive response options — a high-density consulting-deck (pptx); no human ship verdict exists for any of its artifacts."
+    },
+    {
+      "id": "cd-cost-programme-kickoff",
+      "covers": ["consulting-deck", "density-medium"],
+      "why": "Cost programme kickoff — a medium-density consulting-deck (pptx); no human ship verdict exists for any of its artifacts."
+    },
+    {
+      "id": "cd-customer-research-readout",
+      "covers": ["consulting-deck", "density-medium"],
+      "why": "Customer research readout — a medium-density consulting-deck (pptx); no human ship verdict exists for any of its artifacts."
+    },
+    {
+      "id": "cd-digital-transformation-case",
+      "covers": ["consulting-deck", "density-high"],
+      "why": "Investment case for a platform replacement — a high-density consulting-deck (pptx); no human ship verdict exists for any of its artifacts."
+    },
+    {
+      "id": "cd-growth-strategy-readout",
+      "covers": ["consulting-deck", "density-high"],
+      "why": "Growth strategy readout to the board — a high-density consulting-deck (pptx); no human ship verdict exists for any of its artifacts."
+    },
+    {
+      "id": "cd-innovation-portfolio",
+      "covers": ["consulting-deck", "density-medium"],
+      "why": "Innovation portfolio review — a medium-density consulting-deck (pptx); no human ship verdict exists for any of its artifacts."
+    },
+    {
+      "id": "cd-market-scan-adjacent",
+      "covers": ["consulting-deck", "density-high"],
+      "why": "Market scan of three adjacent segments — a high-density consulting-deck (pptx); no human ship verdict exists for any of its artifacts."
+    },
+    {
+      "id": "cd-operating-model-options",
+      "covers": ["consulting-deck", "density-medium"],
+      "why": "Operating model options — a medium-density consulting-deck (pptx); no human ship verdict exists for any of its artifacts."
+    },
+    {
+      "id": "cd-org-design-proposal",
+      "covers": ["consulting-deck", "density-medium"],
+      "why": "Organisation design proposal — a medium-density consulting-deck (pptx); no human ship verdict exists for any of its artifacts."
+    },
+    {
+      "id": "cd-post-merger-day-one",
+      "covers": ["consulting-deck", "density-medium"],
+      "why": "Day one readiness for a merger close — a medium-density consulting-deck (pptx); no human ship verdict exists for any of its artifacts."
+    },
+    {
+      "id": "cd-pricing-strategy-workshop",
+      "covers": ["consulting-deck", "density-medium"],
+      "why": "Pricing strategy workshop deck — a medium-density consulting-deck (pptx); no human ship verdict exists for any of its artifacts."
+    },
+    {
+      "id": "cd-quarterly-business-review",
+      "covers": ["consulting-deck", "density-high"],
+      "why": "Quarterly business review — a high-density consulting-deck (pptx); no human ship verdict exists for any of its artifacts."
+    },
+    {
+      "id": "cd-service-quality-turnaround",
+      "covers": ["consulting-deck", "density-high"],
+      "why": "Service quality turnaround plan — a high-density consulting-deck (pptx); no human ship verdict exists for any of its artifacts."
+    },
+    {
+      "id": "cd-supply-chain-diagnostic",
+      "covers": ["consulting-deck", "density-high"],
+      "why": "Supply chain diagnostic findings — a high-density consulting-deck (pptx); no human ship verdict exists for any of its artifacts."
+    },
+    {
+      "id": "cd-sustainability-roadmap",
+      "covers": ["consulting-deck", "density-low"],
+      "why": "Sustainability roadmap to 2030 — a low-density consulting-deck (pptx); no human ship verdict exists for any of its artifacts."
+    }
+  ]
+}
