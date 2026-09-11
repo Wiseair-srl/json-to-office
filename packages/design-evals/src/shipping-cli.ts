@@ -31,8 +31,10 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseArgs } from 'node:util';
 
 import { analyzeDocument } from './analyze.js';
+import { runWithInkLines, type Line } from './cli-lines.js';
 import { gitState } from './manifest.js';
 import { documentMetrics } from './metrics.js';
 import { comparableRuns, type RecordedRun } from './rejudge.js';
@@ -56,24 +58,6 @@ import {
   SHIPPING_QUESTIONS,
   type ShippingQuestionId,
 } from './shipping.js';
-
-function line(text: string): void {
-  process.stderr.write(`${text}\n`);
-}
-
-function values(argv: readonly string[], name: string): string[] {
-  const found: string[] = [];
-  for (let index = 0; index < argv.length; index += 1) {
-    if (argv[index] === `--${name}` && argv[index + 1] !== undefined) {
-      found.push(argv[index + 1]);
-      index += 1;
-    }
-  }
-  return found;
-}
-
-const one = (argv: readonly string[], name: string): string | undefined =>
-  values(argv, name)[0];
 
 async function readJson<T>(file: string): Promise<T> {
   return JSON.parse(await fs.readFile(file, 'utf8')) as T;
@@ -116,7 +100,7 @@ async function setRuns(dir: string): Promise<SetRun[]> {
   });
 }
 
-async function sheets(dir: string): Promise<number> {
+async function sheets(dir: string, line: Line): Promise<number> {
   let rendered = 0;
   for (const run of await setRuns(dir)) {
     const runDir = path.join(dir, 'runs', run.label);
@@ -140,7 +124,11 @@ async function sheets(dir: string): Promise<number> {
   return 0;
 }
 
-async function reanalyze(dir: string, repoRoot: string): Promise<number> {
+async function reanalyze(
+  dir: string,
+  repoRoot: string,
+  line: Line
+): Promise<number> {
   const runs: Record<string, unknown> = {};
   for (const run of await setRuns(dir)) {
     if (run.outcome !== 'completed') continue;
@@ -183,9 +171,20 @@ async function reanalyze(dir: string, repoRoot: string): Promise<number> {
   return 0;
 }
 
-async function recorded(dir: string, argv: readonly string[]): Promise<number> {
-  const pageFillFile = one(argv, 'page-fill');
-  const pageFillSet = one(argv, 'page-fill-set');
+async function recorded(
+  dir: string,
+  argv: readonly string[],
+  line: Line
+): Promise<number> {
+  const { values } = parseArgs({
+    args: [...argv],
+    options: {
+      'page-fill': { type: 'string' },
+      'page-fill-set': { type: 'string' },
+    },
+  });
+  const pageFillFile = values['page-fill'];
+  const pageFillSet = values['page-fill-set'];
   if (!pageFillFile || !pageFillSet) {
     line(
       'usage: pnpm shipping recorded-facts <set-dir> --page-fill <file> --page-fill-set <key>'
@@ -234,9 +233,9 @@ async function recorded(dir: string, argv: readonly string[]): Promise<number> {
 
 /** `<id>=<dir>` pairs, as `--set` takes them. */
 function parseSets(
-  argv: readonly string[]
+  entries: readonly string[] = []
 ): Array<{ id: string; dir: string }> {
-  return values(argv, 'set').map((entry) => {
+  return entries.map((entry) => {
     const at = entry.indexOf('=');
     if (at <= 0) throw new Error(`--set takes <id>=<dir>, not "${entry}".`);
     return { id: entry.slice(0, at), dir: path.resolve(entry.slice(at + 1)) };
@@ -297,13 +296,21 @@ async function loadRounds(files: readonly string[]): Promise<HumanRound[]> {
   );
 }
 
+const SET_AND_HUMAN = {
+  set: { type: 'string', multiple: true },
+  human: { type: 'string', multiple: true },
+  out: { type: 'string' },
+} as const;
+
 async function calibrate(
   argv: readonly string[],
-  repoRoot: string
+  repoRoot: string,
+  line: Line
 ): Promise<number> {
-  const sets = parseSets(argv);
-  const humanFiles = values(argv, 'human');
-  const out = one(argv, 'out');
+  const { values } = parseArgs({ args: [...argv], options: SET_AND_HUMAN });
+  const sets = parseSets(values.set);
+  const humanFiles = values.human ?? [];
+  const out = values.out;
   if (sets.length === 0 || humanFiles.length === 0 || !out) {
     line(
       'usage: pnpm shipping calibrate --set <id>=<dir>… --human <file>… --out <file>'
@@ -374,9 +381,17 @@ async function calibrate(
   return 0;
 }
 
-async function freeze(argv: readonly string[]): Promise<number> {
-  const calibrationFile = one(argv, 'calibration');
-  const out = one(argv, 'out');
+async function freeze(argv: readonly string[], line: Line): Promise<number> {
+  const { values } = parseArgs({
+    args: [...argv],
+    options: {
+      calibration: { type: 'string' },
+      candidate: { type: 'string' },
+      out: { type: 'string' },
+    },
+  });
+  const calibrationFile = values.calibration;
+  const out = values.out;
   if (!calibrationFile || !out) {
     line(
       'usage: pnpm shipping freeze --calibration <file> [--candidate <id>] --out <file>'
@@ -389,7 +404,7 @@ async function freeze(argv: readonly string[]): Promise<number> {
     generatedAt: string;
     gitSha: string;
   }>(calibrationFile);
-  const id = one(argv, 'candidate') ?? calibration.choice.chosen;
+  const id = values.candidate ?? calibration.choice.chosen;
   const definition = CANDIDATE_DEFINITIONS.find(
     (candidate) => candidate.id === id
   );
@@ -417,12 +432,17 @@ async function freeze(argv: readonly string[]): Promise<number> {
 
 async function verify(
   argv: readonly string[],
-  repoRoot: string
+  repoRoot: string,
+  line: Line
 ): Promise<number> {
-  const definitionFile = one(argv, 'definition');
-  const sets = parseSets(argv);
-  const humanFiles = values(argv, 'human');
-  const out = one(argv, 'out');
+  const { values } = parseArgs({
+    args: [...argv],
+    options: { ...SET_AND_HUMAN, definition: { type: 'string' } },
+  });
+  const definitionFile = values.definition;
+  const sets = parseSets(values.set);
+  const humanFiles = values.human ?? [];
+  const out = values.out;
   if (!definitionFile || sets.length === 0 || humanFiles.length === 0 || !out) {
     line(
       'usage: pnpm shipping verify --definition <file> --set <id>=<dir> --human <file> --out <file>'
@@ -475,34 +495,40 @@ async function verify(
   return 0;
 }
 
-export async function main(argv: readonly string[]): Promise<number> {
+export async function main(
+  argv: readonly string[],
+  line: Line
+): Promise<number> {
   const repoRoot = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
     '../../..'
   );
-  const [command, ...rest] = argv;
+  const [command, target, ...rest] = argv;
+  const needsDir = (usage: string): number => {
+    line(`usage: pnpm shipping ${usage}`);
+    return 1;
+  };
   switch (command) {
     case 'sheets':
-      return rest[0]
-        ? sheets(path.resolve(rest[0]))
-        : (line('usage: pnpm shipping sheets <set-dir>'), 1);
+      return target
+        ? sheets(path.resolve(target), line)
+        : needsDir('sheets <set-dir>');
     case 'reanalyze':
-      return rest[0]
-        ? reanalyze(path.resolve(rest[0]), repoRoot)
-        : (line('usage: pnpm shipping reanalyze <set-dir>'), 1);
+      return target
+        ? reanalyze(path.resolve(target), repoRoot, line)
+        : needsDir('reanalyze <set-dir>');
     case 'recorded-facts':
-      return rest[0]
-        ? recorded(path.resolve(rest[0]), rest.slice(1))
-        : (line(
-            'usage: pnpm shipping recorded-facts <set-dir> --page-fill <file> --page-fill-set <key>'
-          ),
-          1);
+      return target
+        ? recorded(path.resolve(target), rest, line)
+        : needsDir(
+            'recorded-facts <set-dir> --page-fill <file> --page-fill-set <key>'
+          );
     case 'calibrate':
-      return calibrate(rest, repoRoot);
+      return calibrate(argv.slice(1), repoRoot, line);
     case 'freeze':
-      return freeze(rest);
+      return freeze(argv.slice(1), line);
     case 'verify':
-      return verify(rest, repoRoot);
+      return verify(argv.slice(1), repoRoot, line);
     default:
       line(
         'usage: pnpm shipping <sheets|reanalyze|recorded-facts|calibrate|freeze|verify> …'
@@ -511,19 +537,9 @@ export async function main(argv: readonly string[]): Promise<number> {
   }
 }
 
-const invokedDirectly =
-  process.argv[1] !== undefined &&
-  fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
-
-if (invokedDirectly) {
-  main(process.argv.slice(2).filter((arg) => arg !== '--'))
-    .then((code) => {
-      process.exitCode = code;
-    })
-    .catch((error: unknown) => {
-      line(
-        error instanceof Error ? error.stack ?? error.message : String(error)
-      );
-      process.exitCode = 1;
-    });
+if (process.argv[1] && process.argv[1].endsWith('shipping-cli.ts')) {
+  process.exitCode = await runWithInkLines(
+    main,
+    process.argv.slice(2).filter((arg) => arg !== '--')
+  );
 }

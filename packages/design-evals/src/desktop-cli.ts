@@ -28,9 +28,11 @@ import { createHash } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseArgs } from 'node:util';
 
 import type { AgentEvent } from './agent.js';
 import { analyzeDocument } from './analyze.js';
+import { runWithInkLines, type Line } from './cli-lines.js';
 import { briefsById, developmentCorpusDir, loadCorpus } from './corpus.js';
 import {
   desktopAccounting,
@@ -54,40 +56,23 @@ import { loadShippingSemantics } from './shipping-calibration.js';
 import { hasIntegrityDefect, pageDefects, ships } from './shipping.js';
 import { loadSkill } from './skill.js';
 
-function line(text: string): void {
-  process.stderr.write(`${text}\n`);
-}
-
-function values(argv: readonly string[], name: string): string[] {
-  const found: string[] = [];
-  for (let index = 0; index < argv.length; index += 1) {
-    if (argv[index] === `--${name}` && argv[index + 1] !== undefined) {
-      found.push(argv[index + 1]);
-      index += 1;
-    }
-  }
-  return found;
-}
-const one = (argv: readonly string[], name: string) => values(argv, name)[0];
-
 async function readJson<T>(file: string): Promise<T> {
   return JSON.parse(await fs.readFile(file, 'utf8')) as T;
 }
 
-async function prompt(argv: readonly string[]): Promise<number> {
-  const briefId = argv[0];
-  if (!briefId) {
-    line('usage: pnpm desktop prompt <brief>');
-    return 1;
-  }
+/** The exact prompt the headless runner sends for a brief. */
+async function promptText(briefId: string): Promise<string> {
   const corpus = await loadCorpus(developmentCorpusDir(), 'development');
   const [brief] = briefsById(corpus, [briefId]);
-  process.stdout.write(`${briefPrompt(brief)}\n`);
-  return 0;
+  return briefPrompt(brief);
 }
 
-async function sessions(argv: readonly string[]): Promise<number> {
-  const journalFile = one(argv, 'journal');
+async function sessions(argv: readonly string[], line: Line): Promise<number> {
+  const { values } = parseArgs({
+    args: [...argv],
+    options: { journal: { type: 'string' } },
+  });
+  const journalFile = values.journal;
   if (!journalFile) {
     line('usage: pnpm desktop sessions --journal <file>');
     return 1;
@@ -105,12 +90,24 @@ async function sessions(argv: readonly string[]): Promise<number> {
 
 async function importSessions(
   argv: readonly string[],
-  repoRoot: string
+  repoRoot: string,
+  line: Line
 ): Promise<number> {
-  const journalFile = one(argv, 'journal');
-  const out = one(argv, 'out');
-  const model = one(argv, 'model');
-  const mappings = values(argv, 'run').map((entry) => {
+  const { values } = parseArgs({
+    args: [...argv],
+    options: {
+      journal: { type: 'string' },
+      out: { type: 'string' },
+      model: { type: 'string' },
+      run: { type: 'string', multiple: true },
+      'app-version': { type: 'string' },
+      skill: { type: 'string' },
+    },
+  });
+  const journalFile = values.journal;
+  const out = values.out;
+  const model = values.model;
+  const mappings = (values.run ?? []).map((entry) => {
     const at = entry.indexOf('=');
     if (at <= 0)
       throw new Error(`--run takes <brief>=<session>, not "${entry}".`);
@@ -122,8 +119,8 @@ async function importSessions(
     );
     return 1;
   }
-  const appVersion = one(argv, 'app-version');
-  const skillDir = one(argv, 'skill');
+  const appVersion = values['app-version'];
+  const skillDir = values.skill;
   const skill = skillDir ? await loadSkill(skillDir) : undefined;
   const journal = parseJournal(await fs.readFile(journalFile, 'utf8'));
   const corpus = await loadCorpus(developmentCorpusDir(), 'development');
@@ -368,11 +365,20 @@ async function hostRuns(dir: string, repoRoot: string): Promise<HostRun[]> {
 
 async function compare(
   argv: readonly string[],
-  repoRoot: string
+  repoRoot: string,
+  line: Line
 ): Promise<number> {
-  const desktopDir = one(argv, 'desktop');
-  const headlessDir = one(argv, 'headless');
-  const out = one(argv, 'out');
+  const { values } = parseArgs({
+    args: [...argv],
+    options: {
+      desktop: { type: 'string' },
+      headless: { type: 'string' },
+      out: { type: 'string' },
+    },
+  });
+  const desktopDir = values.desktop;
+  const headlessDir = values.headless;
+  const out = values.out;
   if (!desktopDir || !headlessDir || !out) {
     line(
       'usage: pnpm desktop compare --desktop <dir> --headless <dir> --out <file.md>'
@@ -393,7 +399,10 @@ async function compare(
   return 0;
 }
 
-export async function main(argv: readonly string[]): Promise<number> {
+export async function main(
+  argv: readonly string[],
+  line: Line
+): Promise<number> {
   const repoRoot = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
     '../../..'
@@ -401,32 +410,30 @@ export async function main(argv: readonly string[]): Promise<number> {
   const [command, ...rest] = argv;
   switch (command) {
     case 'prompt':
-      return prompt(rest);
+      if (!rest[0]) {
+        line('usage: pnpm desktop prompt <brief>');
+        return 1;
+      }
+      for (const text of (await promptText(rest[0])).split('\n')) line(text);
+      return 0;
     case 'sessions':
-      return sessions(rest);
+      return sessions(rest, line);
     case 'import':
-      return importSessions(rest, repoRoot);
+      return importSessions(rest, repoRoot, line);
     case 'compare':
-      return compare(rest, repoRoot);
+      return compare(rest, repoRoot, line);
     default:
       line('usage: pnpm desktop <prompt|sessions|import|compare> …');
       return 1;
   }
 }
 
-const invokedDirectly =
-  process.argv[1] !== undefined &&
-  fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
-
-if (invokedDirectly) {
-  main(process.argv.slice(2).filter((arg) => arg !== '--'))
-    .then((code) => {
-      process.exitCode = code;
-    })
-    .catch((error: unknown) => {
-      line(
-        error instanceof Error ? error.stack ?? error.message : String(error)
-      );
-      process.exitCode = 1;
-    });
+if (process.argv[1] && process.argv[1].endsWith('desktop-cli.ts')) {
+  const argv = process.argv.slice(2).filter((arg) => arg !== '--');
+  if (argv[0] === 'prompt' && argv[1]) {
+    // Data, not a view: pasted into Desktop as is, so no terminal may rewrap it.
+    process.stdout.write(`${await promptText(argv[1])}\n`);
+  } else {
+    process.exitCode = await runWithInkLines(main, argv);
+  }
 }

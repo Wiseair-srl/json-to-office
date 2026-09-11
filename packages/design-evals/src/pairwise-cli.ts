@@ -1,10 +1,23 @@
-/** `pnpm pairwise <a-dir> <b-dir>` — which set answered the briefs better. */
+/**
+ * `pnpm pairwise <a-dir> <b-dir>` — which set answered the briefs better.
+ *
+ * `pnpm pairwise calibrate --human <file> --judge <file> --a <set> --b <set> --out <file>`
+ * — the same comparisons, rated by Paolo in the review page, against the
+ * judge's two-order verdicts (#409).
+ */
 
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 
-import { comparePairs } from './pairwise.js';
+import {
+  calibrationReport,
+  calibrationSheetFromReview,
+  judgeIsCalibrated,
+  type ReviewedPair,
+} from './calibration.js';
+import { runWithInkLines } from './cli-lines.js';
+import { comparePairs, type PairwiseReport } from './pairwise.js';
 
 const OPTIONS = {
   judge: { type: 'string' },
@@ -15,10 +28,89 @@ const OPTIONS = {
   'single-order': { type: 'boolean' },
 } as const;
 
+async function calibrate(
+  argv: readonly string[],
+  line: (text: string) => void
+): Promise<number> {
+  const { values } = parseArgs({
+    args: [...argv],
+    options: {
+      human: { type: 'string' },
+      judge: { type: 'string' },
+      a: { type: 'string' },
+      b: { type: 'string' },
+      out: { type: 'string' },
+    },
+  });
+  if (!values.human || !values.judge || !values.a || !values.b || !values.out) {
+    line(
+      'usage: pnpm pairwise calibrate --human <file> --judge <file> --a <set> --b <set> --out <file>'
+    );
+    return 1;
+  }
+  const human = JSON.parse(await fs.readFile(values.human, 'utf8')) as {
+    pairs: ReviewedPair[];
+  };
+  const judged = JSON.parse(
+    await fs.readFile(values.judge, 'utf8')
+  ) as PairwiseReport;
+  const dirs: Record<string, string> = {
+    [values.a]: judged.a,
+    [values.b]: judged.b,
+  };
+  const { sheet, judgeSkipped } = calibrationSheetFromReview({
+    human: human.pairs,
+    outcomes: judged.outcomes,
+    sides: { a: values.a, b: values.b },
+    sheetPath: (set, pair) =>
+      path.join(dirs[set], 'runs', pair, 'contact-sheet.png'),
+  });
+  const report = calibrationReport(sheet);
+  const out = path.resolve(values.out);
+  await fs.mkdir(path.dirname(out), { recursive: true });
+  await fs.writeFile(
+    out,
+    JSON.stringify(
+      {
+        human: path.basename(values.human),
+        judge: path.basename(values.judge),
+        judgeModel: judged.judgeModel,
+        judgedAt: judged.judgedAt,
+        judgeSkipped,
+        report,
+        calibrated: judgeIsCalibrated(report),
+        sheet,
+      },
+      null,
+      2
+    )
+  );
+  const interval = report.interval
+    ? ` (95% ${report.interval.low.toFixed(2)}..${report.interval.high.toFixed(2)})`
+    : '';
+  line(
+    `${report.n} pair(s) rated by both: ${(report.rawAgreement * 100).toFixed(0)}% agreement, kappa ${report.kappa.toFixed(2)}${interval}`
+  );
+  if (judgeSkipped.length > 0) {
+    line(
+      `the judge never compared ${judgeSkipped.length}: ${judgeSkipped.join(', ')}`
+    );
+  }
+  if (report.unrated > 0) line(`${report.unrated} pair(s) left unrated`);
+  line(
+    judgeIsCalibrated(report)
+      ? 'the judge agrees with Paolo at the programme threshold'
+      : 'below the programme threshold: report the judge, rely on Paolo'
+  );
+  line(out);
+  return 0;
+}
+
 export async function main(
   argv: readonly string[],
   line: (text: string) => void
 ): Promise<number> {
+  if (argv[0] === 'calibrate') return calibrate(argv.slice(1), line);
   let parsed: ReturnType<typeof parseArguments>;
   try {
     parsed = parseArguments(argv);
@@ -104,21 +196,5 @@ function parseArguments(argv: readonly string[]) {
 }
 
 if (process.argv[1] && process.argv[1].endsWith('pairwise-cli.ts')) {
-  const { createElement } = await import('react');
-  const { render, Static, Text } = await import('ink');
-  const lines: { id: number; text: string }[] = [];
-  const view = () =>
-    createElement(Static<{ id: number; text: string }>, {
-      items: [...lines],
-      children: (item) => createElement(Text, { key: item.id }, item.text),
-    });
-  const app = render(view());
-  try {
-    process.exitCode = await main(process.argv.slice(2), (text) => {
-      lines.push({ id: lines.length, text });
-      app.rerender(view());
-    });
-  } finally {
-    app.unmount();
-  }
+  process.exitCode = await runWithInkLines(main, process.argv.slice(2));
 }

@@ -17,6 +17,7 @@ import path from 'node:path';
 
 import { bootstrapKappa, type KappaReport } from './statistics.js';
 import type { PairwiseVerdict } from './rubric.js';
+import type { PairOutcome } from './pairwise.js';
 
 export interface CalibrationPair {
   id: string;
@@ -76,6 +77,88 @@ export function buildCalibrationSheet(input: {
       judge: pair.judge.winner,
       judgeRationale: pair.judge.rationale,
     })),
+  };
+}
+
+/** One pair as the review page records it: the brief, and which side won. */
+export interface ReviewedPair {
+  /** The brief (or `<brief>#<pass>`) the two documents answer. */
+  pair: string;
+  /** A set name, or `tie`. */
+  preferred: string;
+  leftWas?: string;
+  at?: string;
+}
+
+/**
+ * Paolo's pairs from the review page and the judge's two-order comparisons,
+ * as one rated calibration sheet (#409).
+ *
+ * Both raters are put on the same axis — `a` and `b` are the two recorded
+ * sets, never "left" and "right" — so a disagreement is about the documents
+ * and not about where they sat. A judge whose two showings disagreed has no
+ * preference that survives the swap, so it answers `tie` here, and the
+ * rationale says why; a brief the judge never compared is left out and named,
+ * never counted as agreement.
+ */
+export function calibrationSheetFromReview(input: {
+  human: readonly ReviewedPair[];
+  outcomes: readonly Pick<PairOutcome, 'briefId' | 'verdict'>[];
+  sides: { a: string; b: string };
+  /** Where a set's sheet for a pair is, by set name. */
+  sheetPath: (set: string, pair: string) => string;
+  now?: Date;
+}): { sheet: CalibrationSheet; judgeSkipped: string[] } {
+  const judged = new Map(
+    input.outcomes.map((outcome) => [outcome.briefId, outcome.verdict])
+  );
+  const judgeSkipped: string[] = [];
+  const pairs: CalibrationSheet['pairs'] = [];
+  for (const entry of input.human) {
+    const human =
+      entry.preferred === input.sides.a
+        ? 'a'
+        : entry.preferred === input.sides.b
+          ? 'b'
+          : entry.preferred === 'tie'
+            ? 'tie'
+            : undefined;
+    if (human === undefined) {
+      throw new Error(
+        `Pair ${entry.pair} prefers "${entry.preferred}", which is neither ${input.sides.a}, ${input.sides.b} nor a tie.`
+      );
+    }
+    const verdict = judged.get(entry.pair);
+    if (verdict === undefined) {
+      judgeSkipped.push(entry.pair);
+      continue;
+    }
+    pairs.push({
+      id: entry.pair,
+      briefId: entry.pair.split('#')[0],
+      a: {
+        label: input.sides.a,
+        sheetPath: input.sheetPath(input.sides.a, entry.pair),
+      },
+      b: {
+        label: input.sides.b,
+        sheetPath: input.sheetPath(input.sides.b, entry.pair),
+      },
+      human,
+      judge: verdict === 'inconsistent' ? 'tie' : verdict,
+      judgeRationale:
+        verdict === 'inconsistent'
+          ? "The judge's two orders disagreed, so it has no preference that survives the swap."
+          : '',
+    });
+  }
+  return {
+    sheet: {
+      generatedAt: (input.now ?? new Date()).toISOString(),
+      question: CALIBRATION_QUESTION,
+      pairs,
+    },
+    judgeSkipped,
   };
 }
 
