@@ -643,8 +643,14 @@ delivered prerequisite neither blocks report integration nor closes early.
 | 28  | Phase 2: docx blocks, then five pptx layouts, same phase                                                      |
 | 29  | Themes style consulting chrome; blueprints/profiles decide required presence and content                      |
 | 30  | No PR gate on the scorecard                                                                                   |
-| 31  | Design-system skill emitting an extended theme: decided after Phase 1                                         |
+| 31  | Design-system skill emits a full extended theme, carried by value (decided 2026-09-11, #424)                  |
 
-Deferred decisions: the design-system skill theme (after Phase 1); a
-server-side API judge (only if self-critique underperforms on the scorecard);
+Decision 31, taken 2026-09-11: the Wiseair design-system skill emits a full
+extended theme for both formats, not a token overlay. It reaches the server
+inside the document (PPTX `props.theme` already accepts a theme object; DOCX
+theme-by-value is the product work it creates) and no Wiseair theme enters
+this repository. Rationale and evidence in
+[`skill-taste-inventory.md`](./skill-taste-inventory.md#the-wiseair-extended-theme-decision).
+
+Deferred decisions: a server-side API judge (only if self-critique underperforms on the scorecard);
 the Italian brief subset timing (Phase 4); versioned brand packs (#240).
