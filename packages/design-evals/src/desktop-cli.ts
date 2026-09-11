@@ -32,7 +32,7 @@ import { parseArgs } from 'node:util';
 
 import type { AgentEvent } from './agent.js';
 import { analyzeDocument } from './analyze.js';
-import { runWithInkLines, type Line } from './cli-lines.js';
+import { assignments, runWithInkLines, type Line } from './cli-lines.js';
 import { briefsById, developmentCorpusDir, loadCorpus } from './corpus.js';
 import {
   desktopAccounting,
@@ -52,7 +52,7 @@ import { comparableRuns, type RecordedRun } from './rejudge.js';
 import { renderForJudging } from './render.js';
 import { briefPrompt } from './runner.js';
 import { buildScorecard } from './scorecard.js';
-import { loadShippingSemantics } from './shipping-calibration.js';
+import { loadShippingSemantics, loadSitting } from './shipping-calibration.js';
 import { hasIntegrityDefect, pageDefects, ships } from './shipping.js';
 import { loadSkill } from './skill.js';
 
@@ -107,12 +107,10 @@ async function importSessions(
   const journalFile = values.journal;
   const out = values.out;
   const model = values.model;
-  const mappings = (values.run ?? []).map((entry) => {
-    const at = entry.indexOf('=');
-    if (at <= 0)
-      throw new Error(`--run takes <brief>=<session>, not "${entry}".`);
-    return { briefId: entry.slice(0, at), session: entry.slice(at + 1) };
-  });
+  const mappings = assignments(values.run, 'run').map(([briefId, session]) => ({
+    briefId,
+    session,
+  }));
   if (!journalFile || !out || !model || mappings.length === 0) {
     line(
       'usage: pnpm desktop import --journal <file> --run <brief>=<session>… --model <id> [--app-version <v>] [--skill <dir>] --out <dir>'
@@ -214,7 +212,7 @@ async function importSessions(
           format: brief.format,
           outcome: 'completed',
           ...documentMetrics({
-            diagnostics: measured.diagnostics as never,
+            diagnostics: measured.diagnostics,
             pages: measured.pages,
           }),
           pageCountSource: measured.pageCountSource,
@@ -274,8 +272,7 @@ async function importSessions(
               const facts = journal.sessions.find(
                 (entry) => entry.id === mapping.session
               )?.facts;
-              const server = facts?.server as { version?: string } | undefined;
-              return server?.version ?? 'unrecorded';
+              return facts?.server?.version ?? 'unrecorded';
             })
           ),
         ],
@@ -308,37 +305,19 @@ async function hostRuns(dir: string, repoRoot: string): Promise<HostRun[]> {
   const semantics = await loadShippingSemantics(
     path.join(repoRoot, 'packages/design-evals/baselines')
   );
-  let sitting: Record<string, { level: number; wouldShip: boolean }> = {};
-  try {
-    const report = await readJson<{
-      runs: Array<{
-        run?: string;
-        briefId: string;
-        now?: { level: number; wouldShip: boolean };
-      }>;
-    }>(path.join(dir, `sitting-${semantics.definition.question}.json`));
-    sitting = Object.fromEntries(
-      report.runs.flatMap((run) =>
-        run.now ? [[run.run ?? run.briefId, run.now]] : []
-      )
-    );
-  } catch {
-    sitting = {};
-  }
+  // One sitting over both sets is what makes their verdicts comparable; a set
+  // without one falls back to the verdicts its own run recorded.
+  const sitting =
+    (await loadSitting(
+      path.join(dir, `sitting-${semantics.definition.question}.json`),
+      semantics.definition.question
+    )) ?? {};
   const runs: HostRun[] = [];
-  for (const recorded of comparableRuns(scorecard.runs)) {
-    const run = recorded as unknown as RunMetrics & { label: string };
-    let events: AgentEvent[] = [];
-    try {
-      events = (
-        await readJson<{ events: AgentEvent[] }>(
-          path.join(dir, 'runs', recorded.label, 'transcript.json')
-        )
-      ).events;
-    } catch {
-      events = [];
-    }
-    const verdict = sitting[recorded.label] ?? run.judge;
+  for (const run of comparableRuns(scorecard.runs)) {
+    const { events } = await readJson<{ events: AgentEvent[] }>(
+      path.join(dir, 'runs', run.label, 'transcript.json')
+    );
+    const verdict = sitting[run.label] ?? run.judge;
     const decision = ships(semantics.definition, {
       outcome: run.outcome,
       qualityByCode: run.qualityByCode,
@@ -389,13 +368,14 @@ async function compare(
     await hostRuns(desktopDir, repoRoot),
     await hostRuns(headlessDir, repoRoot)
   );
-  await fs.writeFile(out, hostComparisonMarkdown(comparison));
+  const markdown = out.endsWith('.md') ? out : `${out}.md`;
+  await fs.writeFile(markdown, hostComparisonMarkdown(comparison));
   await fs.writeFile(
-    out.replace(/\.md$/, '.json'),
+    `${markdown.slice(0, -'.md'.length)}.json`,
     JSON.stringify(comparison, null, 2)
   );
   line(hostComparisonMarkdown(comparison));
-  line(out);
+  line(markdown);
   return 0;
 }
 

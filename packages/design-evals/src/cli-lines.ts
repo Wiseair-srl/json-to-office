@@ -35,3 +35,20 @@ export async function runWithInkLines(
     app.unmount();
   }
 }
+
+/**
+ * Repeated `<key>=<value>` flags — `--set before=<dir>`, `--run <brief>=<session>`
+ * — split at the first `=`, refusing an entry without a key.
+ */
+export function assignments(
+  entries: readonly string[] | undefined,
+  flag: string
+): Array<[string, string]> {
+  return (entries ?? []).map((entry) => {
+    const at = entry.indexOf('=');
+    if (at <= 0) {
+      throw new Error(`--${flag} takes <key>=<value>, not "${entry}".`);
+    }
+    return [entry.slice(0, at), entry.slice(at + 1)];
+  });
+}

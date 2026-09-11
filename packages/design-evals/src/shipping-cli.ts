@@ -34,9 +34,10 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
 import { analyzeDocument } from './analyze.js';
-import { runWithInkLines, type Line } from './cli-lines.js';
+import { assignments, runWithInkLines, type Line } from './cli-lines.js';
+import type { BriefFormat } from './corpus.js';
 import { gitState } from './manifest.js';
-import { documentMetrics } from './metrics.js';
+import { documentMetrics, type RunMetrics } from './metrics.js';
 import { comparableRuns, type RecordedRun } from './rejudge.js';
 import { renderForJudging } from './render.js';
 import {
@@ -46,6 +47,7 @@ import {
   humanJudgments,
   humanRepeatability,
   labelArtifacts,
+  loadSitting,
   recordedFacts,
   scoreDefinition,
   verifyDefinition,
@@ -72,32 +74,15 @@ async function exists(file: string): Promise<boolean> {
   }
 }
 
-interface SetRun {
-  label: string;
-  briefId: string;
-  format: string;
-  outcome: 'completed' | 'failed';
-}
+type SetRun = RecordedRun &
+  Pick<RunMetrics, 'format' | 'outcome' | 'qualityByCode'>;
 
 /** The runs of a set, labelled the way the runner wrote their directories. */
-async function setRuns(dir: string): Promise<SetRun[]> {
-  const scorecard = await readJson<{
-    runs: Array<
-      RecordedRun & { format: string; outcome: 'completed' | 'failed' }
-    >;
-  }>(path.join(dir, 'scorecard.json'));
-  return comparableRuns(scorecard.runs).map((run) => {
-    const record = run as unknown as {
-      format: string;
-      outcome: 'completed' | 'failed';
-    };
-    return {
-      label: run.label,
-      briefId: run.briefId,
-      format: record.format,
-      outcome: record.outcome,
-    };
-  });
+async function setRuns(dir: string) {
+  const scorecard = await readJson<{ runs: SetRun[] }>(
+    path.join(dir, 'scorecard.json')
+  );
+  return comparableRuns(scorecard.runs);
 }
 
 async function sheets(dir: string, line: Line): Promise<number> {
@@ -112,10 +97,7 @@ async function sheets(dir: string, line: Line): Promise<number> {
       continue;
     }
     const document = await readJson<unknown>(documentFile);
-    const result = await renderForJudging(
-      run.format as 'docx' | 'pptx',
-      document
-    );
+    const result = await renderForJudging(run.format as BriefFormat, document);
     await fs.writeFile(sheet, result.sheet.png);
     rendered += 1;
     line(`  ${run.label}: ${result.totalPages} page(s)`);
@@ -142,7 +124,7 @@ async function reanalyze(
       await readJson<unknown>(documentFile)
     );
     const metrics = documentMetrics({
-      diagnostics: measured.diagnostics as never,
+      diagnostics: measured.diagnostics,
       pages: measured.pages,
     });
     runs[run.label] = {
@@ -199,21 +181,9 @@ async function recorded(
     line(`${pageFillFile} has no set "${pageFillSet}".`);
     return 1;
   }
-  const scorecard = await readJson<{
-    runs: Array<
-      RecordedRun & { outcome: string; qualityByCode: Record<string, number> }
-    >;
-  }>(path.join(dir, 'scorecard.json'));
-  const runs = comparableRuns(scorecard.runs)
-    .filter(
-      (run) => (run as unknown as { outcome: string }).outcome === 'completed'
-    )
-    .map((run) => ({
-      label: run.label,
-      qualityByCode: (
-        run as unknown as { qualityByCode: Record<string, number> }
-      ).qualityByCode,
-    }));
+  const runs = (await setRuns(dir)).filter(
+    (run) => run.outcome === 'completed'
+  );
   const out = path.join(dir, 'facts.json');
   await fs.writeFile(
     out,
@@ -231,15 +201,14 @@ async function recorded(
   return 0;
 }
 
-/** `<id>=<dir>` pairs, as `--set` takes them. */
+/** `--set <id>=<dir>` flags. */
 function parseSets(
-  entries: readonly string[] = []
+  entries: readonly string[] | undefined
 ): Array<{ id: string; dir: string }> {
-  return entries.map((entry) => {
-    const at = entry.indexOf('=');
-    if (at <= 0) throw new Error(`--set takes <id>=<dir>, not "${entry}".`);
-    return { id: entry.slice(0, at), dir: path.resolve(entry.slice(at + 1)) };
-  });
+  return assignments(entries, 'set').map(([id, dir]) => ({
+    id,
+    dir: path.resolve(dir),
+  }));
 }
 
 async function loadEvidenceSet(id: string, dir: string): Promise<EvidenceSet> {
@@ -251,40 +220,13 @@ async function loadEvidenceSet(id: string, dir: string): Promise<EvidenceSet> {
   for (const question of Object.keys(
     SHIPPING_QUESTIONS
   ) as ShippingQuestionId[]) {
-    const file = path.join(dir, `sitting-${question}.json`);
-    if (!(await exists(file))) continue;
-    const report = await readJson<{
-      question?: string;
-      runs: Array<{
-        run?: string;
-        briefId: string;
-        now?: { level: number; wouldShip: boolean };
-      }>;
-    }>(file);
-    if ((report.question ?? 'v1') !== question) {
-      throw new Error(
-        `${file} was judged with question ${report.question}, not ${question}.`
-      );
-    }
-    sittings[question] = Object.fromEntries(
-      report.runs.flatMap((run) =>
-        run.now
-          ? [
-              [
-                run.run ?? run.briefId,
-                { level: run.now.level, wouldShip: run.now.wouldShip },
-              ],
-            ]
-          : []
-      )
+    const sitting = await loadSitting(
+      path.join(dir, `sitting-${question}.json`),
+      question
     );
+    if (sitting) sittings[question] = sitting;
   }
-  return {
-    id,
-    runs: await setRuns(dir),
-    facts: facts.runs,
-    sittings,
-  };
+  return { id, runs: await setRuns(dir), facts: facts.runs, sittings };
 }
 
 async function loadRounds(files: readonly string[]): Promise<HumanRound[]> {

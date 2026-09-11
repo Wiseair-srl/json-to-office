@@ -175,7 +175,8 @@ const FONT_SUBSTITUTION_CODES = new Set([
  * policy choice as a defect.
  */
 export function documentMetrics(input: {
-  diagnostics: readonly Diagnostic[];
+  /** Diagnostics as an analysis returned them; read field by field. */
+  diagnostics: readonly unknown[];
   pages: number;
 }): DocumentMetrics {
   const qualityByCode: Record<string, number> = {};
@@ -184,7 +185,8 @@ export function documentMetrics(input: {
   let fontSubstitutions = 0;
   const renderedFindings = { mapped: 0, unmapped: 0 };
 
-  for (const entry of input.diagnostics) {
+  for (const raw of input.diagnostics) {
+    const entry = (raw ?? {}) as Diagnostic;
     const code = typeof entry.code === 'string' ? entry.code : '';
     if (entry.certainty === 'rendered') {
       const mapping = (entry.context as { mapping?: unknown } | undefined)

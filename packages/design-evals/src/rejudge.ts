@@ -127,15 +127,15 @@ export interface ComparableRun extends RecordedRun {
   pass: number;
 }
 
-export function comparableRuns(
-  records: readonly RecordedRun[]
-): ComparableRun[] {
+export function comparableRuns<T extends RecordedRun>(
+  records: readonly T[]
+): Array<T & ComparableRun> {
   const passes = new Map<string, number>();
   for (const record of records) {
     passes.set(record.briefId, (passes.get(record.briefId) ?? 0) + 1);
   }
   const seen = new Map<string, number>();
-  const kept: ComparableRun[] = [];
+  const kept: Array<T & ComparableRun> = [];
   for (const record of records) {
     const pass = (seen.get(record.briefId) ?? 0) + 1;
     seen.set(record.briefId, pass);

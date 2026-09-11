@@ -21,6 +21,7 @@
 
 import { createHash } from 'node:crypto';
 
+import type { RunOutcome } from './metrics.js';
 import { SHIPPING_QUESTION } from './rubric.js';
 
 /**
@@ -81,11 +82,17 @@ export interface ShippingDefinition {
   maximumPageDefects?: number;
 }
 
+/** What a definition reads from the judge: the level, and the shipping answer. */
+export interface JudgeAnswer {
+  level: number;
+  wouldShip: boolean;
+}
+
 /** What a definition decides on: all of it already on every run. */
 export interface ShippingFacts {
-  outcome: 'completed' | 'failed';
+  outcome: RunOutcome;
   /** The judge's verdict under the definition's question, when one exists. */
-  judge?: { level: number; wouldShip: boolean };
+  judge?: JudgeAnswer;
   qualityByCode: Readonly<Record<string, number>>;
 }
 

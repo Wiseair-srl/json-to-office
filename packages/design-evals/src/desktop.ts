@@ -16,6 +16,11 @@
  * import records them as such rather than as zero.
  */
 
+import type {
+  JournalCallLine,
+  JournalSessionLine,
+} from '@json-to-office/mcp-server';
+
 import type { AgentEvent } from './agent.js';
 import { SERVER_ALIAS } from './agent.js';
 import { countEnvironmentFailures, countIterations } from './runner.js';
@@ -28,27 +33,18 @@ type Rec = Record<string, unknown>;
 const isRecord = (value: unknown): value is Rec =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
-export interface JournalCall {
-  at: string;
-  seq: number;
-  tool: string;
-  durationMs: number;
-  args: Rec;
-  result: Rec;
-  delivered?: {
-    sha256: string;
-    bytes: number;
-    file: string;
-    handle?: string;
-    revision?: number;
-  };
-}
+/** A call line, as the server wrote it, without the fields grouping replaces. */
+export type JournalCall = Omit<JournalCallLine, 'v' | 'type' | 'session'>;
+
+/** A session line's facts: server version, output and workspace roots. */
+export type JournalSessionFacts = Partial<
+  Omit<JournalSessionLine, 'v' | 'type' | 'at' | 'session'>
+>;
 
 export interface JournalSessionRecord {
   id: string;
   startedAt: string;
-  /** The session line's facts: server version, output and workspace roots. */
-  facts: Rec;
+  facts: JournalSessionFacts;
   calls: JournalCall[];
 }
 
@@ -103,7 +99,7 @@ export function parseJournal(text: string): ParsedJournal {
       args: isRecord(entry.args) ? entry.args : {},
       result: isRecord(entry.result) ? entry.result : {},
       ...(isRecord(entry.delivered) && {
-        delivered: entry.delivered as unknown as JournalCall['delivered'],
+        delivered: entry.delivered as unknown as JournalCallLine['delivered'],
       }),
     };
     const owner = sessions.get(id);
