@@ -34,8 +34,14 @@ describe('FileSystemScanner exclusions', () => {
     await fs.rm(root, { recursive: true, force: true });
   });
 
+  // Posix separators whatever the host: the fixtures above are written that
+  // way, and `path.relative` answers with backslashes on Windows.
   const relative = (files: string[]) =>
-    [...new Set(files.map((file) => path.relative(root, file)))].sort();
+    [
+      ...new Set(
+        files.map((file) => path.relative(root, file).split(path.sep).join('/'))
+      ),
+    ].sort();
 
   it('the depth scan skips them', async () => {
     const found = await new FileSystemScanner().scan(root, 'docx-document');
