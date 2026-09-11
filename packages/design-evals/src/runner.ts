@@ -450,11 +450,7 @@ export async function runBrief(options: RunBriefOptions): Promise<RunMetrics> {
     format: options.brief.format,
     outcome: 'completed',
     ...documentMetrics({
-      diagnostics: measured.diagnostics as readonly {
-        code?: unknown;
-        severity?: unknown;
-        blocking?: unknown;
-      }[],
+      diagnostics: measured.diagnostics,
       pages: measured.pages,
     }),
     pageCountSource: measured.pageCountSource ?? 'structural',

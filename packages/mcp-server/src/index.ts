@@ -72,11 +72,12 @@ export {
 } from './lib/output-root.js';
 
 export {
-  createJournal,
   JOURNAL_ENV,
   JOURNAL_VERSION,
-  type Journal,
-  type JournalSession,
+  type JournalCallLine,
+  type JournalDelivered,
+  type JournalLine,
+  type JournalSessionLine,
 } from './lib/journal.js';
 
 export {

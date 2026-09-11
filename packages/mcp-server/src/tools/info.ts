@@ -221,6 +221,18 @@ export interface ServiceStatus {
   detail?: string;
 }
 
+/**
+ * A service address as configured, read the way the probe reads it: a bare
+ * `host:port` is taken as `http://host:port`. Undefined when it is not a URL.
+ */
+export function serviceUrl(raw: string): URL | undefined {
+  try {
+    return new URL(/^[a-z]+:\/\//i.test(raw) ? raw : `http://${raw}`);
+  } catch {
+    return undefined;
+  }
+}
+
 /** The URL a `highcharts` component will actually be posted to on this host. */
 export function highchartsServerUrl(): string {
   const configured = process.env.HIGHCHARTS_SERVER_URL?.trim();
@@ -244,12 +256,8 @@ export async function probeService(
   rawUrl: string,
   envVar: string
 ): Promise<ServiceStatus> {
-  let target: URL;
-  try {
-    target = new URL(
-      /^[a-z]+:\/\//i.test(rawUrl) ? rawUrl : `http://${rawUrl}`
-    );
-  } catch {
+  const target = serviceUrl(rawUrl);
+  if (!target) {
     return {
       available: false,
       url: rawUrl,

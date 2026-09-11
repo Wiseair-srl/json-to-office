@@ -13,6 +13,7 @@ import type { McpServerFactory } from '@modelcontextprotocol/server';
 
 import type { ToolDeps } from './lib/deps.js';
 import { SERVER_NAME } from './lib/version.js';
+import { highchartsServerUrl, serviceUrl } from './tools/info.js';
 
 import { register as registerInfo } from './tools/info.js';
 import { register as registerDiscover } from './tools/discover.js';
@@ -77,13 +78,6 @@ Document defects come back as structured diagnostics with ok: false, not as erro
 function journalTools(server: McpServer, deps: ToolDeps): void {
   const journal = deps.journal;
   if (!journal) return;
-  const exportServer = process.env.HIGHCHARTS_SERVER_URL;
-  let exportHost: string | undefined;
-  try {
-    exportHost = exportServer ? new URL(exportServer).host : undefined;
-  } catch {
-    exportHost = 'unparseable';
-  }
   const session = journal.openSession({
     server: { name: SERVER_NAME, version: deps.serverVersion },
     pid: process.pid,
@@ -93,7 +87,9 @@ function journalTools(server: McpServer, deps: ToolDeps): void {
     ...(deps.workspacePersistence && {
       workspaceRoot: deps.workspacePersistence.root,
     }),
-    ...(exportHost !== undefined && { exportServerHost: exportHost }),
+    // The host a chart would be posted to, as `jto_info` reads it: which export
+    // server answered is part of what the session measured.
+    exportServerHost: serviceUrl(highchartsServerUrl())?.host ?? 'unparseable',
   });
   const source = {
     async readRevision(handle: string, revision: number) {
@@ -101,30 +97,42 @@ function journalTools(server: McpServer, deps: ToolDeps): void {
       return read.ok ? read.document : undefined;
     },
   };
-  const register = server.registerTool.bind(server);
-  type Handler = (args: unknown, ctx: unknown) => unknown;
-  server.registerTool = ((name: string, config: unknown, handler: Handler) =>
-    register(
-      name,
-      config as never,
-      (async (args: unknown, ctx: unknown) => {
-        const started = Date.now();
-        try {
-          const result = await handler(args, ctx);
-          await session.call(
-            { tool: name, args, result, durationMs: Date.now() - started },
-            source
-          );
-          return result;
-        } catch (error) {
-          await session.call(
-            { tool: name, args, error, durationMs: Date.now() - started },
-            source
-          );
-          throw error;
-        }
-      }) as never
-    )) as typeof server.registerTool;
+  // The SDK calls a tool with `(args, ctx)` when it declares an input schema
+  // and with `(ctx)` alone when it does not, so the wrapper passes whatever it
+  // was given straight through and only reads the arguments where they exist.
+  type Handler = (...params: unknown[]) => unknown;
+  const register = server.registerTool.bind(server) as (
+    name: string,
+    config: { inputSchema?: unknown },
+    handler: Handler
+  ) => ReturnType<typeof server.registerTool>;
+  server.registerTool = ((
+    name: string,
+    config: { inputSchema?: unknown },
+    handler: Handler
+  ) =>
+    register(name, config, async (...params: unknown[]) => {
+      const args = config.inputSchema === undefined ? {} : params[0];
+      const started = Date.now();
+      // Awaited on purpose: the line is on disk before the client hears the
+      // answer, so a host that quits right after a generation cannot lose the
+      // record of it. `call` never rejects, so a journal that cannot be
+      // written costs nothing but the attempt.
+      try {
+        const result = await handler(...params);
+        await session.call(
+          { tool: name, args, result, durationMs: Date.now() - started },
+          source
+        );
+        return result;
+      } catch (error) {
+        await session.call(
+          { tool: name, args, error, durationMs: Date.now() - started },
+          source
+        );
+        throw error;
+      }
+    })) as typeof server.registerTool;
 }
 
 /** Build a server with every tool and resource registered. */

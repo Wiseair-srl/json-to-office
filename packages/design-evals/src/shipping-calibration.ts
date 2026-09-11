@@ -39,9 +39,11 @@ import {
   ships,
   SHIPPING_QUESTIONS,
   STATUS_QUO_DEFINITION,
+  type JudgeAnswer,
   type ShippingDefinition,
   type ShippingQuestionId,
 } from './shipping.js';
+import type { RunOutcome } from './metrics.js';
 
 /** One absolute verdict by the reviewer, on one artifact, in one round. */
 export interface HumanJudgment {
@@ -149,12 +151,10 @@ export interface EvidenceRow {
   format: string;
   /** The human label; `unstable` rows are counted and never scored. */
   label: boolean | 'unstable';
-  outcome: 'completed' | 'failed';
+  outcome: RunOutcome;
   qualityByCode: Readonly<Record<string, number>>;
   /** The judge's verdict in each question's sitting, where it answered. */
-  verdicts: Partial<
-    Record<ShippingQuestionId, { level: number; wouldShip: boolean }>
-  >;
+  verdicts: Partial<Record<ShippingQuestionId, JudgeAnswer>>;
 }
 
 /** One judged set on disk: its runs, their fresh facts, and each sitting's verdicts. */
@@ -165,7 +165,7 @@ export interface EvidenceSet {
     label: string;
     briefId: string;
     format: string;
-    outcome: 'completed' | 'failed';
+    outcome: RunOutcome;
   }>;
   /**
    * `facts.json` runs: every completed run's findings, either re-analysed by
@@ -177,10 +177,7 @@ export interface EvidenceSet {
   >;
   /** Each question's sitting over the set, by run label. */
   sittings: Partial<
-    Record<
-      ShippingQuestionId,
-      Readonly<Record<string, { level: number; wouldShip: boolean }>>
-    >
+    Record<ShippingQuestionId, Readonly<Record<string, JudgeAnswer>>>
   >;
 }
 
@@ -532,4 +529,42 @@ export async function loadShippingSemantics(
     verified:
       verification?.hash === frozen.hash && verification.passed === true,
   };
+}
+
+/**
+ * One judge sitting over a set — `pnpm rejudge <dir> --question <q> --out
+ * <dir>/sitting-<q>.json` — as verdicts by run label.
+ *
+ * Undefined when the set has no sitting for that question; a sitting judged
+ * with another question, or one that does not parse, is refused rather than
+ * read as silence.
+ */
+export async function loadSitting(
+  file: string,
+  question: ShippingQuestionId
+): Promise<Record<string, JudgeAnswer> | undefined> {
+  const report = (await readIfPresent(file)) as
+    | {
+        question?: string;
+        runs: Array<{ run?: string; briefId: string; now?: JudgeAnswer }>;
+      }
+    | undefined;
+  if (!report) return undefined;
+  if ((report.question ?? 'v1') !== question) {
+    throw new Error(
+      `${file} was judged with question ${report.question ?? 'v1'}, not ${question}.`
+    );
+  }
+  return Object.fromEntries(
+    report.runs.flatMap((run) =>
+      run.now
+        ? [
+            [
+              run.run ?? run.briefId,
+              { level: run.now.level, wouldShip: run.now.wouldShip },
+            ],
+          ]
+        : []
+    )
+  );
 }

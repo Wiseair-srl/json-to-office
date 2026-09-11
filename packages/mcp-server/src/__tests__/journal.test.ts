@@ -244,6 +244,39 @@ describe('run journal', () => {
     expect(generate.delivered).toBeUndefined();
   });
 
+  it('journals a tool with no input schema, which the SDK calls with its context alone', async () => {
+    await client.close();
+    const store = createMemoryWorkspaceStore();
+    const deps = createToolDeps({
+      outputRoot: createOutputRoot({ flagDir: path.join(scratch, 'out') }),
+      serverVersion: '9.9.9-test',
+      workspaces: () => store,
+      env: { [JOURNAL_ENV]: journalPath },
+    });
+    const server = createServer(deps);
+    server.registerTool(
+      'jto_test_ping',
+      { description: 'A tool that takes nothing.' },
+      async () => ({
+        content: [
+          { type: 'text' as const, text: '{"ok":true,"diagnostics":[]}' },
+        ],
+      })
+    );
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
+    client = new Client({ name: 'journal-test', version: '1.0.0' });
+    await Promise.all([
+      server.connect(serverTransport),
+      client.connect(clientTransport),
+    ]);
+
+    await client.callTool({ name: 'jto_test_ping', arguments: {} });
+    const ping = (await lines()).find((line) => line.tool === 'jto_test_ping');
+    expect(ping.args).toEqual({});
+    expect(ping.result).toMatchObject({ ok: true });
+  });
+
   it('never lets a journal it cannot write break the tool call', async () => {
     await client.close();
     const blocked = path.join(scratch, 'a-file');

@@ -234,6 +234,50 @@ function payloadOf(result: unknown): unknown {
   return undefined;
 }
 
+/** The first line of every connection: which server, where it writes. */
+export interface JournalSessionLine {
+  v: typeof JOURNAL_VERSION;
+  type: 'session';
+  at: string;
+  session: string;
+  server: { name: string; version: string };
+  pid: number;
+  node: string;
+  platform: string;
+  outputRoot: string;
+  workspaceRoot?: string;
+  exportServerHost?: string;
+}
+
+/** The document a successful generation delivered, kept beside the journal. */
+export interface JournalDelivered {
+  sha256: string;
+  bytes: number;
+  /** The kept copy, named by its digest. */
+  file: string;
+  /** Present when the generation read a workspace revision. */
+  handle?: string;
+  revision?: number;
+}
+
+/** One finished tool call. */
+export interface JournalCallLine {
+  v: typeof JOURNAL_VERSION;
+  type: 'call';
+  /** When the call finished. */
+  at: string;
+  session: string;
+  /** Call order within the session, from 1. */
+  seq: number;
+  tool: string;
+  durationMs: number;
+  args: Record<string, unknown>;
+  result: Record<string, unknown>;
+  delivered?: JournalDelivered;
+}
+
+export type JournalLine = JournalSessionLine | JournalCallLine;
+
 export interface DeliveredSource {
   /** Reads a workspace revision, as the store would for the tool itself. */
   readRevision(handle: string, revision: number): Promise<unknown | undefined>;
@@ -259,11 +303,18 @@ export interface Journal {
   /** Delivered documents land here, named by digest. */
   readonly documentsDir: string;
   /** Start a connection: writes the session line and numbers its calls. */
-  openSession(facts: Rec): JournalSession;
+  openSession(
+    facts: Omit<JournalSessionLine, 'v' | 'type' | 'at' | 'session'>
+  ): JournalSession;
   /** Resolves once every line queued so far has been written. */
   flush(): Promise<void>;
 }
 
+/**
+ * The journal `JTO_MCP_JOURNAL` names, or undefined when it names none.
+ *
+ * `path` wins over the environment, for a host that builds its own deps.
+ */
 export function createJournal(options: {
   path?: string;
   env?: NodeJS.ProcessEnv;
@@ -293,13 +344,15 @@ export function createJournal(options: {
     tail = tail.then(work).catch(complain);
     return tail;
   };
-  const append = (line: Rec): Promise<void> =>
+  const append = (line: JournalLine): Promise<void> =>
     enqueue(async () => {
       await fs.mkdir(path.dirname(file), { recursive: true, mode: 0o700 });
       await fs.appendFile(file, `${JSON.stringify(line)}\n`, { mode: 0o600 });
     });
 
-  const keep = async (document: unknown): Promise<Rec | undefined> => {
+  const keep = async (
+    document: unknown
+  ): Promise<JournalDelivered | undefined> => {
     const text = JSON.stringify(document);
     if (text === undefined) return undefined;
     const hash = sha256(text);
@@ -384,8 +437,8 @@ async function deliveredDocument(
   args: unknown,
   payload: Rec,
   source: DeliveredSource,
-  keep: (document: unknown) => Promise<Rec | undefined>
-): Promise<Rec | undefined> {
+  keep: (document: unknown) => Promise<JournalDelivered | undefined>
+): Promise<JournalDelivered | undefined> {
   const summary = isRecord(payload.source) ? payload.source : undefined;
   if (
     summary?.origin === 'inline' &&

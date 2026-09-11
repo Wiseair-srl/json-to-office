@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
+import { JOURNAL_VERSION } from '@json-to-office/mcp-server';
+
 import {
   desktopAccounting,
   desktopEvents,
   parseJournal,
+  READABLE_JOURNAL_VERSION,
   summarizeSessions,
 } from './desktop.js';
 import { countIterations } from './runner.js';
@@ -117,6 +120,10 @@ describe('parseJournal', () => {
       name: 'json-to-office',
       version: '6.4.0',
     });
+  });
+
+  it('reads the version the server writes, so a bump there forces a change here', () => {
+    expect(READABLE_JOURNAL_VERSION).toBe(JOURNAL_VERSION);
   });
 
   it('refuses a journal line of a version it cannot read', () => {
