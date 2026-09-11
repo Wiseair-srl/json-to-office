@@ -22,7 +22,7 @@
 import { createHash } from 'node:crypto';
 
 import type { RunOutcome } from './metrics.js';
-import { SHIPPING_QUESTION } from './rubric.js';
+import { rubricPrompt, SHIPPING_QUESTION } from './rubric.js';
 
 /**
  * The shipping questions a judge can be asked, by id.
@@ -142,16 +142,18 @@ export function ships(
 }
 
 /**
- * A definition's identity: its terms and the exact wording of its question.
+ * A definition's identity: its terms and the exact prompt its judge reads.
  *
- * The wording is hashed with it because a question reworded after freezing is
- * a different instrument even under the same id.
+ * The prompt is hashed with it because a question reworded, or a rubric level
+ * rewritten, after freezing is a different instrument even under the same id.
  */
 export function definitionHash(definition: ShippingDefinition): string {
   const canonical = JSON.stringify({
     id: definition.id,
     question: definition.question,
-    questionText: SHIPPING_QUESTIONS[definition.question],
+    // The whole prompt the judge reads, not just the question: a level bar
+    // edited after freezing changes the answers as surely as the question.
+    prompt: rubricPrompt(SHIPPING_QUESTIONS[definition.question]),
     judgeAnswer: definition.judgeAnswer,
     minimumLevel: definition.minimumLevel,
     noIntegrityDefect: definition.noIntegrityDefect,

@@ -62,6 +62,10 @@ export interface HumanJudgment {
 export interface HumanRound {
   id: string;
   file: {
+    /** The question the reviewer answered, verbatim. */
+    question?: string;
+    /** When the verdicts were read out of the review page (verification only). */
+    readAt?: string;
     verdicts: ReadonlyArray<{
       set: string;
       run: string;
@@ -434,6 +438,8 @@ export interface FrozenDefinition {
     scores: unknown[];
     chosen: string;
     reason: string;
+    /** Every brief a calibration artifact answered; verification may use none of them. */
+    briefs?: string[];
     [key: string]: unknown;
   };
 }
@@ -467,12 +473,35 @@ export interface VerificationResult {
 export function verifyDefinition(
   frozen: FrozenDefinition,
   rows: readonly EvidenceRow[],
-  options: { seed?: number; resamples?: number; target?: number } = {}
+  options: {
+    /** When the human verdicts were read out of the review page. */
+    humanReadAt: string;
+    seed?: number;
+    resamples?: number;
+    target?: number;
+  }
 ): VerificationResult {
   const hash = definitionHash(frozen.definition);
   if (hash !== frozen.hash) {
     throw new Error(
       `The frozen definition "${frozen.definition.id}" no longer matches its hash: it was edited after freezing, so it cannot be verified as frozen.`
+    );
+  }
+  // Read after freezing, or the definition could have been chosen knowing them.
+  if (!(Date.parse(options.humanReadAt) > Date.parse(frozen.frozenAt))) {
+    throw new Error(
+      `The verification verdicts were read at ${options.humanReadAt}, before the definition was frozen at ${frozen.frozenAt}: they cannot verify it.`
+    );
+  }
+  const calibrated = new Set(frozen.calibration.briefs ?? []);
+  const overlap = [
+    ...new Set(
+      rows.map((row) => row.briefId).filter((brief) => calibrated.has(brief))
+    ),
+  ];
+  if (overlap.length > 0) {
+    throw new Error(
+      `Verification artifacts answer brief(s) the definition was calibrated on: ${overlap.join(', ')}. Verification must be independent by brief.`
     );
   }
   const target = options.target ?? VERIFICATION_TARGET;
@@ -490,6 +519,50 @@ export function verifyDefinition(
 /** Where a frozen definition and its verification are committed. */
 export const FROZEN_DEFINITION_FILE = 'shipping-definition.json';
 export const VERIFICATION_FILE = 'shipping-verification.json';
+
+/** One verification, as the record keeps it — every attempt, never only the last. */
+export interface VerificationAttempt extends VerificationResult {
+  set: { id: string; briefs: string[] };
+  verifiedAt: string;
+  humanReadAt: string;
+  /** Why this attempt was allowed to follow another on the same set. */
+  supersedes?: string;
+}
+
+export interface VerificationRecord {
+  attempts: VerificationAttempt[];
+}
+
+/**
+ * Whether an attempt may join the record.
+ *
+ * A set that has verified one definition can never verify another: choosing
+ * the next definition after seeing how the first did on the set is tuning on
+ * verification outcomes, however it is dressed. The same definition may try
+ * again on the same set only with a stated reason — a crashed sitting, a
+ * harness bug — and the earlier attempt stays in the record beside it.
+ */
+export function admitVerification(
+  record: VerificationRecord | undefined,
+  attempt: Pick<VerificationAttempt, 'hash' | 'set'>,
+  supersede?: string
+): void {
+  const briefs = new Set(attempt.set.briefs);
+  const onSet = (record?.attempts ?? []).filter((earlier) =>
+    earlier.set.briefs.some((brief) => briefs.has(brief))
+  );
+  const other = onSet.find((earlier) => earlier.hash !== attempt.hash);
+  if (other) {
+    throw new Error(
+      `These briefs already verified definition ${other.hash.slice(0, 12)} (${other.definition}); a different definition needs artifacts nobody has verified with.`
+    );
+  }
+  if (onSet.length > 0 && !supersede?.trim()) {
+    throw new Error(
+      'This definition was already verified on these briefs; a second attempt needs a stated reason (--supersede "<why>"), and both stay in the record.'
+    );
+  }
+}
 
 async function readIfPresent(file: string): Promise<unknown | undefined> {
   try {
@@ -521,13 +594,15 @@ export async function loadShippingSemantics(
       `${FROZEN_DEFINITION_FILE} does not match its hash: the definition or its question changed after freezing. Freeze again rather than scoring under an instrument nobody calibrated.`
     );
   }
-  const verification = (await readIfPresent(
+  const record = (await readIfPresent(
     path.join(baselinesDir, VERIFICATION_FILE)
-  )) as { hash?: string; passed?: boolean } | undefined;
+  )) as Pick<VerificationRecord, 'attempts'> | undefined;
+  const latest = (record?.attempts ?? [])
+    .filter((attempt) => attempt.hash === frozen.hash)
+    .at(-1);
   return {
     definition: frozen.definition,
-    verified:
-      verification?.hash === frozen.hash && verification.passed === true,
+    verified: latest?.passed === true,
   };
 }
 
@@ -539,13 +614,21 @@ export async function loadShippingSemantics(
  * with another question, or one that does not parse, is refused rather than
  * read as silence.
  */
+export interface Sitting {
+  verdicts: Record<string, JudgeAnswer>;
+  judgeModel?: string;
+  judgedAt?: string;
+}
+
 export async function loadSitting(
   file: string,
   question: ShippingQuestionId
-): Promise<Record<string, JudgeAnswer> | undefined> {
+): Promise<Sitting | undefined> {
   const report = (await readIfPresent(file)) as
     | {
         question?: string;
+        judgeModel?: string;
+        judgedAt?: string;
         runs: Array<{ run?: string; briefId: string; now?: JudgeAnswer }>;
       }
     | undefined;
@@ -555,16 +638,103 @@ export async function loadSitting(
       `${file} was judged with question ${report.question ?? 'v1'}, not ${question}.`
     );
   }
-  return Object.fromEntries(
-    report.runs.flatMap((run) =>
-      run.now
-        ? [
-            [
-              run.run ?? run.briefId,
-              { level: run.now.level, wouldShip: run.now.wouldShip },
-            ],
-          ]
-        : []
-    )
-  );
+  return {
+    verdicts: Object.fromEntries(
+      report.runs.flatMap((run) =>
+        run.now
+          ? [
+              [
+                run.run ?? run.briefId,
+                { level: run.now.level, wouldShip: run.now.wouldShip },
+              ],
+            ]
+          : []
+      )
+    ),
+    ...(report.judgeModel !== undefined && { judgeModel: report.judgeModel }),
+    ...(report.judgedAt !== undefined && { judgedAt: report.judgedAt }),
+  };
+}
+
+/**
+ * Two sittings of the judge, on the artifacts both answered — the judge's
+ * variance, kept apart from the reviewer's and the author's. With the
+ * calibration sitting against an earlier one it is the judge's
+ * repeatability; with the two questions' sittings against each other it is
+ * how much rewording the question moved the level a definition reads.
+ */
+export function sittingAgreement(
+  a: Readonly<Record<string, JudgeAnswer>>,
+  b: Readonly<Record<string, JudgeAnswer>>,
+  options: { seed?: number; resamples?: number } = {}
+): { n: number; wouldShip: ClusteredKappaReport; level: ClusteredKappaReport } {
+  const shared = Object.keys(a).filter((label) => b[label] !== undefined);
+  return {
+    n: shared.length,
+    wouldShip: clusterBootstrapKappa(
+      shared.map((label) => ({
+        a: a[label].wouldShip,
+        b: b[label].wouldShip,
+        cluster: briefOf(label),
+      })),
+      options
+    ),
+    level: clusterBootstrapKappa(
+      shared.map((label) => ({
+        a: a[label].level,
+        b: b[label].level,
+        cluster: briefOf(label),
+      })),
+      options
+    ),
+  };
+}
+
+/**
+ * How much the author varies, read off repeated passes of one brief: the
+ * briefs whose passes the reviewer split between ship and hold, and the
+ * spread of the judge's level across passes. Same question, same product,
+ * different documents — the part of any delta that is the author's dice.
+ */
+export function authorVariance(
+  rows: readonly EvidenceRow[],
+  question: ShippingQuestionId
+): {
+  briefs: number;
+  briefsTheReviewerSplit: number;
+  meanJudgeLevelRange: number;
+} {
+  // Passes of one brief within one set: across sets the product changed, and
+  // that difference is the product's, not the author's.
+  const byBrief = new Map<string, EvidenceRow[]>();
+  for (const row of rows) {
+    const key = `${row.artifact.split('/')[0]}/${row.briefId}`;
+    const list = byBrief.get(key);
+    if (list) list.push(row);
+    else byBrief.set(key, [row]);
+  }
+  const repeated = [...byBrief.values()].filter((list) => list.length >= 2);
+  const split = repeated.filter((list) => {
+    const labels = new Set(
+      list.flatMap((row) => (row.label === 'unstable' ? [] : [row.label]))
+    );
+    return labels.size > 1;
+  }).length;
+  const ranges = repeated.flatMap((list) => {
+    const levels = list.flatMap((row) => {
+      const verdict = row.verdicts[question];
+      return verdict ? [verdict.level] : [];
+    });
+    return levels.length >= 2
+      ? [Math.max(...levels) - Math.min(...levels)]
+      : [];
+  });
+  return {
+    briefs: repeated.length,
+    briefsTheReviewerSplit: split,
+    meanJudgeLevelRange:
+      ranges.length === 0
+        ? 0
+        : ranges.reduce((sum, range) => sum + range, 0) / ranges.length,
+  };
 }

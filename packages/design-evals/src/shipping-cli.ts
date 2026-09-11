@@ -28,6 +28,7 @@
  *   pnpm shipping verify --definition <file> --set <id>=<dir> --human <file> --out <file>
  */
 
+import { createHash } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -40,6 +41,7 @@ import { gitState } from './manifest.js';
 import { documentMetrics, type RunMetrics } from './metrics.js';
 import { comparableRuns, type RecordedRun } from './rejudge.js';
 import { renderForJudging } from './render.js';
+import { rubricPrompt } from './rubric.js';
 import {
   buildEvidence,
   chooseDefinition,
@@ -48,12 +50,18 @@ import {
   humanRepeatability,
   labelArtifacts,
   loadSitting,
+  sittingAgreement,
+  authorVariance,
+  type Sitting,
   recordedFacts,
   scoreDefinition,
   verifyDefinition,
+  admitVerification,
   type EvidenceSet,
   type FrozenDefinition,
   type HumanRound,
+  type VerificationAttempt,
+  type VerificationRecord,
 } from './shipping-calibration.js';
 import {
   CANDIDATE_DEFINITIONS,
@@ -211,12 +219,22 @@ function parseSets(
   }));
 }
 
-async function loadEvidenceSet(id: string, dir: string): Promise<EvidenceSet> {
+async function loadEvidenceSet(
+  id: string,
+  dir: string
+): Promise<{
+  set: EvidenceSet;
+  sittings: Array<Omit<Sitting, 'verdicts'> & { question: ShippingQuestionId }>;
+  factsSource?: string;
+}> {
   const facts = await readJson<{
     source?: string;
     runs: Record<string, { qualityByCode: Record<string, number> }>;
   }>(path.join(dir, 'facts.json'));
-  const sittings: EvidenceSet['sittings'] = {};
+  const verdicts: EvidenceSet['sittings'] = {};
+  const sittings: Array<
+    Omit<Sitting, 'verdicts'> & { question: ShippingQuestionId }
+  > = [];
   for (const question of Object.keys(
     SHIPPING_QUESTIONS
   ) as ShippingQuestionId[]) {
@@ -224,9 +242,24 @@ async function loadEvidenceSet(id: string, dir: string): Promise<EvidenceSet> {
       path.join(dir, `sitting-${question}.json`),
       question
     );
-    if (sitting) sittings[question] = sitting;
+    if (!sitting) continue;
+    verdicts[question] = sitting.verdicts;
+    sittings.push({
+      question,
+      ...(sitting.judgeModel && { judgeModel: sitting.judgeModel }),
+      ...(sitting.judgedAt && { judgedAt: sitting.judgedAt }),
+    });
   }
-  return { id, runs: await setRuns(dir), facts: facts.runs, sittings };
+  return {
+    set: {
+      id,
+      runs: await setRuns(dir),
+      facts: facts.runs,
+      sittings: verdicts,
+    },
+    sittings,
+    ...(facts.source && { factsSource: facts.source }),
+  };
 }
 
 async function loadRounds(files: readonly string[]): Promise<HumanRound[]> {
@@ -238,9 +271,10 @@ async function loadRounds(files: readonly string[]): Promise<HumanRound[]> {
   );
 }
 
-const SET_AND_HUMAN = {
+const CALIBRATE_OPTIONS = {
   set: { type: 'string', multiple: true },
   human: { type: 'string', multiple: true },
+  previous: { type: 'string', multiple: true },
   out: { type: 'string' },
 } as const;
 
@@ -249,9 +283,13 @@ async function calibrate(
   repoRoot: string,
   line: Line
 ): Promise<number> {
-  const { values } = parseArgs({ args: [...argv], options: SET_AND_HUMAN });
+  const { values } = parseArgs({
+    args: [...argv],
+    options: CALIBRATE_OPTIONS,
+  });
   const sets = parseSets(values.set);
   const humanFiles = values.human ?? [];
+  const previous = assignments(values.previous, 'previous');
   const out = values.out;
   if (sets.length === 0 || humanFiles.length === 0 || !out) {
     line(
@@ -259,9 +297,10 @@ async function calibrate(
     );
     return 1;
   }
-  const evidenceSets = await Promise.all(
+  const loaded = await Promise.all(
     sets.map((set) => loadEvidenceSet(set.id, set.dir))
   );
+  const evidenceSets = loaded.map((entry) => entry.set);
   const judgments = humanJudgments(await loadRounds(humanFiles));
   const labels = labelArtifacts(judgments);
   const rows = buildEvidence(evidenceSets, labels);
@@ -270,11 +309,56 @@ async function calibrate(
   );
   const choice = chooseDefinition(scores, CANDIDATE_DEFINITIONS);
 
+  // Keyed by artifact across sets, so pooled agreement never joins two sets'
+  // documents that happen to share a run label.
+  const pooled = (question: ShippingQuestionId) =>
+    Object.fromEntries(
+      evidenceSets.flatMap((set) =>
+        Object.entries(set.sittings[question] ?? {}).map(([label, answer]) => [
+          `${set.id}/${label}`,
+          answer,
+        ])
+      )
+    );
+  const judgeRepeatability = await Promise.all(
+    previous.map(async ([setId, file]) => {
+      const set = evidenceSets.find((entry) => entry.id === setId);
+      const earlier = await loadSitting(path.resolve(file), 'v1');
+      if (!set || !earlier) {
+        throw new Error(
+          `--previous ${setId}=${file} names no set or no v1 sitting.`
+        );
+      }
+      return {
+        set: setId,
+        earlier: path.basename(file),
+        judgedAt: earlier.judgedAt,
+        ...sittingAgreement(set.sittings.v1 ?? {}, earlier.verdicts),
+      };
+    })
+  );
+
   const manifest = {
     kind: 'shipping-calibration',
     generatedAt: new Date().toISOString(),
     gitSha: gitState(repoRoot).sha,
     questions: SHIPPING_QUESTIONS,
+    // The whole prompt each question's sitting read, hashed, so a manifest
+    // names the instrument and not only its question.
+    prompts: Object.fromEntries(
+      (Object.keys(SHIPPING_QUESTIONS) as ShippingQuestionId[]).map((id) => [
+        id,
+        createHash('sha256')
+          .update(rubricPrompt(SHIPPING_QUESTIONS[id]))
+          .digest('hex'),
+      ])
+    ),
+    sittings: loaded.flatMap((entry) =>
+      entry.sittings.map((sitting) => ({ set: entry.set.id, ...sitting }))
+    ),
+    facts: Object.fromEntries(
+      loaded.map((entry) => [entry.set.id, entry.factsSource ?? 'unrecorded'])
+    ),
     allocation: {
       calibration: sets.map((set) => ({
         id: set.id,
@@ -293,7 +377,12 @@ async function calibrate(
       artifacts: labels.length,
       unstable: labels.filter((entry) => entry.label === 'unstable').length,
     },
-    humanRepeatability: humanRepeatability(judgments),
+    variance: {
+      human: humanRepeatability(judgments),
+      judge: judgeRepeatability,
+      questions: sittingAgreement(pooled('v1'), pooled('v2')),
+      author: authorVariance(rows, 'v1'),
+    },
     candidates: CANDIDATE_DEFINITIONS.map((definition, index) => ({
       definition,
       score: scores[index],
@@ -318,6 +407,23 @@ async function calibrate(
         ` definition-only ${score.confusion.definitionOnly} both-hold ${score.confusion.bothHold}`
     );
   }
+  const { variance } = manifest;
+  line(
+    `reviewer against themselves: n=${variance.human.n}, kappa ${variance.human.kappa.toFixed(2)}`
+  );
+  for (const entry of variance.judge) {
+    line(
+      `judge against its ${entry.earlier} sitting (${entry.set}): n=${entry.n}, ship kappa ${entry.wouldShip.kappa.toFixed(2)}, level kappa ${entry.level.kappa.toFixed(2)}`
+    );
+  }
+  if (variance.questions.n > 0) {
+    line(
+      `v1 against v2 sitting: n=${variance.questions.n}, level kappa ${variance.questions.level.kappa.toFixed(2)}, ship kappa ${variance.questions.wouldShip.kappa.toFixed(2)}`
+    );
+  }
+  line(
+    `author: ${variance.author.briefsTheReviewerSplit}/${variance.author.briefs} briefs split by the reviewer across passes; judge level range ${variance.author.meanJudgeLevelRange.toFixed(2)} on average`
+  );
   line(`chosen: ${choice.chosen} — ${choice.reason}`);
   line(out);
   return 0;
@@ -343,6 +449,7 @@ async function freeze(argv: readonly string[], line: Line): Promise<number> {
   const calibration = await readJson<{
     candidates: Array<{ definition: { id: string }; score: unknown }>;
     choice: { chosen: string; reason: string };
+    allocation: { calibration: Array<{ briefs: string[] }> };
     generatedAt: string;
     gitSha: string;
   }>(calibrationFile);
@@ -365,6 +472,11 @@ async function freeze(argv: readonly string[], line: Line): Promise<number> {
       manifest: path.basename(calibrationFile),
       calibratedAt: calibration.generatedAt,
       calibratedAtSha: calibration.gitSha,
+      briefs: [
+        ...new Set(
+          calibration.allocation.calibration.flatMap((set) => set.briefs)
+        ),
+      ].sort(),
     },
   });
   await fs.writeFile(out, JSON.stringify(frozen, null, 2));
@@ -379,44 +491,81 @@ async function verify(
 ): Promise<number> {
   const { values } = parseArgs({
     args: [...argv],
-    options: { ...SET_AND_HUMAN, definition: { type: 'string' } },
+    options: {
+      set: { type: 'string', multiple: true },
+      human: { type: 'string' },
+      definition: { type: 'string' },
+      record: { type: 'string' },
+      supersede: { type: 'string' },
+    },
   });
   const definitionFile = values.definition;
   const sets = parseSets(values.set);
-  const humanFiles = values.human ?? [];
-  const out = values.out;
-  if (!definitionFile || sets.length === 0 || humanFiles.length === 0 || !out) {
+  const humanFile = values.human;
+  const recordFile = values.record;
+  if (!definitionFile || sets.length === 0 || !humanFile || !recordFile) {
     line(
-      'usage: pnpm shipping verify --definition <file> --set <id>=<dir> --human <file> --out <file>'
+      'usage: pnpm shipping verify --definition <file> --set <id>=<dir> --human <file> --record <file> [--supersede <why>]'
     );
     return 1;
   }
   const frozen = await readJson<FrozenDefinition>(definitionFile);
-  const evidenceSets = await Promise.all(
-    sets.map((set) => loadEvidenceSet(set.id, set.dir))
+  const [round] = await loadRounds([humanFile]);
+  if (!round.file.readAt) {
+    line(
+      `${humanFile} carries no readAt: when the verdicts left the review page is what proves they were not seen before freezing.`
+    );
+    return 1;
+  }
+  const evidenceSets = (
+    await Promise.all(sets.map((set) => loadEvidenceSet(set.id, set.dir)))
+  ).map((entry) => entry.set);
+  const rows = buildEvidence(
+    evidenceSets,
+    labelArtifacts(humanJudgments([round]))
   );
-  const judgments = humanJudgments(await loadRounds(humanFiles));
-  const rows = buildEvidence(evidenceSets, labelArtifacts(judgments));
-  const result = verifyDefinition(frozen, rows);
-  await fs.mkdir(path.dirname(path.resolve(out)), { recursive: true });
+  const result = verifyDefinition(frozen, rows, {
+    humanReadAt: round.file.readAt,
+  });
+  const attempt: VerificationAttempt = {
+    ...result,
+    set: {
+      id: sets.map((set) => set.id).join('+'),
+      briefs: [...new Set(rows.map((row) => row.briefId))].sort(),
+    },
+    verifiedAt: new Date().toISOString(),
+    humanReadAt: round.file.readAt,
+    ...(values.supersede && { supersedes: values.supersede }),
+  };
+  let record: VerificationRecord | undefined;
+  try {
+    record = await readJson<VerificationRecord>(recordFile);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+  }
+  admitVerification(record, attempt, values.supersede);
+  await fs.mkdir(path.dirname(path.resolve(recordFile)), { recursive: true });
   await fs.writeFile(
-    out,
+    recordFile,
     JSON.stringify(
       {
         kind: 'shipping-verification',
-        generatedAt: new Date().toISOString(),
-        gitSha: gitState(repoRoot).sha,
         definitionFile: path.relative(repoRoot, path.resolve(definitionFile)),
-        allocation: {
-          sets: sets.map((set) => ({
-            id: set.id,
-            dir: path.relative(repoRoot, set.dir),
-          })),
-          human: humanFiles.map((file) =>
-            path.relative(repoRoot, path.resolve(file))
-          ),
-        },
-        ...result,
+        attempts: [
+          ...(record?.attempts ?? []),
+          {
+            ...attempt,
+            gitSha: gitState(repoRoot).sha,
+            allocation: {
+              sets: sets.map((set) => ({
+                id: set.id,
+                dir: path.relative(repoRoot, set.dir),
+              })),
+              human: path.relative(repoRoot, path.resolve(humanFile)),
+              question: round.file.question,
+            },
+          },
+        ],
       },
       null,
       2
@@ -433,7 +582,7 @@ async function verify(
   for (const [format, entry] of Object.entries(score.byFormat)) {
     line(`  ${format}: n=${entry.n} kappa ${entry.kappa.toFixed(2)}`);
   }
-  line(out);
+  line(recordFile);
   return 0;
 }
 
