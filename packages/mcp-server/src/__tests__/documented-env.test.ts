@@ -18,7 +18,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { OUTPUT_DIR_ENV, WORKSPACE_DIR_ENV } from '../index.js';
+import { JOURNAL_ENV, OUTPUT_DIR_ENV, WORKSPACE_DIR_ENV } from '../index.js';
 
 const packageRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -28,7 +28,11 @@ const repoRoot = path.resolve(packageRoot, '../..');
 
 /** Every `process.env.X` the server's own source reads. */
 function honouredEnvNames(): Set<string> {
-  const names = new Set<string>([OUTPUT_DIR_ENV, WORKSPACE_DIR_ENV]);
+  const names = new Set<string>([
+    OUTPUT_DIR_ENV,
+    WORKSPACE_DIR_ENV,
+    JOURNAL_ENV,
+  ]);
   const walk = (dir: string): void => {
     for (const entry of readdirSync(dir)) {
       const full = path.join(dir, entry);
@@ -41,7 +45,7 @@ function honouredEnvNames(): Set<string> {
       for (const found of source.matchAll(/process\.env\.([A-Z0-9_]+)/g)) {
         names.add(found[1]);
       }
-      // `process.env[SOME_CONST]` — the two that matter are seeded above.
+      // `process.env[SOME_CONST]` — the three that matter are seeded above.
     }
   };
   walk(path.join(packageRoot, 'src'));

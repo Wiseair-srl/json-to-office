@@ -80,16 +80,17 @@ Pin a version by asking for one â€” `npx -y @json-to-office/mcp-server@1.0.0` â€
 
 ## Options
 
-| Flag / variable          | Meaning                                                                           |
-| ------------------------ | --------------------------------------------------------------------------------- |
-| `--output-dir <path>`    | Where generated files are written. Highest precedence.                            |
-| `JTO_MCP_OUTPUT_DIR`     | Same, when the flag is absent.                                                    |
-| _(neither output flag)_  | A per-connection directory under the system temp dir.                             |
-| `--workspace-dir <path>` | Where workspace revisions are mirrored, so they outlive the connection.           |
-| `JTO_MCP_WORKSPACE_DIR`  | Same, when the flag is absent.                                                    |
-| _(neither ws flag)_      | Workspaces are memory-only: handles end with the connection. This is the default. |
-| `LIBREOFFICE_PATH`       | LibreOffice binary, for preview and the docx `visual` component.                  |
-| `PDFTOPPM_PATH`          | poppler `pdftoppm` binary, for preview.                                           |
+| Flag / variable          | Meaning                                                                                                                                                                                                                                                          |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--output-dir <path>`    | Where generated files are written. Highest precedence.                                                                                                                                                                                                           |
+| `JTO_MCP_OUTPUT_DIR`     | Same, when the flag is absent.                                                                                                                                                                                                                                   |
+| _(neither output flag)_  | A per-connection directory under the system temp dir.                                                                                                                                                                                                            |
+| `--workspace-dir <path>` | Where workspace revisions are mirrored, so they outlive the connection.                                                                                                                                                                                          |
+| `JTO_MCP_WORKSPACE_DIR`  | Same, when the flag is absent.                                                                                                                                                                                                                                   |
+| _(neither ws flag)_      | Workspaces are memory-only: handles end with the connection. This is the default.                                                                                                                                                                                |
+| `JTO_MCP_JOURNAL`        | Append one JSON line per tool call here, and keep each delivered document beside it in `<file>.documents/`. For measurement runs; off by default. It records option values, digests and diagnostic codes, not document text, apart from the delivered documents. |
+| `LIBREOFFICE_PATH`       | LibreOffice binary, for preview and the docx `visual` component.                                                                                                                                                                                                 |
+| `PDFTOPPM_PATH`          | poppler `pdftoppm` binary, for preview.                                                                                                                                                                                                                          |
 
 ## Contracts
 

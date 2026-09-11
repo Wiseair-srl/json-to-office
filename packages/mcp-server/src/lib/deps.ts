@@ -9,6 +9,7 @@
 import { getAdapter, type FormatAdapter, type FormatName } from './adapters.js';
 import { MAX_INLINE_ARTIFACT_BYTES } from './artifacts.js';
 import { createCritiqueLog, type CritiqueLog } from './critique-log.js';
+import { createJournal, type Journal } from './journal.js';
 import { createOutputRoot, type OutputRoot } from './output-root.js';
 import { SERVER_VERSION } from './version.js';
 import { getWorkspaceStore, type WorkspaceStore } from './workspace-store.js';
@@ -49,6 +50,14 @@ export interface ToolDeps {
    * looking at one document, and nothing about it outlives the connection.
    */
   critiques: CritiqueLog;
+  /**
+   * The run journal (#422), when `JTO_MCP_JOURNAL` asked for one.
+   *
+   * Process-wide like the output root: every connection appends to the same
+   * file under its own session id, which is how a measured Desktop session is
+   * told apart from the one before it.
+   */
+  journal?: Journal;
 }
 
 export interface CreateToolDepsOptions {
@@ -63,6 +72,8 @@ export interface CreateToolDepsOptions {
   serverVersion?: string;
   workspaces?: () => WorkspaceStore;
   critiques?: CritiqueLog;
+  /** An already-built journal; absent, `JTO_MCP_JOURNAL` decides. */
+  journal?: Journal;
   getAdapter?: (format: FormatName) => FormatAdapter;
   maxInlineArtifactBytes?: number;
 }
@@ -76,6 +87,9 @@ export function createToolDeps(options: CreateToolDepsOptions = {}): ToolDeps {
       }),
       ...(options.env !== undefined && { env: options.env }),
     });
+  const journal =
+    options.journal ??
+    createJournal({ ...(options.env !== undefined && { env: options.env }) });
 
   return {
     serverVersion: options.serverVersion ?? SERVER_VERSION,
@@ -91,5 +105,6 @@ export function createToolDeps(options: CreateToolDepsOptions = {}): ToolDeps {
     maxInlineArtifactBytes:
       options.maxInlineArtifactBytes ?? MAX_INLINE_ARTIFACT_BYTES,
     critiques: options.critiques ?? createCritiqueLog(),
+    ...(journal !== undefined && { journal }),
   };
 }
