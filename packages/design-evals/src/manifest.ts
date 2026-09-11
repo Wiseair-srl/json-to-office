@@ -72,6 +72,17 @@ export interface RunManifest {
    */
   skillExcluded?: { files: number; bytes: number };
   mode: 'cold' | 'assisted';
+  /**
+   * Present when the runs were authored in Claude Desktop and imported from
+   * the server's journal (#422). The git state above then describes the tree
+   * that measured them; `serverVersions` is what the author actually talked to.
+   */
+  host?: {
+    kind: 'claude-desktop';
+    appVersion?: string;
+    journal: string;
+    serverVersions: string[];
+  };
   os: { platform: string; release: string; arch: string };
   node: string;
   libreoffice: string;

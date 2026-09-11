@@ -8,8 +8,9 @@
  * ten ships became two, all in one direction, beside a visibly better set. An
  * artifact whose judgments agree carries that answer; one whose judgments
  * conflict is `unstable`, left out of the agreement and counted, because no
- * definition can be scored against a person who answered both ways. Their
- * disagreement with himself is reported on its own, as the human floor.
+ * definition can be scored against a person who answered both ways. The
+ * reviewer's disagreement across rounds is reported on its own, as the
+ * human floor.
  *
  * **Allocation by brief.** Calibration artifacts and verification artifacts
  * share no brief, so no document — and no question — reaches both sets
@@ -125,7 +126,7 @@ export function labelArtifacts(
     });
 }
 
-/** The reviewer against himself: first judgment against second, by brief. */
+/** The reviewer's own repeatability: first judgment against second, by brief. */
 export function humanRepeatability(
   judgments: readonly HumanJudgment[],
   options: { seed?: number; resamples?: number } = {}
