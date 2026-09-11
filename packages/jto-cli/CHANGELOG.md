@@ -1,5 +1,14 @@
 # @json-to-office/jto-cli
 
+## 6.4.0
+
+### Patch Changes
+
+- 8c69315: Document, theme and plugin discovery skip `__tests__/` and `__fixtures__/` directories, and core-docx's bundled example documents. The hosted playground scans the monorepo root and listed seven regression fixtures and the two library examples beside its templates.
+- Updated dependencies [8c69315]
+  - @json-to-office/shared-docx@6.4.0
+  - @json-to-office/shared@6.4.0
+
 ## 6.0.0
 
 ### Patch Changes
