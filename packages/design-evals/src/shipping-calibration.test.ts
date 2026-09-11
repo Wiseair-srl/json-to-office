@@ -10,10 +10,13 @@ import {
   freezeDefinition,
   humanJudgments,
   humanRepeatability,
+  admitVerification,
+  authorVariance,
   labelArtifacts,
   loadShippingSemantics,
   recordedFacts,
   scoreDefinition,
+  sittingAgreement,
   verifyDefinition,
   type EvidenceRow,
 } from './shipping-calibration.js';
@@ -200,8 +203,14 @@ describe('choosing a definition', () => {
 describe('freezing and verifying', () => {
   const frozen = freezeDefinition(level, {
     frozenAt: new Date('2026-09-11T18:00:00Z'),
-    evidence: { scores: [], chosen: 'level', reason: 'best agreement' },
+    evidence: {
+      scores: [],
+      chosen: 'level',
+      reason: 'best agreement',
+      briefs: ['cr-a', 'cr-b'],
+    },
   });
+  const readAfter = { humanReadAt: '2026-09-11T19:00:00.000Z' };
 
   it('freezes the definition with its hash and the evidence it was chosen on', () => {
     expect(frozen).toMatchObject({
@@ -223,7 +232,7 @@ describe('freezing and verifying', () => {
         verdicts: { v1: { level: 3, wouldShip: false } },
       }),
     ];
-    const pass = verifyDefinition(frozen, agreeing);
+    const pass = verifyDefinition(frozen, agreeing, readAfter);
     expect(pass.target).toBe(0.5);
     expect(pass.passed).toBe(true);
 
@@ -231,7 +240,7 @@ describe('freezing and verifying', () => {
       ...entry,
       label: entry.label === true ? false : true,
     }));
-    const fail = verifyDefinition(frozen, disagreeing);
+    const fail = verifyDefinition(frozen, disagreeing, readAfter);
     expect(fail.passed).toBe(false);
     expect(fail.score.kappa).toBeLessThan(0.5);
   });
@@ -240,9 +249,64 @@ describe('freezing and verifying', () => {
     expect(() =>
       verifyDefinition(
         { ...frozen, definition: { ...level, minimumLevel: 3 } },
-        []
+        [],
+        readAfter
       )
     ).toThrow(/hash/);
+  });
+
+  it('refuses a verification artifact from a brief the definition was calibrated on', () => {
+    expect(() =>
+      verifyDefinition(frozen, [row('v/cr-b#1', true)], readAfter)
+    ).toThrow(/cr-b/);
+  });
+
+  it('refuses answers read before the definition was frozen', () => {
+    expect(() =>
+      verifyDefinition(frozen, [row('v/tr-a#1', true)], {
+        humanReadAt: '2026-09-11T17:59:00.000Z',
+      })
+    ).toThrow(/before/);
+  });
+
+  describe('the verification record', () => {
+    const attempt = (hash: string, briefs: string[], passed = false) => ({
+      definition: 'x',
+      hash,
+      target: 0.5,
+      passed,
+      score: {} as never,
+      set: { id: 'verification', briefs },
+      verifiedAt: '2026-09-12T10:00:00.000Z',
+      humanReadAt: '2026-09-12T09:00:00.000Z',
+    });
+
+    it('admits a first attempt on a set', () => {
+      expect(() =>
+        admitVerification(undefined, attempt('h1', ['tr-a', 'tr-b']))
+      ).not.toThrow();
+    });
+
+    it('never lets a set verify a second definition: that is tuning on its outcome', () => {
+      const record = { attempts: [attempt('h1', ['tr-a', 'tr-b'])] };
+      expect(() =>
+        admitVerification(record, attempt('h2', ['tr-b', 'tr-c']), 'retry')
+      ).toThrow(/h1/);
+    });
+
+    it('lets the same definition try again on a set only with a stated reason, keeping both', () => {
+      const record = { attempts: [attempt('h1', ['tr-a'])] };
+      expect(() => admitVerification(record, attempt('h1', ['tr-a']))).toThrow(
+        /reason/
+      );
+      expect(() =>
+        admitVerification(
+          record,
+          attempt('h1', ['tr-a']),
+          'the sitting crashed'
+        )
+      ).not.toThrow();
+    });
   });
 
   it('keeps its candidates stable enough to freeze', () => {
@@ -414,7 +478,9 @@ describe('loading the shipping semantics a run set uses', () => {
       await loadShippingSemantics(
         await dirWith({
           'shipping-definition.json': frozen,
-          'shipping-verification.json': { hash: frozen.hash, passed: true },
+          'shipping-verification.json': {
+            attempts: [{ hash: frozen.hash, passed: true }],
+          },
         })
       )
     ).toEqual({ definition: excellentClean, verified: true });
@@ -424,7 +490,12 @@ describe('loading the shipping semantics a run set uses', () => {
         await loadShippingSemantics(
           await dirWith({
             'shipping-definition.json': frozen,
-            'shipping-verification.json': { hash: 'other', passed: true },
+            'shipping-verification.json': {
+              attempts: [
+                { hash: frozen.hash, passed: true },
+                { hash: frozen.hash, passed: false },
+              ],
+            },
           })
         )
       ).verified
@@ -442,5 +513,54 @@ describe('loading the shipping semantics a run set uses', () => {
         })
       )
     ).rejects.toThrow(/hash/);
+  });
+});
+
+describe('variance, reported apart', () => {
+  it('measures one sitting against another on the artifacts both judged', () => {
+    const agreement = sittingAgreement(
+      {
+        'cr-a#1': { level: 4, wouldShip: true },
+        'cr-a#2': { level: 3, wouldShip: false },
+        'cr-b#1': { level: 4, wouldShip: false },
+        'cr-c#1': { level: 2, wouldShip: false },
+      },
+      {
+        'cr-a#1': { level: 4, wouldShip: true },
+        'cr-a#2': { level: 4, wouldShip: false },
+        'cr-b#1': { level: 4, wouldShip: true },
+      }
+    );
+    expect(agreement.n).toBe(3);
+    expect(agreement.wouldShip.rawAgreement).toBeCloseTo(2 / 3, 10);
+    expect(agreement.level.rawAgreement).toBeCloseTo(2 / 3, 10);
+  });
+
+  it('says how much the author varies: briefs whose passes the reviewer split, and the judge level range across passes', () => {
+    const variance = authorVariance(
+      [
+        row('s/cr-a#1', true, {
+          verdicts: { v1: { level: 4, wouldShip: true } },
+        }),
+        row('s/cr-a#2', false, {
+          verdicts: { v1: { level: 2, wouldShip: false } },
+        }),
+        row('s/cr-a#3', 'unstable', {
+          verdicts: { v1: { level: 3, wouldShip: false } },
+        }),
+        row('s/cr-b#1', true, {
+          verdicts: { v1: { level: 4, wouldShip: true } },
+        }),
+        row('s/cr-b#2', true, {
+          verdicts: { v1: { level: 4, wouldShip: true } },
+        }),
+      ],
+      'v1'
+    );
+    expect(variance).toEqual({
+      briefs: 2,
+      briefsTheReviewerSplit: 1,
+      meanJudgeLevelRange: 1,
+    });
   });
 });

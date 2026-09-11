@@ -308,10 +308,12 @@ async function hostRuns(dir: string, repoRoot: string): Promise<HostRun[]> {
   // One sitting over both sets is what makes their verdicts comparable; a set
   // without one falls back to the verdicts its own run recorded.
   const sitting =
-    (await loadSitting(
-      path.join(dir, `sitting-${semantics.definition.question}.json`),
-      semantics.definition.question
-    )) ?? {};
+    (
+      await loadSitting(
+        path.join(dir, `sitting-${semantics.definition.question}.json`),
+        semantics.definition.question
+      )
+    )?.verdicts ?? {};
   const runs: HostRun[] = [];
   for (const run of comparableRuns(scorecard.runs)) {
     const { events } = await readJson<{ events: AgentEvent[] }>(
