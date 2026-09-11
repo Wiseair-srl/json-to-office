@@ -127,6 +127,11 @@ export async function main(
     `${compared} document(s) re-judged, unchanged since; ` +
       `${changed} changed their wouldShip answer`
   );
+  if (question !== 'v1') {
+    line(
+      `asked question ${question}: the recorded verdicts answered v1, so no self-agreement is computed`
+    );
+  }
   if (report.agreement) {
     const { wouldShip, level, genericness, levelMovedMoreThanOne } =
       report.agreement;
