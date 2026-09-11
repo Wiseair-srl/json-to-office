@@ -66,6 +66,67 @@ Working rules:
 
 Document defects come back as structured diagnostics with ok: false, not as errors — read them and repair. Generated files are written under the server's output root and returned as paths; ask for base64 only for small artifacts.`;
 
+/**
+ * Route every tool this server registers through the run journal (#422).
+ *
+ * Done here, once, rather than in each tool module: the journal is about the
+ * sequence of calls, which no single tool can see, and a tool added later is
+ * journaled without anyone remembering to. The handler's own result is what
+ * the client receives either way — the journal only reads it.
+ */
+function journalTools(server: McpServer, deps: ToolDeps): void {
+  const journal = deps.journal;
+  if (!journal) return;
+  const exportServer = process.env.HIGHCHARTS_SERVER_URL;
+  let exportHost: string | undefined;
+  try {
+    exportHost = exportServer ? new URL(exportServer).host : undefined;
+  } catch {
+    exportHost = 'unparseable';
+  }
+  const session = journal.openSession({
+    server: { name: SERVER_NAME, version: deps.serverVersion },
+    pid: process.pid,
+    node: process.version,
+    platform: `${process.platform}-${process.arch}`,
+    outputRoot: deps.outputRoot.path,
+    ...(deps.workspacePersistence && {
+      workspaceRoot: deps.workspacePersistence.root,
+    }),
+    ...(exportHost !== undefined && { exportServerHost: exportHost }),
+  });
+  const source = {
+    async readRevision(handle: string, revision: number) {
+      const read = await deps.workspaces().get(handle, { revision });
+      return read.ok ? read.document : undefined;
+    },
+  };
+  const register = server.registerTool.bind(server);
+  type Handler = (args: unknown, ctx: unknown) => unknown;
+  server.registerTool = ((name: string, config: unknown, handler: Handler) =>
+    register(
+      name,
+      config as never,
+      (async (args: unknown, ctx: unknown) => {
+        const started = Date.now();
+        try {
+          const result = await handler(args, ctx);
+          await session.call(
+            { tool: name, args, result, durationMs: Date.now() - started },
+            source
+          );
+          return result;
+        } catch (error) {
+          await session.call(
+            { tool: name, args, error, durationMs: Date.now() - started },
+            source
+          );
+          throw error;
+        }
+      }) as never
+    )) as typeof server.registerTool;
+}
+
 /** Build a server with every tool and resource registered. */
 export function createServer(deps: ToolDeps): McpServer {
   const server = new McpServer(
@@ -75,6 +136,7 @@ export function createServer(deps: ToolDeps): McpServer {
       instructions: SERVER_INSTRUCTIONS,
     }
   );
+  journalTools(server, deps);
 
   registerInfo(server, deps);
   registerDiscover(server, deps);

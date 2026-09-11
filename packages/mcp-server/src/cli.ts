@@ -14,6 +14,7 @@ import { serveStdio } from '@modelcontextprotocol/server/stdio';
 
 import { createServerFactory } from './server.js';
 import { createToolDeps } from './lib/deps.js';
+import { JOURNAL_ENV } from './lib/journal.js';
 import { OUTPUT_DIR_ENV } from './lib/output-root.js';
 import { WORKSPACE_DIR_ENV } from './workspace/persistence.js';
 import { SERVER_VERSION } from './lib/version.js';
@@ -104,6 +105,9 @@ Options:
 Environment:
   ${OUTPUT_DIR_ENV}    Output root, when --output-dir is absent.
   ${WORKSPACE_DIR_ENV} Workspace root, when --workspace-dir is absent.
+  ${JOURNAL_ENV}       Append a JSONL line per tool call to this file, and keep
+                        each delivered document beside it. For measurement
+                        runs; off by default.
   LIBREOFFICE_PATH      LibreOffice binary, for preview.
   PDFTOPPM_PATH         poppler pdftoppm binary, for preview.
 

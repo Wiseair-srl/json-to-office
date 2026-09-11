@@ -72,6 +72,14 @@ export {
 } from './lib/output-root.js';
 
 export {
+  createJournal,
+  JOURNAL_ENV,
+  JOURNAL_VERSION,
+  type Journal,
+  type JournalSession,
+} from './lib/journal.js';
+
+export {
   deliverArtifact,
   MAX_INLINE_ARTIFACT_BYTES,
   MIME_TYPES,
