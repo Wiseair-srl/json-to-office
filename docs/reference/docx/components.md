@@ -9,7 +9,7 @@ The complete catalog of DOCX components: what each one does, every prop it accep
 | [`docx`](/reference/docx/document#docx-root)  | container               | `section` only                                                                                                              |
 | [`section`](/reference/docx/document#section) | container               | heading, paragraph, image, statistic, table, list, toc, divider, highcharts, chart, visual, columns, text-box, block, group |
 | [`columns`](#columns)                         | layout                  | same as section, minus `columns` (no nesting)                                                                               |
-| [`text-box`](#text-box)                       | layout                  | heading, paragraph, image, divider                                                                                          |
+| [`text-box`](#text-box)                       | layout                  | same as section — the box is a one-cell table, so it holds a table, a columns, another text-box                             |
 | [`heading`](#heading)                         | content                 | —                                                                                                                           |
 | [`paragraph`](#paragraph)                     | content                 | —                                                                                                                           |
 | [`image`](#image)                             | content                 | —                                                                                                                           |
@@ -515,7 +515,7 @@ Inside a `text-box`, a nested `columns` renders as a multi-column table.
 
 ## `text-box`
 
-A bordered, padded box — callouts, sidebars, cover-page blocks. Allowed children: `heading`, `paragraph`, `image`.
+A bordered, padded box — callouts, sidebars, cover-page blocks. It holds what a section holds: headings, paragraphs, images, and also a `table` (the cover block's metadata band), a `columns`, another `text-box` — the box is a one-cell table, and a cell takes any flow content.
 
 | Prop            | Type                                                                                | Required | Default   | Description                                                                            |
 | --------------- | ----------------------------------------------------------------------------------- | -------- | --------- | -------------------------------------------------------------------------------------- |

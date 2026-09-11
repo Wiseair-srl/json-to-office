@@ -116,6 +116,13 @@ export class FileSystemScanner {
     '**/tmp/**',
     '**/.cache/**',
     '**/out/**',
+    // Test data, not documents: the hosted playground scans this monorepo and
+    // listed every regression fixture beside the templates.
+    '**/__tests__/**',
+    '**/__fixtures__/**',
+    // core-docx's bundled examples: library data `loadJsonExample` reads from
+    // dist, only ever in source inside this monorepo.
+    '**/core-docx/src/templates/documents/**',
   ];
 
   async scan(

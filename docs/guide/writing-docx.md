@@ -339,7 +339,7 @@ Two layout containers exist below the section level. `columns` splits content in
 
 Each child fills the next column. Columns accept nearly everything a section does (headings, paragraphs, images, tables, lists, charts, text boxes) — but not another `columns`.
 
-`text-box` draws a bordered, padded, optionally floating box containing headings, paragraphs, and images — the classic callout or sidebar:
+`text-box` draws a bordered, padded, optionally floating box containing anything a section can — headings, paragraphs, images, a table, a `columns` — the classic callout, sidebar or cover band:
 
 ```json
 {

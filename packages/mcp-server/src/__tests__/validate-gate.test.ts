@@ -123,14 +123,15 @@ const NULL_PROPS_SECTION = {
 };
 
 /**
- * DOCX containers the writer nests and the published schema does not let it.
- * Both come from the corpus, both have pinned goldens: a `section` inside a
- * `section` flattens away, and a `columns` inside a `text-box` becomes a table
- * of cells inside the box's own cell. `section.allowedChildren` and
- * `text-box.allowedChildren` name neither, and widening them would make both
- * containers mutually recursive — which the narrowing pass, whose whole output
- * is inlined, cannot express. Pinned so the day it is expressible the gap is
- * visible rather than assumed closed.
+ * The one DOCX nesting the writer accepts and the published schema does not:
+ * a `section` inside a `section` flattens away (corpus-pinned), and
+ * `section.allowedChildren` deliberately names no section — bare sections do
+ * not nest. Pinned so the gap stays visible rather than assumed closed.
+ *
+ * A `columns` inside a `text-box` used to sit beside it: the schema narrowed
+ * text-box children by inlining them, which could not express two containers
+ * holding each other. Flow content is one shared recursive definition now, so
+ * the box holds what a section holds and the gap is closed — asserted below.
  */
 const NESTED_SECTION = {
   name: 'docx',
@@ -352,23 +353,25 @@ describe('jto_validate mirrors the generation gate', () => {
     }
   });
 
-  it('pins the DOCX containers the schema narrows tighter than the writer', async () => {
+  it('pins the DOCX container the schema narrows tighter than the writer', async () => {
     // Not a props question and not closed by the requiredness fix: the
     // published schema is stricter here than `jto_validate` and the writer,
     // which is the one direction still open. Asserted rather than described so
     // widening `allowedChildren` (or narrowing the walk) reddens this test.
-    const gaps: Array<[string, unknown]> = [
-      ['nested section', NESTED_SECTION],
-      ['columns in a text-box', NESTED_COLUMNS_IN_TEXT_BOX],
+    // The second case is the gap that closed: all three must agree on it now,
+    // so a narrowing pass that stops sharing flow content reddens this too.
+    const cases: Array<[string, unknown, boolean]> = [
+      ['nested section', NESTED_SECTION, false],
+      ['columns in a text-box', NESTED_COLUMNS_IN_TEXT_BOX, true],
     ];
     const unexpected: string[] = [];
-    for (const [label, document] of gaps) {
+    for (const [label, document, accepted] of cases) {
       const verdict = await validate('docx', document);
       const generated = await renders('docx', document);
       const published = publishedSchemaAccepts('docx', document);
-      if (verdict.ok !== true || generated !== true || published !== false) {
+      if (verdict.ok !== true || generated !== true || published !== accepted) {
         unexpected.push(
-          `${label}: jto_validate ok=${verdict.ok}, generation ok=${generated}, published schema ok=${published} (expected true/true/false)`
+          `${label}: jto_validate ok=${verdict.ok}, generation ok=${generated}, published schema ok=${published} (expected true/true/${accepted})`
         );
       }
     }

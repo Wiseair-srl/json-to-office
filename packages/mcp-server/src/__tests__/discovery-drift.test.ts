@@ -46,6 +46,7 @@ import {
 import { loadCore } from '../lib/core.js';
 import { RESOURCE_URIS } from '../resources/index.js';
 import { designNote, designNoteNames } from '../lib/design-notes.js';
+import { galleryDocument, galleryManifests } from '../templates/gallery.js';
 import { PUBLISHED_SURFACE } from './fixtures/published-surface.js';
 
 let client: Client;
@@ -648,6 +649,40 @@ describe('tools and resources describe the same surface', () => {
         }
       }
     }
+    expect(broken, broken.join('\n')).toEqual([]);
+  });
+
+  it('every gallery template also satisfies the JSON Schema this server publishes', () => {
+    // The gallery is what jto_discover hands an agent to start a designed
+    // document from — the same promise as the starters, and the one the
+    // cover block broke: a table inside a floating text-box that built and
+    // rendered while the published schema refused it. A fresh Ajv, because
+    // the document schema carries an `$id` the shared instance may hold.
+    const broken: string[] = [];
+    let checked = 0;
+    for (const format of FORMAT_NAMES) {
+      const validate = new Ajv({
+        strict: false,
+        allErrors: true,
+        validateFormats: false,
+      }).compile(formatSchemas(format).document);
+      for (const manifest of galleryManifests(format)) {
+        const document = galleryDocument(manifest.name);
+        if (document === undefined) {
+          broken.push(`${manifest.name}: gallery document unreadable`);
+          continue;
+        }
+        checked += 1;
+        if (!validate(document)) {
+          broken.push(
+            `${manifest.name}: ${(validate.errors ?? [])
+              .map((e) => `${e.instancePath} ${e.message}`)
+              .join('; ')}`
+          );
+        }
+      }
+    }
+    expect(checked).toBeGreaterThan(0);
     expect(broken, broken.join('\n')).toEqual([]);
   });
 

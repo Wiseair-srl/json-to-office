@@ -300,6 +300,7 @@ export {
 // which can hold children, and what those children may be.
 export {
   STANDARD_COMPONENTS_REGISTRY,
+  FLOW_CHILDREN,
   getStandardComponent,
   getAllStandardComponentNames,
 } from './schemas/component-registry';
@@ -396,6 +397,7 @@ export {
   DEFAULT_DOCX_RENDERER_ID,
   collectDocxRendererErrors,
   docxComponentDefinitionName,
+  docxFlowDefinitionName,
 } from './schemas/renderer';
 export type { DocxRendererId } from './schemas/renderer';
 
