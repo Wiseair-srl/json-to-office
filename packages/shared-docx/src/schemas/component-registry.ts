@@ -38,6 +38,7 @@ import { ChartPropsSchema } from './components/chart';
 import { VisualPropsSchema } from './components/visual';
 import {
   DOCX_RENDERER_IDS,
+  docxFlowDefinitionName,
   docxPropsSchemaForRenderer,
   type DocxRendererId,
 } from './renderer';
@@ -124,6 +125,34 @@ export interface StandardComponentDefinition {
 }
 
 /**
+ * Flow content: everything a section body holds.
+ *
+ * The containers that sit in flow — `group`, `columns`, `text-box` — are each
+ * compiled to a table cell or a transparent run of blocks, and a cell holds
+ * whatever a section holds. So they name this same list (`columns` minus
+ * itself), and the schema builder below gives every container that names the
+ * whole list one shared recursive definition instead of an inlined copy:
+ * that is what lets a text-box hold a columns that holds a text-box.
+ */
+export const FLOW_CHILDREN = [
+  'block',
+  'group',
+  'heading',
+  'paragraph',
+  'image',
+  'statistic',
+  'table',
+  'list',
+  'toc',
+  'divider',
+  'highcharts',
+  'chart',
+  'visual',
+  'columns',
+  'text-box',
+] as const;
+
+/**
  * SINGLE SOURCE OF TRUTH for all standard components
  *
  * This is the ONLY place where standard components are defined.
@@ -163,23 +192,7 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
         { path: ['footer'], arity: 'component-array', reportStructure: true },
       ],
       hasChildren: true,
-      allowedChildren: [
-        'block',
-        'group',
-        'heading',
-        'paragraph',
-        'image',
-        'statistic',
-        'table',
-        'list',
-        'toc',
-        'divider',
-        'highcharts',
-        'chart',
-        'visual',
-        'columns',
-        'text-box',
-      ],
+      allowedChildren: FLOW_CHILDREN,
       category: 'container',
       description:
         'Section container - groups related content with optional title. Use for organizing document structure.',
@@ -188,22 +201,9 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
       name: 'columns',
       propsSchema: ColumnsPropsSchema,
       hasChildren: true,
-      allowedChildren: [
-        'block',
-        'group',
-        'heading',
-        'paragraph',
-        'image',
-        'statistic',
-        'table',
-        'list',
-        'toc',
-        'divider',
-        'highcharts',
-        'chart',
-        'visual',
-        'text-box',
-      ],
+      // Everything in flow but another `columns`: at the top level a columns
+      // becomes a section column layout, which has no second level.
+      allowedChildren: FLOW_CHILDREN.filter((name) => name !== 'columns'),
       category: 'layout',
       description:
         'Multi-column layout - arranges content in 2-4 columns. Great for side-by-side content.',
@@ -212,10 +212,12 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
       name: 'text-box',
       propsSchema: TextBoxPropsSchema,
       hasChildren: true,
-      allowedChildren: ['heading', 'paragraph', 'image', 'divider'],
+      // A one-cell table, so it holds what a section holds — a table for a
+      // metadata band, a columns for a two-up sidebar, another text-box.
+      allowedChildren: FLOW_CHILDREN,
       category: 'layout',
       description:
-        'Floating text container - allows positioning text anywhere on the page with absolute or relative positioning.',
+        'Floating text container - allows positioning text anywhere on the page with absolute or relative positioning. Holds any flow content, tables and columns included.',
     },
 
     // ========================================================================
@@ -265,23 +267,7 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
       name: 'group',
       propsSchema: GroupPropsSchema,
       hasChildren: true,
-      allowedChildren: [
-        'group',
-        'block',
-        'heading',
-        'paragraph',
-        'image',
-        'statistic',
-        'table',
-        'list',
-        'toc',
-        'divider',
-        'highcharts',
-        'chart',
-        'visual',
-        'columns',
-        'text-box',
-      ],
+      allowedChildren: FLOW_CHILDREN,
       category: 'container',
       description:
         'Transparent group of flow components; also the inspectable result of block expansion.',
@@ -539,114 +525,159 @@ export function createAllComponentSchemas(
   );
 }
 
+/** Same names, in any order. */
+function sameNames(a: readonly string[], b: readonly string[]): boolean {
+  const set = new Set(a);
+  return (
+    a.length === set.size && b.length === set.size && b.every((n) => set.has(n))
+  );
+}
+
 /**
  * Build all standard component schemas with per-container narrowed children.
  *
- * Resolves containers in dependency order so each container's children union
- * only references its allowedChildren. Plugin schemas are always included in
- * every container's children.
+ * Flow content is one shared recursive definition (`flow`): every container
+ * whose `allowedChildren` is exactly `FLOW_CHILDREN` — `section`, `group`,
+ * `text-box` — takes it as its children type, which is what lets the containers
+ * in flow nest each other without a cycle in the schema. A container that
+ * narrows the list (`docx` to sections, `columns` to flow minus itself) gets an
+ * inlined union of the branches it names, resolved in dependency order; only
+ * those can still form a cycle, and one is a registry mistake.
  *
- * @param selfRef - The Type.Recursive self-reference (used as fallback and for plugin children)
+ * Plugin schemas join the flow definition and every inlined union, so a plugin
+ * is allowed wherever a standard component is.
+ *
+ * @param selfRef - The Type.Recursive self-reference: table cell content,
+ *   section header and footer, plugin children — the positions that take any
+ *   component at all.
  * @param pluginSchemas - Plugin component schemas (always allowed in all containers)
- * @returns schemas array and a byName map for direct lookups
+ * @returns every standard branch (`schemas`, by name in `byName`), the flow
+ *   definition, and `roots` — the branches outside flow (`docx`, `section`).
+ *   A union a TypeBox check can walk on its own is `[...roots, flow]`: the flow
+ *   branches reference the definition by `$id`, which only resolves through it.
  */
 export function createAllComponentSchemasNarrowed(
   selfRef: TSchema,
   pluginSchemas: TSchema[] = [],
   profile?: { renderer: DocxRendererId; requireDiscriminator: boolean }
-): { schemas: TSchema[]; byName: Map<string, TSchema> } {
+): {
+  schemas: TSchema[];
+  byName: Map<string, TSchema>;
+  flow: TSchema;
+  roots: TSchema[];
+} {
   // A component whose `renderers` excludes this profile is not built at all,
   // so it is absent from the union *and* from every container's narrowed
   // children — `allowedChildren` maps through these maps and drops what it
   // cannot find, which keeps the two lists from disagreeing.
   const drawnHere = (comp: StandardComponentDefinition): boolean =>
     !profile || !comp.renderers || comp.renderers.includes(profile.renderer);
+  const components = STANDARD_COMPONENTS_REGISTRY.filter(drawnHere);
+  const inFlow = new Set<string>(FLOW_CHILDREN);
+  const byName = new Map<string, TSchema>();
 
-  // Phase 1: Build leaf (non-container) component schemas — no children
-  // selfRef is passed so factories (e.g. table) can wire up recursive refs.
-  const leafSchemas = new Map<string, TSchema>();
-  for (const comp of STANDARD_COMPONENTS_REGISTRY) {
-    if (!drawnHere(comp)) continue;
+  // Leaves first: selfRef is passed so factories (e.g. table) can wire up
+  // recursive refs.
+  for (const comp of components) {
     if (!comp.hasChildren) {
-      leafSchemas.set(
+      byName.set(
         comp.name,
         createComponentSchemaObject(comp, undefined, selfRef, profile)
       );
     }
   }
 
-  // Phase 2: Resolve containers in dependency order
-  const containers = STANDARD_COMPONENTS_REGISTRY.filter(
-    (c) => c.hasChildren && drawnHere(c)
+  /**
+   * Resolve a set of containers against `flowRef`. Inside the recursive
+   * callback that is the placeholder reference; afterwards it is the built
+   * definition itself, which `section` embeds so a check that starts at a
+   * root reaches the `$id` before any branch refers to it.
+   */
+  const resolveContainers = (
+    containers: readonly StandardComponentDefinition[],
+    flowRef: TSchema
+  ): void => {
+    const pending = [...containers];
+    while (pending.length > 0) {
+      const before = pending.length;
+      for (let i = pending.length - 1; i >= 0; i--) {
+        const comp = pending[i];
+        if (!comp.allowedChildren) {
+          // No allowedChildren declared — fallback to full recursive ref
+          byName.set(
+            comp.name,
+            createComponentSchemaObject(comp, selfRef, selfRef, profile)
+          );
+          pending.splice(i, 1);
+          continue;
+        }
+        if (sameNames(comp.allowedChildren, FLOW_CHILDREN)) {
+          byName.set(
+            comp.name,
+            createComponentSchemaObject(comp, flowRef, selfRef, profile)
+          );
+          pending.splice(i, 1);
+          continue;
+        }
+
+        // A narrowed union inlines its branches, so those have to exist first.
+        const deps = comp.allowedChildren.filter((name) =>
+          components.some((c) => c.name === name && c.hasChildren)
+        );
+        if (!deps.every((name) => byName.has(name))) continue;
+
+        const childSchemas = comp.allowedChildren
+          .map((name) => byName.get(name))
+          .filter((s): s is TSchema => s !== undefined);
+        const allChildSchemas = [...childSchemas, ...pluginSchemas];
+        const childrenType =
+          allChildSchemas.length === 1
+            ? allChildSchemas[0]
+            : Type.Union(allChildSchemas);
+        byName.set(
+          comp.name,
+          createComponentSchemaObject(comp, childrenType, selfRef, profile)
+        );
+        pending.splice(i, 1);
+      }
+
+      if (pending.length === before) {
+        throw new Error(
+          `Circular allowedChildren among: ${pending.map((c) => c.name).join(', ')}`
+        );
+      }
+    }
+  };
+
+  const flow = Type.Recursive(
+    (Flow) => {
+      resolveContainers(
+        components.filter((c) => c.hasChildren && inFlow.has(c.name)),
+        Flow
+      );
+      const members = FLOW_CHILDREN.map((name) => byName.get(name)).filter(
+        (s): s is TSchema => s !== undefined
+      );
+      return Type.Union([...members, ...pluginSchemas], {
+        discriminator: { propertyName: 'name' },
+        description:
+          'Flow content: what a section body holds, and so what a group, columns or text-box holds.',
+      });
+    },
+    { $id: docxFlowDefinitionName(profile?.renderer) }
   );
-  const resolved = new Map<string, TSchema>();
-  const pending = [...containers];
 
-  while (pending.length > 0) {
-    const before = pending.length;
-    for (let i = pending.length - 1; i >= 0; i--) {
-      const comp = pending[i];
+  resolveContainers(
+    components.filter((c) => c.hasChildren && !inFlow.has(c.name)),
+    flow
+  );
 
-      if (comp.name === 'group') {
-        // Transparent flow groups recurse without admitting document/section roots.
-        const flow = Type.Intersect([
-          selfRef,
-          Type.Object({
-            name: Type.Union([
-              ...comp.allowedChildren!.map((name) => Type.Literal(name)),
-              ...pluginSchemas.map((schema) => schema.properties.name),
-            ]),
-          }),
-        ]);
-        resolved.set(
-          comp.name,
-          createComponentSchemaObject(comp, flow, selfRef, profile)
-        );
-        pending.splice(i, 1);
-        continue;
-      }
-      if (!comp.allowedChildren) {
-        // No allowedChildren declared — fallback to full recursive ref
-        resolved.set(
-          comp.name,
-          createComponentSchemaObject(comp, selfRef, selfRef, profile)
-        );
-        pending.splice(i, 1);
-        continue;
-      }
-
-      // Check if all container dependencies are resolved
-      const containerDeps = comp.allowedChildren.filter((name) =>
-        containers.some((c) => c.name === name)
-      );
-      if (!containerDeps.every((d) => resolved.has(d))) continue;
-
-      // Build narrowed children union
-      const childSchemas = comp.allowedChildren
-        .map((name) => resolved.get(name) ?? leafSchemas.get(name))
-        .filter((s): s is TSchema => s !== undefined);
-
-      const allChildSchemas = [...childSchemas, ...pluginSchemas];
-      const childrenType =
-        allChildSchemas.length === 1
-          ? allChildSchemas[0]
-          : Type.Union(allChildSchemas);
-
-      resolved.set(
-        comp.name,
-        createComponentSchemaObject(comp, childrenType, selfRef, profile)
-      );
-      pending.splice(i, 1);
-    }
-
-    if (pending.length === before) {
-      throw new Error(
-        `Circular allowedChildren among: ${pending.map((c) => c.name).join(', ')}`
-      );
-    }
-  }
-
-  // Combine: containers (resolved) + leaves
-  const byName = new Map([...resolved, ...leafSchemas]);
-  return { schemas: [...byName.values()], byName };
+  // Registry order, so the exported unions read the way the registry does.
+  const schemas = components
+    .map((comp) => byName.get(comp.name))
+    .filter((s): s is TSchema => s !== undefined);
+  const roots = components
+    .filter((comp) => !inFlow.has(comp.name))
+    .map((comp) => byName.get(comp.name)!);
+  return { schemas, byName, flow, roots };
 }

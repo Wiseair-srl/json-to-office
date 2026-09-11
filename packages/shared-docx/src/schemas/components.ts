@@ -51,18 +51,18 @@ export const StandardComponentDefinitionSchema = Type.Union(
   }
 );
 
-export const ComponentDefinitionSchema = Type.Recursive((This) =>
-  Type.Union(
-    [
-      // Standard components from registry with per-container narrowed children
-      ...createAllComponentSchemasNarrowed(This).schemas,
-    ],
-    {
-      discriminator: { propertyName: 'name' },
-      description: 'Component definition with discriminated union',
-    }
-  )
-);
+export const ComponentDefinitionSchema = Type.Recursive((This) => {
+  // Standard components from registry with per-container narrowed children.
+  // The roots outside flow plus the flow definition itself: a check that
+  // enters the flow union through the definition can resolve the `$id` the
+  // flow branches point their children at, which a flat list of branches
+  // could not.
+  const { roots, flow } = createAllComponentSchemasNarrowed(This);
+  return Type.Union([...roots, flow], {
+    discriminator: { propertyName: 'name' },
+    description: 'Component definition with discriminated union',
+  });
+});
 
 // ============================================================================
 // TypeScript Types

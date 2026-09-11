@@ -89,11 +89,11 @@ describe('narrowed children validation', () => {
     expect(valid).toBe(false);
   });
 
-  it('rejects toc inside text-box (only heading/paragraph/image allowed)', () => {
+  it('rejects section inside text-box (flow content only)', () => {
     const textBox = {
       name: 'text-box',
       props: {},
-      children: [{ name: 'toc', props: {} }],
+      children: [{ name: 'section', props: {}, children: [] }],
     };
     const valid = Value.Check(ComponentDefinitionSchema, textBox);
     expect(valid).toBe(false);
@@ -107,5 +107,42 @@ describe('narrowed children validation', () => {
     };
     const valid = Value.Check(ComponentDefinitionSchema, textBox);
     expect(valid).toBe(true);
+  });
+
+  it('accepts what a section holds inside text-box, containers included', () => {
+    // A text-box is a one-cell table, so the cover's metadata band (a table
+    // inside a floating box) and a columns inside a box are legal — and the
+    // containers in flow nest each other without bound.
+    const textBox = {
+      name: 'text-box',
+      children: [
+        {
+          name: 'table',
+          props: {
+            columns: [{ header: { content: 'A' }, cells: [{ content: '1' }] }],
+          },
+        },
+        {
+          name: 'columns',
+          props: { columns: 2 },
+          children: [
+            {
+              name: 'text-box',
+              children: [{ name: 'toc' }, { name: 'group', children: [] }],
+            },
+          ],
+        },
+      ],
+    };
+    expect(Value.Check(ComponentDefinitionSchema, textBox)).toBe(true);
+  });
+
+  it('keeps columns from nesting columns', () => {
+    const columns = {
+      name: 'columns',
+      props: { columns: 2 },
+      children: [{ name: 'columns', props: { columns: 2 }, children: [] }],
+    };
+    expect(Value.Check(ComponentDefinitionSchema, columns)).toBe(false);
   });
 });

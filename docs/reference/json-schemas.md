@@ -44,8 +44,8 @@ pnpm generate:schemas   # runs tsx scripts/generate-schemas.ts
 `pnpm build` runs the same step through turbo, so the files in `schemas/` are regenerated on every full build. The conversion:
 
 - emits `$schema: "http://json-schema.org/draft-07/schema#"` — draft-07's own `$id`, so a stock validator resolves the dialect without being told,
-- hoists recursive subschemas into `definitions`,
-- rewrites TypeBox's internal self-references to `#/definitions/ComponentDefinition`, so the recursive component tree is expressed as a normal JSON Schema `$ref`.
+- hoists recursive subschemas into `definitions` — one component union per renderer (`ComponentDefinition_<renderer>`), and for DOCX the flow content a section, group or text-box holds (`FlowContent_<renderer>`), so the containers in flow can hold each other by `$ref` rather than by an inlined copy,
+- rewrites TypeBox's internal self-references to those definitions, so the recursive component tree is expressed as a normal JSON Schema `$ref`.
 
 The TypeBox component registry is the source of truth for the generated schemas, runtime validators, and TypeScript types. CI regenerates the schemas and uses them in the example conformance checks.
 

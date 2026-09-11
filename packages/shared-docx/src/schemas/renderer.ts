@@ -28,6 +28,15 @@ export function docxComponentDefinitionName(renderer: DocxRendererId): string {
 }
 
 /**
+ * The flow-content definition: what a section body holds, and so what every
+ * container in flow — `group`, `columns`, `text-box` — holds too. Per renderer
+ * for the same reason as above; unsuffixed for the unprofiled runtime schema.
+ */
+export function docxFlowDefinitionName(renderer?: DocxRendererId): string {
+  return renderer ? `FlowContent_${renderer}` : 'FlowContent';
+}
+
+/**
  * Derive one renderer view from the canonical props schema.
  *
  * The canonical schema is the union of everything any backend can express, so

@@ -178,8 +178,14 @@ export function createBlockAuthoringSchema(
     if (cached) return { ...ref(cached), ...metadata(schema) };
     const name = `${prefix}_Literal${nextId++}`;
     literals.set(key, name);
-    definitions[name] = {};
-    const result: Schema = { ...schema };
+    // Filled in place, never replaced: a name-const branch of a union below is
+    // inlined by object, and the component graph is cyclic through its named
+    // definitions (a group's children are flow content, which holds groups),
+    // so a branch can be inlined while it is still being built. Swapping the
+    // placeholder for a new object would leave that inline copy empty — a
+    // branch with no `name` that then blocks the union's dispatch rewrite.
+    const result: Schema = (definitions[name] = {});
+    Object.assign(result, schema);
     if (typeof schema.$ref === 'string') {
       const target = resolve(schema.$ref);
       if (target !== undefined) {
@@ -235,7 +241,6 @@ export function createBlockAuthoringSchema(
     // Conditions/negations inspect literal values, not binding syntax.
     for (const key of ['then', 'else'])
       if (schema[key] !== undefined) result[key] = literal(schema[key]);
-    definitions[name] = result;
     return { ...ref(name), ...metadata(schema) };
   }
 

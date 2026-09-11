@@ -132,7 +132,25 @@ export const PUBLISHED_SURFACE: Record<FormatName, PublishedComponentSurface> =
           'toc',
           'visual',
         ],
-        'text-box': ['divider', 'heading', 'image', 'paragraph'],
+        // A one-cell table, so it holds what a section holds — the cover's
+        // metadata band is a table inside a floating box.
+        'text-box': [
+          'chart',
+          'columns',
+          'divider',
+          'heading',
+          'highcharts',
+          'image',
+          'block',
+          'group',
+          'list',
+          'paragraph',
+          'statistic',
+          'table',
+          'text-box',
+          'toc',
+          'visual',
+        ],
       },
     },
 

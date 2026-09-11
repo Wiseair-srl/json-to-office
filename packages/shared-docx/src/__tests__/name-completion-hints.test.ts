@@ -57,6 +57,40 @@ describe('component name autocomplete', () => {
     expect(labels).not.toContain('docx');
   });
 
+  it.each(['group', 'text-box'])(
+    'offers everything a section holds inside a %s',
+    async (container) => {
+      // A text-box is a one-cell table and a group is transparent, so both
+      // hold flow content — the cover's metadata band is a table inside a
+      // floating box. Same list as a section, from the same definition.
+      const labels = await completionsAt(
+        standardSchema,
+        `{"name":"docx","children":[{"name":"section","children":[{"name":"${container}","children":[{"name":""}]}]}]}`
+      );
+      for (const name of getStandardComponent('section')!.allowedChildren!)
+        expect(labels).toContain(name);
+      expect(labels).not.toContain('section');
+      expect(labels).not.toContain('docx');
+    }
+  );
+
+  it.each(['group', 'text-box'])(
+    'reports one discriminator error inside a %s, naming flow content only',
+    async (container) => {
+      // The group used to be typed as the full component union narrowed by an
+      // intersected name list, which the language service reported twice —
+      // once with every component, once with the allowed ones.
+      const diagnostics = await diagnosticsFor(
+        `{"name":"docx","children":[{"name":"section","children":[{"name":"${container}","children":[{"name":"bogus"}]}]}]}`
+      );
+      expect(diagnostics).toHaveLength(1);
+      expect(diagnostics[0]).toMatch(/Value is not accepted. Valid values:/);
+      expect(diagnostics[0]).toContain('"table"');
+      expect(diagnostics[0]).toContain('"columns"');
+      expect(diagnostics[0]).not.toContain('"section"');
+    }
+  );
+
   it('offers section plus content components at the document root', async () => {
     const labels = await completionsAt(
       standardSchema,
