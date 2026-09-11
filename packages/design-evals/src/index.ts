@@ -78,10 +78,43 @@ export {
 export { renderForJudging, RenderError } from './render.js';
 export {
   bootstrapKappa,
+  clusterBootstrapKappa,
   cohensKappa,
   rawAgreement,
+  type ClusteredKappaReport,
   type KappaReport,
 } from './statistics.js';
+export {
+  CANDIDATE_DEFINITIONS,
+  definitionHash,
+  INTEGRITY_CODES,
+  PAGE_DEFECT_CODES,
+  ships,
+  SHIPPING_QUESTIONS,
+  STATUS_QUO_DEFINITION,
+  type ShippingDefinition,
+  type ShippingFacts,
+  type ShippingQuestionId,
+} from './shipping.js';
+export {
+  buildEvidence,
+  chooseDefinition,
+  freezeDefinition,
+  humanJudgments,
+  humanRepeatability,
+  labelArtifacts,
+  loadShippingSemantics,
+  scoreDefinition,
+  verifyDefinition,
+  VERIFICATION_TARGET,
+  type DefinitionScore,
+  type EvidenceRow,
+  type EvidenceSet,
+  type FrozenDefinition,
+  type HumanJudgment,
+  type LabelledArtifact,
+  type VerificationResult,
+} from './shipping-calibration.js';
 export {
   buildCalibrationSheet,
   CALIBRATION_QUESTION,

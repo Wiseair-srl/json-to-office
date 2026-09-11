@@ -81,32 +81,44 @@ function mulberry32(seed: number): () => number {
   };
 }
 
-export function bootstrapKappa<T extends string | number | boolean>(
-  ratings: readonly Rating<T>[],
-  options: { resamples?: number; confidence?: number; seed?: number } = {}
-): KappaReport {
+export interface ClusteredKappaReport extends KappaReport {
+  /** Independent units the interval was resampled over. */
+  clusters: number;
+}
+
+type BootstrapOptions = {
+  resamples?: number;
+  confidence?: number;
+  seed?: number;
+};
+
+/**
+ * A percentile interval over resamples of whole units.
+ *
+ * A unit is one rating for the plain bootstrap and every rating of one brief
+ * for the clustered one; drawing units in the same order from the same seed
+ * makes a plain bootstrap exactly a clustered one over singleton units.
+ */
+function resampledInterval<T extends string | number | boolean>(
+  units: readonly (readonly Rating<T>[])[],
+  options: BootstrapOptions
+): KappaReport['interval'] {
+  if (units.length < 2) return undefined;
   const resamples = options.resamples ?? 2000;
   const confidence = options.confidence ?? 0.95;
-  const base: KappaReport = {
-    n: ratings.length,
-    rawAgreement: rawAgreement(ratings),
-    kappa: cohensKappa(ratings),
-  };
-  if (ratings.length < 2) return base;
-
   const random = mulberry32(options.seed ?? 20260903);
   const values: number[] = [];
   for (let index = 0; index < resamples; index += 1) {
     const sample: Rating<T>[] = [];
-    for (let pick = 0; pick < ratings.length; pick += 1) {
-      sample.push(ratings[Math.floor(random() * ratings.length)]);
+    for (let pick = 0; pick < units.length; pick += 1) {
+      sample.push(...units[Math.floor(random() * units.length)]);
     }
     const kappa = cohensKappa(sample);
     // A resample where one rater never varies has an undefined kappa; it is
     // dropped rather than counted as zero, which would drag the interval.
     if (Number.isFinite(kappa)) values.push(kappa);
   }
-  if (values.length === 0) return base;
+  if (values.length === 0) return undefined;
 
   values.sort((a, b) => a - b);
   const tail = (1 - confidence) / 2;
@@ -117,14 +129,56 @@ export function bootstrapKappa<T extends string | number | boolean>(
         Math.max(0, Math.round(quantile * (values.length - 1)))
       )
     ];
-
   return {
-    ...base,
-    interval: {
-      low: at(tail),
-      high: at(1 - tail),
-      confidence,
-      resamples: values.length,
-    },
+    low: at(tail),
+    high: at(1 - tail),
+    confidence,
+    resamples: values.length,
+  };
+}
+
+/**
+ * Kappa with its interval resampled by brief, not by document.
+ *
+ * Three passes of one brief are not three independent observations: they
+ * share the question, and a judge — or a person — who reads a brief one way
+ * reads all its documents that way. Resampling documents treats them as
+ * independent and reports an interval narrower than the evidence. So whole
+ * clusters are drawn with replacement, and the interval says how much the
+ * agreement depends on which briefs happened to be in the set (#409).
+ */
+export function clusterBootstrapKappa<T extends string | number | boolean>(
+  ratings: readonly (Rating<T> & { cluster: string })[],
+  options: BootstrapOptions = {}
+): ClusteredKappaReport {
+  const groups = new Map<string, Rating<T>[]>();
+  for (const rating of ratings) {
+    const group = groups.get(rating.cluster);
+    if (group) group.push(rating);
+    else groups.set(rating.cluster, [rating]);
+  }
+  const interval = resampledInterval([...groups.values()], options);
+  return {
+    n: ratings.length,
+    rawAgreement: rawAgreement(ratings),
+    kappa: cohensKappa(ratings),
+    clusters: groups.size,
+    ...(interval && { interval }),
+  };
+}
+
+export function bootstrapKappa<T extends string | number | boolean>(
+  ratings: readonly Rating<T>[],
+  options: BootstrapOptions = {}
+): KappaReport {
+  const interval = resampledInterval(
+    ratings.map((rating) => [rating]),
+    options
+  );
+  return {
+    n: ratings.length,
+    rawAgreement: rawAgreement(ratings),
+    kappa: cohensKappa(ratings),
+    ...(interval && { interval }),
   };
 }

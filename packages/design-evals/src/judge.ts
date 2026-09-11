@@ -98,9 +98,11 @@ export async function judgeDocument(input: {
   brief: Brief;
   sheet: JudgeImage;
   call: VisionCall;
+  /** The shipping question to ask; the original one when omitted. */
+  question?: string;
 }): Promise<JudgeResult<JudgeVerdict>> {
   const answered = await input.call({
-    system: rubricPrompt(),
+    system: rubricPrompt(input.question),
     text: [
       briefContext(input.brief),
       '',

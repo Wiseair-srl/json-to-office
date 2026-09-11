@@ -12,6 +12,37 @@ import type { RunMetrics } from './metrics.js';
 import { buildsClean } from './metrics.js';
 import type { RunManifest } from './manifest.js';
 import type { Stratification } from './corpus.js';
+import {
+  definitionHash,
+  hasIntegrityDefect as reportsIntegrityDefect,
+  ships,
+  STATUS_QUO_DEFINITION,
+  type ShippingDefinition,
+} from './shipping.js';
+
+/** The definition a scorecard's `wouldShip` is computed under (#409). */
+export interface ShippingSemantics {
+  definition: ShippingDefinition;
+  /** True only once the frozen definition passed independent verification. */
+  verified: boolean;
+}
+
+const STATUS_QUO: ShippingSemantics = {
+  definition: STATUS_QUO_DEFINITION,
+  verified: false,
+};
+
+/** Whether a run ships under the definition; undefined when it cannot say. */
+function shipsRun(
+  run: RunMetrics,
+  definition: ShippingDefinition
+): boolean | undefined {
+  return ships(definition, {
+    outcome: run.outcome,
+    qualityByCode: run.qualityByCode,
+    ...(run.judge && { judge: run.judge }),
+  });
+}
 
 export interface ScorecardTotals {
   /** Every brief attempted. The denominator for every rate below. */
@@ -69,9 +100,18 @@ export interface JudgeTotals {
   wouldShip: number;
   wouldShipRate: number;
   medianGenericness: number;
+  /**
+   * What `wouldShip` means here: the definition's id and hash, and whether it
+   * has passed independent verification. Until it has, the binary shipping
+   * rate is advisory and `excellent` is the number to read.
+   */
+  shipping: { definition: string; hash: string; verified: boolean };
 }
 
-export function judgeTotals(runs: readonly RunMetrics[]): JudgeTotals {
+export function judgeTotals(
+  runs: readonly RunMetrics[],
+  shipping: ShippingSemantics = STATUS_QUO
+): JudgeTotals {
   // A failed run is not unjudged, it is unshippable: leaving it out would let
   // a phase improve its rate by producing fewer documents. A run that
   // *completed* and has no verdict is a different thing — the judge itself
@@ -82,7 +122,9 @@ export function judgeTotals(runs: readonly RunMetrics[]): JudgeTotals {
     if (run.judge) return [run.judge.level as number];
     return run.outcome === 'failed' ? [1] : [];
   });
-  const shipped = runs.filter((run) => run.judge?.wouldShip === true).length;
+  const shipped = runs.filter(
+    (run) => shipsRun(run, shipping.definition) === true
+  ).length;
   const excellent = runs.filter((run) => (run.judge?.level ?? 1) >= 4).length;
   return {
     judged: runs.filter((run) => run.judge !== undefined).length,
@@ -94,6 +136,11 @@ export function judgeTotals(runs: readonly RunMetrics[]): JudgeTotals {
     medianGenericness: median(
       runs.flatMap((run) => (run.judge ? [run.judge.genericness] : []))
     ),
+    shipping: {
+      definition: shipping.definition.id,
+      hash: definitionHash(shipping.definition),
+      verified: shipping.verified,
+    },
   };
 }
 
@@ -137,29 +184,11 @@ export function median(values: readonly number[]): number {
     : (sorted[middle - 1] + sorted[middle]) / 2;
 }
 
-/** An integrity defect is anything that would be visible in the rendered file. */
-const INTEGRITY_CODES = new Set([
-  'W_QUALITY_TEXT_OVERFLOW',
-  'W_QUALITY_BOX_OVERLAP',
-  'W_QUALITY_FRAME_COLLISION',
-  'W_QUALITY_SVG_TEXT_CLIPPED',
-  'W_QUALITY_LINE_BOX_COLLAPSE',
-  'W_QUALITY_TABLE_WIDTH_OVERFLOW',
-  'W_QUALITY_PLACEHOLDER_TEXT',
-  'W_QUALITY_SCAFFOLD_MARKER',
-  'W_QUALITY_RENDERED_CLIP',
-  'W_QUALITY_RENDERED_SPILL',
-  'W_QUALITY_RENDERED_OVERLAP',
-  'W_QUALITY_RENDERED_TEXT_MISSING',
-]);
-
 function hasIntegrityDefect(run: RunMetrics): boolean {
   // A failed run is not defect-free; it is a run whose defects were never
   // measured, and the target counts it as not shippable either way.
   if (run.outcome === 'failed') return true;
-  return Object.keys(run.qualityByCode).some((code) =>
-    INTEGRITY_CODES.has(code)
-  );
+  return reportsIntegrityDefect(run.qualityByCode);
 }
 
 export function totals(runs: readonly RunMetrics[]): ScorecardTotals {
@@ -254,8 +283,11 @@ export function buildScorecard(input: {
   };
   /** Archetype per brief id, so the scorecard can group by it. */
   archetypes: Readonly<Record<string, string>>;
+  /** The shipping definition `wouldShip` is computed under; the status quo when absent. */
+  shipping?: ShippingSemantics;
   now?: Date;
 }): Scorecard {
+  const shipping = input.shipping ?? STATUS_QUO;
   const qualityByCode: Record<string, number> = {};
   for (const run of input.runs) {
     for (const [code, count] of Object.entries(run.qualityByCode)) {
@@ -269,7 +301,7 @@ export function buildScorecard(input: {
     manifest: input.manifest,
     totals: totals(input.runs),
     ...(input.runs.some((run) => run.judge !== undefined) && {
-      judge: judgeTotals(input.runs),
+      judge: judgeTotals(input.runs, shipping),
     }),
     qualityByCode: Object.fromEntries(Object.entries(qualityByCode).sort()),
     byFormat: group(input.runs, (run) => run.format),
@@ -277,7 +309,12 @@ export function buildScorecard(input: {
       input.runs,
       (run) => input.archetypes[run.briefId] ?? 'unknown'
     ),
-    runs: [...input.runs].sort((a, b) => a.briefId.localeCompare(b.briefId)),
+    runs: [...input.runs]
+      .sort((a, b) => a.briefId.localeCompare(b.briefId))
+      .map((run) => {
+        const decision = shipsRun(run, shipping.definition);
+        return decision === undefined ? run : { ...run, ships: decision };
+      }),
     failures: input.runs
       .filter((run) => run.outcome === 'failed')
       .map((run) => ({

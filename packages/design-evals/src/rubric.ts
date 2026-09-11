@@ -39,14 +39,21 @@ export interface PairwiseVerdict {
   rationale: string;
 }
 
-/** The rubric, as the judge reads it. Generated so it cannot drift. */
-export function rubricPrompt(): string {
+/**
+ * The rubric, as the judge reads it. Generated so it cannot drift.
+ *
+ * The shipping question is a parameter because #409 calibrates it: the
+ * levels are fixed, the decision they feed is not yet.
+ */
+export function rubricPrompt(
+  shippingQuestion: string = SHIPPING_QUESTION
+): string {
   return [
     'You are reviewing a rendered document against a five-level rubric. A higher level NEVER compensates for a failure below it: assign the highest level whose bar is met AND whose every lower bar is met.',
     '',
     ...RUBRIC.map((entry) => `${entry.level}. ${entry.name} — ${entry.bar}`),
     '',
-    SHIPPING_QUESTION,
+    shippingQuestion,
     '',
     GENERICNESS_PENALTY,
     '',

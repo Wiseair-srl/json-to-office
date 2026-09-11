@@ -106,6 +106,12 @@ export interface RunMetrics extends DocumentMetrics {
    * stay distinguishable.
    */
   judge?: RunJudgement;
+  /**
+   * Whether the run ships under the scorecard's shipping definition (#409).
+   * Derived by the scorecard, never by the runner; absent when the definition
+   * needs a verdict the run does not have.
+   */
+  ships?: boolean;
 }
 
 /** A run that produced nothing, counted rather than dropped. */
