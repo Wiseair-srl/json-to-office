@@ -97,3 +97,63 @@ describe('pairwise CLI', () => {
     expect(comparePairs).not.toHaveBeenCalled();
   });
 });
+
+describe('pnpm pairwise calibrate', () => {
+  it('rates the review page against the recorded two-order verdicts and writes the report', async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'pairwise-calibrate-'));
+    dirs.push(dir);
+    const humanFile = path.join(dir, 'human.json');
+    const judgeFile = path.join(dir, 'judge.json');
+    const out = path.join(dir, 'calibration.json');
+    await fs.writeFile(
+      humanFile,
+      JSON.stringify({
+        pairs: [
+          { pair: 'cd-a', preferred: 'assisted', leftWas: 'cold' },
+          { pair: 'cr-b', preferred: 'cold', leftWas: 'assisted' },
+          { pair: 'tr-c', preferred: 'assisted', leftWas: 'cold' },
+        ],
+      })
+    );
+    await fs.writeFile(
+      judgeFile,
+      JSON.stringify({
+        a: '/sets/cold',
+        b: '/sets/assisted',
+        judgeModel: 'claude-opus-5',
+        judgedAt: '2026-09-05T15:10:49.362Z',
+        outcomes: [
+          { briefId: 'cd-a', verdict: 'b', judgements: [] },
+          { briefId: 'cr-b', verdict: 'inconsistent', judgements: [] },
+        ],
+        skipped: [{ briefId: 'tr-c', why: 'no verdict' }],
+        tally: {},
+      })
+    );
+    const lines: string[] = [];
+    const code = await main(
+      [
+        'calibrate',
+        '--human',
+        humanFile,
+        '--judge',
+        judgeFile,
+        '--a',
+        'cold',
+        '--b',
+        'assisted',
+        '--out',
+        out,
+      ],
+      (text) => lines.push(text)
+    );
+    expect(code).toBe(0);
+    const written = JSON.parse(await fs.readFile(out, 'utf8'));
+    expect(written.report.n).toBe(2);
+    expect(written.judgeSkipped).toEqual(['tr-c']);
+    expect(written.sheet.pairs[0].a.sheetPath).toBe(
+      path.join('/sets/cold', 'runs', 'cd-a', 'contact-sheet.png')
+    );
+    expect(lines.join('\n')).toMatch(/never compared 1: tr-c/);
+  });
+});

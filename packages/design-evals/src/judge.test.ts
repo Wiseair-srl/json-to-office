@@ -12,6 +12,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildCalibrationSheet,
   calibrationReport,
+  calibrationSheetFromReview,
   judgeIsCalibrated,
   ordersFirst,
   type CalibrationSheet,
@@ -302,5 +303,52 @@ describe('calibration', () => {
     );
     expect(judgeIsCalibrated(calibrationReport(agreeing))).toBe(true);
     expect(judgeIsCalibrated(calibrationReport(disagreeing))).toBe(false);
+  });
+});
+
+describe('the development pairs, rated in the review page', () => {
+  const outcomes = [
+    { briefId: 'cd-a', verdict: 'b' as const, judgements: [] },
+    { briefId: 'cr-b', verdict: 'inconsistent' as const, judgements: [] },
+    { briefId: 'tr-c', verdict: 'tie' as const, judgements: [] },
+  ];
+  const human = [
+    { pair: 'cd-a', preferred: 'assisted', leftWas: 'cold' },
+    { pair: 'cr-b', preferred: 'cold', leftWas: 'assisted' },
+    { pair: 'tr-c', preferred: 'tie', leftWas: 'cold' },
+    // The judge answered nothing for this brief: never scored as agreement.
+    { pair: 'tr-d', preferred: 'cold', leftWas: 'assisted' },
+  ];
+
+  it('translates both raters onto one axis and treats an order-inconsistent judge as no preference', () => {
+    const { sheet, judgeSkipped } = calibrationSheetFromReview({
+      human,
+      outcomes,
+      sides: { a: 'cold', b: 'assisted' },
+      sheetPath: (side, briefId) => `/${side}/${briefId}.png`,
+      now: new Date('2026-09-12T08:00:00Z'),
+    });
+    expect(judgeSkipped).toEqual(['tr-d']);
+    expect(
+      sheet.pairs.map((pair) => [pair.briefId, pair.human, pair.judge])
+    ).toEqual([
+      ['cd-a', 'b', 'b'],
+      ['cr-b', 'a', 'tie'],
+      ['tr-c', 'tie', 'tie'],
+    ]);
+    expect(sheet.pairs[1].judgeRationale).toMatch(/orders disagreed/);
+    expect(sheet.pairs[0].a.sheetPath).toBe('/cold/cd-a.png');
+    expect(calibrationReport(sheet).n).toBe(3);
+  });
+
+  it('refuses an answer naming a side that is neither', () => {
+    expect(() =>
+      calibrationSheetFromReview({
+        human: [{ pair: 'cd-a', preferred: 'before', leftWas: 'cold' }],
+        outcomes,
+        sides: { a: 'cold', b: 'assisted' },
+        sheetPath: () => '',
+      })
+    ).toThrow(/before/);
   });
 });
