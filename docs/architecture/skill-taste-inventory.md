@@ -26,6 +26,16 @@ the first two issues are still open — read the way an agent reads it: the serv
 `jto://guide/design/<format>` (themes, profiles, rules, blocks, blueprints,
 rubric), `jto://themes`, the three prompts.
 
+**Released.** Skill 4.0.0 was published to the Wiseair skills store on
+2026-09-14 (`json-to-office-4.0.0.skill`, sha256
+`35280ae4e5f75868d023c568c2014ee8180933de964c730c49060ddd357c6506`, 14 KB):
+`SKILL.md`, `CHANGELOG.md`, `manifest.json` and the eval set, checked against
+the source of mcp-server 6.6.0. Its changelog says what was verified and what
+was not: no report or deck has been authored with it at a matching build yet,
+and the headless half of #422 is the first; the decks are the open question
+(`packages/design-evals/baselines/README.md`, the forty pairs and the
+verification set).
+
 ## How the replacements were verified
 
 A replacement counts only if it was observed. Three kinds of evidence:
