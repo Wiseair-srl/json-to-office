@@ -1,0 +1,783 @@
+{
+  "human": "2026-09-13-human-phase0-pairs.json",
+  "judge": "2026-09-05-pairwise-cold-vs-assisted.json",
+  "judgeModel": "claude-opus-5",
+  "judgedAt": "2026-09-05T15:10:49.362Z",
+  "judgeSkipped": [
+    "cd-competitive-response",
+    "cd-org-design-proposal",
+    "cd-pricing-strategy-workshop",
+    "tr-schema-migration-plan"
+  ],
+  "report": {
+    "n": 36,
+    "rawAgreement": 0.16666666666666666,
+    "kappa": -0.005586592178770941,
+    "interval": {
+      "low": -0.07563025210084034,
+      "high": 0.0769230769230769,
+      "confidence": 0.95,
+      "resamples": 2000
+    },
+    "unrated": 0,
+    "disagreements": [
+      {
+        "pairId": "cd-cost-programme-kickoff",
+        "briefId": "cd-cost-programme-kickoff",
+        "human": "b",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "pairId": "cd-digital-transformation-case",
+        "briefId": "cd-digital-transformation-case",
+        "human": "b",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "pairId": "cd-growth-strategy-readout",
+        "briefId": "cd-growth-strategy-readout",
+        "human": "b",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "pairId": "cd-innovation-portfolio",
+        "briefId": "cd-innovation-portfolio",
+        "human": "b",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "pairId": "cd-operating-model-options",
+        "briefId": "cd-operating-model-options",
+        "human": "b",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "pairId": "cd-post-merger-day-one",
+        "briefId": "cd-post-merger-day-one",
+        "human": "b",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "pairId": "cd-quarterly-business-review",
+        "briefId": "cd-quarterly-business-review",
+        "human": "a",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "pairId": "cd-supply-chain-diagnostic",
+        "briefId": "cd-supply-chain-diagnostic",
+        "human": "b",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "pairId": "cd-sustainability-roadmap",
+        "briefId": "cd-sustainability-roadmap",
+        "human": "b",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "pairId": "cr-brand-repositioning",
+        "briefId": "cr-brand-repositioning",
+        "human": "a",
+        "judge": "b",
+        "judgeRationale": ""
+      },
+      {
+        "pairId": "cr-customer-churn-diagnosis",
+        "briefId": "cr-customer-churn-diagnosis",
+        "human": "b",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "pairId": "cr-digital-channel-shift",
+        "briefId": "cr-digital-channel-shift",
+        "human": "b",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "pairId": "cr-esg-reporting-readiness",
+        "briefId": "cr-esg-reporting-readiness",
+        "human": "a",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "pairId": "cr-market-entry-nordics",
+        "briefId": "cr-market-entry-nordics",
+        "human": "b",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "pairId": "cr-post-merger-integration",
+        "briefId": "cr-post-merger-integration",
+        "human": "a",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "pairId": "cr-pricing-review-logistics",
+        "briefId": "cr-pricing-review-logistics",
+        "human": "a",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "pairId": "cr-procurement-savings",
+        "briefId": "cr-procurement-savings",
+        "human": "b",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "pairId": "cr-service-model-redesign",
+        "briefId": "cr-service-model-redesign",
+        "human": "a",
+        "judge": "b",
+        "judgeRationale": ""
+      },
+      {
+        "pairId": "cr-store-network-rationalisation",
+        "briefId": "cr-store-network-rationalisation",
+        "human": "a",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "pairId": "cr-supply-resilience",
+        "briefId": "cr-supply-resilience",
+        "human": "a",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "pairId": "cr-workforce-planning",
+        "briefId": "cr-workforce-planning",
+        "human": "a",
+        "judge": "b",
+        "judgeRationale": ""
+      },
+      {
+        "pairId": "tr-accessibility-audit",
+        "briefId": "tr-accessibility-audit",
+        "human": "a",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "pairId": "tr-api-gateway-migration",
+        "briefId": "tr-api-gateway-migration",
+        "human": "a",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "pairId": "tr-build-pipeline-audit",
+        "briefId": "tr-build-pipeline-audit",
+        "human": "b",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "pairId": "tr-capacity-forecast",
+        "briefId": "tr-capacity-forecast",
+        "human": "a",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "pairId": "tr-data-retention-policy",
+        "briefId": "tr-data-retention-policy",
+        "human": "b",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "pairId": "tr-incident-postmortem-db",
+        "briefId": "tr-incident-postmortem-db",
+        "human": "b",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "pairId": "tr-load-test-results",
+        "briefId": "tr-load-test-results",
+        "human": "a",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "pairId": "tr-memo-vendor-selection",
+        "briefId": "tr-memo-vendor-selection",
+        "human": "a",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "pairId": "tr-observability-standard",
+        "briefId": "tr-observability-standard",
+        "human": "a",
+        "judge": "b",
+        "judgeRationale": ""
+      }
+    ]
+  },
+  "calibrated": false,
+  "sheet": {
+    "generatedAt": "2026-09-13T20:18:56.586Z",
+    "question": "For each pair, open both contact sheets and record which document you would rather send to a client — \"a\", \"b\", or \"tie\". Do not read the judge column first.",
+    "pairs": [
+      {
+        "id": "cd-capital-allocation",
+        "briefId": "cd-capital-allocation",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/cd-capital-allocation/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/cd-capital-allocation/contact-sheet.png"
+        },
+        "human": "tie",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "id": "cd-cost-programme-kickoff",
+        "briefId": "cd-cost-programme-kickoff",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/cd-cost-programme-kickoff/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/cd-cost-programme-kickoff/contact-sheet.png"
+        },
+        "human": "b",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "id": "cd-customer-research-readout",
+        "briefId": "cd-customer-research-readout",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/cd-customer-research-readout/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/cd-customer-research-readout/contact-sheet.png"
+        },
+        "human": "b",
+        "judge": "b",
+        "judgeRationale": ""
+      },
+      {
+        "id": "cd-digital-transformation-case",
+        "briefId": "cd-digital-transformation-case",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/cd-digital-transformation-case/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/cd-digital-transformation-case/contact-sheet.png"
+        },
+        "human": "b",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "id": "cd-growth-strategy-readout",
+        "briefId": "cd-growth-strategy-readout",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/cd-growth-strategy-readout/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/cd-growth-strategy-readout/contact-sheet.png"
+        },
+        "human": "b",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "id": "cd-innovation-portfolio",
+        "briefId": "cd-innovation-portfolio",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/cd-innovation-portfolio/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/cd-innovation-portfolio/contact-sheet.png"
+        },
+        "human": "b",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "id": "cd-market-scan-adjacent",
+        "briefId": "cd-market-scan-adjacent",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/cd-market-scan-adjacent/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/cd-market-scan-adjacent/contact-sheet.png"
+        },
+        "human": "tie",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "id": "cd-operating-model-options",
+        "briefId": "cd-operating-model-options",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/cd-operating-model-options/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/cd-operating-model-options/contact-sheet.png"
+        },
+        "human": "b",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "id": "cd-post-merger-day-one",
+        "briefId": "cd-post-merger-day-one",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/cd-post-merger-day-one/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/cd-post-merger-day-one/contact-sheet.png"
+        },
+        "human": "b",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "id": "cd-quarterly-business-review",
+        "briefId": "cd-quarterly-business-review",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/cd-quarterly-business-review/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/cd-quarterly-business-review/contact-sheet.png"
+        },
+        "human": "a",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "id": "cd-service-quality-turnaround",
+        "briefId": "cd-service-quality-turnaround",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/cd-service-quality-turnaround/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/cd-service-quality-turnaround/contact-sheet.png"
+        },
+        "human": "b",
+        "judge": "b",
+        "judgeRationale": ""
+      },
+      {
+        "id": "cd-supply-chain-diagnostic",
+        "briefId": "cd-supply-chain-diagnostic",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/cd-supply-chain-diagnostic/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/cd-supply-chain-diagnostic/contact-sheet.png"
+        },
+        "human": "b",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "id": "cd-sustainability-roadmap",
+        "briefId": "cd-sustainability-roadmap",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/cd-sustainability-roadmap/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/cd-sustainability-roadmap/contact-sheet.png"
+        },
+        "human": "b",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "id": "cr-brand-repositioning",
+        "briefId": "cr-brand-repositioning",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/cr-brand-repositioning/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/cr-brand-repositioning/contact-sheet.png"
+        },
+        "human": "a",
+        "judge": "b",
+        "judgeRationale": ""
+      },
+      {
+        "id": "cr-cost-programme-review",
+        "briefId": "cr-cost-programme-review",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/cr-cost-programme-review/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/cr-cost-programme-review/contact-sheet.png"
+        },
+        "human": "tie",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "id": "cr-customer-churn-diagnosis",
+        "briefId": "cr-customer-churn-diagnosis",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/cr-customer-churn-diagnosis/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/cr-customer-churn-diagnosis/contact-sheet.png"
+        },
+        "human": "b",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "id": "cr-digital-channel-shift",
+        "briefId": "cr-digital-channel-shift",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/cr-digital-channel-shift/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/cr-digital-channel-shift/contact-sheet.png"
+        },
+        "human": "b",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "id": "cr-esg-reporting-readiness",
+        "briefId": "cr-esg-reporting-readiness",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/cr-esg-reporting-readiness/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/cr-esg-reporting-readiness/contact-sheet.png"
+        },
+        "human": "a",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "id": "cr-market-entry-nordics",
+        "briefId": "cr-market-entry-nordics",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/cr-market-entry-nordics/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/cr-market-entry-nordics/contact-sheet.png"
+        },
+        "human": "b",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "id": "cr-post-merger-integration",
+        "briefId": "cr-post-merger-integration",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/cr-post-merger-integration/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/cr-post-merger-integration/contact-sheet.png"
+        },
+        "human": "a",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "id": "cr-pricing-review-logistics",
+        "briefId": "cr-pricing-review-logistics",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/cr-pricing-review-logistics/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/cr-pricing-review-logistics/contact-sheet.png"
+        },
+        "human": "a",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "id": "cr-procurement-savings",
+        "briefId": "cr-procurement-savings",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/cr-procurement-savings/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/cr-procurement-savings/contact-sheet.png"
+        },
+        "human": "b",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "id": "cr-service-model-redesign",
+        "briefId": "cr-service-model-redesign",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/cr-service-model-redesign/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/cr-service-model-redesign/contact-sheet.png"
+        },
+        "human": "a",
+        "judge": "b",
+        "judgeRationale": ""
+      },
+      {
+        "id": "cr-store-network-rationalisation",
+        "briefId": "cr-store-network-rationalisation",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/cr-store-network-rationalisation/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/cr-store-network-rationalisation/contact-sheet.png"
+        },
+        "human": "a",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "id": "cr-supply-resilience",
+        "briefId": "cr-supply-resilience",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/cr-supply-resilience/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/cr-supply-resilience/contact-sheet.png"
+        },
+        "human": "a",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "id": "cr-workforce-planning",
+        "briefId": "cr-workforce-planning",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/cr-workforce-planning/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/cr-workforce-planning/contact-sheet.png"
+        },
+        "human": "a",
+        "judge": "b",
+        "judgeRationale": ""
+      },
+      {
+        "id": "tr-accessibility-audit",
+        "briefId": "tr-accessibility-audit",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/tr-accessibility-audit/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/tr-accessibility-audit/contact-sheet.png"
+        },
+        "human": "a",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "id": "tr-api-gateway-migration",
+        "briefId": "tr-api-gateway-migration",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/tr-api-gateway-migration/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/tr-api-gateway-migration/contact-sheet.png"
+        },
+        "human": "a",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "id": "tr-build-pipeline-audit",
+        "briefId": "tr-build-pipeline-audit",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/tr-build-pipeline-audit/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/tr-build-pipeline-audit/contact-sheet.png"
+        },
+        "human": "b",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "id": "tr-capacity-forecast",
+        "briefId": "tr-capacity-forecast",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/tr-capacity-forecast/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/tr-capacity-forecast/contact-sheet.png"
+        },
+        "human": "a",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "id": "tr-data-retention-policy",
+        "briefId": "tr-data-retention-policy",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/tr-data-retention-policy/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/tr-data-retention-policy/contact-sheet.png"
+        },
+        "human": "b",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "id": "tr-incident-postmortem-db",
+        "briefId": "tr-incident-postmortem-db",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/tr-incident-postmortem-db/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/tr-incident-postmortem-db/contact-sheet.png"
+        },
+        "human": "b",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "id": "tr-load-test-results",
+        "briefId": "tr-load-test-results",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/tr-load-test-results/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/tr-load-test-results/contact-sheet.png"
+        },
+        "human": "a",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "id": "tr-memo-vendor-selection",
+        "briefId": "tr-memo-vendor-selection",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/tr-memo-vendor-selection/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/tr-memo-vendor-selection/contact-sheet.png"
+        },
+        "human": "a",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      },
+      {
+        "id": "tr-observability-standard",
+        "briefId": "tr-observability-standard",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/tr-observability-standard/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/tr-observability-standard/contact-sheet.png"
+        },
+        "human": "a",
+        "judge": "b",
+        "judgeRationale": ""
+      },
+      {
+        "id": "tr-security-review-auth",
+        "briefId": "tr-security-review-auth",
+        "a": {
+          "label": "baseline-cold",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-cold/runs/tr-security-review-auth/contact-sheet.png"
+        },
+        "b": {
+          "label": "baseline-assisted",
+          "sheetPath": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/baseline-assisted/runs/tr-security-review-auth/contact-sheet.png"
+        },
+        "human": "tie",
+        "judge": "tie",
+        "judgeRationale": "The judge's two orders disagreed, so it has no preference that survives the swap."
+      }
+    ]
+  }
+}

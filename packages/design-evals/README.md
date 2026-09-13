@@ -56,6 +56,9 @@ in three steps, each recorded under `baselines/`:
    (Phase 0 cold against assisted), read beside the judge's two-order verdicts
    on the same pairs:
    `pnpm pairwise calibrate --human <file> --judge baselines/2026-09-05-pairwise-cold-vs-assisted.json --a baseline-cold --b baseline-assisted --out <file>`.
+   Done 2026-09-13: no overall preference (assisted 19, cold 16, tie 5), decks
+   for assisted 12–1, reports for cold 15–7, and the judge's kappa against
+   him −0.01 (baselines README, "The forty pairs").
 2. **Shipping (#409).** A shipping definition calibrated on the checkpoint
    verdicts, frozen, then verified on fresh briefs (below).
 3. **Host (#422).** Claude Desktop against the headless runner on one build
@@ -132,11 +135,13 @@ definition tries again on it only with `--supersede "<why>"`, both attempts
 kept. The target is Cohen's kappa ≥ 0.5 on the verification set; a miss is
 recorded as a miss.
 
-Both raters judge the contact sheet, whose pages are thumbnails: "after
-reading the argument" means as far as the sheet shows it (the reviewer can
-open the sheet at full size; the judge sees it as one image). The page-defect
-term is the rubric's own first level — "nothing … empty" — measured by the
-rendered pass rather than guessed.
+Both raters judge the contact sheet, whose pages are thumbnails (the reviewer
+can open it at full size; the judge sees it as one image), so v2's "read the
+argument" means as far as the sheet shows it. The reviewer's question never
+changes between calibration and verification — "Would you send this to the
+client unchanged?", verbatim — because a definition is calibrated against the
+answers to it. The page-defect term is the rubric's own first level — "nothing
+… empty" — measured by the rendered pass rather than guessed.
 
 ## Claude Desktop against the headless runner (#422)
 
