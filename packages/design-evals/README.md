@@ -136,12 +136,15 @@ kept. The target is Cohen's kappa ≥ 0.5 on the verification set; a miss is
 recorded as a miss.
 
 Both raters judge the contact sheet, whose pages are thumbnails (the reviewer
-can open it at full size; the judge sees it as one image), so v2's "read the
-argument" means as far as the sheet shows it. The reviewer's question never
-changes between calibration and verification — "Would you send this to the
-client unchanged?", verbatim — because a definition is calibrated against the
-answers to it. The page-defect term is the rubric's own first level — "nothing
-… empty" — measured by the rendered pass rather than guessed.
+can open it at full size; the judge sees it as one image), so "after reading
+the argument" means as far as the sheet shows it. The verification review asks
+#409's definition — "After reading its argument, would you send this to the
+client unchanged?", with the formatting exactly as it is — where the
+calibration rounds asked "Would you send this to the client unchanged?". Each
+verdict file records its question verbatim, so a definition that tracked the
+older wording and not the definition fails verification instead of passing on
+a different question. The page-defect term is the rubric's own first level —
+"nothing … empty" — measured by the rendered pass rather than guessed.
 
 ## Claude Desktop against the headless runner (#422)
 

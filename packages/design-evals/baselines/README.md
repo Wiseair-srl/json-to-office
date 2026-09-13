@@ -333,6 +333,9 @@ What the numbers carry:
   survived two rounds, over 8 briefs, all client reports. Verification judges
   each artifact once, on briefs none of these share, and includes technical
   reports and decks.
+- **The question sharpens at verification.** Both calibration rounds asked
+  "Would you send this to the client unchanged?"; verification asks #409's
+  definition, after reading the argument with the formatting untouched.
 - **The reviewer bounds it.** On the 24 before documents Paolo's two rounds
   agree at kappa 0.23 (round two, above). The judge against its own earlier
   sittings: ship kappa 0.33 on after and after-exhibits, undefined on before
