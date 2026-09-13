@@ -68,6 +68,7 @@ import {
   SHIPPING_QUESTIONS,
   type ShippingQuestionId,
 } from './shipping.js';
+import { formatKappa } from './statistics.js';
 
 async function readJson<T>(file: string): Promise<T> {
   return JSON.parse(await fs.readFile(file, 'utf8')) as T;
@@ -401,7 +402,7 @@ async function calibrate(
       ? ` [${score.interval.low.toFixed(2)}, ${score.interval.high.toFixed(2)}]`
       : '';
     line(
-      `  ${definition.id.padEnd(16)} n=${String(score.n).padStart(3)} kappa ${score.kappa.toFixed(2)}${interval}` +
+      `  ${definition.id.padEnd(16)} n=${String(score.n).padStart(3)} kappa ${formatKappa(score.kappa)}${interval}` +
         ` agree ${(score.rawAgreement * 100).toFixed(0)}%` +
         ` both-ship ${score.confusion.bothShip} human-only ${score.confusion.humanOnly}` +
         ` definition-only ${score.confusion.definitionOnly} both-hold ${score.confusion.bothHold}`
@@ -409,16 +410,16 @@ async function calibrate(
   }
   const { variance } = manifest;
   line(
-    `reviewer against themselves: n=${variance.human.n}, kappa ${variance.human.kappa.toFixed(2)}`
+    `reviewer against themselves: n=${variance.human.n}, kappa ${formatKappa(variance.human.kappa)}`
   );
   for (const entry of variance.judge) {
     line(
-      `judge against its ${entry.earlier} sitting (${entry.set}): n=${entry.n}, ship kappa ${entry.wouldShip.kappa.toFixed(2)}, level kappa ${entry.level.kappa.toFixed(2)}`
+      `judge against its ${entry.earlier} sitting (${entry.set}): n=${entry.n}, ship kappa ${formatKappa(entry.wouldShip.kappa)}, level kappa ${formatKappa(entry.level.kappa)}`
     );
   }
   if (variance.questions.n > 0) {
     line(
-      `v1 against v2 sitting: n=${variance.questions.n}, level kappa ${variance.questions.level.kappa.toFixed(2)}, ship kappa ${variance.questions.wouldShip.kappa.toFixed(2)}`
+      `v1 against v2 sitting: n=${variance.questions.n}, level kappa ${formatKappa(variance.questions.level.kappa)}, ship kappa ${formatKappa(variance.questions.wouldShip.kappa)}`
     );
   }
   line(
@@ -573,14 +574,14 @@ async function verify(
   );
   const { score } = result;
   line(
-    `${result.definition}: n=${score.n} over ${score.clusters} brief(s), kappa ${score.kappa.toFixed(2)}` +
+    `${result.definition}: n=${score.n} over ${score.clusters} brief(s), kappa ${formatKappa(score.kappa)}` +
       (score.interval
         ? ` [${score.interval.low.toFixed(2)}, ${score.interval.high.toFixed(2)}]`
         : '') +
       ` — ${result.passed ? 'PASSED' : 'FAILED'} the ${result.target} target`
   );
   for (const [format, entry] of Object.entries(score.byFormat)) {
-    line(`  ${format}: n=${entry.n} kappa ${entry.kappa.toFixed(2)}`);
+    line(`  ${format}: n=${entry.n} kappa ${formatKappa(entry.kappa)}`);
   }
   line(recordFile);
   return 0;

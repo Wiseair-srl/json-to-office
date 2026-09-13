@@ -55,6 +55,13 @@ export function cohensKappa<T extends string | number | boolean>(
   return (observed - expected) / (1 - expected);
 }
 
+/** A kappa for a report line: undefined agreement is said, not printed as NaN. */
+export function formatKappa(kappa: number | null): string {
+  return kappa !== null && Number.isFinite(kappa)
+    ? kappa.toFixed(2)
+    : 'undefined';
+}
+
 export function rawAgreement<T extends string | number | boolean>(
   ratings: readonly Rating<T>[]
 ): number {

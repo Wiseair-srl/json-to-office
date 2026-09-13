@@ -417,14 +417,18 @@ export function chooseDefinition(
     );
   const chosen = eligible[0];
   const top = ranked.find((score) => score.kappa === best)!;
+  const topDefinition = definitionOf(top.id);
+  // Name the rule that separated the chosen definition from the best one.
+  const decider =
+    readsPages(topDefinition) && !readsPages(chosen)
+      ? 'reads no page term, which only documents measure'
+      : terms(chosen) < terms(topDefinition)
+        ? 'decides on fewer terms'
+        : 'has the same page term and as many terms, and was listed first';
   const reason =
     chosen.id === top.id
       ? `highest kappa (${best.toFixed(2)})`
-      : `within ${margin} of the highest kappa (${top.id}, ${best.toFixed(2)}), and ${
-          readsPages(definitionOf(top.id)) && !readsPages(chosen)
-            ? 'reads no page term, which only documents measure'
-            : 'decides on fewer terms'
-        }`;
+      : `within ${margin} of the highest kappa (${top.id}, ${best.toFixed(2)}), and ${decider}`;
   return { chosen: chosen.id, reason };
 }
 

@@ -3,6 +3,7 @@ import {
   bootstrapKappa,
   clusterBootstrapKappa,
   cohensKappa,
+  formatKappa,
   rawAgreement,
 } from './statistics.js';
 
@@ -73,6 +74,15 @@ describe('cohensKappa', () => {
     ];
     expect(cohensKappa(levels)).toBeGreaterThan(0.5);
     expect(cohensKappa(levels)).toBeLessThan(1);
+  });
+});
+
+describe('formatKappa', () => {
+  it('prints two decimals, and says undefined rather than NaN', () => {
+    expect(formatKappa(0.6666)).toBe('0.67');
+    expect(formatKappa(Number.NaN)).toBe('undefined');
+    // A kappa read back from JSON: NaN was written as null.
+    expect(formatKappa(null)).toBe('undefined');
   });
 });
 

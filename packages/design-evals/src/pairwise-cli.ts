@@ -18,6 +18,7 @@ import {
 } from './calibration.js';
 import { runWithInkLines } from './cli-lines.js';
 import { comparePairs, type PairwiseReport } from './pairwise.js';
+import { formatKappa } from './statistics.js';
 
 const OPTIONS = {
   judge: { type: 'string' },
@@ -89,7 +90,7 @@ async function calibrate(
     ? ` (95% ${report.interval.low.toFixed(2)}..${report.interval.high.toFixed(2)})`
     : '';
   line(
-    `${report.n} pair(s) rated by both: ${(report.rawAgreement * 100).toFixed(0)}% agreement, kappa ${report.kappa.toFixed(2)}${interval}`
+    `${report.n} pair(s) rated by both: ${(report.rawAgreement * 100).toFixed(0)}% agreement, kappa ${formatKappa(report.kappa)}${interval}`
   );
   if (judgeSkipped.length > 0) {
     line(
