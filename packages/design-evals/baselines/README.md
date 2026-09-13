@@ -9,27 +9,29 @@ guards. Their transcripts did not record tool responses, so successful artifact
 delivery cannot be verified from the scorecards alone. Preserve the original
 numbers; use fresh matched runs with the guards before making acceptance claims.
 
-| File                                                          | Mode | Server                                               | Model           | Runs                                                                 | Judge                           |
-| ------------------------------------------------------------- | ---- | ---------------------------------------------------- | --------------- | -------------------------------------------------------------------- | ------------------------------- |
-| `2026-09-04-cold-server-2.0.0.json`                           | cold | 2.0.0                                                | claude-sonnet-5 | 40                                                                   | yes                             |
-| `2026-09-07-checkpoint-before-cold-server-4.4.0.json`         | cold | 4.4.0                                                | claude-sonnet-5 | 24 (set `client-report-checkpoint`, 8 × 3)                           | yes (claude-opus-5)             |
-| `2026-09-08-checkpoint-after-cold-server-4.4.2.json`          | cold | 4.4.2                                                | claude-sonnet-5 | 24 (set `client-report-checkpoint`, 8 × 3)                           | yes (claude-opus-5)             |
-| `2026-09-08-rejudge-checkpoint-before.json`                   | —    | —                                                    | —               | 24 rejudged, same session as the next row                            | claude-opus-5                   |
-| `2026-09-08-rejudge-checkpoint-after.json`                    | —    | —                                                    | —               | 24 rejudged, same session as the row above                           | claude-opus-5                   |
-| `2026-09-08-human-checkpoint-verdicts.json`                   | —    | —                                                    | —               | 48 absolute + 24 pairwise, Paolo, blind                              | human                           |
-| `2026-09-08-checkpoint-after-fill-cold-server-4.4.0.json`     | cold | 4.4.0 (jto-ops 4.4.2 + page-fill rule)               | claude-sonnet-5 | 24 (set `client-report-checkpoint`, 8 × 3)                           | yes (claude-opus-5)             |
-| `2026-09-08-rejudge-checkpoint-before-2.json`                 | —    | —                                                    | —               | 24 rejudged, same session as the next row                            | claude-opus-5                   |
-| `2026-09-08-rejudge-checkpoint-after-fill.json`               | —    | —                                                    | —               | 24 rejudged, same session as the row above                           | claude-opus-5                   |
-| `2026-09-08-page-fill-measure.json`                           | —    | —                                                    | —               | page fill of every delivered document, 3 sets                        | rendered pass                   |
-| `2026-09-08-checkpoint-after-flow-cold-server-4.4.4.json`     | cold | 4.4.4 + sections flow (PR #402 build)                | claude-sonnet-5 | 24 (set `client-report-checkpoint`, 8 × 3)                           | yes (claude-opus-5)             |
-| `2026-09-08-rejudge-checkpoint-before-3.json`                 | —    | —                                                    | —               | 24 rejudged, same session as the next row                            | claude-opus-5                   |
-| `2026-09-08-rejudge-checkpoint-after-flow.json`               | —    | —                                                    | —               | 24 rejudged, same session as the row above                           | claude-opus-5                   |
-| `2026-09-08-checkpoint-after-exhibits-cold-server-4.4.4.json` | cold | 4.4.4 + exhibit rule, last-page rule (PR #405 build) | claude-sonnet-5 | 24 (set `client-report-checkpoint`, 8 × 3)                           | yes (claude-opus-5)             |
-| `2026-09-08-rejudge-checkpoint-before-4.json`                 | —    | —                                                    | —               | 24 rejudged, same session as the next row                            | claude-opus-5                   |
-| `2026-09-08-rejudge-checkpoint-after-exhibits.json`           | —    | —                                                    | —               | 24 rejudged, same session as the row above                           | claude-opus-5                   |
-| `2026-09-09-human-checkpoint-verdicts-round2.json`            | —    | —                                                    | —               | 48 absolute (before again + after-exhibits) + 24 pairs, Paolo, blind | human                           |
-| `2026-09-13-shipping-calibration.json`                        | —    | —                                                    | —               | 72 artifacts (64 stable labels), 6 candidate shipping definitions    | claude-opus-5, v1 + v2 sittings |
-| `shipping-definition.json`                                    | —    | —                                                    | —               | the frozen definition, `clean-pages`, awaiting verification          | —                               |
+| File                                                          | Mode | Server                                               | Model           | Runs                                                                  | Judge                           |
+| ------------------------------------------------------------- | ---- | ---------------------------------------------------- | --------------- | --------------------------------------------------------------------- | ------------------------------- |
+| `2026-09-04-cold-server-2.0.0.json`                           | cold | 2.0.0                                                | claude-sonnet-5 | 40                                                                    | yes                             |
+| `2026-09-07-checkpoint-before-cold-server-4.4.0.json`         | cold | 4.4.0                                                | claude-sonnet-5 | 24 (set `client-report-checkpoint`, 8 × 3)                            | yes (claude-opus-5)             |
+| `2026-09-08-checkpoint-after-cold-server-4.4.2.json`          | cold | 4.4.2                                                | claude-sonnet-5 | 24 (set `client-report-checkpoint`, 8 × 3)                            | yes (claude-opus-5)             |
+| `2026-09-08-rejudge-checkpoint-before.json`                   | —    | —                                                    | —               | 24 rejudged, same session as the next row                             | claude-opus-5                   |
+| `2026-09-08-rejudge-checkpoint-after.json`                    | —    | —                                                    | —               | 24 rejudged, same session as the row above                            | claude-opus-5                   |
+| `2026-09-08-human-checkpoint-verdicts.json`                   | —    | —                                                    | —               | 48 absolute + 24 pairwise, Paolo, blind                               | human                           |
+| `2026-09-08-checkpoint-after-fill-cold-server-4.4.0.json`     | cold | 4.4.0 (jto-ops 4.4.2 + page-fill rule)               | claude-sonnet-5 | 24 (set `client-report-checkpoint`, 8 × 3)                            | yes (claude-opus-5)             |
+| `2026-09-08-rejudge-checkpoint-before-2.json`                 | —    | —                                                    | —               | 24 rejudged, same session as the next row                             | claude-opus-5                   |
+| `2026-09-08-rejudge-checkpoint-after-fill.json`               | —    | —                                                    | —               | 24 rejudged, same session as the row above                            | claude-opus-5                   |
+| `2026-09-08-page-fill-measure.json`                           | —    | —                                                    | —               | page fill of every delivered document, 3 sets                         | rendered pass                   |
+| `2026-09-08-checkpoint-after-flow-cold-server-4.4.4.json`     | cold | 4.4.4 + sections flow (PR #402 build)                | claude-sonnet-5 | 24 (set `client-report-checkpoint`, 8 × 3)                            | yes (claude-opus-5)             |
+| `2026-09-08-rejudge-checkpoint-before-3.json`                 | —    | —                                                    | —               | 24 rejudged, same session as the next row                             | claude-opus-5                   |
+| `2026-09-08-rejudge-checkpoint-after-flow.json`               | —    | —                                                    | —               | 24 rejudged, same session as the row above                            | claude-opus-5                   |
+| `2026-09-08-checkpoint-after-exhibits-cold-server-4.4.4.json` | cold | 4.4.4 + exhibit rule, last-page rule (PR #405 build) | claude-sonnet-5 | 24 (set `client-report-checkpoint`, 8 × 3)                            | yes (claude-opus-5)             |
+| `2026-09-08-rejudge-checkpoint-before-4.json`                 | —    | —                                                    | —               | 24 rejudged, same session as the next row                             | claude-opus-5                   |
+| `2026-09-08-rejudge-checkpoint-after-exhibits.json`           | —    | —                                                    | —               | 24 rejudged, same session as the row above                            | claude-opus-5                   |
+| `2026-09-09-human-checkpoint-verdicts-round2.json`            | —    | —                                                    | —               | 48 absolute (before again + after-exhibits) + 24 pairs, Paolo, blind  | human                           |
+| `2026-09-13-shipping-calibration.json`                        | —    | —                                                    | —               | 72 artifacts (64 stable labels), 6 candidate shipping definitions     | claude-opus-5, v1 + v2 sittings |
+| `shipping-definition.json`                                    | —    | —                                                    | —               | the frozen definition, `clean-pages`, awaiting verification           | —                               |
+| `2026-09-13-human-phase0-pairs.json`                          | —    | —                                                    | —               | 40 pairs, cold against assisted, Paolo, blind                         | human                           |
+| `2026-09-13-pairwise-calibration-phase0.json`                 | —    | —                                                    | —               | Paolo's 40 pairs against the judge's two-order verdicts (36 compared) | —                               |
 
 ## The client-report checkpoint "before" set
 
@@ -452,3 +454,31 @@ establish the size of the underlying quality differences. The second-shown
 win rate was 64%. Only six pairs supplied a stable direction, so this result
 does not establish whole-corpus sendability or sensitivity to smaller future
 improvements. Human calibration and further measurement remain in #360.
+
+## The forty pairs, by Paolo (#321, #409)
+
+`2026-09-13-human-phase0-pairs.json` is Paolo's blind reading of the same
+forty cold and assisted pairs: one pair at a time, sides randomised (cold on
+the left in 20), "Which would you rather send?". Cold
+`cd-pricing-strategy-workshop` is the clean rerun that replaced the
+contaminated first run.
+
+|                        | cold | assisted | tie |
+| ---------------------- | ---- | -------- | --- |
+| client reports (13)    | 8    | 4        | 1   |
+| technical reports (11) | 7    | 3        | 1   |
+| decks (16)             | 1    | 12       | 3   |
+| all forty              | 16   | 19       | 5   |
+
+Across the corpus he has no preference (19–16, sign test p = 0.74), and no
+side bias either (left 18, right 17). By archetype the split is sharp: the
+3.2.0 skill made the decks he would rather send and the reports he would
+not.
+
+Against the judge (`2026-09-13-pairwise-calibration-phase0.json`, the 36
+pairs it compared, an order-inconsistent verdict read as a tie): 17%
+agreement, kappa −0.01 [−0.08, 0.08]. Its six order-consistent verdicts all
+chose the assisted document; Paolo agreed on the two decks and chose the cold
+document on the four reports. On the thirty it could not decide he picked a
+side in 26. The pairwise judge, as it ran on 2026-09-05, does not stand in
+for him, and "assisted 6, cold 0" above is not what he sees.
