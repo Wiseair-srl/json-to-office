@@ -190,6 +190,29 @@ describe('choosing a definition', () => {
     expect(choice.reason).toMatch(/page/);
   });
 
+  it('names what decided the choice when the order breaks the tie', () => {
+    // Same page term, same number of terms: only the listed order separates them.
+    const answerPages: ShippingDefinition = {
+      ...answer,
+      id: 'answer-pages',
+      noIntegrityDefect: true,
+      maximumPageDefects: 1,
+    };
+    const levelPages: ShippingDefinition = {
+      ...pages,
+      id: 'level-pages',
+      noIntegrityDefect: true,
+    };
+    const choice = chooseDefinition(
+      [score('level-pages', 0.66), score('answer-pages', 0.68)],
+      [levelPages, answerPages],
+      { margin: 0.05 }
+    );
+    expect(choice.chosen).toBe('level-pages');
+    expect(choice.reason).not.toMatch(/fewer terms/);
+    expect(choice.reason).toMatch(/listed first/);
+  });
+
   it('never chooses a definition whose agreement is undefined', () => {
     expect(
       chooseDefinition(
