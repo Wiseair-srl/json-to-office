@@ -36,6 +36,7 @@ import {
 import {
   definitionHash,
   PAGE_DEFECT_CODES,
+  promptDigest,
   ships,
   SHIPPING_QUESTIONS,
   STATUS_QUO_DEFINITION,
@@ -406,29 +407,43 @@ export function chooseDefinition(
     if (!found) throw new Error(`Unknown candidate "${id}".`);
     return found;
   };
+  const listed = (definition: ShippingDefinition): number =>
+    order.get(definition.id) ?? 0;
+  // The stated rule, in order: the first step that separates two candidates
+  // decides between them, and is the reason given for the choice.
+  const tieBreaks: ReadonlyArray<{
+    compare: (a: ShippingDefinition, b: ShippingDefinition) => number;
+    reason: string;
+  }> = [
+    {
+      compare: (a, b) => Number(readsPages(a)) - Number(readsPages(b)),
+      reason: 'reads no page term, which only documents measure',
+    },
+    {
+      compare: (a, b) => terms(a) - terms(b),
+      reason: 'decides on fewer terms',
+    },
+    {
+      compare: (a, b) => listed(a) - listed(b),
+      reason: 'has the same page term and as many terms, and was listed first',
+    },
+  ];
   const eligible = ranked
     .filter((score) => score.kappa >= best - margin)
     .map((score) => definitionOf(score.id))
     .sort(
       (a, b) =>
-        Number(readsPages(a)) - Number(readsPages(b)) ||
-        terms(a) - terms(b) ||
-        (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0)
+        tieBreaks.map((step) => step.compare(a, b)).find((d) => d !== 0) ?? 0
     );
   const chosen = eligible[0];
   const top = ranked.find((score) => score.kappa === best)!;
-  const topDefinition = definitionOf(top.id);
-  // Name the rule that separated the chosen definition from the best one.
-  const decider =
-    readsPages(topDefinition) && !readsPages(chosen)
-      ? 'reads no page term, which only documents measure'
-      : terms(chosen) < terms(topDefinition)
-        ? 'decides on fewer terms'
-        : 'has the same page term and as many terms, and was listed first';
+  const decider = tieBreaks.find(
+    (step) => step.compare(chosen, definitionOf(top.id)) < 0
+  );
   const reason =
     chosen.id === top.id
       ? `highest kappa (${best.toFixed(2)})`
-      : `within ${margin} of the highest kappa (${top.id}, ${best.toFixed(2)}), and ${decider}`;
+      : `within ${margin} of the highest kappa (${top.id}, ${best.toFixed(2)}), and ${decider?.reason}`;
   return { chosen: chosen.id, reason };
 }
 
@@ -480,6 +495,12 @@ export function verifyDefinition(
   options: {
     /** When the human verdicts were read out of the review page. */
     humanReadAt: string;
+    /** The judge sittings the verdicts came from, one per set and question. */
+    sittings: ReadonlyArray<{
+      question?: ShippingQuestionId;
+      judgedAt?: string;
+      promptSha256?: string;
+    }>;
     seed?: number;
     resamples?: number;
     target?: number;
@@ -496,6 +517,31 @@ export function verifyDefinition(
     throw new Error(
       `The verification verdicts were read at ${options.humanReadAt}, before the definition was frozen at ${frozen.frozenAt}: they cannot verify it.`
     );
+  }
+  // The sitting the definition reads answered after freezing, or its verdicts
+  // could have been seen while choosing; and it read the frozen prompt.
+  const { question } = frozen.definition;
+  const expectedPrompt = promptDigest(question);
+  for (const sitting of options.sittings) {
+    if ((sitting.question ?? 'v1') !== question) continue;
+    if (sitting.judgedAt === undefined) {
+      throw new Error(
+        `A judge sitting for question ${question} does not say when it answered, so it cannot show it followed the freeze.`
+      );
+    }
+    if (!(Date.parse(sitting.judgedAt) > Date.parse(frozen.frozenAt))) {
+      throw new Error(
+        `The judge sitting for question ${question} answered at ${sitting.judgedAt}, before the definition was frozen at ${frozen.frozenAt}: its verdicts could have shaped the choice.`
+      );
+    }
+    if (
+      sitting.promptSha256 !== undefined &&
+      sitting.promptSha256 !== expectedPrompt
+    ) {
+      throw new Error(
+        `The judge sitting for question ${question} read another prompt (${sitting.promptSha256.slice(0, 12)}) than the frozen definition names (${expectedPrompt.slice(0, 12)}).`
+      );
+    }
   }
   const calibrated = new Set(frozen.calibration.briefs ?? []);
   const overlap = [
@@ -622,6 +668,8 @@ export interface Sitting {
   verdicts: Record<string, JudgeAnswer>;
   judgeModel?: string;
   judgedAt?: string;
+  /** The digest of the whole prompt the sitting read; absent on sittings older than the field. */
+  promptSha256?: string;
 }
 
 export async function loadSitting(
@@ -633,6 +681,7 @@ export async function loadSitting(
         question?: string;
         judgeModel?: string;
         judgedAt?: string;
+        promptSha256?: string;
         runs: Array<{ run?: string; briefId: string; now?: JudgeAnswer }>;
       }
     | undefined;
@@ -657,6 +706,9 @@ export async function loadSitting(
     ),
     ...(report.judgeModel !== undefined && { judgeModel: report.judgeModel }),
     ...(report.judgedAt !== undefined && { judgedAt: report.judgedAt }),
+    ...(report.promptSha256 !== undefined && {
+      promptSha256: report.promptSha256,
+    }),
   };
 }
 

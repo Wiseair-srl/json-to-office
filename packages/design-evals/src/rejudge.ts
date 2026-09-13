@@ -28,7 +28,11 @@ import { developmentCorpusDir, loadCorpus, selectBriefs } from './corpus.js';
 import { agentVision, anthropicVision, judgeDocument } from './judge.js';
 import type { KappaReport } from './statistics.js';
 import { bootstrapKappa, type Rating } from './statistics.js';
-import { SHIPPING_QUESTIONS, type ShippingQuestionId } from './shipping.js';
+import {
+  promptDigest,
+  SHIPPING_QUESTIONS,
+  type ShippingQuestionId,
+} from './shipping.js';
 
 /** One document, judged twice. */
 export interface RejudgedRun {
@@ -48,6 +52,8 @@ export interface RejudgeReport {
   /** The shipping question the judge was asked; absent on reports older than #409 (`v1`). */
   question?: ShippingQuestionId;
   judgedAt: string;
+  /** Digest of the whole prompt the judge read, so a sitting names its instrument (#409). */
+  promptSha256?: string;
   runs: RejudgedRun[];
   /** Self-agreement, per rubric field. Absent when nothing could be compared. */
   agreement?: {
@@ -256,6 +262,7 @@ export async function rejudge(options: RejudgeOptions): Promise<RejudgeReport> {
     judgeModel: options.judgeModel,
     question: options.question ?? 'v1',
     judgedAt: new Date().toISOString(),
+    promptSha256: promptDigest(options.question ?? 'v1'),
     runs,
     ...(agreement && { agreement }),
   };

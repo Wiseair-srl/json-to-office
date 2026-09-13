@@ -1,14 +1,16 @@
+import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 
 import {
   CANDIDATE_DEFINITIONS,
   definitionHash,
   pageDefects,
+  promptDigest,
   ships,
   SHIPPING_QUESTIONS,
   type ShippingDefinition,
 } from './shipping.js';
-import { SHIPPING_QUESTION } from './rubric.js';
+import { rubricPrompt, SHIPPING_QUESTION } from './rubric.js';
 
 const base: ShippingDefinition = {
   id: 'test',
@@ -129,5 +131,14 @@ describe('the candidate definitions', () => {
     );
     // The question's wording is part of what was frozen, not just its id.
     expect(definitionHash(first)).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('name the whole prompt a judge sitting read by its digest', () => {
+    expect(promptDigest('v1')).toBe(
+      createHash('sha256')
+        .update(rubricPrompt(SHIPPING_QUESTIONS.v1))
+        .digest('hex')
+    );
+    expect(promptDigest('v1')).not.toBe(promptDigest('v2'));
   });
 });
