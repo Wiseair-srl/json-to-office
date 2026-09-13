@@ -3,7 +3,9 @@ import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { renderForJudging } from './render.js';
+import { freezeDefinition } from './shipping-calibration.js';
 import { main } from './shipping-cli.js';
+import { CANDIDATE_DEFINITIONS } from './shipping.js';
 
 vi.mock('./render.js', async (original) => ({
   ...(await original<typeof import('./render.js')>()),
@@ -67,5 +69,109 @@ describe('pnpm shipping sheets', () => {
     expect(output).not.toContain('soffice');
     expect(output).toContain('1 contact sheet(s) rendered');
     expect(output).toContain('1 failed');
+  });
+});
+
+describe('pnpm shipping verify', () => {
+  it('records which judge sitting the verification read, beside the definition hash', async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'shipping-verify-'));
+    dirs.push(dir);
+    const set = path.join(dir, 'set');
+    await fs.mkdir(set);
+    const briefs = ['tr-a', 'tr-b', 'tr-c', 'tr-d'];
+    const levels = [4, 4, 3, 3];
+    await fs.writeFile(
+      path.join(set, 'scorecard.json'),
+      JSON.stringify({
+        runs: briefs.map((briefId) => ({
+          briefId,
+          format: 'docx',
+          outcome: 'completed',
+        })),
+      })
+    );
+    await fs.writeFile(
+      path.join(set, 'facts.json'),
+      JSON.stringify({
+        source: 'reanalysis',
+        runs: Object.fromEntries(
+          briefs.map((briefId) => [briefId, { qualityByCode: {} }])
+        ),
+      })
+    );
+    await fs.writeFile(
+      path.join(set, 'sitting-v1.json'),
+      JSON.stringify({
+        question: 'v1',
+        judgeModel: 'claude-opus-5',
+        judgedAt: '2026-09-14T08:00:00.000Z',
+        runs: briefs.map((briefId, index) => ({
+          briefId,
+          run: briefId,
+          now: { level: levels[index], wouldShip: false, genericness: 2 },
+        })),
+      })
+    );
+    const human = path.join(dir, 'human.json');
+    await fs.writeFile(
+      human,
+      JSON.stringify({
+        question:
+          'After reading its argument, would you send this to the client unchanged?',
+        readAt: '2026-09-14T09:00:00.000Z',
+        verdicts: briefs.map((run, index) => ({
+          set: 'verification',
+          run,
+          wouldShip: levels[index] >= 4,
+        })),
+      })
+    );
+    const definition = path.join(dir, 'definition.json');
+    await fs.writeFile(
+      definition,
+      JSON.stringify(
+        freezeDefinition(
+          CANDIDATE_DEFINITIONS.find((entry) => entry.id === 'excellent')!,
+          {
+            frozenAt: new Date('2026-09-13T20:00:00.000Z'),
+            evidence: {
+              scores: [],
+              chosen: 'excellent',
+              reason: 'test',
+              briefs: ['cr-z'],
+            },
+          }
+        )
+      )
+    );
+    const record = path.join(dir, 'record.json');
+
+    const lines: string[] = [];
+    const code = await main(
+      [
+        'verify',
+        '--definition',
+        definition,
+        '--set',
+        `verification=${set}`,
+        '--human',
+        human,
+        '--record',
+        record,
+      ],
+      (text) => lines.push(text)
+    );
+
+    expect(code, lines.join('\n')).toBe(0);
+    const [attempt] = JSON.parse(await fs.readFile(record, 'utf8')).attempts;
+    expect(attempt.passed).toBe(true);
+    expect(attempt.allocation.sittings).toEqual([
+      {
+        set: 'verification',
+        question: 'v1',
+        judgeModel: 'claude-opus-5',
+        judgedAt: '2026-09-14T08:00:00.000Z',
+      },
+    ]);
   });
 });

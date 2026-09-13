@@ -25,7 +25,7 @@
  *     stated rule.
  *
  *   pnpm shipping freeze --calibration <file> [--candidate <id>] --out <file>
- *   pnpm shipping verify --definition <file> --set <id>=<dir> --human <file> --out <file>
+ *   pnpm shipping verify --definition <file> --set <id>=<dir>… --human <file> --record <file> [--supersede <why>]
  */
 
 import { createHash } from 'node:crypto';
@@ -533,9 +533,10 @@ async function verify(
     );
     return 1;
   }
-  const evidenceSets = (
-    await Promise.all(sets.map((set) => loadEvidenceSet(set.id, set.dir)))
-  ).map((entry) => entry.set);
+  const loaded = await Promise.all(
+    sets.map((set) => loadEvidenceSet(set.id, set.dir))
+  );
+  const evidenceSets = loaded.map((entry) => entry.set);
   const rows = buildEvidence(
     evidenceSets,
     labelArtifacts(humanJudgments([round]))
@@ -579,6 +580,14 @@ async function verify(
               })),
               human: path.relative(repoRoot, path.resolve(humanFile)),
               question: round.file.question,
+              // The judge model and sitting the verdicts came from; the hash
+              // above names the prompt it read.
+              sittings: loaded.flatMap((entry) =>
+                entry.sittings.map((sitting) => ({
+                  set: entry.set.id,
+                  ...sitting,
+                }))
+              ),
             },
           },
         ],
