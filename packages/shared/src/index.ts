@@ -40,6 +40,7 @@ export type {
   UnsupportedRendererFeatureErrorInit,
   FeatureRequirement,
   RendererStatus,
+  AssetUnreadableError,
 } from './rendering/index';
 export {
   assertNever,
@@ -49,6 +50,8 @@ export {
   rendererWarning,
   FeatureRequirementCollector,
   RENDERER_DEPENDENCY_MISSING,
+  ASSET_UNREADABLE,
+  assetUnreadableError,
   RendererRegistry,
   assertRendererSupports,
   diagnoseUnsupportedFeatures,

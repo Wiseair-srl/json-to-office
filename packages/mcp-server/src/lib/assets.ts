@@ -5,13 +5,16 @@
  * not there validated clean and then failed the render — as `E_INTERNAL`, the
  * code this server keeps for its own bugs, because what escaped was an unnamed
  * `Error` from wherever the bytes were first wanted: the DOCX image loader,
- * pptxgenjs at write time, `fs` itself. None of those carries a pointer or a
- * code to classify. The document carries both: it says which image named the
- * file, and where.
+ * pptxgenjs at write time, `fs` itself. The cores now name that failure
+ * `ASSET_UNREADABLE` where they read the bytes themselves (pptxgenjs reads its
+ * own), but none of them has a pointer. The document does: it says which image
+ * named the file, and where.
  *
- * One check, three callers. `jto_validate` reports it; `jto_generate` and
- * `jto_preview` ask it when a render fails, so the failure comes back as the
- * finding validation would have given, at the same pointer.
+ * One check, four callers. `jto_validate` reports it; `jto_generate`,
+ * `jto_preview` and `jto_docx_diff` ask it when a render fails, so the failure
+ * comes back as the finding validation would have given, at the same pointer.
+ * What it cannot see — a URL, a path fed through a block's string slot — is
+ * classified by the name alone (`assetUnreadableDiagnostic` in `errors.ts`).
  *
  * The verdict mirrors what generation does with each image, which differs by
  * where the image sits:

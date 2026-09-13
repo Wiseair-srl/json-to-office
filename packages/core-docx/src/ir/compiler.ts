@@ -20,6 +20,7 @@
 
 import {
   FeatureRequirementCollector,
+  assetUnreadableError,
   type FeatureRequirement,
 } from '@json-to-office/shared/rendering';
 import type {
@@ -930,7 +931,10 @@ function compileChromeImage(
 
   const loaded = ctx.images.get(source);
   if (!loaded) {
-    throw new Error(`Failed to load image from ${source.substring(0, 50)}`);
+    throw (
+      unreadableImage(source, ctx) ??
+      new Error(`Failed to load image from ${source.substring(0, 50)}`)
+    );
   }
 
   const mediaType = detectImageType(source, loaded.contentType);
@@ -3708,6 +3712,24 @@ function visualPlacementPixels(
 const UNLOWERED_IMAGE_PROPS = ['comment'] as const;
 
 /**
+ * The error for an image the loader tried and could not read.
+ *
+ * That is the document's defect — a file that is not there, a URL that did not
+ * answer — so it is thrown as `ASSET_UNREADABLE`, carrying the source and what
+ * the read threw. `undefined` when the loader never tried the source: that is
+ * a gap in this pipeline's walk, and nothing in the document can repair it.
+ */
+function unreadableImage(
+  source: string,
+  ctx: CompileContext
+): Error | undefined {
+  const { failures } = ctx.images;
+  return failures?.has(source)
+    ? assetUnreadableError(source, failures.get(source))
+    : undefined;
+}
+
+/**
  * An image, and the caption paragraph that may follow it.
  *
  * The bytes were loaded before compilation started; what happens here is the
@@ -3736,7 +3758,12 @@ function compileImage(
   }
 
   const loaded = ctx.images.get(source);
-  if (!loaded) throw new Error(`Failed to load image from ${source}`);
+  if (!loaded) {
+    throw (
+      unreadableImage(source, ctx) ??
+      new Error(`Failed to load image from ${source}`)
+    );
+  }
 
   const mediaType = detectImageType(source, loaded.contentType);
   if (mediaType === 'svg') ctx.features.require('svg-images', path);

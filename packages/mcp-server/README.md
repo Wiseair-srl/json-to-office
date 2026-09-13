@@ -202,7 +202,7 @@ The gate, not `jto://schema/{format}/document`. The two agree except on componen
 
 **Out** — `format`, `renderer` (when requested), `theme` (what the render actually settled on, absent when the document's own `props.theme` decided), `artifact`, `source`.
 
-Warnings the render emitted arrive as warning-severity diagnostics in the same envelope as a successful artifact — one place to look whether generation refused or merely compromised. The tool reports progress against a three-step total when the client sends a progress token, and checks for cancellation before the write so an abandoned request leaves no file behind.
+Warnings the render emitted arrive as warning-severity diagnostics in the same envelope as a successful artifact — one place to look whether generation refused or merely compromised. An image the render could not read is `E_ASSET_UNREADABLE`: at the image's `props/path`, exactly as `jto_validate` reports it, when the document names a local file there; without a pointer, and with the path or URL the render tried in `context.source`, when it could not have — a URL that did not answer, a path fed through a block's string slot. That second case needs a renderer that reads the image itself, which every DOCX renderer and PPTX `office-open` do; pptxgenjs reads its own. The tool reports progress against a three-step total when the client sends a progress token, and checks for cancellation before the write so an abandoned request leaves no file behind.
 
 ### `jto_preview`
 
@@ -236,7 +236,7 @@ DOCX only.
 
 **Out** — `summary` `{tracked: {modified, inserted, deleted}, untracked[], unchangedBlocks, notes[]}`; `artifact` (unless `dryRun`); `redline` (the redline document JSON, only when asked for); `dryRun`; `before` and `after` source summaries.
 
-Both sides are validated before the walk, and their diagnostics are tagged with `context.side`. Read `summary.untracked`: changes with no native Word revision — tables, images, charts — are invisible as revisions inside the file itself.
+Both sides are validated before the walk, and their diagnostics are tagged with `context.side`. So is an image the redline could not render: `E_ASSET_UNREADABLE` at its pointer in whichever document names it. Read `summary.untracked`: changes with no native Word revision — tables, images, charts — are invisible as revisions inside the file itself.
 
 ### Workspaces
 
@@ -338,7 +338,7 @@ The cores name their generation warnings in a dialect of their own too — bare 
 | `E_UNKNOWN_COMPONENT`              | `name` is not a component of this format, or not one allowed here.                                          |
 | `E_MUTUALLY_EXCLUSIVE`             | Two props that exclude each other were both set.                                                            |
 | `E_THEME_NOT_FOUND`                | A theme the document names does not exist.                                                                  |
-| `E_ASSET_UNREADABLE`               | An image file the document names cannot be read, and generation fails over it.                              |
+| `E_ASSET_UNREADABLE`               | An image the document names — a file, or a URL — cannot be read, and generation fails over it.              |
 | `E_EMPTY_DOCUMENT`                 | The document has no content.                                                                                |
 | `E_INVALID_DOCUMENT`               | The document fails a rule with no more specific code.                                                       |
 | `E_INVALID_JSON`                   | A document string does not parse.                                                                           |

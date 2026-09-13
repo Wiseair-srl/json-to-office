@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ASSET_UNREADABLE,
   FeatureRequirementCollector,
   RendererRegistry,
   assertRendererSupports,
+  assetUnreadableError,
   diagnoseUnsupportedFeatures,
 } from '../capabilities';
 import { UnsupportedRendererFeatureError } from '../diagnostics';
@@ -319,5 +321,32 @@ describe('RendererRegistry', () => {
         'secondary',
       ]);
     });
+  });
+});
+
+describe('assetUnreadableError', () => {
+  it('is named, carries the source, and says why', () => {
+    const cause = Object.assign(new Error('ENOENT: no such file'), {
+      code: 'ENOENT',
+    });
+    const error = assetUnreadableError('/missing/logo.png', cause);
+
+    expect(error).toBeInstanceOf(Error);
+    expect(error.name).toBe(ASSET_UNREADABLE);
+    expect(error.source).toBe('/missing/logo.png');
+    expect(error.cause).toBe(cause);
+    expect(error.message).toBe(
+      'Failed to load image from /missing/logo.png: ENOENT: no such file'
+    );
+  });
+
+  it('keeps a data URI out of its message, but not off the error', () => {
+    const source = `data:image/png;base64,${'A'.repeat(4096)}`;
+    const error = assetUnreadableError(source, 'Invalid base64 data URI');
+
+    expect(error.source).toBe(source);
+    expect(error.message).toBe(
+      `Failed to load image from ${source.slice(0, 50)}…: Invalid base64 data URI`
+    );
   });
 });
