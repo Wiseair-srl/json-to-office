@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { QUALITY_CODES } from '@json-to-office/quality';
+import { CONSULTING_PPTX_THEME } from '../themes/consulting';
 import { preparePptxQualityDocument } from './facts';
 import { analyzePptxQuality } from './preflight';
 
@@ -1471,6 +1472,105 @@ describe('brand consistency', () => {
       ])
     ).filter((finding) => finding.code === QUALITY_CODES.OFF_PALETTE);
     expect(findings).toEqual([]);
+  });
+
+  it('never judges a theme given by value against its own palette', () => {
+    // Inline, the theme is part of the document but still the palette's
+    // definition: the consulting gridline (#E4E7EB, its DOCX twin's
+    // `borderSecondary`) has no pptx token, and named it is never walked.
+    const slides = [
+      {
+        name: 'slide',
+        children: [
+          {
+            name: 'text',
+            props: { text: 'Off brand', color: '#FF00FF', x: 1, y: 1, w: 3 },
+          },
+        ],
+      },
+    ];
+    const inline = pptxDiagnostics(
+      deck({ ...CANVAS, theme: CONSULTING_PPTX_THEME }, slides)
+    );
+    expect(
+      inline.filter((finding) =>
+        [finding.path, ...(finding.relatedPaths ?? [])].some(
+          (path) => path === '/props/theme' || path.startsWith('/props/theme/')
+        )
+      )
+    ).toEqual([]);
+    // What the author painted is still judged.
+    expect(
+      inline
+        .filter((finding) => finding.code === QUALITY_CODES.OFF_PALETTE)
+        .map((finding) => finding.path)
+    ).toEqual(['/children/0/children/0/props/color']);
+    expect(inline).toEqual(
+      pptxDiagnostics(deck({ ...CANVAS, theme: 'consulting' }, slides))
+    );
+  });
+
+  it('judges authored colours against the palette an inline theme defines', () => {
+    // The inline theme replaces the house accent: the new one is on this
+    // deck's palette and the old one is not.
+    const theme = {
+      ...CONSULTING_PPTX_THEME,
+      colors: { ...CONSULTING_PPTX_THEME.colors, accent: '#E4007C' },
+    };
+    const findings = pptxDiagnostics(
+      deck({ ...CANVAS, theme }, [
+        {
+          name: 'slide',
+          children: [
+            {
+              name: 'text',
+              props: { text: 'New', color: '#E4007C', x: 1, y: 1, w: 3 },
+            },
+            {
+              name: 'text',
+              props: { text: 'Old', color: '#1B4F8A', x: 1, y: 3, w: 3 },
+            },
+          ],
+        },
+      ])
+    ).filter((finding) => finding.code === QUALITY_CODES.OFF_PALETTE);
+    expect(findings.map((finding) => finding.path)).toEqual([
+      '/children/0/children/1/props/color',
+    ]);
+  });
+
+  it('counts the families of an inline theme as it does a named one', () => {
+    // A face a theme style names is the theme's, not an authored choice, so
+    // inlining the theme must not tip the deck past the family limit.
+    const theme = {
+      ...CONSULTING_PPTX_THEME,
+      name: 'house',
+      styles: {
+        ...CONSULTING_PPTX_THEME.styles,
+        caption: {
+          ...CONSULTING_PPTX_THEME.styles?.caption,
+          fontFace: 'Georgia',
+        },
+      },
+    };
+    const slides = [
+      {
+        name: 'slide',
+        children: [
+          {
+            name: 'text',
+            props: { text: 'One', fontFace: 'Futura', x: 1, y: 1, w: 3 },
+          },
+        ],
+      },
+    ];
+    const named = analyzePptxQuality(
+      deck({ ...CANVAS, theme: 'house' }, slides),
+      {
+        customThemes: { house: theme },
+      }
+    ).diagnostics;
+    expect(pptxDiagnostics(deck({ ...CANVAS, theme }, slides))).toEqual(named);
   });
 });
 
