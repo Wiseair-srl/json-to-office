@@ -1418,7 +1418,14 @@ export function prepareDocxQualityDocument(
     ],
   });
 
-  collectColorLiterals(document).forEach((literal, index) => {
+  // Brand facts are what the author painted. Overrides merge into the theme
+  // before its palette is read, so their values are its definition — as if
+  // the theme had been named — and the theme fact above reports its families.
+  // Placeholders, below, still walk them: a marker blocks generation anywhere.
+  const content = { ...document, props: { ...asRecord(document.props) } };
+  delete content.props.themeOverrides;
+
+  collectColorLiterals(content).forEach((literal, index) => {
     addFact({
       id: `docx:color:${index}:${literal.path}`,
       kind: 'docx/color',
@@ -1428,7 +1435,7 @@ export function prepareDocxQualityDocument(
     });
   });
 
-  collectFontFamilies(document).forEach((use, index) => {
+  collectFontFamilies(content).forEach((use, index) => {
     addFact({
       id: `docx:font:${index}:${use.path}`,
       kind: 'docx/font-family',
