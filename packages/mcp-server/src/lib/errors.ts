@@ -13,6 +13,7 @@ import {
   type DiagnosticTone,
 } from '@json-to-office/jto-ops';
 import {
+  ASSET_UNREADABLE,
   RENDERER_DEPENDENCY_MISSING,
   type ValidationError,
 } from '@json-to-office/shared';
@@ -120,7 +121,7 @@ export const ERROR_CODES = {
    * option, or the document's own `props.theme`.
    */
   UNKNOWN_THEME: 'W_UNKNOWN_THEME',
-  /** An image file the document names cannot be read, and generation fails over it. */
+  /** An image the document names — a file, or a URL — cannot be read, and generation fails over it. */
   ASSET_UNREADABLE: 'E_ASSET_UNREADABLE',
   /** The same, where generation completes without the picture instead. */
   ASSET_UNREADABLE_ADVISORY: 'W_ASSET_UNREADABLE',
@@ -368,6 +369,31 @@ export function toolResult<T extends object>(
 const HOST_DEPENDENCY_ERRORS = new Set([RENDERER_DEPENDENCY_MISSING]);
 
 /**
+ * An image the render could not read, as the diagnostic it is.
+ *
+ * It used to escape as whatever the read threw — a raw `fs` error, a status
+ * line — and `E_INTERNAL` on that sent the agent to report a bug when the
+ * repair was a path in its JSON. The cores now name it `ASSET_UNREADABLE` and
+ * carry the path or URL they tried; it is matched on the name for the reason
+ * `HOST_DEPENDENCY_ERRORS` is. It has no pointer, because nothing here has the
+ * document: a tool that does asks the document first (`lib/assets.ts`), so
+ * this answers for the images that check cannot see.
+ */
+export function assetUnreadableDiagnostic(
+  error: unknown
+): Diagnostic | undefined {
+  if (!(error instanceof Error) || error.name !== ASSET_UNREADABLE) {
+    return undefined;
+  }
+  const source = (error as { source?: unknown }).source;
+  return diagnostic(ERROR_CODES.ASSET_UNREADABLE, error.message, {
+    suggestion:
+      'Point the image at a file or URL that can be read, or embed it as base64.',
+    ...(typeof source === 'string' && { context: { source } }),
+  });
+}
+
+/**
  * Quality failures that are the caller's, and what each one really is.
  *
  * All three reach us as plain exceptions, and `E_INTERNAL` on one of them says
@@ -544,14 +570,20 @@ export async function guarded<T extends object>(
       (error instanceof Error && HOST_DEPENDENCY_ERRORS.has(error.name)
         ? ERROR_CODES.DEPENDENCY_MISSING
         : ERROR_CODES.INTERNAL);
+    const escaped =
+      assetUnreadableDiagnostic(error) ?? diagnostic(code, message);
     return withHostNotes(
-      failure(code, message, {
-        context: {
-          ...(stackAllowed() &&
-            error instanceof Error &&
-            error.stack !== undefined && { stack: error.stack }),
+      failureFrom([
+        {
+          ...escaped,
+          context: {
+            ...escaped.context,
+            ...(stackAllowed() &&
+              error instanceof Error &&
+              error.stack !== undefined && { stack: error.stack }),
+          },
         },
-      }),
+      ]),
       notes
     );
   }

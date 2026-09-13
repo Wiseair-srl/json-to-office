@@ -55,6 +55,7 @@ import type { FormatAdapter, FormatName } from '../lib/adapters.js';
 import { assetFailures } from '../lib/assets.js';
 import {
   ERROR_CODES,
+  assetUnreadableDiagnostic,
   diagnostic,
   failure,
   failureFrom,
@@ -379,6 +380,10 @@ function renderFailure(
  * repair, and following that suggestion costs a call and finds nothing. The
  * classification `jto_generate` already makes is the correct one, so preview
  * makes the same one rather than folding it into the generic case.
+ *
+ * An image the build could not read is the same story the other way round:
+ * the document is at fault, but jto_validate does not fetch a URL or follow a
+ * block slot, and would report nothing.
  */
 function buildFailure(error: unknown): Failure {
   if (error instanceof Error && error.name === RENDERER_DEPENDENCY_MISSING) {
@@ -387,6 +392,18 @@ function buildFailure(error: unknown): Failure {
         "Install the renderer's backend, or re-run with a renderer jto_info reports as available. The document is not at fault.",
       context: { stage: 'build' satisfies PreviewStage },
     });
+  }
+  const unreadable = assetUnreadableDiagnostic(error);
+  if (unreadable !== undefined) {
+    return failureFrom([
+      {
+        ...unreadable,
+        context: {
+          ...unreadable.context,
+          stage: 'build' satisfies PreviewStage,
+        },
+      },
+    ]);
   }
   return renderFailure('build', message(error));
 }
@@ -783,16 +800,20 @@ export async function renderPreview(
     // nothing about the document, so the validation pass that leads the
     // generic case would only add noise to it.
     const build = buildFailure(error);
+    const cause = build.diagnostics[0]?.code;
+    if (cause === ERROR_CODES.DEPENDENCY_MISSING) return build;
+    const unreadable = await assetFailures(format, document, {
+      ...(render.baseDir !== undefined && { baseDir: render.baseDir }),
+    });
     return failureFrom([
-      ...(build.diagnostics[0]?.code === ERROR_CODES.DEPENDENCY_MISSING
+      ...validationDiagnostics(options.getAdapter(format), document),
+      ...unreadable,
+      // A build that failed over an image would repeat, without a pointer,
+      // what the check has just reported with one. jto_generate answers with
+      // the check alone, and so does this.
+      ...(cause === ERROR_CODES.ASSET_UNREADABLE && unreadable.length > 0
         ? []
-        : [
-            ...validationDiagnostics(options.getAdapter(format), document),
-            ...(await assetFailures(format, document, {
-              ...(render.baseDir !== undefined && { baseDir: render.baseDir }),
-            })),
-          ]),
-      ...build.diagnostics,
+        : build.diagnostics),
     ]);
   }
   const generateMs = elapsed(generateStarted);

@@ -429,6 +429,9 @@ export function detectImageType(
 /**
  * Download image from URL and return buffer
  * Uses native fetch with automatic redirect following and proper headers
+ *
+ * The messages leave the URL out: every caller names the source in the error
+ * it builds around this one, and the status alone is what this one adds.
  */
 export async function downloadImageFromUrl(
   url: string
@@ -449,9 +452,8 @@ export async function downloadImageFromUrl(
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      throw new Error(
-        `Failed to download image: HTTP ${response.status} ${response.statusText}`
-      );
+      // Wrapped once, below, like every other failure in here.
+      throw new Error(`HTTP ${response.status} ${response.statusText}`);
     }
 
     const contentType = response.headers.get('content-type') || undefined;
@@ -469,9 +471,9 @@ export async function downloadImageFromUrl(
           'Failed to download image: Request timeout after 10 seconds'
         );
       }
-      throw new Error(`Failed to download image from ${url}: ${error.message}`);
+      throw new Error(`Failed to download image: ${error.message}`);
     }
-    throw new Error(`Failed to download image from ${url}: Unknown error`);
+    throw new Error('Failed to download image: Unknown error');
   }
 }
 

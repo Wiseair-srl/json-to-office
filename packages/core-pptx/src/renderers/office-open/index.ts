@@ -13,6 +13,7 @@
  */
 
 import { readFile } from 'node:fs/promises';
+import { assetUnreadableError } from '@json-to-office/shared/rendering';
 import {
   finalizePackage,
   readPackage,
@@ -25,6 +26,7 @@ import type {
   PptxIR,
   PptxIrChartElement,
   PptxIrResource,
+  PptxIrResourceOrigin,
 } from '../../ir/types';
 import type { PptxRenderOptions, PptxRenderer, PptxRendererId } from '../types';
 import { background, slideChild, type OfficeOpenEmitContext } from './emit';
@@ -326,29 +328,36 @@ async function loadResourceBytes(
   resources: readonly PptxIrResource[]
 ): Promise<Map<string, Uint8Array>> {
   const entries = await Promise.all(
-    resources.map(async (resource) => {
-      switch (resource.origin.kind) {
-        case 'inline':
-          return [resource.id, resource.origin.bytes] as const;
-        case 'file':
-          return [
-            resource.id,
-            new Uint8Array(await readFile(resource.origin.path)),
-          ] as const;
-        case 'remote': {
-          const response = await fetch(resource.origin.url);
-          if (!response.ok) {
-            throw new Error(
-              `failed to fetch image ${resource.origin.url}: ${response.status} ${response.statusText}`
-            );
-          }
-          return [
-            resource.id,
-            new Uint8Array(await response.arrayBuffer()),
-          ] as const;
-        }
-      }
-    })
+    resources.map(
+      async (resource) =>
+        [resource.id, await resourceBytes(resource.origin)] as const
+    )
   );
   return new Map(entries);
+}
+
+/**
+ * One resource's bytes.
+ *
+ * A file that is not there, or a URL that does not answer with the picture, is
+ * the document's defect. It leaves as `ASSET_UNREADABLE` carrying the location,
+ * because the raw `fs` error or status line says nothing a caller can classify.
+ */
+async function resourceBytes(
+  origin: PptxIrResourceOrigin
+): Promise<Uint8Array> {
+  if (origin.kind === 'inline') return origin.bytes;
+  const location = origin.kind === 'file' ? origin.path : origin.url;
+  try {
+    if (origin.kind === 'file') {
+      return new Uint8Array(await readFile(origin.path));
+    }
+    const response = await fetch(origin.url);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status} ${response.statusText}`);
+    }
+    return new Uint8Array(await response.arrayBuffer());
+  } catch (error) {
+    throw assetUnreadableError(location, error);
+  }
 }

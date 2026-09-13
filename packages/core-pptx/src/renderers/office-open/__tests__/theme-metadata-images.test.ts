@@ -9,8 +9,10 @@
  * (#259).
  */
 
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { resolve } from 'node:path';
 import JSZip from 'jszip';
+import { ASSET_UNREADABLE } from '@json-to-office/shared/rendering';
 import { generateBufferViaIr } from '../../../core/generateFromIr';
 import type { PresentationComponentDefinition } from '../../../types';
 
@@ -204,5 +206,56 @@ describe('image crop and rounding', () => {
       const slide = await partOrUndefined(zip, 'ppt/slides/slide1.xml');
       expect(slide).toContain('<p:pic>');
     }
+  });
+});
+
+/* ------------------------------------------------------------------ *
+ * Images that cannot be read
+ * ------------------------------------------------------------------ */
+
+/**
+ * The adapter reads the bytes itself, so it is where a picture that is not
+ * there first fails — and that is the document's defect. The failure is named,
+ * so a caller can tell it from a bug here without reading the message.
+ */
+describe('office-open images that cannot be read', () => {
+  const picture = (path: string) =>
+    deck({}, {}, [{ name: 'image', props: { path, x: 1, y: 1, w: 2, h: 2 } }]);
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('names a file that is not there, by the path it tried', async () => {
+    await expect(
+      generateBufferViaIr(picture('no-such-directory/logo.png') as never, {
+        renderer: 'office-open',
+      })
+    ).rejects.toMatchObject({
+      name: ASSET_UNREADABLE,
+      source: resolve('no-such-directory', 'logo.png'),
+      cause: expect.objectContaining({ code: 'ENOENT' }),
+    });
+  });
+
+  it('names a URL that does not answer with the picture, and its status', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response('gone', { status: 404, statusText: 'Not Found' })
+      )
+    );
+    // A loopback host, which layout never probes, so the adapter's own fetch
+    // is the only request.
+    const url = 'http://127.0.0.1:9/logo.png';
+
+    await expect(
+      generateBufferViaIr(picture(url) as never, { renderer: 'office-open' })
+    ).rejects.toMatchObject({
+      name: ASSET_UNREADABLE,
+      source: url,
+      message: expect.stringContaining('HTTP 404 Not Found'),
+    });
   });
 });

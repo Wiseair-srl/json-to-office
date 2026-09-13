@@ -8,6 +8,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { ASSET_UNREADABLE } from '@json-to-office/shared/rendering';
 import { compileDocumentToIr } from '../../core/generateFromIr';
 import { getAvailableWidthTwips } from '../../utils/widthUtils';
 import { minimalTheme } from '../../templates/themes';
@@ -182,6 +183,39 @@ describe('components/image', () => {
     await expect(imageBlocks({ path: '/no/such/image.png' })).rejects.toThrow(
       /Failed to load image/
     );
+  });
+
+  // A file that is not there is the document's defect, and a caller has to be
+  // able to tell that without reading the message.
+  it('names the failure, with the source and what the read threw', async () => {
+    await expect(
+      imageBlocks({ path: '/no/such/image.png' })
+    ).rejects.toMatchObject({
+      name: ASSET_UNREADABLE,
+      source: '/no/such/image.png',
+      cause: expect.objectContaining({ code: 'ENOENT' }),
+    });
+  });
+
+  it('names a header image it could not load the same way', async () => {
+    const compiled = compileDocumentToIr({
+      name: 'docx',
+      props: { theme: 'minimal' },
+      children: [
+        {
+          name: 'section',
+          props: {
+            header: [{ name: 'image', props: { path: '/no/such/logo.png' } }],
+          },
+          children: [{ name: 'paragraph', props: { text: 'Body.' } }],
+        },
+      ],
+    } as unknown as ReportComponentDefinition);
+
+    await expect(compiled).rejects.toMatchObject({
+      name: ASSET_UNREADABLE,
+      source: '/no/such/logo.png',
+    });
   });
 
   it('accepts every option at once', async () => {
