@@ -50,7 +50,8 @@ describe('pnpm shipping sheets', () => {
       async (_format, document) => {
         if ((document as { id: string }).id === 'cd-broken') {
           throw new Error(
-            'Preview failed at the convert stage: Command failed:\n/Applications/LibreOffice.app/Contents/MacOS/soffice --headless'
+            // Node's execFile error: the command on the first line, stderr after.
+            'Preview failed at the convert stage: Command failed: /Applications/LibreOffice.app/Contents/MacOS/soffice --headless --convert-to pdf preview.pptx\nUnspecified Application Error'
           );
         }
         return { sheet: { png: Buffer.from('png') }, totalPages: 3 } as never;
@@ -69,7 +70,7 @@ describe('pnpm shipping sheets', () => {
     ).resolves.toBe('png');
     const output = lines.join('\n');
     expect(output).toContain(
-      'cd-broken: render failed — Preview failed at the convert stage: Command failed:'
+      'cd-broken: render failed — Preview failed at the convert stage'
     );
     expect(output).not.toContain('soffice');
     expect(output).toContain('1 contact sheet(s) rendered');
