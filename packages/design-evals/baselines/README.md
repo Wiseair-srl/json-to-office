@@ -355,11 +355,58 @@ What the numbers carry:
   (neither sitting shipped one), level kappa 0.25–0.51.
 - **The reworded question moves the answer, not the level.** v1 against v2 on
   69 artifacts: level kappa 0.66, ship kappa 0.23.
+- **The author varies too.** Each brief was authored three times per set: in
+  7 of the 24 set-briefs Paolo's labels split across the three documents, and
+  the judge's level spans 0.63 of a level on average. Both mix what the author
+  did differently with what the rater did.
 - **Exploratory, not a candidate.** On the 64 labels the level floor decides
   one artifact the other terms would ship; the integrity term flags 4
   artifacts, 3 of which Paolo shipped (the #344 matcher's precision); the page
   ceiling alone would score 0.78. That is a hypothesis for the next
   calibration, not a reason to change this one.
+
+## The shipping verification set (#409)
+
+Fresh cold documents on the 32 `shipping-verification` briefs (5 client
+reports, 11 technical reports, 16 decks), none of which a calibration artifact
+answers: branch build `0457165` (mcp-server 6.4.0), claude-sonnet-5, no judge
+during authoring, local export server.
+
+- **Two folders, one build.** The first run hit the account's weekly usage
+  limit after 21 briefs (`2026-09-11-shipping-verification-cold-server-6.4.0.json`):
+  `cd-growth-strategy-readout` failed after 10 tool calls, the ten after it
+  before doing anything. All 11 ran again two days later in the same worktree
+  at the same commit (`2026-09-13-shipping-verification-2-cold-server-6.4.0.json`,
+  11/11), so for that brief the counted document is a retry. Verify reads the
+  folders as `verification` and `verification-2`.
+- **Two decks cannot be seen.** `cd-cost-programme-kickoff` and
+  `cd-customer-research-readout` generated, but LibreOffice aborts converting
+  them at every attempt — during authoring (so the agent never previewed them),
+  in the re-analysis and in four sheet renders. With no sheet there is no judge
+  verdict and no human verdict, so 30 artifacts (14 decks) is the denominator.
+  The verification record lists every run it does not count and why
+  (`allocation.outside`).
+- **Facts** are re-analysed by today's analyzer and agree with the run-time
+  record document by document.
+- **Judge**: one sitting per folder with the frozen question (claude-opus-5,
+  2026-09-13), committed before the human verdicts were read. The two sittings
+  predate the prompt digest a sitting now records; nothing that builds the
+  prompt changed between the freeze and them.
+- **Reviewer**: Sendability Review III, published after the freeze, asks #409's
+  question; the verdicts and the verification record follow when it is done.
+- **Reviewer exposure.** About an hour before the page went up, the forty-pair
+  review below showed Paolo the Phase 0 cold and assisted documents on all 32
+  of these briefs: other artifacts, from an older build, never labelled for
+  shipping, so nothing calibrated saw them. They can still colour an absolute
+  verdict the way the better set coloured round two.
+
+What a result here can and cannot say. The calibration labels answer the older
+question and verification the sharper one, so a miss does not separate the
+definition from its wording. Two of the definition's terms were barely
+exercised in calibration: the level floor passed 69 of the 72 artifacts, and
+the page term, measured on flowing documents, has nothing to read on decks —
+for the 14 decks the definition is the judge's level and the integrity checks.
+Read the per-format result before the pooled one.
 
 ## Reading one
 
@@ -471,33 +518,6 @@ win rate was 64%. Only six pairs supplied a stable direction, so this result
 does not establish whole-corpus sendability or sensitivity to smaller future
 improvements. Human calibration and further measurement remain in #360.
 
-## The shipping verification set (#409)
-
-Fresh cold documents on the 32 `shipping-verification` briefs (5 client
-reports, 11 technical reports, 16 decks), none of which a calibration artifact
-answers: branch build `0457165` (mcp-server 6.4.0), claude-sonnet-5, no judge
-during authoring, local export server.
-
-- **Two folders, one build.** The first run stopped at the account's weekly
-  usage limit after 21 briefs; its last 11 deck briefs failed without doing
-  any work (`2026-09-11-shipping-verification-cold-server-6.4.0.json`). They
-  ran again two days later in the same worktree at the same commit
-  (`2026-09-13-shipping-verification-2-cold-server-6.4.0.json`, 11/11). Verify
-  reads both as `verification` and `verification-2`.
-- **Two decks cannot be seen.** `cd-cost-programme-kickoff` and
-  `cd-customer-research-readout` generated, but LibreOffice aborts converting
-  them at every attempt — during authoring (so the agent never previewed them),
-  in the re-analysis and in four sheet renders. With no sheet there is no judge
-  verdict and no human verdict, so 30 artifacts (14 decks) is the denominator.
-- **Facts** are re-analysed by today's analyzer and agree with the run-time
-  record document by document. Page fill is measured on flowing documents, so
-  for decks the frozen definition mostly reads the judge's level and the
-  integrity checks.
-- **Judge**: one sitting per folder with the frozen question (claude-opus-5,
-  2026-09-13), committed before the human verdicts were read.
-- **Reviewer**: Sendability Review III, published after the freeze, asks #409's
-  question; the verdicts and the verification record follow when it is done.
-
 ## The forty pairs, by Paolo (#321, #409)
 
 `2026-09-13-human-phase0-pairs.json` is Paolo's blind reading of the same
@@ -513,15 +533,17 @@ contaminated first run.
 | decks (16)             | 1    | 12       | 3   |
 | all forty              | 16   | 19       | 5   |
 
-Across the corpus he has no preference (19–16, sign test p = 0.74), and no
-side bias either (left 18, right 17). By archetype the split is sharp: the
-3.2.0 skill made the decks he would rather send and the reports he would
-not.
+Across the corpus there is no preference (19–16, sign test p = 0.74) and no
+side bias (left 18, right 17). By archetype the split is sharp: Paolo would
+rather send the 3.2.0-assisted decks, and the cold reports.
 
 Against the judge (`2026-09-13-pairwise-calibration-phase0.json`, the 36
-pairs it compared, an order-inconsistent verdict read as a tie): 17%
-agreement, kappa −0.01 [−0.08, 0.08]. Its six order-consistent verdicts all
-chose the assisted document; Paolo agreed on the two decks and chose the cold
-document on the four reports. On the thirty it could not decide he picked a
-side in 26. The pairwise judge, as it ran on 2026-09-05, does not stand in
-for him, and "assisted 6, cold 0" above is not what he sees.
+pairs it compared): 17% agreement, kappa −0.01 [−0.08, 0.08]. That reading
+scores an order-inconsistent verdict as a tie — the judge keeps no preference
+through the swap — which is not a finding that the documents are equal (the
+two-order result above). Read either way it does not track Paolo: its six
+order-consistent verdicts all chose the assisted document, and Paolo agreed on
+the two decks and chose the cold document on the four reports; on the thirty
+it could not decide, Paolo picked a side in 26. The pairwise judge, as it ran
+on 2026-09-05, does not stand in for the reviewer, and "assisted 6, cold 0"
+above is not what the reviewer sees.
