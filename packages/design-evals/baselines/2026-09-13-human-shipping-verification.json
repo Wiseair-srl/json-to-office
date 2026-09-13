@@ -1,0 +1,284 @@
+{
+  "note": "Paolo, blind verification review (Sendability Review III): fresh cold documents on the 32 shipping-verification briefs, none shared with the calibration set, judged once each, in one shuffled pass, after the shipping definition was frozen.",
+  "reviewer": "paolo",
+  "question": "After reading its argument, would you send this to the client unchanged?",
+  "readAt": "2026-09-13T21:56:05.000Z",
+  "sets": {
+    "verification": "evals-out/shipping-verification (first run; stopped at the weekly usage limit after 21 briefs)",
+    "verification-2": "evals-out/shipping-verification-2 (the 11 remaining deck briefs, same build)"
+  },
+  "summary": {
+    "shown": 30,
+    "answered": 30,
+    "wouldShip": {
+      "docx": {
+        "yes": 15,
+        "no": 1
+      },
+      "pptx": {
+        "yes": 1,
+        "no": 13
+      }
+    },
+    "reasons": {
+      "other": 12,
+      "pages": 1
+    },
+    "notShown": [
+      {
+        "set": "verification",
+        "label": "cd-cost-programme-kickoff",
+        "outcome": "completed",
+        "failure": ""
+      },
+      {
+        "set": "verification",
+        "label": "cd-customer-research-readout",
+        "outcome": "completed",
+        "failure": ""
+      }
+    ]
+  },
+  "verdicts": [
+    {
+      "set": "verification",
+      "run": "cd-capital-allocation",
+      "format": "pptx",
+      "wouldShip": false,
+      "reasons": ["other"],
+      "at": "2026-09-13T21:54:59.752Z"
+    },
+    {
+      "set": "verification",
+      "run": "cd-competitive-response",
+      "format": "pptx",
+      "wouldShip": false,
+      "reasons": ["other"],
+      "at": "2026-09-13T21:53:27.531Z"
+    },
+    {
+      "set": "verification",
+      "run": "cd-digital-transformation-case",
+      "format": "pptx",
+      "wouldShip": false,
+      "reasons": ["other"],
+      "at": "2026-09-13T21:55:13.951Z"
+    },
+    {
+      "set": "verification",
+      "run": "cr-customer-churn-diagnosis",
+      "format": "docx",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-13T21:53:33.716Z"
+    },
+    {
+      "set": "verification",
+      "run": "cr-digital-channel-shift",
+      "format": "docx",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-13T21:53:01.581Z"
+    },
+    {
+      "set": "verification",
+      "run": "cr-procurement-savings",
+      "format": "docx",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-13T21:54:42.201Z"
+    },
+    {
+      "set": "verification",
+      "run": "cr-store-network-rationalisation",
+      "format": "docx",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-13T21:55:23.202Z"
+    },
+    {
+      "set": "verification",
+      "run": "cr-supply-resilience",
+      "format": "docx",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-13T21:54:20.234Z"
+    },
+    {
+      "set": "verification",
+      "run": "tr-accessibility-audit",
+      "format": "docx",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-13T21:54:04.683Z"
+    },
+    {
+      "set": "verification",
+      "run": "tr-api-gateway-migration",
+      "format": "docx",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-13T21:55:27.536Z"
+    },
+    {
+      "set": "verification",
+      "run": "tr-build-pipeline-audit",
+      "format": "docx",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-13T21:54:44.001Z"
+    },
+    {
+      "set": "verification",
+      "run": "tr-capacity-forecast",
+      "format": "docx",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-13T21:55:17.036Z"
+    },
+    {
+      "set": "verification",
+      "run": "tr-data-retention-policy",
+      "format": "docx",
+      "wouldShip": false,
+      "reasons": ["pages"],
+      "at": "2026-09-13T21:54:16.566Z"
+    },
+    {
+      "set": "verification",
+      "run": "tr-incident-postmortem-db",
+      "format": "docx",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-13T21:53:00.581Z"
+    },
+    {
+      "set": "verification",
+      "run": "tr-load-test-results",
+      "format": "docx",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-13T21:53:43.899Z"
+    },
+    {
+      "set": "verification",
+      "run": "tr-memo-vendor-selection",
+      "format": "docx",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-13T21:53:19.482Z"
+    },
+    {
+      "set": "verification",
+      "run": "tr-observability-standard",
+      "format": "docx",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-13T21:54:47.117Z"
+    },
+    {
+      "set": "verification",
+      "run": "tr-schema-migration-plan",
+      "format": "docx",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-13T21:53:39.548Z"
+    },
+    {
+      "set": "verification",
+      "run": "tr-security-review-auth",
+      "format": "docx",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-13T21:53:22.564Z"
+    },
+    {
+      "set": "verification-2",
+      "run": "cd-growth-strategy-readout",
+      "format": "pptx",
+      "wouldShip": false,
+      "reasons": ["other"],
+      "at": "2026-09-13T21:54:37.717Z"
+    },
+    {
+      "set": "verification-2",
+      "run": "cd-innovation-portfolio",
+      "format": "pptx",
+      "wouldShip": false,
+      "reasons": ["other"],
+      "at": "2026-09-13T21:55:03.385Z"
+    },
+    {
+      "set": "verification-2",
+      "run": "cd-market-scan-adjacent",
+      "format": "pptx",
+      "wouldShip": false,
+      "reasons": ["other"],
+      "at": "2026-09-13T21:55:05.935Z"
+    },
+    {
+      "set": "verification-2",
+      "run": "cd-operating-model-options",
+      "format": "pptx",
+      "wouldShip": false,
+      "reasons": ["other"],
+      "at": "2026-09-13T21:53:50.883Z"
+    },
+    {
+      "set": "verification-2",
+      "run": "cd-org-design-proposal",
+      "format": "pptx",
+      "wouldShip": false,
+      "reasons": ["other"],
+      "at": "2026-09-13T21:53:15.415Z"
+    },
+    {
+      "set": "verification-2",
+      "run": "cd-post-merger-day-one",
+      "format": "pptx",
+      "wouldShip": false,
+      "reasons": ["other"],
+      "at": "2026-09-13T21:55:20.936Z"
+    },
+    {
+      "set": "verification-2",
+      "run": "cd-pricing-strategy-workshop",
+      "format": "pptx",
+      "wouldShip": false,
+      "reasons": ["other"],
+      "at": "2026-09-13T21:53:57.782Z"
+    },
+    {
+      "set": "verification-2",
+      "run": "cd-quarterly-business-review",
+      "format": "pptx",
+      "wouldShip": true,
+      "reasons": [],
+      "at": "2026-09-13T21:54:56.185Z"
+    },
+    {
+      "set": "verification-2",
+      "run": "cd-service-quality-turnaround",
+      "format": "pptx",
+      "wouldShip": false,
+      "reasons": ["other"],
+      "at": "2026-09-13T21:54:34.267Z"
+    },
+    {
+      "set": "verification-2",
+      "run": "cd-supply-chain-diagnostic",
+      "format": "pptx",
+      "wouldShip": false,
+      "reasons": [],
+      "at": "2026-09-13T21:55:10.885Z"
+    },
+    {
+      "set": "verification-2",
+      "run": "cd-sustainability-roadmap",
+      "format": "pptx",
+      "wouldShip": false,
+      "reasons": ["other"],
+      "at": "2026-09-13T21:54:22.900Z"
+    }
+  ]
+}

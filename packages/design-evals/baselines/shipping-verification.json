@@ -1,0 +1,193 @@
+{
+  "kind": "shipping-verification",
+  "definitionFile": "packages/design-evals/baselines/shipping-definition.json",
+  "attempts": [
+    {
+      "definition": "clean-pages",
+      "hash": "4477208543b3d90b756cd68c0f92b5b3cb354e8429b029dbab1c06cfd54cd0f9",
+      "target": 0.5,
+      "passed": true,
+      "score": {
+        "id": "clean-pages",
+        "hash": "4477208543b3d90b756cd68c0f92b5b3cb354e8429b029dbab1c06cfd54cd0f9",
+        "n": 30,
+        "rawAgreement": 0.8333333333333334,
+        "kappa": 0.6724890829694323,
+        "clusters": 30,
+        "interval": {
+          "low": 0.39999999999999997,
+          "high": 0.926829268292683,
+          "confidence": 0.95,
+          "resamples": 2000
+        },
+        "excluded": {
+          "unstable": 0,
+          "undecided": 0
+        },
+        "confusion": {
+          "bothShip": 11,
+          "bothHold": 14,
+          "humanOnly": 5,
+          "definitionOnly": 0
+        },
+        "byFormat": {
+          "docx": {
+            "n": 16,
+            "kappa": 0.2558139534883721,
+            "rawAgreement": 0.75,
+            "confusion": {
+              "bothShip": 11,
+              "bothHold": 1,
+              "humanOnly": 4,
+              "definitionOnly": 0
+            }
+          },
+          "pptx": {
+            "n": 14,
+            "kappa": 0,
+            "rawAgreement": 0.9285714285714286,
+            "confusion": {
+              "bothShip": 0,
+              "bothHold": 13,
+              "humanOnly": 1,
+              "definitionOnly": 0
+            }
+          }
+        }
+      },
+      "set": {
+        "id": "verification+verification-2",
+        "briefs": [
+          "cd-capital-allocation",
+          "cd-competitive-response",
+          "cd-digital-transformation-case",
+          "cd-growth-strategy-readout",
+          "cd-innovation-portfolio",
+          "cd-market-scan-adjacent",
+          "cd-operating-model-options",
+          "cd-org-design-proposal",
+          "cd-post-merger-day-one",
+          "cd-pricing-strategy-workshop",
+          "cd-quarterly-business-review",
+          "cd-service-quality-turnaround",
+          "cd-supply-chain-diagnostic",
+          "cd-sustainability-roadmap",
+          "cr-customer-churn-diagnosis",
+          "cr-digital-channel-shift",
+          "cr-procurement-savings",
+          "cr-store-network-rationalisation",
+          "cr-supply-resilience",
+          "tr-accessibility-audit",
+          "tr-api-gateway-migration",
+          "tr-build-pipeline-audit",
+          "tr-capacity-forecast",
+          "tr-data-retention-policy",
+          "tr-incident-postmortem-db",
+          "tr-load-test-results",
+          "tr-memo-vendor-selection",
+          "tr-observability-standard",
+          "tr-schema-migration-plan",
+          "tr-security-review-auth"
+        ]
+      },
+      "verifiedAt": "2026-09-13T21:56:37.439Z",
+      "humanReadAt": "2026-09-13T21:56:05.000Z",
+      "gitSha": "1cd4f0027a582af26f498b38dccf1fb2b3abded9",
+      "allocation": {
+        "sets": [
+          {
+            "id": "verification",
+            "dir": "packages/design-evals/evals-out/shipping-verification"
+          },
+          {
+            "id": "verification-2",
+            "dir": "packages/design-evals/evals-out/shipping-verification-2"
+          }
+        ],
+        "human": "packages/design-evals/baselines/2026-09-13-human-shipping-verification.json",
+        "question": "After reading its argument, would you send this to the client unchanged?",
+        "sittings": [
+          {
+            "set": "verification",
+            "question": "v1",
+            "judgeModel": "claude-opus-5",
+            "judgedAt": "2026-09-13T21:16:26.030Z"
+          },
+          {
+            "set": "verification-2",
+            "question": "v1",
+            "judgeModel": "claude-opus-5",
+            "judgedAt": "2026-09-13T21:24:53.748Z"
+          }
+        ],
+        "outside": [
+          {
+            "set": "verification",
+            "run": "cd-cost-programme-kickoff",
+            "reason": "no contact sheet"
+          },
+          {
+            "set": "verification",
+            "run": "cd-customer-research-readout",
+            "reason": "no contact sheet"
+          },
+          {
+            "set": "verification",
+            "run": "cd-growth-strategy-readout",
+            "reason": "run failed"
+          },
+          {
+            "set": "verification",
+            "run": "cd-innovation-portfolio",
+            "reason": "run failed"
+          },
+          {
+            "set": "verification",
+            "run": "cd-market-scan-adjacent",
+            "reason": "run failed"
+          },
+          {
+            "set": "verification",
+            "run": "cd-operating-model-options",
+            "reason": "run failed"
+          },
+          {
+            "set": "verification",
+            "run": "cd-org-design-proposal",
+            "reason": "run failed"
+          },
+          {
+            "set": "verification",
+            "run": "cd-post-merger-day-one",
+            "reason": "run failed"
+          },
+          {
+            "set": "verification",
+            "run": "cd-pricing-strategy-workshop",
+            "reason": "run failed"
+          },
+          {
+            "set": "verification",
+            "run": "cd-quarterly-business-review",
+            "reason": "run failed"
+          },
+          {
+            "set": "verification",
+            "run": "cd-service-quality-turnaround",
+            "reason": "run failed"
+          },
+          {
+            "set": "verification",
+            "run": "cd-supply-chain-diagnostic",
+            "reason": "run failed"
+          },
+          {
+            "set": "verification",
+            "run": "cd-sustainability-roadmap",
+            "reason": "run failed"
+          }
+        ]
+      }
+    }
+  ]
+}
