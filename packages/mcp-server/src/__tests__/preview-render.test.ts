@@ -167,6 +167,53 @@ describe('a document that will not build', () => {
     );
   }, 60_000);
 
+  it('names the image file that is not there, as jto_validate does', async () => {
+    const result = await renderPreview({
+      format: 'docx',
+      document: {
+        name: 'docx',
+        props: {},
+        children: [
+          {
+            name: 'section',
+            children: [
+              { name: 'paragraph', props: { text: 'Fine.' } },
+              { name: 'image', props: { path: '/nonexistent/chart.png' } },
+            ],
+          },
+        ],
+      },
+      getAdapter,
+      cacheDir: null,
+      probe: async () => ({
+        libreoffice: {
+          available: true,
+          path: '/nowhere/soffice',
+          envVar: 'LIBREOFFICE_PATH',
+          searched: [],
+        },
+        pdftoppm: {
+          available: true,
+          path: '/nowhere/pdftoppm',
+          envVar: 'PDFTOPPM_PATH',
+          searched: [],
+        },
+      }),
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    // The schema has nothing to say about this document, so the lead is the
+    // file — at the pointer an agent patches — ahead of the stage failure.
+    expect(result.diagnostics[0]).toMatchObject({
+      code: ERROR_CODES.ASSET_UNREADABLE,
+      path: '/children/0/children/1/props/path',
+    });
+    expect(result.diagnostics.map((issue) => issue.code)).toContain(
+      PREVIEW_ERROR_CODES.RENDER_FAILED
+    );
+  }, 60_000);
+
   /**
    * A build that fails because the renderer will not load.
    *

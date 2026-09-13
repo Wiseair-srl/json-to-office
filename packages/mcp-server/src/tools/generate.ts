@@ -21,6 +21,7 @@ import {
   type GeneratorOptions,
 } from '../lib/adapters.js';
 import { MIME_TYPES, deliverArtifact } from '../lib/artifacts.js';
+import { assetFailures } from '../lib/assets.js';
 import type { ToolDeps } from '../lib/deps.js';
 import {
   condenseDiagnostics,
@@ -223,7 +224,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
     {
       title: 'Generate a document',
       description:
-        'Render a document to a real .docx or .pptx. The file is written under the server output root and returned as a path; pass `outputMode: "base64"` only for small artifacts. A document that fails the generation gate comes back with `ok: false` and the same path-addressed diagnostics jto_validate reports, never as an error. An unfilled scaffold slot (`{{…}}`) is always refused here even though jto_validate lets a draft pass, so fill every slot before generating. Warnings the render emitted (unresolved fonts, a `theme` or `props.theme` naming nothing) arrive as warning-severity diagnostics alongside a successful artifact. The DOCX `highcharts` component draws through a Highcharts export server that must be running on the host (see jto_info.previewDependencies.highchartsExportServer); the `visual` component needs no such service.',
+        'Render a document to a real .docx or .pptx. The file is written under the server output root and returned as a path; pass `outputMode: "base64"` only for small artifacts. A document that fails the generation gate comes back with `ok: false` and the same path-addressed diagnostics jto_validate reports, never as an error — an image file that cannot be read included, as `E_ASSET_UNREADABLE` at its path. An unfilled scaffold slot (`{{…}}`) is always refused here even though jto_validate lets a draft pass, so fill every slot before generating. Warnings the render emitted (unresolved fonts, a `theme` or `props.theme` naming nothing) arrive as warning-severity diagnostics alongside a successful artifact. The DOCX `highcharts` component draws through a Highcharts export server that must be running on the host (see jto_info.previewDependencies.highchartsExportServer); the `visual` component needs no such service.',
       annotations: {
         readOnlyHint: false,
         destructiveHint: false,
@@ -347,8 +348,26 @@ export function register(server: McpServer, deps: ToolDeps): void {
               themeLabel = generator.themeLabel;
               buffer = await generator.generateBuffer(resolved.document);
             } catch (error) {
-              const diagnostics = diagnosticsFromThrown(error);
-              // Not a rejected document: let `guarded` call it what it is.
+              // A rejected document throws its own diagnostics. An image file
+              // that is not there throws an unnamed Error from wherever the
+              // bytes were first wanted — the DOCX image loader, pptxgenjs at
+              // write time, `fs` — with no code for `guarded` to classify and
+              // no pointer, so the document is asked instead: the check
+              // jto_validate runs names the image and the path to repair.
+              let diagnostics = diagnosticsFromThrown(error);
+              if (!diagnostics) {
+                const unreadable = await assetFailures(
+                  args.format,
+                  resolved.document,
+                  {
+                    ...(args.baseDir !== undefined && {
+                      baseDir: args.baseDir,
+                    }),
+                  }
+                );
+                if (unreadable.length > 0) diagnostics = unreadable;
+              }
+              // Not the document's defect: let `guarded` call it what it is.
               if (!diagnostics) throw error;
               return {
                 ok: false,

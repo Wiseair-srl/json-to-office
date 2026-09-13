@@ -115,6 +115,15 @@ export const ERROR_CODES = {
   MUTUALLY_EXCLUSIVE: 'E_MUTUALLY_EXCLUSIVE',
   /** A theme the document names does not exist. */
   THEME_NOT_FOUND: 'E_THEME_NOT_FOUND',
+  /**
+   * A theme name matched nothing and generation falls back — the `theme`
+   * option, or the document's own `props.theme`.
+   */
+  UNKNOWN_THEME: 'W_UNKNOWN_THEME',
+  /** An image file the document names cannot be read, and generation fails over it. */
+  ASSET_UNREADABLE: 'E_ASSET_UNREADABLE',
+  /** The same, where generation completes without the picture instead. */
+  ASSET_UNREADABLE_ADVISORY: 'W_ASSET_UNREADABLE',
   /** The document is empty. */
   EMPTY_DOCUMENT: 'E_EMPTY_DOCUMENT',
   /** The renderer could draw the document, but not this one feature of it. */

@@ -833,6 +833,350 @@ describe('jto_validate', () => {
   });
 });
 
+/**
+ * What the document points at outside itself.
+ *
+ * A theme name and an image path are both plain strings to the schema, so a
+ * document naming a theme that does not exist or a file that is not there
+ * validated clean — and generation was where they surfaced, as a silent
+ * fallback and as `E_INTERNAL` respectively.
+ */
+describe('references outside the document', () => {
+  /** 1×1 transparent PNG: real bytes, for the images that are there. */
+  const PNG = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+    'base64'
+  );
+
+  const codesOf = (result: Record<string, any>): string[] =>
+    result.diagnostics.map((entry: { code: string }) => entry.code);
+
+  const docxWith = (...children: unknown[]) => ({
+    name: 'docx',
+    props: { theme: 'minimal' },
+    children: [{ name: 'section', children }],
+  });
+
+  const pptxWith = (...children: unknown[]) => ({
+    ...VALID_PPTX,
+    children: [{ name: 'slide', props: {}, children }],
+  });
+
+  const pptxImage = (source: Record<string, unknown>) => ({
+    name: 'image',
+    props: { ...source, x: 1, y: 1, w: 2, h: 2 },
+  });
+
+  describe('props.theme', () => {
+    it.each([
+      ['docx', VALID_DOCX, ['consulting', 'devportal', 'minimal', 'vermilion']],
+      [
+        'pptx',
+        VALID_PPTX,
+        ['consulting', 'dark', 'default', 'devportal', 'minimal', 'vermilion'],
+      ],
+    ] as const)(
+      'warns that a %s theme name matches nothing, and names the ones that would',
+      async (format, valid, themes) => {
+        const { result } = await validate({
+          format,
+          document: { ...valid, props: { ...valid.props, theme: 'corporate' } },
+        });
+
+        // Generation falls back to the built-in default and still renders, so
+        // this advises rather than blocks — the same verdict generation gives.
+        expect(result).toMatchObject({ ok: true, valid: true });
+        const unknown = result.diagnostics.filter(
+          (entry: { code: string }) => entry.code === 'W_UNKNOWN_THEME'
+        );
+        expect(unknown).toHaveLength(1);
+        expect(unknown[0]).toMatchObject({
+          severity: 'warning',
+          path: '/props/theme',
+          context: {
+            format,
+            theme: 'corporate',
+            themes,
+            source: 'props.theme',
+          },
+        });
+        expect(unknown[0].message).toContain('"corporate"');
+        for (const name of themes) {
+          expect(unknown[0].suggestion).toContain(`"${name}"`);
+        }
+      }
+    );
+
+    it('says nothing about an inline pptx theme or a document that names none', async () => {
+      // The pptx root takes a whole theme object as well as a name. Only a
+      // name can fail to match anything.
+      const minimal = (await getAdapter('pptx').getBuiltinThemeValues!())
+        .minimal as Record<string, unknown>;
+      const inline = await validate({
+        format: 'pptx',
+        document: {
+          ...VALID_PPTX,
+          props: { ...VALID_PPTX.props, theme: { ...minimal, name: 'brand' } },
+        },
+      });
+      expect(inline.result.ok).toBe(true);
+      expect(codesOf(inline.result)).not.toContain('W_UNKNOWN_THEME');
+
+      const unnamed = await validate({
+        format: 'docx',
+        document: { ...VALID_DOCX, props: {} },
+      });
+      expect(codesOf(unnamed.result)).not.toContain('W_UNKNOWN_THEME');
+    });
+  });
+
+  describe('image files', () => {
+    it('refuses a docx image whose file does not exist, at its path', async () => {
+      const { result, isError } = await validate({
+        format: 'docx',
+        document: docxWith({
+          name: 'image',
+          props: { path: '/nonexistent/chart.png', width: 200 },
+        }),
+      });
+
+      // Generation cannot build this document, so neither can the verdict.
+      expect(isError).toBeFalsy();
+      expect(result).toMatchObject({
+        ok: false,
+        valid: false,
+        generationReady: false,
+      });
+      expect(result.diagnostics).toContainEqual(
+        expect.objectContaining({
+          severity: 'error',
+          code: 'E_ASSET_UNREADABLE',
+          path: '/children/0/children/0/props/path',
+          context: expect.objectContaining({
+            value: '/nonexistent/chart.png',
+            resolved: path.resolve('/nonexistent/chart.png'),
+            reason: 'missing',
+          }),
+        })
+      );
+    });
+
+    it('resolves a relative path against baseDir, as generation does', async () => {
+      await fs.mkdir(path.join(scratch, 'assets'));
+      await fs.writeFile(path.join(scratch, 'assets', 'chart.png'), PNG);
+      const document = docxWith({
+        name: 'image',
+        props: { path: 'assets/chart.png', width: 200 },
+      });
+
+      // Where baseDir says: found, and nothing to report.
+      const found = await validate({
+        format: 'docx',
+        document,
+        baseDir: scratch,
+      });
+      expect(found.result).toMatchObject({ ok: true, diagnostics: [] });
+
+      // Without it the server's working directory decides, as it does for
+      // jto_generate — and the file is not there.
+      const lost = await validate({ format: 'docx', document });
+      expect(lost.result.ok).toBe(false);
+      expect(lost.result.diagnostics).toContainEqual(
+        expect.objectContaining({
+          code: 'E_ASSET_UNREADABLE',
+          path: '/children/0/children/0/props/path',
+          context: expect.objectContaining({
+            value: 'assets/chart.png',
+            resolved: path.resolve('assets/chart.png'),
+          }),
+        })
+      );
+    });
+
+    it('refuses a path that names a directory', async () => {
+      const { result } = await validate({
+        format: 'docx',
+        document: docxWith({ name: 'image', props: { path: '.', width: 200 } }),
+        baseDir: scratch,
+      });
+      expect(result.ok).toBe(false);
+      expect(result.diagnostics).toContainEqual(
+        expect.objectContaining({
+          code: 'E_ASSET_UNREADABLE',
+          context: expect.objectContaining({ reason: 'not-a-file' }),
+        })
+      );
+    });
+
+    it('refuses a pptx image whose file does not exist under the base directory', async () => {
+      const { result } = await validate({
+        format: 'pptx',
+        document: pptxWith(pptxImage({ path: 'missing/chart.png' })),
+        baseDir: scratch,
+      });
+      expect(result).toMatchObject({ ok: false, valid: false });
+      expect(result.diagnostics).toContainEqual(
+        expect.objectContaining({
+          severity: 'error',
+          code: 'E_ASSET_UNREADABLE',
+          path: '/children/0/children/0/props/path',
+          context: expect.objectContaining({
+            value: 'missing/chart.png',
+            resolved: path.join(scratch, 'missing', 'chart.png'),
+            reason: 'missing',
+          }),
+        })
+      );
+    });
+
+    it('warns, as generation does, that pptx drops an image outside its base directory', async () => {
+      // The pptx pipeline never reads a file outside baseDir or the working
+      // directory: it drops the image with a warning and renders the rest. So
+      // the answer is that warning, not a verdict on a file nobody will open.
+      const { result } = await validate({
+        format: 'pptx',
+        document: pptxWith(pptxImage({ path: '/nonexistent/chart.png' })),
+        baseDir: scratch,
+      });
+      expect(result.ok).toBe(true);
+      expect(codesOf(result)).not.toContain('E_ASSET_UNREADABLE');
+      expect(result.diagnostics).toContainEqual(
+        expect.objectContaining({
+          severity: 'warning',
+          code: 'W_IMAGE_PATH_OUTSIDE_ROOTS',
+          path: '/children/0/children/0/props/path',
+          context: expect.objectContaining({ value: '/nonexistent/chart.png' }),
+        })
+      );
+    });
+
+    it('does not block on a docx table cell, which draws a placeholder instead', async () => {
+      const { result } = await validate({
+        format: 'docx',
+        document: docxWith({
+          name: 'table',
+          props: {
+            columns: [
+              {
+                header: { content: 'Logo' },
+                cells: [
+                  {
+                    content: {
+                      name: 'image',
+                      props: { path: '/nonexistent/logo.png', width: 40 },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        }),
+      });
+      expect(result.ok).toBe(true);
+      expect(codesOf(result)).not.toContain('E_ASSET_UNREADABLE');
+      expect(result.diagnostics).toContainEqual(
+        expect.objectContaining({
+          severity: 'warning',
+          code: 'W_ASSET_UNREADABLE',
+          path: '/children/0/children/0/props/columns/0/cells/0/content/props/path',
+        })
+      );
+    });
+
+    it('finds images in headers, groups and slide backgrounds', async () => {
+      const docx = await validate({
+        format: 'docx',
+        document: {
+          name: 'docx',
+          props: { theme: 'minimal' },
+          children: [
+            {
+              name: 'section',
+              props: {
+                header: [
+                  {
+                    name: 'image',
+                    props: { path: '/nonexistent/logo.png', width: 80 },
+                  },
+                ],
+              },
+              children: [{ name: 'paragraph', props: { text: 'Body.' } }],
+            },
+          ],
+        },
+      });
+      expect(docx.result.diagnostics).toContainEqual(
+        expect.objectContaining({
+          code: 'E_ASSET_UNREADABLE',
+          path: '/children/0/props/header/0/props/path',
+        })
+      );
+
+      const pptx = await validate({
+        format: 'pptx',
+        document: {
+          ...VALID_PPTX,
+          children: [
+            {
+              name: 'slide',
+              props: { background: { image: { path: 'missing/bg.png' } } },
+              children: [
+                {
+                  name: 'group',
+                  props: { x: 0, y: 0, w: 4, h: 4 },
+                  children: [pptxImage({ path: 'missing/chart.png' })],
+                },
+              ],
+            },
+          ],
+        },
+        baseDir: scratch,
+      });
+      const located = pptx.result.diagnostics
+        .filter(
+          (entry: { code: string }) => entry.code === 'E_ASSET_UNREADABLE'
+        )
+        .map((entry: { path: string }) => entry.path);
+      expect(located).toEqual([
+        '/children/0/props/background/image/path',
+        '/children/0/children/0/children/0/props/path',
+      ]);
+    });
+
+    it('leaves URLs, data URIs, inline sources and disabled images alone', async () => {
+      const { result } = await validate({
+        format: 'docx',
+        document: docxWith(
+          // Remote: generation fetches it, and validation does no network.
+          {
+            name: 'image',
+            props: { path: 'https://example.invalid/chart.png', width: 200 },
+          },
+          // Already in the document.
+          {
+            name: 'image',
+            props: { path: `data:image/png;base64,${PNG.toString('base64')}` },
+          },
+          {
+            name: 'image',
+            props: { svg: '<svg xmlns="http://www.w3.org/2000/svg"/>' },
+          },
+          // Switched off: generation never loads it.
+          {
+            name: 'image',
+            enabled: false,
+            props: { path: '/nonexistent/chart.png', width: 200 },
+          }
+        ),
+      });
+      expect(result.ok).toBe(true);
+      expect(
+        codesOf(result).filter((code) => code.endsWith('_ASSET_UNREADABLE'))
+      ).toEqual([]);
+    });
+  });
+});
+
 describe('includeCompiled', () => {
   const withBlock = {
     name: 'docx',

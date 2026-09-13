@@ -527,6 +527,125 @@ describe('jto_generate', () => {
   );
 });
 
+/**
+ * An image file that is not there is the document's defect.
+ *
+ * The render used to fail with `E_INTERNAL` "Failed to load image from …" —
+ * the code this server reserves for its own bugs — so an agent was sent to
+ * report one when the repair was a path in its JSON.
+ */
+describe('image files', () => {
+  /** 1×1 transparent PNG. */
+  const PNG = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+    'base64'
+  );
+
+  const codesOf = (result: Record<string, any>): string[] =>
+    result.diagnostics.map((entry: { code: string }) => entry.code);
+
+  it(
+    'blames the missing docx image, at its path, not the server',
+    async () => {
+      const result = await generate({
+        format: 'docx',
+        document: {
+          ...DOCX,
+          children: [
+            ...DOCX.children,
+            {
+              name: 'image',
+              props: { path: '/nonexistent/chart.png', width: 200 },
+            },
+          ],
+        },
+      });
+
+      expect(result.ok).toBe(false);
+      expect(result.artifact).toBeUndefined();
+      expect(codesOf(result)).not.toContain('E_INTERNAL');
+      expect(result.diagnostics).toContainEqual(
+        expect.objectContaining({
+          severity: 'error',
+          code: 'E_ASSET_UNREADABLE',
+          path: '/children/2/props/path',
+          context: expect.objectContaining({
+            value: '/nonexistent/chart.png',
+            reason: 'missing',
+          }),
+        })
+      );
+    },
+    GENERATION_TIMEOUT_MS
+  );
+
+  it(
+    'blames the missing pptx image the same way',
+    async () => {
+      // Inside baseDir, so the pptx pipeline really does go looking for it —
+      // and it is pptxgenjs, at write time, that finds it absent.
+      const result = await generate({
+        format: 'pptx',
+        document: {
+          ...PPTX,
+          children: [
+            {
+              name: 'slide',
+              props: {},
+              children: [
+                { name: 'text', props: { text: 'Q3 results' } },
+                {
+                  name: 'image',
+                  props: { path: 'missing/chart.png', x: 1, y: 1, w: 2, h: 2 },
+                },
+              ],
+            },
+          ],
+        },
+        baseDir: scratch,
+        filename: 'missing-image.pptx',
+      });
+
+      expect(result.ok).toBe(false);
+      expect(codesOf(result)).not.toContain('E_INTERNAL');
+      expect(result.diagnostics).toContainEqual(
+        expect.objectContaining({
+          severity: 'error',
+          code: 'E_ASSET_UNREADABLE',
+          path: '/children/0/children/1/props/path',
+          context: expect.objectContaining({
+            resolved: path.join(scratch, 'missing', 'chart.png'),
+          }),
+        })
+      );
+    },
+    GENERATION_TIMEOUT_MS
+  );
+
+  it(
+    'renders once the file is where baseDir says',
+    async () => {
+      await fs.mkdir(path.join(scratch, 'assets'));
+      await fs.writeFile(path.join(scratch, 'assets', 'chart.png'), PNG);
+      const result = await generate({
+        format: 'docx',
+        document: {
+          ...DOCX,
+          children: [
+            ...DOCX.children,
+            { name: 'image', props: { path: 'assets/chart.png', width: 20 } },
+          ],
+        },
+        baseDir: scratch,
+        filename: 'with-image.docx',
+      });
+      expect(result.ok).toBe(true);
+      expect(result.artifact).toBeDefined();
+    },
+    GENERATION_TIMEOUT_MS
+  );
+});
+
 describe('scaffold markers', () => {
   const SCAFFOLDED = {
     name: 'docx',
