@@ -96,6 +96,7 @@ async function setRuns(dir: string) {
 
 async function sheets(dir: string, line: Line): Promise<number> {
   let rendered = 0;
+  let failed = 0;
   for (const run of await setRuns(dir)) {
     const runDir = path.join(dir, 'runs', run.label);
     const sheet = path.join(runDir, 'contact-sheet.png');
@@ -106,13 +107,27 @@ async function sheets(dir: string, line: Line): Promise<number> {
       continue;
     }
     const document = await readJson<unknown>(documentFile);
-    const result = await renderForJudging(run.format as BriefFormat, document);
-    await fs.writeFile(sheet, result.sheet.png);
-    rendered += 1;
-    line(`  ${run.label}: ${result.totalPages} page(s)`);
+    try {
+      const result = await renderForJudging(
+        run.format as BriefFormat,
+        document
+      );
+      await fs.writeFile(sheet, result.sheet.png);
+      rendered += 1;
+      line(`  ${run.label}: ${result.totalPages} page(s)`);
+    } catch (error) {
+      // One converter crash leaves one document without a sheet, not the rest;
+      // the command reruns only what is still missing.
+      failed += 1;
+      const message = error instanceof Error ? error.message : String(error);
+      line(`  ${run.label}: render failed — ${message.split('\n')[0]}`);
+    }
   }
-  line(`${rendered} contact sheet(s) rendered in ${dir}`);
-  return 0;
+  line(
+    `${rendered} contact sheet(s) rendered in ${dir}` +
+      (failed > 0 ? `, ${failed} failed` : '')
+  );
+  return failed > 0 ? 1 : 0;
 }
 
 async function reanalyze(
