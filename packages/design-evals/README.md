@@ -49,10 +49,18 @@ attempt. When a transport interruption prevents final usage reporting,
 
 ## Next measurement
 
-Keep the existing baselines as historical evidence. Before using shipping
-rates as a gate, recover their rendered artifacts (or produce fresh matched
-runs), assemble the 40 development pairs required by #321, and collect Paolo's
-ratings. Report agreement and kappa before relying on the judge.
+Keep the existing baselines as historical evidence. The judge becomes a gate
+in three steps, each recorded under `baselines/`:
+
+1. **Pairs (#321).** Paolo's blind preferences on the 40 development pairs
+   (Phase 0 cold against assisted), read beside the judge's two-order verdicts
+   on the same pairs:
+   `pnpm pairwise calibrate --human <file> --judge baselines/2026-09-05-pairwise-cold-vs-assisted.json --a baseline-cold --b baseline-assisted --out <file>`.
+2. **Shipping (#409).** A shipping definition calibrated on the checkpoint
+   verdicts, frozen, then verified on fresh briefs (below).
+3. **Host (#422).** Claude Desktop against the headless runner on one build
+   and one skill (below), so a headless scorecard says how far it stands for
+   Desktop.
 
 Then repeat the development corpus on a fixed revision with `--repeat 3
 --judge`, holding the author model, judge model, skill mode and render environment
@@ -72,6 +80,11 @@ definition is frozen it is the status quo — the judge's own answer to the
 original question — and until one passes verification the binary rate is
 **advisory**: read `excellent` (level ≥ 4) beside it.
 
+Frozen on 2026-09-13: `clean-pages` — level ≥ 3, no integrity defect, at most
+one empty or under-filled page — at kappa 0.66 on the checkpoint verdicts,
+awaiting verification. The numbers and what they carry are in
+[`baselines/README.md`](baselines/README.md#the-shipping-definition-calibrated-409).
+
 Calibrating, freezing and verifying one:
 
 ```bash
@@ -87,7 +100,8 @@ pnpm shipping calibrate \
   --set after-exhibits=evals-out/checkpoint-after-5 \
   --human baselines/2026-09-08-human-checkpoint-verdicts.json \
   --human baselines/2026-09-09-human-checkpoint-verdicts-round2.json \
-  --out baselines/<date>-shipping-calibration.json
+  --previous before=baselines/2026-09-08-rejudge-checkpoint-before-4.json \
+  --out baselines/<date>-shipping-calibration.json    # --previous: the judge against an earlier sitting
 pnpm shipping freeze --calibration baselines/<date>-shipping-calibration.json \
   --out baselines/shipping-definition.json
 

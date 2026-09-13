@@ -1,0 +1,530 @@
+{
+  "kind": "shipping-calibration",
+  "generatedAt": "2026-09-13T20:11:11.408Z",
+  "gitSha": "4fa91cf9b1a859ca85dee8a0857f93736623ade3",
+  "questions": {
+    "v1": "Would you send this to a client, unchanged, with your name on it?",
+    "v2": "Read the argument, then answer: would you send this to the client as it is, with its formatting untouched? Say no only for something you would have to fix before sending — an empty or mostly blank page, text that is clipped, overlapping or too small to read, a chart or table that is broken or unreadable, leftover placeholder text, or an argument that does not hold together. Polish you would welcome but would not insist on is not a reason to say no; that is what the level is for."
+  },
+  "prompts": {
+    "v1": "cb2ef80be26c2425baceeed55d293c0e615ec11e2ec54ccef5ef9910e88124a9",
+    "v2": "3ffef57a52c73c9a44f6bb81ce3094341c28d3fccb3133d55477e64974e0a57b"
+  },
+  "sittings": [
+    {
+      "set": "before",
+      "question": "v1",
+      "judgeModel": "claude-opus-5",
+      "judgedAt": "2026-09-11T16:58:00.973Z"
+    },
+    {
+      "set": "before",
+      "question": "v2",
+      "judgeModel": "claude-opus-5",
+      "judgedAt": "2026-09-11T17:13:25.459Z"
+    },
+    {
+      "set": "after",
+      "question": "v1",
+      "judgeModel": "claude-opus-5",
+      "judgedAt": "2026-09-11T16:57:58.757Z"
+    },
+    {
+      "set": "after",
+      "question": "v2",
+      "judgeModel": "claude-opus-5",
+      "judgedAt": "2026-09-11T17:12:41.919Z"
+    },
+    {
+      "set": "after-exhibits",
+      "question": "v1",
+      "judgeModel": "claude-opus-5",
+      "judgedAt": "2026-09-11T17:00:05.657Z"
+    },
+    {
+      "set": "after-exhibits",
+      "question": "v2",
+      "judgeModel": "claude-opus-5",
+      "judgedAt": "2026-09-11T17:14:11.062Z"
+    }
+  ],
+  "facts": {
+    "before": "recorded",
+    "after": "recorded",
+    "after-exhibits": "recorded"
+  },
+  "allocation": {
+    "calibration": [
+      {
+        "id": "before",
+        "dir": "packages/design-evals/evals-out/checkpoint-before",
+        "briefs": [
+          "cr-brand-repositioning",
+          "cr-cost-programme-review",
+          "cr-esg-reporting-readiness",
+          "cr-market-entry-nordics",
+          "cr-post-merger-integration",
+          "cr-pricing-review-logistics",
+          "cr-service-model-redesign",
+          "cr-workforce-planning"
+        ]
+      },
+      {
+        "id": "after",
+        "dir": "packages/design-evals/evals-out/checkpoint-after",
+        "briefs": [
+          "cr-brand-repositioning",
+          "cr-cost-programme-review",
+          "cr-esg-reporting-readiness",
+          "cr-market-entry-nordics",
+          "cr-post-merger-integration",
+          "cr-pricing-review-logistics",
+          "cr-service-model-redesign",
+          "cr-workforce-planning"
+        ]
+      },
+      {
+        "id": "after-exhibits",
+        "dir": "packages/design-evals/evals-out/checkpoint-after-5",
+        "briefs": [
+          "cr-brand-repositioning",
+          "cr-cost-programme-review",
+          "cr-esg-reporting-readiness",
+          "cr-market-entry-nordics",
+          "cr-post-merger-integration",
+          "cr-pricing-review-logistics",
+          "cr-service-model-redesign",
+          "cr-workforce-planning"
+        ]
+      }
+    ],
+    "human": [
+      "packages/design-evals/baselines/2026-09-08-human-checkpoint-verdicts.json",
+      "packages/design-evals/baselines/2026-09-09-human-checkpoint-verdicts-round2.json"
+    ],
+    "artifacts": 72,
+    "unstable": 8
+  },
+  "variance": {
+    "human": {
+      "n": 24,
+      "rawAgreement": 0.6666666666666666,
+      "kappa": 0.2258064516129032,
+      "clusters": 8,
+      "interval": {
+        "low": 0,
+        "high": 0.43749999999999994,
+        "confidence": 0.95,
+        "resamples": 2000
+      }
+    },
+    "judge": [
+      {
+        "set": "before",
+        "earlier": "2026-09-08-rejudge-checkpoint-before-4.json",
+        "judgedAt": "2026-09-09T00:02:29.092Z",
+        "n": 24,
+        "wouldShip": {
+          "n": 24,
+          "rawAgreement": 1,
+          "kappa": null,
+          "clusters": 8
+        },
+        "level": {
+          "n": 24,
+          "rawAgreement": 0.6666666666666666,
+          "kappa": 0.24999999999999986,
+          "clusters": 8,
+          "interval": {
+            "low": -0.09090909090909084,
+            "high": 0.5522388059701492,
+            "confidence": 0.95,
+            "resamples": 1999
+          }
+        }
+      },
+      {
+        "set": "after",
+        "earlier": "2026-09-08-rejudge-checkpoint-after.json",
+        "judgedAt": "2026-09-08T01:26:34.860Z",
+        "n": 24,
+        "wouldShip": {
+          "n": 24,
+          "rawAgreement": 0.875,
+          "kappa": 0.3333333333333337,
+          "clusters": 8,
+          "interval": {
+            "low": -0.11111111111111065,
+            "high": 0.8333333333333334,
+            "confidence": 0.95,
+            "resamples": 1991
+          }
+        },
+        "level": {
+          "n": 24,
+          "rawAgreement": 0.75,
+          "kappa": 0.2653061224489796,
+          "clusters": 8,
+          "interval": {
+            "low": -0.09090909090909109,
+            "high": 0.4594594594594595,
+            "confidence": 0.95,
+            "resamples": 2000
+          }
+        }
+      },
+      {
+        "set": "after-exhibits",
+        "earlier": "2026-09-08-rejudge-checkpoint-after-exhibits.json",
+        "judgedAt": "2026-09-09T00:19:56.604Z",
+        "n": 24,
+        "wouldShip": {
+          "n": 24,
+          "rawAgreement": 0.6666666666666666,
+          "kappa": 0.33333333333333326,
+          "clusters": 8,
+          "interval": {
+            "low": 0.052631578947368446,
+            "high": 0.6546762589928059,
+            "confidence": 0.95,
+            "resamples": 2000
+          }
+        },
+        "level": {
+          "n": 24,
+          "rawAgreement": 0.7916666666666666,
+          "kappa": 0.5081967213114752,
+          "clusters": 8,
+          "interval": {
+            "low": 0.11111111111111119,
+            "high": 0.8297872340425532,
+            "confidence": 0.95,
+            "resamples": 2000
+          }
+        }
+      }
+    ],
+    "questions": {
+      "n": 69,
+      "wouldShip": {
+        "n": 69,
+        "rawAgreement": 0.5362318840579711,
+        "kappa": 0.22580645161290339,
+        "clusters": 24,
+        "interval": {
+          "low": 0.11945392491467573,
+          "high": 0.3418542541014878,
+          "confidence": 0.95,
+          "resamples": 2000
+        }
+      },
+      "level": {
+        "n": 69,
+        "rawAgreement": 0.8115942028985508,
+        "kappa": 0.6555299539170507,
+        "clusters": 24,
+        "interval": {
+          "low": 0.47808896210873136,
+          "high": 0.8109589041095889,
+          "confidence": 0.95,
+          "resamples": 2000
+        }
+      }
+    },
+    "author": {
+      "briefs": 24,
+      "briefsTheReviewerSplit": 7,
+      "meanJudgeLevelRange": 0.625
+    }
+  },
+  "candidates": [
+    {
+      "definition": {
+        "id": "judge-v1",
+        "summary": "The judge answers yes to the original shipping question: send it unchanged, with your name on it.",
+        "question": "v1",
+        "judgeAnswer": true,
+        "minimumLevel": 0,
+        "noIntegrityDefect": false
+      },
+      "score": {
+        "id": "judge-v1",
+        "hash": "22168fb10b5596a83f8ca04defb7fa208b1237fcae7a37bd5735cb03ff9727ac",
+        "n": 64,
+        "rawAgreement": 0.6875,
+        "kappa": 0.375,
+        "clusters": 8,
+        "interval": {
+          "low": 0.198019801980198,
+          "high": 0.5457227138643067,
+          "confidence": 0.95,
+          "resamples": 2000
+        },
+        "excluded": {
+          "unstable": 8,
+          "undecided": 0
+        },
+        "confusion": {
+          "bothShip": 13,
+          "bothHold": 31,
+          "humanOnly": 19,
+          "definitionOnly": 1
+        },
+        "byFormat": {
+          "docx": {
+            "n": 64,
+            "kappa": 0.375,
+            "rawAgreement": 0.6875,
+            "confusion": {
+              "bothShip": 13,
+              "bothHold": 31,
+              "humanOnly": 19,
+              "definitionOnly": 1
+            }
+          }
+        }
+      }
+    },
+    {
+      "definition": {
+        "id": "judge-v2",
+        "summary": "The judge answers yes to the reworded question: sendable after reading the argument, with the formatting untouched.",
+        "question": "v2",
+        "judgeAnswer": true,
+        "minimumLevel": 0,
+        "noIntegrityDefect": false
+      },
+      "score": {
+        "id": "judge-v2",
+        "hash": "b9e38e1205acd283e13f9e1df7c911594cd8de33e0d0d8e5a8e976176e1158a6",
+        "n": 61,
+        "rawAgreement": 0.7704918032786885,
+        "kappa": 0.5383783783783783,
+        "clusters": 8,
+        "interval": {
+          "low": 0.30784123910939,
+          "high": 0.7640449438202247,
+          "confidence": 0.95,
+          "resamples": 2000
+        },
+        "excluded": {
+          "unstable": 8,
+          "undecided": 3
+        },
+        "confusion": {
+          "bothShip": 29,
+          "bothHold": 18,
+          "humanOnly": 2,
+          "definitionOnly": 12
+        },
+        "byFormat": {
+          "docx": {
+            "n": 61,
+            "kappa": 0.5383783783783783,
+            "rawAgreement": 0.7704918032786885,
+            "confusion": {
+              "bothShip": 29,
+              "bothHold": 18,
+              "humanOnly": 2,
+              "definitionOnly": 12
+            }
+          }
+        }
+      }
+    },
+    {
+      "definition": {
+        "id": "excellent",
+        "summary": "The judge places the document at rubric level 4 or above, whatever it answers to the shipping question.",
+        "question": "v1",
+        "judgeAnswer": false,
+        "minimumLevel": 4,
+        "noIntegrityDefect": false
+      },
+      "score": {
+        "id": "excellent",
+        "hash": "143e3b9fcc43d0e9bbf4fae1584790f48e47ed2935e8fc1c2d69966808aa2f1b",
+        "n": 64,
+        "rawAgreement": 0.78125,
+        "kappa": 0.5625,
+        "clusters": 8,
+        "interval": {
+          "low": 0.2449952335557675,
+          "high": 0.8149905123339658,
+          "confidence": 0.95,
+          "resamples": 2000
+        },
+        "excluded": {
+          "unstable": 8,
+          "undecided": 0
+        },
+        "confusion": {
+          "bothShip": 22,
+          "bothHold": 28,
+          "humanOnly": 10,
+          "definitionOnly": 4
+        },
+        "byFormat": {
+          "docx": {
+            "n": 64,
+            "kappa": 0.5625,
+            "rawAgreement": 0.78125,
+            "confusion": {
+              "bothShip": 22,
+              "bothHold": 28,
+              "humanOnly": 10,
+              "definitionOnly": 4
+            }
+          }
+        }
+      }
+    },
+    {
+      "definition": {
+        "id": "excellent-clean",
+        "summary": "Rubric level 4 or above, and no integrity defect the static or rendered checks can see.",
+        "question": "v1",
+        "judgeAnswer": false,
+        "minimumLevel": 4,
+        "noIntegrityDefect": true
+      },
+      "score": {
+        "id": "excellent-clean",
+        "hash": "5d833e18219402016a57db95cc4a79e918c41e7af7091bbdc854f39776a1a1c2",
+        "n": 64,
+        "rawAgreement": 0.75,
+        "kappa": 0.5,
+        "clusters": 8,
+        "interval": {
+          "low": 0.12903225806451624,
+          "high": 0.7825242718446602,
+          "confidence": 0.95,
+          "resamples": 2000
+        },
+        "excluded": {
+          "unstable": 8,
+          "undecided": 0
+        },
+        "confusion": {
+          "bothShip": 20,
+          "bothHold": 28,
+          "humanOnly": 12,
+          "definitionOnly": 4
+        },
+        "byFormat": {
+          "docx": {
+            "n": 64,
+            "kappa": 0.5,
+            "rawAgreement": 0.75,
+            "confusion": {
+              "bothShip": 20,
+              "bothHold": 28,
+              "humanOnly": 12,
+              "definitionOnly": 4
+            }
+          }
+        }
+      }
+    },
+    {
+      "definition": {
+        "id": "clean-pages",
+        "summary": "Rubric level 3 or above, no integrity defect, and at most one page the rendered pass finds empty or under-filled.",
+        "question": "v1",
+        "judgeAnswer": false,
+        "minimumLevel": 3,
+        "noIntegrityDefect": true,
+        "maximumPageDefects": 1
+      },
+      "score": {
+        "id": "clean-pages",
+        "hash": "4477208543b3d90b756cd68c0f92b5b3cb354e8429b029dbab1c06cfd54cd0f9",
+        "n": 64,
+        "rawAgreement": 0.828125,
+        "kappa": 0.65625,
+        "clusters": 8,
+        "interval": {
+          "low": 0.403921568627451,
+          "high": 0.9060665362035225,
+          "confidence": 0.95,
+          "resamples": 2000
+        },
+        "excluded": {
+          "unstable": 8,
+          "undecided": 0
+        },
+        "confusion": {
+          "bothShip": 27,
+          "bothHold": 26,
+          "humanOnly": 5,
+          "definitionOnly": 6
+        },
+        "byFormat": {
+          "docx": {
+            "n": 64,
+            "kappa": 0.65625,
+            "rawAgreement": 0.828125,
+            "confusion": {
+              "bothShip": 27,
+              "bothHold": 26,
+              "humanOnly": 5,
+              "definitionOnly": 6
+            }
+          }
+        }
+      }
+    },
+    {
+      "definition": {
+        "id": "judge-v2-clean",
+        "summary": "The judge answers yes to the reworded question, with no integrity defect and at most one empty or under-filled page.",
+        "question": "v2",
+        "judgeAnswer": true,
+        "minimumLevel": 0,
+        "noIntegrityDefect": true,
+        "maximumPageDefects": 1
+      },
+      "score": {
+        "id": "judge-v2-clean",
+        "hash": "5731c112e800fe4225d8d1fdb01d36e2bff9e558cd0feb90b8d225e119f5a694",
+        "n": 63,
+        "rawAgreement": 0.8412698412698413,
+        "kappa": 0.6824596774193549,
+        "clusters": 8,
+        "interval": {
+          "low": 0.46099647710115754,
+          "high": 0.8761904761904762,
+          "confidence": 0.95,
+          "resamples": 2000
+        },
+        "excluded": {
+          "unstable": 8,
+          "undecided": 1
+        },
+        "confusion": {
+          "bothShip": 26,
+          "bothHold": 27,
+          "humanOnly": 5,
+          "definitionOnly": 5
+        },
+        "byFormat": {
+          "docx": {
+            "n": 63,
+            "kappa": 0.6824596774193549,
+            "rawAgreement": 0.8412698412698413,
+            "confusion": {
+              "bothShip": 26,
+              "bothHold": 27,
+              "humanOnly": 5,
+              "definitionOnly": 5
+            }
+          }
+        }
+      }
+    }
+  ],
+  "choice": {
+    "chosen": "clean-pages",
+    "reason": "within 0.05 of the highest kappa (judge-v2-clean, 0.68), and has the same page term and as many terms, and was listed first"
+  }
+}
