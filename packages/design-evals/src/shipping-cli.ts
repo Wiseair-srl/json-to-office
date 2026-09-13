@@ -120,7 +120,12 @@ async function sheets(dir: string, line: Line): Promise<number> {
       // the command reruns only what is still missing.
       failed += 1;
       const message = error instanceof Error ? error.message : String(error);
-      line(`  ${run.label}: render failed — ${message.split('\n')[0]}`);
+      // The converter's command line follows "Command failed:"; it says nothing
+      // the run label does not.
+      const reason = message
+        .split('\n')[0]
+        .replace(/:? Command failed:.*$/, '');
+      line(`  ${run.label}: render failed — ${reason}`);
     }
   }
   line(
