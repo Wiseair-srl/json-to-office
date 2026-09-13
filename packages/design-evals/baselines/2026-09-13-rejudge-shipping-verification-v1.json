@@ -1,0 +1,276 @@
+{
+  "source": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/shipping-verification/scorecard.json",
+  "judgeModel": "claude-opus-5",
+  "question": "v1",
+  "judgedAt": "2026-09-13T21:16:26.030Z",
+  "runs": [
+    {
+      "briefId": "cd-capital-allocation",
+      "run": "cd-capital-allocation",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cd-competitive-response",
+      "run": "cd-competitive-response",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cd-cost-programme-kickoff",
+      "run": "cd-cost-programme-kickoff",
+      "then": {},
+      "error": "no contact sheet"
+    },
+    {
+      "briefId": "cd-customer-research-readout",
+      "run": "cd-customer-research-readout",
+      "then": {},
+      "error": "no contact sheet"
+    },
+    {
+      "briefId": "cd-digital-transformation-case",
+      "run": "cd-digital-transformation-case",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cd-growth-strategy-readout",
+      "run": "cd-growth-strategy-readout",
+      "then": {},
+      "error": "no contact sheet"
+    },
+    {
+      "briefId": "cd-innovation-portfolio",
+      "run": "cd-innovation-portfolio",
+      "then": {},
+      "error": "no contact sheet"
+    },
+    {
+      "briefId": "cd-market-scan-adjacent",
+      "run": "cd-market-scan-adjacent",
+      "then": {},
+      "error": "no contact sheet"
+    },
+    {
+      "briefId": "cd-operating-model-options",
+      "run": "cd-operating-model-options",
+      "then": {},
+      "error": "no contact sheet"
+    },
+    {
+      "briefId": "cd-org-design-proposal",
+      "run": "cd-org-design-proposal",
+      "then": {},
+      "error": "no contact sheet"
+    },
+    {
+      "briefId": "cd-post-merger-day-one",
+      "run": "cd-post-merger-day-one",
+      "then": {},
+      "error": "no contact sheet"
+    },
+    {
+      "briefId": "cd-pricing-strategy-workshop",
+      "run": "cd-pricing-strategy-workshop",
+      "then": {},
+      "error": "no contact sheet"
+    },
+    {
+      "briefId": "cd-quarterly-business-review",
+      "run": "cd-quarterly-business-review",
+      "then": {},
+      "error": "no contact sheet"
+    },
+    {
+      "briefId": "cd-service-quality-turnaround",
+      "run": "cd-service-quality-turnaround",
+      "then": {},
+      "error": "no contact sheet"
+    },
+    {
+      "briefId": "cd-supply-chain-diagnostic",
+      "run": "cd-supply-chain-diagnostic",
+      "then": {},
+      "error": "no contact sheet"
+    },
+    {
+      "briefId": "cd-sustainability-roadmap",
+      "run": "cd-sustainability-roadmap",
+      "then": {},
+      "error": "no contact sheet"
+    },
+    {
+      "briefId": "cr-customer-churn-diagnosis",
+      "run": "cr-customer-churn-diagnosis",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 4,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "cr-digital-channel-shift",
+      "run": "cr-digital-channel-shift",
+      "then": {},
+      "now": {
+        "wouldShip": true,
+        "level": 4,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cr-procurement-savings",
+      "run": "cr-procurement-savings",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cr-store-network-rationalisation",
+      "run": "cr-store-network-rationalisation",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cr-supply-resilience",
+      "run": "cr-supply-resilience",
+      "then": {},
+      "now": {
+        "wouldShip": true,
+        "level": 4,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "tr-accessibility-audit",
+      "run": "tr-accessibility-audit",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 1,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "tr-api-gateway-migration",
+      "run": "tr-api-gateway-migration",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "tr-build-pipeline-audit",
+      "run": "tr-build-pipeline-audit",
+      "then": {},
+      "now": {
+        "wouldShip": true,
+        "level": 4,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "tr-capacity-forecast",
+      "run": "tr-capacity-forecast",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 4,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "tr-data-retention-policy",
+      "run": "tr-data-retention-policy",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 1,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "tr-incident-postmortem-db",
+      "run": "tr-incident-postmortem-db",
+      "then": {},
+      "now": {
+        "wouldShip": true,
+        "level": 4,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "tr-load-test-results",
+      "run": "tr-load-test-results",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 4,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "tr-memo-vendor-selection",
+      "run": "tr-memo-vendor-selection",
+      "then": {},
+      "now": {
+        "wouldShip": true,
+        "level": 4,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "tr-observability-standard",
+      "run": "tr-observability-standard",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 4,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "tr-schema-migration-plan",
+      "run": "tr-schema-migration-plan",
+      "then": {},
+      "now": {
+        "wouldShip": true,
+        "level": 4,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "tr-security-review-auth",
+      "run": "tr-security-review-auth",
+      "then": {},
+      "now": {
+        "wouldShip": true,
+        "level": 4,
+        "genericness": 3
+      }
+    }
+  ]
+}

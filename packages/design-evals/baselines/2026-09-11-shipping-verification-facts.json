@@ -1,0 +1,173 @@
+{
+  "source": "reanalysis",
+  "analyzedAt": "2026-09-11T17:17:51.358Z",
+  "gitSha": "53bb246d4acfb933cfbe454c88cffe9ce82f99be",
+  "runs": {
+    "cd-capital-allocation": {
+      "format": "pptx",
+      "pages": 10,
+      "pageCountSource": "rendered",
+      "qualityByCode": {
+        "W_QUALITY_RENDERED_CLIP": 4,
+        "W_QUALITY_RENDERED_SPILL": 3,
+        "W_QUALITY_TEXT_TIGHT": 9
+      }
+    },
+    "cd-competitive-response": {
+      "format": "pptx",
+      "pages": 10,
+      "pageCountSource": "rendered",
+      "qualityByCode": {
+        "W_QUALITY_RENDERED_CLIP": 1,
+        "W_QUALITY_TEXT_TIGHT": 9,
+        "W_QUALITY_TITLE_DRIFT": 1
+      }
+    },
+    "cd-cost-programme-kickoff": {
+      "format": "pptx",
+      "pages": 11,
+      "pageCountSource": "structural",
+      "qualityByCode": {
+        "W_QUALITY_TEXT_TIGHT": 10
+      }
+    },
+    "cd-customer-research-readout": {
+      "format": "pptx",
+      "pages": 12,
+      "pageCountSource": "structural",
+      "qualityByCode": {
+        "W_QUALITY_TEXT_TIGHT": 11
+      }
+    },
+    "cd-digital-transformation-case": {
+      "format": "pptx",
+      "pages": 15,
+      "pageCountSource": "rendered",
+      "qualityByCode": {
+        "W_QUALITY_RENDERED_CLIP": 3,
+        "W_QUALITY_RENDERED_SPILL": 2,
+        "W_QUALITY_RENDERED_TEXT_MISSING": 1,
+        "W_QUALITY_TEXT_TIGHT": 14
+      }
+    },
+    "cr-customer-churn-diagnosis": {
+      "format": "docx",
+      "pages": 4,
+      "pageCountSource": "rendered",
+      "qualityByCode": {}
+    },
+    "cr-digital-channel-shift": {
+      "format": "docx",
+      "pages": 4,
+      "pageCountSource": "rendered",
+      "qualityByCode": {}
+    },
+    "cr-procurement-savings": {
+      "format": "docx",
+      "pages": 5,
+      "pageCountSource": "rendered",
+      "qualityByCode": {}
+    },
+    "cr-store-network-rationalisation": {
+      "format": "docx",
+      "pages": 4,
+      "pageCountSource": "rendered",
+      "qualityByCode": {
+        "W_QUALITY_TABLE_NUMERIC_ALIGN": 1
+      }
+    },
+    "cr-supply-resilience": {
+      "format": "docx",
+      "pages": 5,
+      "pageCountSource": "rendered",
+      "qualityByCode": {}
+    },
+    "tr-accessibility-audit": {
+      "format": "docx",
+      "pages": 7,
+      "pageCountSource": "rendered",
+      "qualityByCode": {
+        "W_QUALITY_RENDERED_CLIP": 16,
+        "W_QUALITY_RENDERED_PAGE_UNDERFILLED": 1,
+        "W_QUALITY_RENDERED_TABLE_SPLIT": 1,
+        "W_QUALITY_RENDERED_TEXT_MISSING": 2,
+        "W_QUALITY_TABLE_NUMERIC_ALIGN": 1
+      }
+    },
+    "tr-api-gateway-migration": {
+      "format": "docx",
+      "pages": 5,
+      "pageCountSource": "rendered",
+      "qualityByCode": {}
+    },
+    "tr-build-pipeline-audit": {
+      "format": "docx",
+      "pages": 4,
+      "pageCountSource": "rendered",
+      "qualityByCode": {}
+    },
+    "tr-capacity-forecast": {
+      "format": "docx",
+      "pages": 5,
+      "pageCountSource": "rendered",
+      "qualityByCode": {
+        "W_QUALITY_RENDERED_CLIP": 6,
+        "W_QUALITY_RENDERED_PAGE_UNDERFILLED": 1,
+        "W_QUALITY_RENDERED_TABLE_SPLIT": 1
+      }
+    },
+    "tr-data-retention-policy": {
+      "format": "docx",
+      "pages": 7,
+      "pageCountSource": "rendered",
+      "qualityByCode": {
+        "W_QUALITY_OFF_PALETTE": 3,
+        "W_QUALITY_RENDERED_PAGE_UNDERFILLED": 2
+      }
+    },
+    "tr-incident-postmortem-db": {
+      "format": "docx",
+      "pages": 4,
+      "pageCountSource": "rendered",
+      "qualityByCode": {
+        "W_QUALITY_RENDERED_TABLE_SPLIT": 1
+      }
+    },
+    "tr-load-test-results": {
+      "format": "docx",
+      "pages": 4,
+      "pageCountSource": "rendered",
+      "qualityByCode": {
+        "W_QUALITY_RENDERED_TABLE_SPLIT": 1
+      }
+    },
+    "tr-memo-vendor-selection": {
+      "format": "docx",
+      "pages": 2,
+      "pageCountSource": "rendered",
+      "qualityByCode": {
+        "W_QUALITY_RENDERED_TEXT_MISSING": 3
+      }
+    },
+    "tr-observability-standard": {
+      "format": "docx",
+      "pages": 7,
+      "pageCountSource": "rendered",
+      "qualityByCode": {}
+    },
+    "tr-schema-migration-plan": {
+      "format": "docx",
+      "pages": 6,
+      "pageCountSource": "rendered",
+      "qualityByCode": {
+        "W_QUALITY_RENDERED_CLIP": 6
+      }
+    },
+    "tr-security-review-auth": {
+      "format": "docx",
+      "pages": 6,
+      "pageCountSource": "rendered",
+      "qualityByCode": {}
+    }
+  }
+}
