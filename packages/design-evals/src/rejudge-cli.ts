@@ -5,6 +5,7 @@ import path from 'node:path';
 
 import { rejudge, type RejudgedRun } from './rejudge.js';
 import { SHIPPING_QUESTIONS, type ShippingQuestionId } from './shipping.js';
+import { formatKappa } from './statistics.js';
 
 /** Options that take a value, so their value is never read as the runs dir. */
 const VALUED_OPTIONS = [
@@ -140,19 +141,19 @@ export async function main(
       : '';
     line(
       `wouldShip: ${(wouldShip.rawAgreement * 100).toFixed(0)}% agreement, ` +
-        `kappa ${wouldShip.kappa.toFixed(2)}${interval}`
+        `kappa ${formatKappa(wouldShip.kappa)}${interval}`
     );
     // A field nothing could be compared on is said to be absent rather than
     // printed as 0% and NaN, which read as measurements.
     line(
       level
-        ? `level: ${(level.rawAgreement * 100).toFixed(0)}% exact, kappa ${level.kappa.toFixed(2)}, ` +
+        ? `level: ${(level.rawAgreement * 100).toFixed(0)}% exact, kappa ${formatKappa(level.kappa)}, ` +
             `${levelMovedMoreThanOne} moved more than one step`
         : 'level: no stored verdict carried it, nothing to compare'
     );
     line(
       genericness
-        ? `genericness: ${(genericness.rawAgreement * 100).toFixed(0)}% exact, kappa ${genericness.kappa.toFixed(2)}`
+        ? `genericness: ${(genericness.rawAgreement * 100).toFixed(0)}% exact, kappa ${formatKappa(genericness.kappa)}`
         : 'genericness: no stored verdict carried it, nothing to compare'
     );
     // The number the programme actually rests on, said plainly.

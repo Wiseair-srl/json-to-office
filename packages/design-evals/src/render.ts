@@ -26,7 +26,11 @@ export interface RenderedDocument {
 }
 
 export class RenderError extends Error {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    /** The preview stage that failed (`build`, `convert`, `rasterize`…), when the renderer said. */
+    readonly stage?: string
+  ) {
     super(message);
     this.name = 'RenderError';
   }
@@ -46,9 +50,13 @@ export async function renderForJudging(
     getAdapter,
   });
   if (!rendered.ok) {
+    const stage = rendered.diagnostics
+      .map((entry) => (entry.context as { stage?: unknown } | undefined)?.stage)
+      .find((value): value is string => typeof value === 'string');
     throw new RenderError(
       rendered.diagnostics.map((entry) => entry.message).join('; ') ||
-        'the preview failed with no diagnostics'
+        'the preview failed with no diagnostics',
+      stage
     );
   }
   return {

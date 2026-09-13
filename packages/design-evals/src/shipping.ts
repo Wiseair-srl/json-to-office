@@ -163,6 +163,17 @@ export function definitionHash(definition: ShippingDefinition): string {
 }
 
 /**
+ * The whole prompt a judge sitting reads for a question, by digest: what a
+ * sitting records, so a verification can refuse one that read another prompt
+ * than the frozen definition names.
+ */
+export function promptDigest(question: ShippingQuestionId): string {
+  return createHash('sha256')
+    .update(rubricPrompt(SHIPPING_QUESTIONS[question]))
+    .digest('hex');
+}
+
+/**
  * The candidates, written down before the calibration sitting scores them.
  *
  * Six, because each answers a different account of the gap between the judge

@@ -18,7 +18,7 @@
  *     measurement of the judged renders. For calibration artifacts, which
  *     today's engine would paginate differently.
  *
- *   pnpm shipping calibrate --set <id>=<dir>… --human <file>… --out <file>
+ *   pnpm shipping calibrate --set <id>=<dir>… --human <file>… [--previous <set>=<file>…] --out <file>
  *     Score every candidate definition on the human-labelled artifacts, with
  *     each set's `sitting-<question>.json` judge sittings (`pnpm rejudge <dir>
  *     --question v2 --out <dir>/sitting-v2.json`), and choose one by the
@@ -28,7 +28,6 @@
  *   pnpm shipping verify --definition <file> --set <id>=<dir>… --human <file> --record <file> [--supersede <why>]
  */
 
-import { createHash } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -40,8 +39,11 @@ import type { BriefFormat } from './corpus.js';
 import { gitState } from './manifest.js';
 import { documentMetrics, type RunMetrics } from './metrics.js';
 import { comparableRuns, type RecordedRun } from './rejudge.js';
-import { renderForJudging } from './render.js';
-import { rubricPrompt } from './rubric.js';
+import {
+  RenderError,
+  renderForJudging,
+  type RenderedDocument,
+} from './render.js';
 import {
   buildEvidence,
   chooseDefinition,
@@ -65,6 +67,7 @@ import {
 } from './shipping-calibration.js';
 import {
   CANDIDATE_DEFINITIONS,
+  promptDigest,
   SHIPPING_QUESTIONS,
   type ShippingQuestionId,
 } from './shipping.js';
@@ -107,26 +110,23 @@ async function sheets(dir: string, line: Line): Promise<number> {
       continue;
     }
     const document = await readJson<unknown>(documentFile);
+    let result: RenderedDocument;
     try {
-      const result = await renderForJudging(
-        run.format as BriefFormat,
-        document
-      );
-      await fs.writeFile(sheet, result.sheet.png);
-      rendered += 1;
-      line(`  ${run.label}: ${result.totalPages} page(s)`);
+      result = await renderForJudging(run.format as BriefFormat, document);
     } catch (error) {
+      if (!(error instanceof RenderError)) throw error;
       // One converter crash leaves one document without a sheet, not the rest;
       // the command reruns only what is still missing.
       failed += 1;
-      const message = error instanceof Error ? error.message : String(error);
-      // The converter's command line follows "Command failed:"; it says nothing
-      // the run label does not.
-      const reason = message
-        .split('\n')[0]
-        .replace(/:? Command failed:.*$/, '');
-      line(`  ${run.label}: render failed — ${reason}`);
+      line(
+        `  ${run.label}: render failed` +
+          (error.stage ? ` at the ${error.stage} stage` : '')
+      );
+      continue;
     }
+    await fs.writeFile(sheet, result.sheet.png);
+    rendered += 1;
+    line(`  ${run.label}: ${result.totalPages} page(s)`);
   }
   line(
     `${rendered} contact sheet(s) rendered in ${dir}` +
@@ -253,12 +253,18 @@ function parseSets(
   }));
 }
 
+/** Where a set's verdicts came from: one judge sitting, by question. */
+type SittingRecord = Omit<Sitting, 'verdicts'> & {
+  set: string;
+  question: ShippingQuestionId;
+};
+
 async function loadEvidenceSet(
   id: string,
   dir: string
 ): Promise<{
   set: EvidenceSet;
-  sittings: Array<Omit<Sitting, 'verdicts'> & { question: ShippingQuestionId }>;
+  sittings: SittingRecord[];
   factsSource?: string;
 }> {
   const facts = await readJson<{
@@ -266,9 +272,7 @@ async function loadEvidenceSet(
     runs: Record<string, { qualityByCode: Record<string, number> }>;
   }>(path.join(dir, 'facts.json'));
   const verdicts: EvidenceSet['sittings'] = {};
-  const sittings: Array<
-    Omit<Sitting, 'verdicts'> & { question: ShippingQuestionId }
-  > = [];
+  const sittings: SittingRecord[] = [];
   for (const question of Object.keys(
     SHIPPING_QUESTIONS
   ) as ShippingQuestionId[]) {
@@ -279,9 +283,11 @@ async function loadEvidenceSet(
     if (!sitting) continue;
     verdicts[question] = sitting.verdicts;
     sittings.push({
+      set: id,
       question,
       ...(sitting.judgeModel && { judgeModel: sitting.judgeModel }),
       ...(sitting.judgedAt && { judgedAt: sitting.judgedAt }),
+      ...(sitting.promptSha256 && { promptSha256: sitting.promptSha256 }),
     });
   }
   return {
@@ -293,6 +299,26 @@ async function loadEvidenceSet(
     },
     sittings,
     ...(facts.source && { factsSource: facts.source }),
+  };
+}
+
+/** Every `--set`, with the sittings their verdicts came from and each set's facts source. */
+async function loadEvidenceSets(
+  sets: ReadonlyArray<{ id: string; dir: string }>
+): Promise<{
+  evidenceSets: EvidenceSet[];
+  sittings: SittingRecord[];
+  factsSources: Record<string, string>;
+}> {
+  const loaded = await Promise.all(
+    sets.map((set) => loadEvidenceSet(set.id, set.dir))
+  );
+  return {
+    evidenceSets: loaded.map((entry) => entry.set),
+    sittings: loaded.flatMap((entry) => entry.sittings),
+    factsSources: Object.fromEntries(
+      loaded.map((entry) => [entry.set.id, entry.factsSource ?? 'unrecorded'])
+    ),
   };
 }
 
@@ -327,14 +353,11 @@ async function calibrate(
   const out = values.out;
   if (sets.length === 0 || humanFiles.length === 0 || !out) {
     line(
-      'usage: pnpm shipping calibrate --set <id>=<dir>… --human <file>… --out <file>'
+      'usage: pnpm shipping calibrate --set <id>=<dir>… --human <file>… [--previous <set>=<file>…] --out <file>'
     );
     return 1;
   }
-  const loaded = await Promise.all(
-    sets.map((set) => loadEvidenceSet(set.id, set.dir))
-  );
-  const evidenceSets = loaded.map((entry) => entry.set);
+  const { evidenceSets, sittings, factsSources } = await loadEvidenceSets(sets);
   const judgments = humanJudgments(await loadRounds(humanFiles));
   const labels = labelArtifacts(judgments);
   const rows = buildEvidence(evidenceSets, labels);
@@ -382,17 +405,11 @@ async function calibrate(
     prompts: Object.fromEntries(
       (Object.keys(SHIPPING_QUESTIONS) as ShippingQuestionId[]).map((id) => [
         id,
-        createHash('sha256')
-          .update(rubricPrompt(SHIPPING_QUESTIONS[id]))
-          .digest('hex'),
+        promptDigest(id),
       ])
     ),
-    sittings: loaded.flatMap((entry) =>
-      entry.sittings.map((sitting) => ({ set: entry.set.id, ...sitting }))
-    ),
-    facts: Object.fromEntries(
-      loaded.map((entry) => [entry.set.id, entry.factsSource ?? 'unrecorded'])
-    ),
+    sittings,
+    facts: factsSources,
     allocation: {
       calibration: sets.map((set) => ({
         id: set.id,
@@ -539,7 +556,7 @@ async function verify(
   const recordFile = values.record;
   if (!definitionFile || sets.length === 0 || !humanFile || !recordFile) {
     line(
-      'usage: pnpm shipping verify --definition <file> --set <id>=<dir> --human <file> --record <file> [--supersede <why>]'
+      'usage: pnpm shipping verify --definition <file> --set <id>=<dir>… --human <file> --record <file> [--supersede <why>]'
     );
     return 1;
   }
@@ -551,17 +568,35 @@ async function verify(
     );
     return 1;
   }
-  const loaded = await Promise.all(
-    sets.map((set) => loadEvidenceSet(set.id, set.dir))
-  );
-  const evidenceSets = loaded.map((entry) => entry.set);
+  const { evidenceSets, sittings } = await loadEvidenceSets(sets);
   const rows = buildEvidence(
     evidenceSets,
     labelArtifacts(humanJudgments([round]))
   );
   const result = verifyDefinition(frozen, rows, {
     humanReadAt: round.file.readAt,
+    sittings,
   });
+  // Every run the score does not count, and why, so the denominator is on
+  // the record rather than only in whatever prose describes the set.
+  const labelled = new Set(rows.map((row) => row.artifact));
+  const outside: Array<{ set: string; run: string; reason: string }> = [];
+  for (const [index, set] of sets.entries()) {
+    for (const run of evidenceSets[index].runs) {
+      if (labelled.has(`${set.id}/${run.label}`)) continue;
+      const sheet = path.join(set.dir, 'runs', run.label, 'contact-sheet.png');
+      outside.push({
+        set: set.id,
+        run: run.label,
+        reason:
+          run.outcome !== 'completed'
+            ? `run ${run.outcome}`
+            : (await exists(sheet))
+              ? 'no reviewer verdict'
+              : 'no contact sheet',
+      });
+    }
+  }
   const attempt: VerificationAttempt = {
     ...result,
     set: {
@@ -598,14 +633,10 @@ async function verify(
               })),
               human: path.relative(repoRoot, path.resolve(humanFile)),
               question: round.file.question,
-              // The judge model and sitting the verdicts came from; the hash
-              // above names the prompt it read.
-              sittings: loaded.flatMap((entry) =>
-                entry.sittings.map((sitting) => ({
-                  set: entry.set.id,
-                  ...sitting,
-                }))
-              ),
+              // The judge model, time and prompt digest of each sitting the
+              // verdicts came from.
+              sittings,
+              outside,
             },
           },
         ],
@@ -624,6 +655,16 @@ async function verify(
   );
   for (const [format, entry] of Object.entries(score.byFormat)) {
     line(`  ${format}: n=${entry.n} kappa ${formatKappa(entry.kappa)}`);
+  }
+  if (outside.length > 0) {
+    const reasons = new Map<string, number>();
+    for (const entry of outside) {
+      reasons.set(entry.reason, (reasons.get(entry.reason) ?? 0) + 1);
+    }
+    line(
+      `${outside.length} artifact(s) outside the denominator: ` +
+        [...reasons].map(([reason, count]) => `${count} ${reason}`).join(', ')
+    );
   }
   line(recordFile);
   return 0;

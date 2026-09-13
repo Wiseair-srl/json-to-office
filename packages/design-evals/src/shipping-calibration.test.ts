@@ -23,6 +23,7 @@ import {
 import {
   CANDIDATE_DEFINITIONS,
   definitionHash,
+  promptDigest,
   type ShippingDefinition,
 } from './shipping.js';
 
@@ -77,7 +78,7 @@ describe('human judgments', () => {
     });
   });
 
-  it('measures the reviewer against himself on every artifact judged twice', () => {
+  it('measures the reviewer against themselves on every artifact judged twice', () => {
     const report = humanRepeatability(judgments);
     expect(report.n).toBe(2);
     expect(report.rawAgreement).toBe(0.5);
@@ -190,6 +191,21 @@ describe('choosing a definition', () => {
     expect(choice.reason).toMatch(/page/);
   });
 
+  it('names fewer terms when that is what decided', () => {
+    const levelClean: ShippingDefinition = {
+      ...level,
+      id: 'level-clean',
+      noIntegrityDefect: true,
+    };
+    const choice = chooseDefinition(
+      [score('level-clean', 0.62), score('level', 0.6)],
+      [levelClean, level],
+      { margin: 0.05 }
+    );
+    expect(choice.chosen).toBe('level');
+    expect(choice.reason).toMatch(/fewer terms/);
+  });
+
   it('names what decided the choice when the order breaks the tie', () => {
     // Same page term, same number of terms: only the listed order separates them.
     const answerPages: ShippingDefinition = {
@@ -233,7 +249,16 @@ describe('freezing and verifying', () => {
       briefs: ['cr-a', 'cr-b'],
     },
   });
-  const readAfter = { humanReadAt: '2026-09-11T19:00:00.000Z' };
+  const readAfter = {
+    humanReadAt: '2026-09-11T19:00:00.000Z',
+    sittings: [
+      {
+        question: 'v1' as const,
+        judgedAt: '2026-09-11T18:30:00.000Z',
+        promptSha256: promptDigest('v1'),
+      },
+    ],
+  };
 
   it('freezes the definition with its hash and the evidence it was chosen on', () => {
     expect(frozen).toMatchObject({
@@ -287,9 +312,47 @@ describe('freezing and verifying', () => {
   it('refuses answers read before the definition was frozen', () => {
     expect(() =>
       verifyDefinition(frozen, [row('v/tr-a#1', true)], {
+        ...readAfter,
         humanReadAt: '2026-09-11T17:59:00.000Z',
       })
     ).toThrow(/before/);
+  });
+
+  it('refuses a judge sitting that could have been seen before freezing', () => {
+    const sitting = readAfter.sittings[0];
+    // Judged before the freeze: its verdicts could have shaped the choice.
+    expect(() =>
+      verifyDefinition(frozen, [row('v/tr-a#1', true)], {
+        ...readAfter,
+        sittings: [{ ...sitting, judgedAt: '2026-09-11T17:30:00.000Z' }],
+      })
+    ).toThrow(/sitting/);
+    // A sitting that does not say when it answered cannot show it came after.
+    expect(() =>
+      verifyDefinition(frozen, [row('v/tr-a#1', true)], {
+        ...readAfter,
+        sittings: [{ question: 'v1' }],
+      })
+    ).toThrow(/when/);
+    // Another question's sitting is not the one the definition reads.
+    expect(() =>
+      verifyDefinition(frozen, [row('v/tr-a#1', true)], {
+        ...readAfter,
+        sittings: [
+          sitting,
+          { question: 'v2', judgedAt: '2026-09-11T17:30:00.000Z' },
+        ],
+      })
+    ).not.toThrow();
+  });
+
+  it('refuses a judge sitting that read another prompt than the frozen one', () => {
+    expect(() =>
+      verifyDefinition(frozen, [row('v/tr-a#1', true)], {
+        ...readAfter,
+        sittings: [{ ...readAfter.sittings[0], promptSha256: 'f'.repeat(64) }],
+      })
+    ).toThrow(/prompt/);
   });
 
   describe('the verification record', () => {

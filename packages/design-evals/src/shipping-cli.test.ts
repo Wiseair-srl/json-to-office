@@ -3,10 +3,10 @@ import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { analyzeDocument } from './analyze.js';
-import { renderForJudging } from './render.js';
+import { RenderError, renderForJudging } from './render.js';
 import { freezeDefinition } from './shipping-calibration.js';
 import { main } from './shipping-cli.js';
-import { CANDIDATE_DEFINITIONS } from './shipping.js';
+import { CANDIDATE_DEFINITIONS, promptDigest } from './shipping.js';
 
 vi.mock('./analyze.js', async (original) => ({
   ...(await original<typeof import('./analyze.js')>()),
@@ -25,33 +25,44 @@ afterEach(async () => {
   );
 });
 
+/**
+ * A recorded set on disk, the way the runner leaves one: a scorecard, and a
+ * delivered document in `runs/<brief>/` for every completed run.
+ */
+async function writeSet(
+  runs: ReadonlyArray<{ briefId: string; format: string; outcome?: string }>
+): Promise<string> {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'shipping-cli-'));
+  dirs.push(dir);
+  const recorded = runs.map((run) => ({ outcome: 'completed', ...run }));
+  await fs.writeFile(
+    path.join(dir, 'scorecard.json'),
+    JSON.stringify({ runs: recorded })
+  );
+  for (const { briefId, outcome } of recorded) {
+    if (outcome !== 'completed') continue;
+    await fs.mkdir(path.join(dir, 'runs', briefId), { recursive: true });
+    await fs.writeFile(
+      path.join(dir, 'runs', briefId, 'document.json'),
+      JSON.stringify({ id: briefId })
+    );
+  }
+  return dir;
+}
+
 describe('pnpm shipping sheets', () => {
   it('renders every sheet it can when one render fails, and names the failure', async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'shipping-cli-'));
-    dirs.push(dir);
-    const runs = ['cd-broken', 'cd-fine'].map((briefId) => ({
-      briefId,
-      format: 'pptx',
-      outcome: 'completed',
-    }));
-    await fs.writeFile(
-      path.join(dir, 'scorecard.json'),
-      JSON.stringify({ runs })
-    );
-    for (const { briefId } of runs) {
-      await fs.mkdir(path.join(dir, 'runs', briefId), { recursive: true });
-      await fs.writeFile(
-        path.join(dir, 'runs', briefId, 'document.json'),
-        JSON.stringify({ id: briefId })
-      );
-    }
+    const dir = await writeSet([
+      { briefId: 'cd-broken', format: 'pptx' },
+      { briefId: 'cd-fine', format: 'pptx' },
+    ]);
     // One converter crash must not leave every later document without a sheet.
     vi.mocked(renderForJudging).mockImplementation(
       async (_format, document) => {
         if ((document as { id: string }).id === 'cd-broken') {
-          throw new Error(
-            // Node's execFile error: the command on the first line, stderr after.
-            'Preview failed at the convert stage: Command failed: /Applications/LibreOffice.app/Contents/MacOS/soffice --headless --convert-to pdf preview.pptx\nUnspecified Application Error'
+          throw new RenderError(
+            'Preview failed at the convert stage: Command failed: /Applications/LibreOffice.app/Contents/MacOS/soffice --headless --convert-to pdf preview.pptx\nUnspecified Application Error',
+            'convert'
           );
         }
         return { sheet: { png: Buffer.from('png') }, totalPages: 3 } as never;
@@ -69,9 +80,7 @@ describe('pnpm shipping sheets', () => {
       )
     ).resolves.toBe('png');
     const output = lines.join('\n');
-    expect(output).toContain(
-      'cd-broken: render failed — Preview failed at the convert stage'
-    );
+    expect(output).toContain('cd-broken: render failed at the convert stage');
     expect(output).not.toContain('soffice');
     expect(output).toContain('1 contact sheet(s) rendered');
     expect(output).toContain('1 failed');
@@ -79,29 +88,21 @@ describe('pnpm shipping sheets', () => {
 });
 
 describe('pnpm shipping verify', () => {
-  it('records which judge sitting the verification read, beside the definition hash', async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'shipping-verify-'));
-    dirs.push(dir);
-    const set = path.join(dir, 'set');
-    await fs.mkdir(set);
+  it('records the judge sittings it read and every artifact outside the denominator', async () => {
     const briefs = ['tr-a', 'tr-b', 'tr-c', 'tr-d'];
     const levels = [4, 4, 3, 3];
-    await fs.writeFile(
-      path.join(set, 'scorecard.json'),
-      JSON.stringify({
-        runs: briefs.map((briefId) => ({
-          briefId,
-          format: 'docx',
-          outcome: 'completed',
-        })),
-      })
-    );
+    const set = await writeSet([
+      ...briefs.map((briefId) => ({ briefId, format: 'docx' })),
+      // Completed, but never shown to the reviewer: it has no sheet.
+      { briefId: 'tr-e', format: 'docx' },
+      { briefId: 'tr-f', format: 'docx', outcome: 'failed' },
+    ]);
     await fs.writeFile(
       path.join(set, 'facts.json'),
       JSON.stringify({
         source: 'reanalysis',
         runs: Object.fromEntries(
-          briefs.map((briefId) => [briefId, { qualityByCode: {} }])
+          [...briefs, 'tr-e'].map((briefId) => [briefId, { qualityByCode: {} }])
         ),
       })
     );
@@ -111,6 +112,7 @@ describe('pnpm shipping verify', () => {
         question: 'v1',
         judgeModel: 'claude-opus-5',
         judgedAt: '2026-09-14T08:00:00.000Z',
+        promptSha256: promptDigest('v1'),
         runs: briefs.map((briefId, index) => ({
           briefId,
           run: briefId,
@@ -118,7 +120,9 @@ describe('pnpm shipping verify', () => {
         })),
       })
     );
-    const human = path.join(dir, 'human.json');
+    const work = await fs.mkdtemp(path.join(os.tmpdir(), 'shipping-verify-'));
+    dirs.push(work);
+    const human = path.join(work, 'human.json');
     await fs.writeFile(
       human,
       JSON.stringify({
@@ -132,7 +136,7 @@ describe('pnpm shipping verify', () => {
         })),
       })
     );
-    const definition = path.join(dir, 'definition.json');
+    const definition = path.join(work, 'definition.json');
     await fs.writeFile(
       definition,
       JSON.stringify(
@@ -150,7 +154,7 @@ describe('pnpm shipping verify', () => {
         )
       )
     );
-    const record = path.join(dir, 'record.json');
+    const record = path.join(work, 'record.json');
 
     const lines: string[] = [];
     const code = await main(
@@ -177,31 +181,23 @@ describe('pnpm shipping verify', () => {
         question: 'v1',
         judgeModel: 'claude-opus-5',
         judgedAt: '2026-09-14T08:00:00.000Z',
+        promptSha256: promptDigest('v1'),
       },
     ]);
+    expect(attempt.allocation.outside).toEqual([
+      { set: 'verification', run: 'tr-e', reason: 'no contact sheet' },
+      { set: 'verification', run: 'tr-f', reason: 'run failed' },
+    ]);
+    expect(lines.join('\n')).toContain('2 artifact(s) outside the denominator');
   });
 });
 
 describe('pnpm shipping reanalyze', () => {
   it('names the documents it could not render instead of counting their pages quietly', async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'shipping-facts-'));
-    dirs.push(dir);
-    const runs = ['cd-unrenderable', 'cd-fine'].map((briefId) => ({
-      briefId,
-      format: 'pptx',
-      outcome: 'completed',
-    }));
-    await fs.writeFile(
-      path.join(dir, 'scorecard.json'),
-      JSON.stringify({ runs })
-    );
-    for (const { briefId } of runs) {
-      await fs.mkdir(path.join(dir, 'runs', briefId), { recursive: true });
-      await fs.writeFile(
-        path.join(dir, 'runs', briefId, 'document.json'),
-        JSON.stringify({ id: briefId })
-      );
-    }
+    const dir = await writeSet([
+      { briefId: 'cd-unrenderable', format: 'pptx' },
+      { briefId: 'cd-fine', format: 'pptx' },
+    ]);
     // A failed render falls back to counting slides and drops every rendered
     // finding, so the facts say less than they seem to.
     vi.mocked(analyzeDocument).mockImplementation(async (_format, document) =>
