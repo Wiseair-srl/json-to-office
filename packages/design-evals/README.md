@@ -60,7 +60,9 @@ in three steps, each recorded under `baselines/`:
    for assisted 12–1, reports for cold 15–7, and the judge's kappa against the
    reviewer −0.01 ([baselines README](baselines/README.md#the-forty-pairs-by-paolo-321-409)).
 2. **Shipping (#409).** A shipping definition calibrated on the checkpoint
-   verdicts, frozen, then verified on fresh briefs (below).
+   verdicts, frozen, then verified on fresh briefs (below). Done 2026-09-13:
+   `clean-pages` passes pooled (kappa 0.67) and not within a format (reports
+   0.26, decks 0.00).
 3. **Host (#422).** Claude Desktop against the headless runner on one build
    and one skill (below), so a headless scorecard says how far it stands for
    Desktop.
@@ -84,9 +86,11 @@ original question — and until one passes verification the binary rate is
 **advisory**: read `excellent` (level ≥ 4) beside it.
 
 Frozen on 2026-09-13: `clean-pages` — level ≥ 3, no integrity defect, at most
-one empty or under-filled page — at kappa 0.66 on the checkpoint verdicts,
-awaiting verification. The numbers and what they carry are in
-[`baselines/README.md`](baselines/README.md#the-shipping-definition-calibrated-409).
+one empty or under-filled page — at kappa 0.66 on the checkpoint verdicts.
+Verified the same day on 30 fresh documents at kappa 0.67 pooled, which passes
+the target; within a format it is 0.26 on reports and 0.00 on decks, so do not
+compare ship rates inside one format. The numbers and what they carry are in
+[`baselines/README.md`](baselines/README.md#the-shipping-verification-set-409).
 
 Calibrating, freezing and verifying one:
 
