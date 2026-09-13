@@ -262,8 +262,11 @@ catch, so its own account of its work is evidence of nothing.
 **Three numbers mean exactly what they say, and the names are load-bearing.**
 `buildsClean` is a mechanical floor — the file built, nothing blocks
 generation, no placeholder text survived — and is deliberately NOT called
-shippable, because whether a document is worth sending is the judge's question
-and reaches the scorecard as `judge.wouldShipRate`. `iterations` counts
+shippable, because whether a document is worth sending is the reviewer's
+question. The scorecard answers it as `judge.wouldShipRate`, under the frozen
+shipping definition the judge's verdict feeds (`judge.shipping`,
+`packages/design-evals/baselines/shipping-definition.json`, #409), and marks it
+advisory until that definition passes verification against the reviewer. `iterations` counts
 edit-and-recheck rounds after the first draft, which is the spec's metric with
 its target of 2, not the agent's turn count, which is an order of magnitude
 larger and lives beside it as `turns`. `pages` is measured by rendering the

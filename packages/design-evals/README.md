@@ -57,8 +57,8 @@ in three steps, each recorded under `baselines/`:
    on the same pairs:
    `pnpm pairwise calibrate --human <file> --judge baselines/2026-09-05-pairwise-cold-vs-assisted.json --a baseline-cold --b baseline-assisted --out <file>`.
    Done 2026-09-13: no overall preference (assisted 19, cold 16, tie 5), decks
-   for assisted 12–1, reports for cold 15–7, and the judge's kappa against
-   him −0.01 (baselines README, "The forty pairs").
+   for assisted 12–1, reports for cold 15–7, and the judge's kappa against the
+   reviewer −0.01 ([baselines README](baselines/README.md#the-forty-pairs-by-paolo-321-409)).
 2. **Shipping (#409).** A shipping definition calibrated on the checkpoint
    verdicts, frozen, then verified on fresh briefs (below).
 3. **Host (#422).** Claude Desktop against the headless runner on one build
@@ -98,13 +98,14 @@ pnpm shipping recorded-facts evals-out/checkpoint-before \
 pnpm rejudge evals-out/checkpoint-before --question v1 --out evals-out/checkpoint-before/sitting-v1.json
 pnpm rejudge evals-out/checkpoint-before --question v2 --out evals-out/checkpoint-before/sitting-v2.json
 # … the same for checkpoint-after and checkpoint-after-5, in one sitting …
+# --previous: the judge against an earlier sitting of the same set.
 pnpm shipping calibrate \
   --set before=evals-out/checkpoint-before --set after=evals-out/checkpoint-after \
   --set after-exhibits=evals-out/checkpoint-after-5 \
   --human baselines/2026-09-08-human-checkpoint-verdicts.json \
   --human baselines/2026-09-09-human-checkpoint-verdicts-round2.json \
   --previous before=baselines/2026-09-08-rejudge-checkpoint-before-4.json \
-  --out baselines/<date>-shipping-calibration.json    # --previous: the judge against an earlier sitting
+  --out baselines/<date>-shipping-calibration.json
 pnpm shipping freeze --calibration baselines/<date>-shipping-calibration.json \
   --out baselines/shipping-definition.json
 
@@ -128,8 +129,10 @@ share no brief, and kappa's interval is resampled by brief, not by document.
 **Freeze, then verify**: the frozen file carries a hash of the definition and
 of the whole prompt its judge reads; verification, and every later scorecard,
 refuse a definition whose hash no longer matches. Verification also refuses
-an artifact from a calibration brief, and verdicts whose `readAt` (when they
-left the review page) is not after the freeze. The record is append-only: a
+an artifact from a calibration brief, verdicts whose `readAt` (when they left
+the review page) is not after the freeze, and a judge sitting that answered
+before the freeze or records another prompt digest than the frozen one; it
+lists every run it does not count, with the reason. The record is append-only: a
 set that verified one definition can never verify another, and the same
 definition tries again on it only with `--supersede "<why>"`, both attempts
 kept. The target is Cohen's kappa ≥ 0.5 on the verification set; a miss is
