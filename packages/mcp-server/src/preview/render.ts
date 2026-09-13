@@ -52,6 +52,7 @@ import {
 import type { PreparedDocument } from '@json-to-office/quality';
 
 import type { FormatAdapter, FormatName } from '../lib/adapters.js';
+import { assetFailures } from '../lib/assets.js';
 import {
   ERROR_CODES,
   diagnostic,
@@ -777,14 +778,20 @@ export async function renderPreview(
     if (signal?.aborted) return cancelled();
     // "Document validation failed" on its own is not something an agent can
     // repair. The adapter can say exactly which pointers are wrong, so ask it
-    // and lead with that — the same diagnostics jto_validate would have given.
-    // A missing backend says nothing about the document, so the validation
-    // pass that leads the generic case would only add noise to it.
+    // and lead with that — the same diagnostics jto_validate would have given,
+    // an image file that is not there among them. A missing backend says
+    // nothing about the document, so the validation pass that leads the
+    // generic case would only add noise to it.
     const build = buildFailure(error);
     return failureFrom([
       ...(build.diagnostics[0]?.code === ERROR_CODES.DEPENDENCY_MISSING
         ? []
-        : validationDiagnostics(options.getAdapter(format), document)),
+        : [
+            ...validationDiagnostics(options.getAdapter(format), document),
+            ...(await assetFailures(format, document, {
+              ...(render.baseDir !== undefined && { baseDir: render.baseDir }),
+            })),
+          ]),
       ...build.diagnostics,
     ]);
   }

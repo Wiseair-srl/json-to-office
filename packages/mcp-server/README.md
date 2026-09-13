@@ -184,11 +184,13 @@ The scaffold is schema- and semantic-valid, carries the block definitions it inv
 
 ### `jto_validate`
 
-**In** — `format` (required); document source; `renderer` (validate against this profile instead of the document's own, for this check only); `quality` `{profile?, policy?}`; `maxDiagnostics` (1–1000, default 100 — errors are kept ahead of warnings when the cap bites).
+**In** — `format` (required); document source; `renderer` (validate against this profile instead of the document's own, for this check only); `baseDir` (what relative image paths resolve against — pass the one you will generate with); `quality` `{profile?, policy?}`; `maxDiagnostics` (1–1000, default 100 — errors are kept ahead of warnings when the cap bites).
 
 **Out** — `valid`, `generationReady` (`valid` and no `{{…}}` scaffold marker left — the state `jto_generate` accepts), `scaffoldMarkers` (how many remain), `format`, `renderer` (when one was requested), `source` `{origin, handle?, revision?}`, `counts` `{error, warning, info}` (before any cap), `truncated`, `profileId` (the quality profile the analysis ran under).
 
 `ok` mirrors the gate generation applies: schema and semantic errors block it, renderer-profile findings (`W_UNSUPPORTED_RENDERER_FEATURE`) come back as warnings, because the renderer has the last word on those.
+
+What the document points at is checked the way generation will use it. A `props.theme` that names no theme is `W_UNKNOWN_THEME` at `/props/theme`, listing the themes that exist: generation falls back to the built-in default and renders. An image file that cannot be read is `E_ASSET_UNREADABLE` at the image's `props/path`, with relative paths resolved against `baseDir` (or the server working directory) exactly as `jto_generate` resolves them — except where generation steps around it: a DOCX table cell draws a text placeholder (`W_ASSET_UNREADABLE`), and PPTX never reads a file outside `baseDir` or the working directory, dropping the image with the same `W_IMAGE_PATH_OUTSIDE_ROOTS` generation reports. URLs and data URIs are not checked.
 
 Design-quality findings ride the same envelope as `W_QUALITY_*` warnings and infos: an undeclared slide canvas, estimated text overflow, overcrowding, unreadable type, table overflow, or a skipped heading. They carry category, certainty, evidence, suggestion, and optional fixes. They are advisory by default; `quality.policy.gate: "warning"` makes warning-or-higher findings set `ok: false` without turning the tool call into a protocol error.
 
@@ -336,6 +338,7 @@ The cores name their generation warnings in a dialect of their own too — bare 
 | `E_UNKNOWN_COMPONENT`              | `name` is not a component of this format, or not one allowed here.                                          |
 | `E_MUTUALLY_EXCLUSIVE`             | Two props that exclude each other were both set.                                                            |
 | `E_THEME_NOT_FOUND`                | A theme the document names does not exist.                                                                  |
+| `E_ASSET_UNREADABLE`               | An image file the document names cannot be read, and generation fails over it.                              |
 | `E_EMPTY_DOCUMENT`                 | The document has no content.                                                                                |
 | `E_INVALID_DOCUMENT`               | The document fails a rule with no more specific code.                                                       |
 | `E_INVALID_JSON`                   | A document string does not parse.                                                                           |
@@ -369,7 +372,8 @@ The cores name their generation warnings in a dialect of their own too — bare 
 | `E_INTERNAL`                       | A bug here. Everything else is about your document or your host.                                            |
 | `W_UNSUPPORTED_RENDERER_FEATURE`   | The renderer cannot draw one feature of an otherwise valid document.                                        |
 | `W_HOST_NOTE`                      | A note the render emitted mid-run — unknown theme, unreadable theme file, staged font.                      |
-| `W_UNKNOWN_THEME`                  | A requested theme name matched nothing; generation continued with a fallback.                               |
+| `W_UNKNOWN_THEME`                  | A theme name — the `theme` option or the document's `props.theme` — matched nothing; generation falls back. |
+| `W_ASSET_UNREADABLE`               | An image file that cannot be read where generation draws a placeholder instead (a DOCX table cell).         |
 | `W_BLANK_DOCUMENT`                 | A workspace was opened on an empty skeleton, with no content yet.                                           |
 | `W_SCAFFOLD_DRAFT`                 | A scaffold opened; the message says how many markers are still owed.                                        |
 | `W_BRIEF_UNUSED`                   | A brief key matched no metadata field or chrome slot of the variant.                                        |
