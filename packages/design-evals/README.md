@@ -160,8 +160,13 @@ out how well, the same briefs (`briefs/sets/desktop-headless-pairs.json`) run
 on both hosts against one server build and one skill, and the server's run
 journal makes the Desktop side measurable the same way.
 
-1. Build the server at the commit under test:
-   `pnpm turbo build --filter=@json-to-office/mcp-server...`.
+1. Build the server at the commit under test, in a worktree kept for the whole
+   comparison: `git worktree add --detach <dir> <commit>`, then
+   `pnpm install --frozen-lockfile --force` and
+   `pnpm turbo build --filter=@json-to-office/design-evals...` in it. Run the
+   headless half, point Desktop and run the import all from that worktree:
+   the import checks each session's server build against the tree it runs
+   in, and an edit or rebuild in between breaks the match.
 2. Point Claude Desktop's `json-to-office` entry at that build, with the journal
    on. In `claude_desktop_config.json`:
 
