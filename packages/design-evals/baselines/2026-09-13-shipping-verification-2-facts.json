@@ -1,0 +1,118 @@
+{
+  "source": "reanalysis",
+  "analyzedAt": "2026-09-13T21:03:20.381Z",
+  "gitSha": "477ff8dd2e21f2df64404061e4445ad967a363bc",
+  "runs": {
+    "cd-growth-strategy-readout": {
+      "format": "pptx",
+      "pages": 14,
+      "pageCountSource": "rendered",
+      "qualityByCode": {
+        "W_QUALITY_RENDERED_CLIP": 2,
+        "W_QUALITY_TEXT_TIGHT": 13
+      }
+    },
+    "cd-innovation-portfolio": {
+      "format": "pptx",
+      "pages": 12,
+      "pageCountSource": "rendered",
+      "qualityByCode": {
+        "W_QUALITY_RENDERED_CLIP": 2,
+        "W_QUALITY_RENDERED_SPILL": 3,
+        "W_QUALITY_TEXT_TIGHT": 11,
+        "W_QUALITY_TITLE_DRIFT": 1
+      }
+    },
+    "cd-market-scan-adjacent": {
+      "format": "pptx",
+      "pages": 10,
+      "pageCountSource": "rendered",
+      "qualityByCode": {
+        "W_QUALITY_RENDERED_CLIP": 4,
+        "W_QUALITY_TEXT_TIGHT": 9
+      }
+    },
+    "cd-operating-model-options": {
+      "format": "pptx",
+      "pages": 12,
+      "pageCountSource": "rendered",
+      "qualityByCode": {
+        "W_QUALITY_RENDERED_CLIP": 3,
+        "W_QUALITY_RENDERED_SPILL": 2,
+        "W_QUALITY_TEXT_TIGHT": 11
+      }
+    },
+    "cd-org-design-proposal": {
+      "format": "pptx",
+      "pages": 12,
+      "pageCountSource": "rendered",
+      "qualityByCode": {
+        "W_QUALITY_RENDERED_SPILL": 11,
+        "W_QUALITY_TEXT_TIGHT": 11,
+        "W_QUALITY_TITLE_DRIFT": 2
+      }
+    },
+    "cd-post-merger-day-one": {
+      "format": "pptx",
+      "pages": 10,
+      "pageCountSource": "rendered",
+      "qualityByCode": {
+        "W_QUALITY_CHART_UNITS": 1,
+        "W_QUALITY_RENDERED_CLIP": 1,
+        "W_QUALITY_RENDERED_SPILL": 1,
+        "W_QUALITY_TEXT_TIGHT": 9
+      }
+    },
+    "cd-pricing-strategy-workshop": {
+      "format": "pptx",
+      "pages": 14,
+      "pageCountSource": "rendered",
+      "qualityByCode": {
+        "W_QUALITY_RENDERED_CLIP": 3,
+        "W_QUALITY_RENDERED_SPILL": 1,
+        "W_QUALITY_TEXT_TIGHT": 13
+      }
+    },
+    "cd-quarterly-business-review": {
+      "format": "pptx",
+      "pages": 12,
+      "pageCountSource": "rendered",
+      "qualityByCode": {
+        "W_QUALITY_RENDERED_CLIP": 4,
+        "W_QUALITY_RENDERED_SPILL": 7,
+        "W_QUALITY_TEXT_TIGHT": 11
+      }
+    },
+    "cd-service-quality-turnaround": {
+      "format": "pptx",
+      "pages": 12,
+      "pageCountSource": "rendered",
+      "qualityByCode": {
+        "W_QUALITY_RENDERED_CLIP": 6,
+        "W_QUALITY_RENDERED_SPILL": 2,
+        "W_QUALITY_TEXT_TIGHT": 11
+      }
+    },
+    "cd-supply-chain-diagnostic": {
+      "format": "pptx",
+      "pages": 12,
+      "pageCountSource": "rendered",
+      "qualityByCode": {
+        "W_QUALITY_RENDERED_CLIP": 2,
+        "W_QUALITY_RENDERED_SPILL": 2,
+        "W_QUALITY_TEXT_TIGHT": 11
+      }
+    },
+    "cd-sustainability-roadmap": {
+      "format": "pptx",
+      "pages": 10,
+      "pageCountSource": "rendered",
+      "qualityByCode": {
+        "W_QUALITY_CHART_UNITS": 1,
+        "W_QUALITY_RENDERED_CLIP": 2,
+        "W_QUALITY_RENDERED_SPILL": 1,
+        "W_QUALITY_TEXT_TIGHT": 9
+      }
+    }
+  }
+}

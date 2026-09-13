@@ -1,0 +1,118 @@
+{
+  "source": "/Users/paolobarbato/Documents/Development/json-to-office/packages/design-evals/evals-out/shipping-verification-2/scorecard.json",
+  "judgeModel": "claude-opus-5",
+  "question": "v1",
+  "judgedAt": "2026-09-13T21:24:53.748Z",
+  "runs": [
+    {
+      "briefId": "cd-growth-strategy-readout",
+      "run": "cd-growth-strategy-readout",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cd-innovation-portfolio",
+      "run": "cd-innovation-portfolio",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cd-market-scan-adjacent",
+      "run": "cd-market-scan-adjacent",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cd-operating-model-options",
+      "run": "cd-operating-model-options",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 4,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cd-org-design-proposal",
+      "run": "cd-org-design-proposal",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cd-post-merger-day-one",
+      "run": "cd-post-merger-day-one",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cd-pricing-strategy-workshop",
+      "run": "cd-pricing-strategy-workshop",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 4,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "cd-quarterly-business-review",
+      "run": "cd-quarterly-business-review",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cd-service-quality-turnaround",
+      "run": "cd-service-quality-turnaround",
+      "then": {},
+      "now": {
+        "wouldShip": true,
+        "level": 4,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "cd-supply-chain-diagnostic",
+      "run": "cd-supply-chain-diagnostic",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 4,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cd-sustainability-roadmap",
+      "run": "cd-sustainability-roadmap",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    }
+  ]
+}
