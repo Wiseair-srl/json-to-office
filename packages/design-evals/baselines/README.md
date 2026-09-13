@@ -28,6 +28,12 @@ numbers; use fresh matched runs with the guards before making acceptance claims.
 | `2026-09-08-rejudge-checkpoint-before-4.json`                 | —    | —                                                    | —               | 24 rejudged, same session as the next row                             | claude-opus-5                   |
 | `2026-09-08-rejudge-checkpoint-after-exhibits.json`           | —    | —                                                    | —               | 24 rejudged, same session as the row above                            | claude-opus-5                   |
 | `2026-09-09-human-checkpoint-verdicts-round2.json`            | —    | —                                                    | —               | 48 absolute (before again + after-exhibits) + 24 pairs, Paolo, blind  | human                           |
+| `2026-09-11-rejudge-checkpoint-before-v1.json`                | —    | —                                                    | —               | 24 rejudged with question v1, one sitting per set                     | claude-opus-5                   |
+| `2026-09-11-rejudge-checkpoint-before-v2.json`                | —    | —                                                    | —               | 24 rejudged with question v2, one sitting per set                     | claude-opus-5                   |
+| `2026-09-11-rejudge-checkpoint-after-v1.json`                 | —    | —                                                    | —               | 24 rejudged with question v1, one sitting per set                     | claude-opus-5                   |
+| `2026-09-11-rejudge-checkpoint-after-v2.json`                 | —    | —                                                    | —               | 24 rejudged with question v2, one sitting per set                     | claude-opus-5                   |
+| `2026-09-11-rejudge-checkpoint-after-exhibits-v1.json`        | —    | —                                                    | —               | 24 rejudged with question v1, one sitting per set                     | claude-opus-5                   |
+| `2026-09-11-rejudge-checkpoint-after-exhibits-v2.json`        | —    | —                                                    | —               | 24 rejudged with question v2, one sitting per set                     | claude-opus-5                   |
 | `2026-09-13-shipping-calibration.json`                        | —    | —                                                    | —               | 72 artifacts (64 stable labels), 6 candidate shipping definitions     | claude-opus-5, v1 + v2 sittings |
 | `shipping-definition.json`                                    | —    | —                                                    | —               | the frozen definition, `clean-pages`, awaiting verification           | —                               |
 | `2026-09-13-human-phase0-pairs.json`                          | —    | —                                                    | —               | 40 pairs, cold against assisted, Paolo, blind                         | human                           |
@@ -305,7 +311,8 @@ recalibrating it is the follow-up.
 written into `src/shipping.ts` before any score was seen against both of
 Paolo's rounds on the three checkpoint sets: 72 artifacts, 8 judged both ways
 and left out as unstable, so 64 labels over 8 briefs. The judge answered each
-question in one sitting per set (claude-opus-5, 2026-09-11); the facts are as
+question in one sitting per set (claude-opus-5, 2026-09-11,
+`2026-09-11-rejudge-checkpoint-<set>-<question>.json`); the facts are as
 recorded when Paolo judged the documents. Three v2 verdicts were lost to
 malformed judge replies (v1: none), so those artifacts are undecided under a
 v2 definition.
