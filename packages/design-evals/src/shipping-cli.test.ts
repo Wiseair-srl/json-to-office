@@ -2,11 +2,16 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { analyzeDocument } from './analyze.js';
 import { renderForJudging } from './render.js';
 import { freezeDefinition } from './shipping-calibration.js';
 import { main } from './shipping-cli.js';
 import { CANDIDATE_DEFINITIONS } from './shipping.js';
 
+vi.mock('./analyze.js', async (original) => ({
+  ...(await original<typeof import('./analyze.js')>()),
+  analyzeDocument: vi.fn(),
+}));
 vi.mock('./render.js', async (original) => ({
   ...(await original<typeof import('./render.js')>()),
   renderForJudging: vi.fn(),
@@ -173,5 +178,49 @@ describe('pnpm shipping verify', () => {
         judgedAt: '2026-09-14T08:00:00.000Z',
       },
     ]);
+  });
+});
+
+describe('pnpm shipping reanalyze', () => {
+  it('names the documents it could not render instead of counting their pages quietly', async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'shipping-facts-'));
+    dirs.push(dir);
+    const runs = ['cd-unrenderable', 'cd-fine'].map((briefId) => ({
+      briefId,
+      format: 'pptx',
+      outcome: 'completed',
+    }));
+    await fs.writeFile(
+      path.join(dir, 'scorecard.json'),
+      JSON.stringify({ runs })
+    );
+    for (const { briefId } of runs) {
+      await fs.mkdir(path.join(dir, 'runs', briefId), { recursive: true });
+      await fs.writeFile(
+        path.join(dir, 'runs', briefId, 'document.json'),
+        JSON.stringify({ id: briefId })
+      );
+    }
+    // A failed render falls back to counting slides and drops every rendered
+    // finding, so the facts say less than they seem to.
+    vi.mocked(analyzeDocument).mockImplementation(async (_format, document) =>
+      (document as { id: string }).id === 'cd-unrenderable'
+        ? { diagnostics: [], pages: 11, pageCountSource: 'structural' }
+        : { diagnostics: [], pages: 10, pageCountSource: 'rendered' }
+    );
+
+    const lines: string[] = [];
+    const code = await main(['reanalyze', dir], (text) => lines.push(text));
+
+    expect(code).toBe(0);
+    const output = lines.join('\n');
+    expect(output).toContain(
+      'cd-unrenderable: 11 page(s), counted without a render — no rendered findings'
+    );
+    expect(output).toContain('1 of 2 document(s) could not be rendered');
+    const facts = JSON.parse(
+      await fs.readFile(path.join(dir, 'facts.json'), 'utf8')
+    );
+    expect(facts.runs['cd-unrenderable'].pageCountSource).toBe('structural');
   });
 });

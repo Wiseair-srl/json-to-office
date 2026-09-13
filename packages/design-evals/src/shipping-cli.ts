@@ -136,6 +136,7 @@ async function reanalyze(
   line: Line
 ): Promise<number> {
   const runs: Record<string, unknown> = {};
+  let unrendered = 0;
   for (const run of await setRuns(dir)) {
     if (run.outcome !== 'completed') continue;
     const documentFile = path.join(dir, 'runs', run.label, 'document.json');
@@ -157,7 +158,19 @@ async function reanalyze(
       pageCountSource: measured.pageCountSource,
       qualityByCode: metrics.qualityByCode,
     };
-    line(`  ${run.label}: ${metrics.pages} page(s)`);
+    // A failed render still yields a page count, from the structure, and no
+    // rendered finding at all: say so, or the facts claim a clean document.
+    const structural = measured.pageCountSource === 'structural';
+    if (structural) unrendered += 1;
+    line(
+      `  ${run.label}: ${metrics.pages} page(s)` +
+        (structural ? ', counted without a render — no rendered findings' : '')
+    );
+  }
+  if (unrendered > 0) {
+    line(
+      `${unrendered} of ${Object.keys(runs).length} document(s) could not be rendered`
+    );
   }
   const out = path.join(dir, 'facts.json');
   await fs.writeFile(
