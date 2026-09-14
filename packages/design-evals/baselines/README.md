@@ -45,6 +45,10 @@ numbers; use fresh matched runs with the guards before making acceptance claims.
 | `2026-09-13-human-shipping-verification.json`                 | —        | —                                                    | —               | 30 absolute verdicts on the verification set, Paolo, blind                                      | human                           |
 | `shipping-verification.json`                                  | —        | —                                                    | —               | the verification record: attempt 1, `clean-pages`, passed pooled (0.67), per format 0.26 / 0.00 | —                               |
 | `2026-09-14-desktop-headless-pairs-assisted-skill-4.0.0.json` | assisted | 6.4.0 + run journal (branch build cc886e7)           | claude-sonnet-5 | 12 (set `desktop-headless-pairs`, 4 × 3), skill 4.0.0 as published                              | no                              |
+| `2026-09-14-desktop-pairs-claude-desktop-skill-4.0.0.json`    | assisted | 6.4.0 + run journal (same build)                     | claude-sonnet-5 | 4 (set `desktop-headless-pairs`, 4 × 1), Claude Desktop 1.52386.0                               | no                              |
+| `2026-09-14-rejudge-desktop-pairs-v1.json`                    | —        | —                                                    | —               | 4 judged with the frozen question, same sitting as the next row                                 | claude-opus-5                   |
+| `2026-09-14-rejudge-headless-pairs-v1.json`                   | —        | —                                                    | —               | 10 judged with the frozen question, same sitting as the row above                               | claude-opus-5                   |
+| `2026-09-14-desktop-vs-headless.md` / `.json`                 | —        | —                                                    | —               | Desktop against headless, brief by brief and by format                                          | —                               |
 | `2026-09-13-human-phase0-pairs.json`                          | —        | —                                                    | —               | 40 pairs, cold against assisted, Paolo, blind                                                   | human                           |
 | `2026-09-13-pairwise-calibration-phase0.json`                 | —        | —                                                    | —               | Paolo's 40 pairs against the judge's two-order verdicts (36 compared)                           | —                               |
 
@@ -447,7 +451,7 @@ Read the per-format result before the pooled one.
 the worktree `.claude/worktrees/host-422` at `cc886e7`, server script sha256
 `334f3285…`, skill `json-to-office` 4.0.0 exactly as published to the skills
 store (`SKILL.md` alone in the prompt), claude-sonnet-5, local export server.
-The Desktop half runs against the same worktree and has not run yet.
+The Desktop half ran against the same worktree (below).
 
 - **10 of 12 delivered.** Every delivered run followed the skill's workflow:
   `jto_info`, `jto_scaffold`, patches, a contact-sheet preview, a recorded
@@ -472,6 +476,55 @@ The Desktop half runs against the same worktree and has not run yet.
 So a headless run counts a clarifying question as a failure where Desktop
 would put it to the person, which is exactly the host difference the Desktop
 half's "Proceed without asking" rule records.
+
+**Desktop half** (`2026-09-14-desktop-pairs-claude-desktop-skill-4.0.0.json`):
+the same four briefs, one conversation each, in Claude Desktop 1.52386.0 with
+skill 4.0.0 and claude-sonnet-5, every other connector off, against the same
+server build (`matchedBuild: true`); Claude was quit and reopened before each
+brief, so each is its own server session.
+
+- **A launch serves every chat.** While the briefs ran the reviewer edited an
+  unrelated document in another chat of the same launches — after brief 1 in
+  its session, and interleaved with brief 2's calls. Each chat works in its own
+  workspace, so each brief is imported from its own
+  (`--run <brief>=<session>@<workspace>`, the option added for this) and the
+  other workspace is an exclusion with its reason; none of its calls is
+  counted. Brief 3's final `jto_generate` handed the file back inline, which
+  writes nothing to disk; the importer had read that as a missing file and
+  now checks such a delivery by the document's digest.
+- **One sitting** for both hosts with the frozen question (claude-opus-5,
+  `2026-09-14-rejudge-desktop-pairs-v1.json`,
+  `2026-09-14-rejudge-headless-pairs-v1.json`). One headless reply was not a
+  verdict and was asked again minutes later with the same prompt, recorded
+  under `retries`.
+
+The comparison, brief by brief (`2026-09-14-desktop-vs-headless.md`):
+
+|                   | runs | delivered | integrity defect, of delivered | median iterations | median tool calls | ships (`clean-pages`) | median level |
+| ----------------- | ---- | --------- | ------------------------------ | ----------------- | ----------------- | --------------------- | ------------ |
+| reports, Desktop  | 2    | 2         | 0                              | 3                 | 14                | 2                     | 3.5          |
+| reports, headless | 6    | 6         | 0                              | 3                 | 17                | 6                     | 3            |
+| decks, Desktop    | 2    | 2         | 1                              | 6                 | 18                | 1                     | 3            |
+| decks, headless   | 6    | 4         | 4                              | 2                 | 14.5              | 0                     | 3            |
+
+Every delivered run on both hosts scaffolded, previewed a contact sheet,
+recorded a critique and generated last.
+
+What it decides, with one Desktop run per brief — a direction, not a rate:
+
+- **Reports: the headless runner stands in for Desktop.** Same delivery, no
+  integrity defect on either host, the same median iterations, every run
+  ships under `clean-pages`, levels within half a step.
+- **Decks: it does not, yet.** Both Desktop decks delivered and one carries no
+  rendered defect; every delivered headless deck carries clip and spill
+  findings, and two of three headless runs of the self-contradicting
+  sustainability brief stopped to ask where the Desktop run went ahead.
+  Whether that is the host — the skill loaded when it triggers rather than
+  inlined, a person able to answer — or one draw of a variable author, one run
+  per brief cannot say. A deck measured headless should be read with this.
+- **What headless cannot show at all:** a question put to the person (it
+  counts one as a failure), a file handed back inline, and a launch shared with
+  other chats.
 
 ## Reading one
 

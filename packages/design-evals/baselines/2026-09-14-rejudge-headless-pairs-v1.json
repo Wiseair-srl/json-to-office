@@ -1,0 +1,130 @@
+{
+  "source": "/Users/paolobarbato/Documents/Development/json-to-office/.claude/worktrees/host-422/packages/design-evals/evals-out/headless-pairs/scorecard.json",
+  "judgeModel": "claude-opus-5",
+  "question": "v1",
+  "judgedAt": "2026-09-14T17:40:20.494Z",
+  "promptSha256": "cb2ef80be26c2425baceeed55d293c0e615ec11e2ec54ccef5ef9910e88124a9",
+  "runs": [
+    {
+      "briefId": "cd-growth-strategy-readout",
+      "run": "cd-growth-strategy-readout#1",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cd-growth-strategy-readout",
+      "run": "cd-growth-strategy-readout#2",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cd-growth-strategy-readout",
+      "run": "cd-growth-strategy-readout#3",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cd-sustainability-roadmap",
+      "run": "cd-sustainability-roadmap#1",
+      "then": {},
+      "error": "no contact sheet"
+    },
+    {
+      "briefId": "cd-sustainability-roadmap",
+      "run": "cd-sustainability-roadmap#2",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cd-sustainability-roadmap",
+      "run": "cd-sustainability-roadmap#3",
+      "then": {},
+      "error": "no contact sheet"
+    },
+    {
+      "briefId": "cr-market-entry-nordics",
+      "run": "cr-market-entry-nordics#1",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cr-market-entry-nordics",
+      "run": "cr-market-entry-nordics#2",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cr-market-entry-nordics",
+      "run": "cr-market-entry-nordics#3",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cr-post-merger-integration",
+      "run": "cr-post-merger-integration#1",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "cr-post-merger-integration",
+      "run": "cr-post-merger-integration#2",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 4,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cr-post-merger-integration",
+      "run": "cr-post-merger-integration#3",
+      "then": {},
+      "now": {
+        "wouldShip": true,
+        "level": 4,
+        "genericness": 2
+      }
+    }
+  ],
+  "retries": [
+    {
+      "run": "cd-growth-strategy-readout#2",
+      "firstError": "The judge answered something that is not a verdict: {\"type\":\"object\",\"properties\":{\"level\":3,\"wouldShip\":false,\"genericness\":3,\"rationale\":\"Integrity holds: no clipping, no placeholder text, every page renders. Chrome is consistent \u2014 thin rule + eyebro",
+      "judgedAt": "2026-09-14T17:43:37.531Z",
+      "promptSha256": "cb2ef80be26c2425baceeed55d293c0e615ec11e2ec54ccef5ef9910e88124a9",
+      "why": "the first reply in this sitting was not a verdict; asked again minutes later, same model and prompt"
+    }
+  ]
+}

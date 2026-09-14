@@ -1,0 +1,452 @@
+{
+  "briefs": [
+    {
+      "briefId": "cd-growth-strategy-readout",
+      "format": "pptx",
+      "desktop": [
+        {
+          "briefId": "cd-growth-strategy-readout",
+          "format": "pptx",
+          "outcome": "completed",
+          "iterations": 2,
+          "toolCalls": 15,
+          "pages": 13,
+          "integrityDefect": true,
+          "pageDefects": 0,
+          "environmentFailures": 0,
+          "loop": {
+            "scaffolded": true,
+            "validations": 1,
+            "previews": 2,
+            "contactSheets": 1,
+            "critiqueInspections": 1,
+            "critiqueRecords": 1,
+            "generations": 2
+          },
+          "level": 3,
+          "ships": false
+        }
+      ],
+      "headless": [
+        {
+          "briefId": "cd-growth-strategy-readout",
+          "format": "pptx",
+          "outcome": "completed",
+          "iterations": 1,
+          "toolCalls": 14,
+          "pages": 13,
+          "integrityDefect": true,
+          "pageDefects": 0,
+          "environmentFailures": 0,
+          "loop": {
+            "scaffolded": true,
+            "validations": 2,
+            "previews": 2,
+            "contactSheets": 1,
+            "critiqueInspections": 1,
+            "critiqueRecords": 1,
+            "generations": 1
+          },
+          "level": 3,
+          "ships": false
+        },
+        {
+          "briefId": "cd-growth-strategy-readout",
+          "format": "pptx",
+          "outcome": "completed",
+          "iterations": 2,
+          "toolCalls": 15,
+          "pages": 12,
+          "integrityDefect": true,
+          "pageDefects": 0,
+          "environmentFailures": 0,
+          "loop": {
+            "scaffolded": true,
+            "validations": 3,
+            "previews": 2,
+            "contactSheets": 1,
+            "critiqueInspections": 1,
+            "critiqueRecords": 1,
+            "generations": 1
+          },
+          "level": 3,
+          "ships": false
+        },
+        {
+          "briefId": "cd-growth-strategy-readout",
+          "format": "pptx",
+          "outcome": "completed",
+          "iterations": 5,
+          "toolCalls": 19,
+          "pages": 12,
+          "integrityDefect": true,
+          "pageDefects": 0,
+          "environmentFailures": 0,
+          "loop": {
+            "scaffolded": true,
+            "validations": 2,
+            "previews": 3,
+            "contactSheets": 2,
+            "critiqueInspections": 1,
+            "critiqueRecords": 1,
+            "generations": 1
+          },
+          "level": 3,
+          "ships": false
+        }
+      ]
+    },
+    {
+      "briefId": "cd-sustainability-roadmap",
+      "format": "pptx",
+      "desktop": [
+        {
+          "briefId": "cd-sustainability-roadmap",
+          "format": "pptx",
+          "outcome": "completed",
+          "iterations": 10,
+          "toolCalls": 21,
+          "pages": 10,
+          "integrityDefect": false,
+          "pageDefects": 0,
+          "environmentFailures": 0,
+          "loop": {
+            "scaffolded": true,
+            "validations": 1,
+            "previews": 2,
+            "contactSheets": 1,
+            "critiqueInspections": 1,
+            "critiqueRecords": 1,
+            "generations": 1
+          },
+          "level": 3,
+          "ships": true
+        }
+      ],
+      "headless": [
+        {
+          "briefId": "cd-sustainability-roadmap",
+          "format": "pptx",
+          "outcome": "failed",
+          "iterations": 0,
+          "toolCalls": 0,
+          "pages": 0,
+          "integrityDefect": true,
+          "pageDefects": 0,
+          "environmentFailures": 0,
+          "loop": {
+            "scaffolded": false,
+            "validations": 0,
+            "previews": 0,
+            "contactSheets": 0,
+            "critiqueInspections": 0,
+            "critiqueRecords": 0,
+            "generations": 0
+          },
+          "ships": false
+        },
+        {
+          "briefId": "cd-sustainability-roadmap",
+          "format": "pptx",
+          "outcome": "completed",
+          "iterations": 2,
+          "toolCalls": 13,
+          "pages": 10,
+          "integrityDefect": true,
+          "pageDefects": 0,
+          "environmentFailures": 0,
+          "loop": {
+            "scaffolded": true,
+            "validations": 2,
+            "previews": 2,
+            "contactSheets": 1,
+            "critiqueInspections": 1,
+            "critiqueRecords": 1,
+            "generations": 1
+          },
+          "level": 3,
+          "ships": false
+        },
+        {
+          "briefId": "cd-sustainability-roadmap",
+          "format": "pptx",
+          "outcome": "failed",
+          "iterations": 0,
+          "toolCalls": 0,
+          "pages": 0,
+          "integrityDefect": true,
+          "pageDefects": 0,
+          "environmentFailures": 0,
+          "loop": {
+            "scaffolded": false,
+            "validations": 0,
+            "previews": 0,
+            "contactSheets": 0,
+            "critiqueInspections": 0,
+            "critiqueRecords": 0,
+            "generations": 0
+          },
+          "ships": false
+        }
+      ]
+    },
+    {
+      "briefId": "cr-market-entry-nordics",
+      "format": "docx",
+      "desktop": [
+        {
+          "briefId": "cr-market-entry-nordics",
+          "format": "docx",
+          "outcome": "completed",
+          "iterations": 4,
+          "toolCalls": 16,
+          "pages": 5,
+          "integrityDefect": false,
+          "pageDefects": 0,
+          "environmentFailures": 0,
+          "loop": {
+            "scaffolded": true,
+            "validations": 4,
+            "previews": 1,
+            "contactSheets": 1,
+            "critiqueInspections": 1,
+            "critiqueRecords": 1,
+            "generations": 1
+          },
+          "level": 3,
+          "ships": true
+        }
+      ],
+      "headless": [
+        {
+          "briefId": "cr-market-entry-nordics",
+          "format": "docx",
+          "outcome": "completed",
+          "iterations": 2,
+          "toolCalls": 13,
+          "pages": 3,
+          "integrityDefect": false,
+          "pageDefects": 0,
+          "environmentFailures": 0,
+          "loop": {
+            "scaffolded": true,
+            "validations": 3,
+            "previews": 1,
+            "contactSheets": 1,
+            "critiqueInspections": 1,
+            "critiqueRecords": 1,
+            "generations": 1
+          },
+          "level": 3,
+          "ships": true
+        },
+        {
+          "briefId": "cr-market-entry-nordics",
+          "format": "docx",
+          "outcome": "completed",
+          "iterations": 3,
+          "toolCalls": 17,
+          "pages": 4,
+          "integrityDefect": false,
+          "pageDefects": 0,
+          "environmentFailures": 0,
+          "loop": {
+            "scaffolded": true,
+            "validations": 4,
+            "previews": 1,
+            "contactSheets": 1,
+            "critiqueInspections": 1,
+            "critiqueRecords": 1,
+            "generations": 1
+          },
+          "level": 3,
+          "ships": true
+        },
+        {
+          "briefId": "cr-market-entry-nordics",
+          "format": "docx",
+          "outcome": "completed",
+          "iterations": 2,
+          "toolCalls": 13,
+          "pages": 4,
+          "integrityDefect": false,
+          "pageDefects": 0,
+          "environmentFailures": 0,
+          "loop": {
+            "scaffolded": true,
+            "validations": 3,
+            "previews": 1,
+            "contactSheets": 1,
+            "critiqueInspections": 1,
+            "critiqueRecords": 1,
+            "generations": 1
+          },
+          "level": 3,
+          "ships": true
+        }
+      ]
+    },
+    {
+      "briefId": "cr-post-merger-integration",
+      "format": "docx",
+      "desktop": [
+        {
+          "briefId": "cr-post-merger-integration",
+          "format": "docx",
+          "outcome": "completed",
+          "iterations": 2,
+          "toolCalls": 12,
+          "pages": 4,
+          "integrityDefect": false,
+          "pageDefects": 0,
+          "environmentFailures": 0,
+          "loop": {
+            "scaffolded": true,
+            "validations": 2,
+            "previews": 1,
+            "contactSheets": 1,
+            "critiqueInspections": 1,
+            "critiqueRecords": 1,
+            "generations": 1
+          },
+          "level": 4,
+          "ships": true
+        }
+      ],
+      "headless": [
+        {
+          "briefId": "cr-post-merger-integration",
+          "format": "docx",
+          "outcome": "completed",
+          "iterations": 6,
+          "toolCalls": 17,
+          "pages": 6,
+          "integrityDefect": false,
+          "pageDefects": 0,
+          "environmentFailures": 0,
+          "loop": {
+            "scaffolded": true,
+            "validations": 3,
+            "previews": 1,
+            "contactSheets": 1,
+            "critiqueInspections": 1,
+            "critiqueRecords": 1,
+            "generations": 1
+          },
+          "level": 3,
+          "ships": true
+        },
+        {
+          "briefId": "cr-post-merger-integration",
+          "format": "docx",
+          "outcome": "completed",
+          "iterations": 3,
+          "toolCalls": 21,
+          "pages": 4,
+          "integrityDefect": false,
+          "pageDefects": 0,
+          "environmentFailures": 0,
+          "loop": {
+            "scaffolded": true,
+            "validations": 4,
+            "previews": 1,
+            "contactSheets": 1,
+            "critiqueInspections": 2,
+            "critiqueRecords": 1,
+            "generations": 1
+          },
+          "level": 4,
+          "ships": true
+        },
+        {
+          "briefId": "cr-post-merger-integration",
+          "format": "docx",
+          "outcome": "completed",
+          "iterations": 5,
+          "toolCalls": 18,
+          "pages": 5,
+          "integrityDefect": false,
+          "pageDefects": 0,
+          "environmentFailures": 0,
+          "loop": {
+            "scaffolded": true,
+            "validations": 3,
+            "previews": 1,
+            "contactSheets": 1,
+            "critiqueInspections": 1,
+            "critiqueRecords": 1,
+            "generations": 1
+          },
+          "level": 4,
+          "ships": true
+        }
+      ]
+    }
+  ],
+  "byFormat": {
+    "docx": {
+      "desktop": {
+        "runs": 2,
+        "delivered": 2,
+        "withIntegrityDefect": 0,
+        "withPageDefects": 0,
+        "withEnvironmentFailure": 0,
+        "medianIterations": 3,
+        "medianToolCalls": 14,
+        "scaffolded": 2,
+        "contactSheet": 2,
+        "recordedCritique": 2,
+        "ships": 2,
+        "medianLevel": 3.5,
+        "intervened": 0
+      },
+      "headless": {
+        "runs": 6,
+        "delivered": 6,
+        "withIntegrityDefect": 0,
+        "withPageDefects": 0,
+        "withEnvironmentFailure": 0,
+        "medianIterations": 3,
+        "medianToolCalls": 17,
+        "scaffolded": 6,
+        "contactSheet": 6,
+        "recordedCritique": 6,
+        "ships": 6,
+        "medianLevel": 3,
+        "intervened": 0
+      }
+    },
+    "pptx": {
+      "desktop": {
+        "runs": 2,
+        "delivered": 2,
+        "withIntegrityDefect": 1,
+        "withPageDefects": 0,
+        "withEnvironmentFailure": 0,
+        "medianIterations": 6,
+        "medianToolCalls": 18,
+        "scaffolded": 2,
+        "contactSheet": 2,
+        "recordedCritique": 2,
+        "ships": 1,
+        "medianLevel": 3,
+        "intervened": 0
+      },
+      "headless": {
+        "runs": 6,
+        "delivered": 4,
+        "withIntegrityDefect": 6,
+        "withPageDefects": 0,
+        "withEnvironmentFailure": 0,
+        "medianIterations": 2,
+        "medianToolCalls": 14.5,
+        "scaffolded": 4,
+        "contactSheet": 4,
+        "recordedCritique": 4,
+        "ships": 0,
+        "medianLevel": 3,
+        "intervened": 0
+      }
+    }
+  }
+}

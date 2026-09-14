@@ -65,7 +65,10 @@ in three steps, each recorded under `baselines/`:
    0.26, decks 0.00).
 3. **Host (#422).** Claude Desktop against the headless runner on one build
    and one skill (below), so a headless scorecard says how far it stands for
-   Desktop.
+   Desktop. Done 2026-09-14: for reports it stands in (same delivery, no
+   integrity defect, every run ships); for decks it does not yet — both
+   Desktop decks delivered, one clean, where every delivered headless deck
+   carries rendered defects ([baselines README](baselines/README.md#claude-desktop-against-the-headless-runner-422)).
 
 Then repeat the development corpus on a fixed revision with `--repeat 3
 --judge`, holding the author model, judge model, skill mode and render environment
