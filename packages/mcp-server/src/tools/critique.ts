@@ -19,9 +19,17 @@
  * the agent may still patch whatever it likes — but a recommendation to stop
  * revising and either ship or change the plan, because past three rounds
  * subjective polish stops converging.
+ *
+ * A ship verdict answers for the integrity findings the inspection showed.
+ * The judgement stays the model's — the rendered matcher is wrong sometimes,
+ * and a report it flags can be one a person would send — but it cannot be
+ * silent: a ship is refused while a finding is neither repaired nor accepted
+ * with a reason, in the same selectors a quality policy suppresses with, and
+ * the acceptances are filed with the round.
  */
 
 import type { McpServer, ServerContext } from '@modelcontextprotocol/server';
+import { isSuppressed, type QualitySuppression } from '@json-to-office/quality';
 import { RUBRIC, SHIPPING_QUESTION } from '@json-to-office/shared';
 
 import { checkRenderer, type FormatName } from '../lib/adapters.js';
@@ -38,6 +46,7 @@ import {
 import type { ToolDeps } from '../lib/deps.js';
 import {
   MAX_CRITIQUE_ROUNDS,
+  type CritiqueFinding,
   type CritiqueRecord,
   type CritiqueVerdict,
 } from '../lib/critique-log.js';
@@ -88,6 +97,7 @@ export interface CritiqueInput {
   verdict?: CritiqueVerdict;
   rationale?: string;
   level?: number;
+  accept?: QualitySuppression[];
   maxDiagnostics?: number;
 }
 
@@ -168,7 +178,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
 
 \`action: "inspect"\` renders the workspace at its current revision (or the \`revision\` you name), and returns: one contact sheet tiling every page, up to ${MAX_EVIDENCE_PAGES} full-resolution pages chosen where the rendered pass found something, that pass's findings as diagnostics with certainty "rendered", the rubric as data, and a run id. Look at the images — that is the point of the call — and judge the document against the rubric's five levels and its shipping question.
 
-\`action: "record"\` files that judgement: the \`runId\` you were given, \`verdict\` "ship" or "iterate", and a \`rationale\` naming the page and the element that decided it. Only recording counts as a round. Inspecting twice does not, and re-sending the same \`runId\` after a dropped response returns the round already filed rather than a second one. A verdict is about the revision it was formed against, so a record is refused once the workspace has moved past that revision — inspect again and judge what is there now.
+\`action: "record"\` files that judgement: the \`runId\` you were given, \`verdict\` "ship" or "iterate", and a \`rationale\` naming the page and the element that decided it. A ship verdict answers for the inspection's integrity findings — text clipped, spilled, overlapping or missing on the rendered page: while one is neither repaired nor accepted in \`accept\`, with the reason the page shows it is wrong about this document, the record is refused (E_CRITIQUE_OPEN_FINDINGS) and no round is spent. Only recording counts as a round. Inspecting twice does not, and re-sending the same \`runId\` after a dropped response returns the round already filed rather than a second one. A verdict is about the revision it was formed against, so a record is refused once the workspace has moved past that revision — inspect again and judge what is there now.
 
 ${MAX_CRITIQUE_ROUNDS} recorded iterate rounds is the limit; the third answers with a stop recommendation, because past three rounds subjective polish stops converging. Nothing here blocks jto_generate.
 
@@ -231,6 +241,28 @@ Needs LibreOffice and poppler on the host (see jto_info.previewDependencies). FI
             maximum: 5,
             description:
               'record: the highest rubric level met, with every level below it met. Optional.',
+          },
+          accept: {
+            type: 'array',
+            description:
+              'record, ship only: the integrity findings of the inspection you judge wrong about this document, each with why. Matched the way a quality policy suppression is — by `code`, `ruleId` or `path` — and filed with the round. A ship verdict is refused while a finding the inspection showed is neither repaired nor accepted here.',
+            items: {
+              type: 'object',
+              properties: {
+                code: { type: 'string', minLength: 1 },
+                ruleId: { type: 'string', minLength: 1 },
+                path: { type: 'string' },
+                pathMatch: { type: 'string', enum: ['exact', 'subtree'] },
+                reason: {
+                  type: 'string',
+                  minLength: 1,
+                  description:
+                    'What the rendered page shows that makes the finding wrong here.',
+                },
+              },
+              required: ['reason'],
+              additionalProperties: false,
+            },
           },
           maxDiagnostics: maxDiagnosticsProperty,
         },
@@ -298,6 +330,24 @@ Needs LibreOffice and poppler on the host (see jto_info.previewDependencies). FI
                 verdict: { type: 'string', enum: ['ship', 'iterate'] },
                 rationale: { type: 'string' },
                 level: { type: 'integer' },
+                accepted: {
+                  type: 'array',
+                  description:
+                    'The integrity findings a ship verdict accepted, each with the reason that covered it.',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      code: { type: 'string' },
+                      ruleId: { type: 'string' },
+                      path: { type: 'string' },
+                      page: { type: 'integer' },
+                      message: { type: 'string' },
+                      reason: { type: 'string' },
+                    },
+                    required: ['code', 'message', 'reason'],
+                    additionalProperties: false,
+                  },
+                },
                 recordedAt: { type: 'string' },
               },
               required: [
@@ -527,20 +577,32 @@ async function inspect(
   }
 
   const rounds = deps.critiques.rounds(args.handle).length;
+  const integrity = integrityFindings(findings.diagnostics);
   const run = deps.critiques.open({
     handle: args.handle,
     format,
     revision: opened.record.revision,
+    integrity,
   });
+  const owed =
+    integrity.length > 0
+      ? ` A ship verdict has to answer for the ${integrity.length} integrity finding${integrity.length === 1 ? '' : 's'} on this revision (${describeFindings(integrity)}): repair them and inspect again, or accept in \`accept\` each one the pages show is wrong, with the reason.`
+      : '';
   diagnostics.push(
     diagnostic(
       ERROR_CODES.CRITIQUE_STOP,
-      rounds >= MAX_CRITIQUE_ROUNDS
+      (rounds >= MAX_CRITIQUE_ROUNDS
         ? `${rounds} iterate rounds are already recorded for this workspace; judge it, but expect the record to recommend stopping.`
-        : `Look at the images, judge them against the rubric, then call jto_critique record with runId "${run.id}". Only that counts as a round; ${MAX_CRITIQUE_ROUNDS - rounds} remain.`,
+        : `Look at the images, judge them against the rubric, then call jto_critique record with runId "${run.id}". Only that counts as a round; ${MAX_CRITIQUE_ROUNDS - rounds} remain.`) +
+        owed,
       {
         severity: 'info',
-        context: { runId: run.id, rounds, revision: opened.record.revision },
+        context: {
+          runId: run.id,
+          rounds,
+          revision: opened.record.revision,
+          integrityFindings: integrity.length,
+        },
       }
     )
   );
@@ -602,6 +664,92 @@ export function choosePages(
       reason: 'No rendered finding here; read it for what a rule cannot see.',
     }));
   return [...flagged, ...rest].slice(0, Math.max(0, wanted));
+}
+
+/**
+ * The findings a ship verdict has to answer for: integrity findings at warning
+ * or worse — text clipped, spilled, overlapping or missing on the rendered
+ * page. Information stays a note, and composition, legibility and the rest are
+ * the verdict's to weigh rather than to account for one by one.
+ */
+export function integrityFindings(
+  diagnostics: readonly Diagnostic[]
+): CritiqueFinding[] {
+  return diagnostics
+    .filter(
+      (finding) =>
+        finding.category === 'integrity' && finding.severity !== 'info'
+    )
+    .map((finding) => {
+      const page = (finding.context as { page?: unknown } | undefined)?.page;
+      return {
+        code: finding.code,
+        ...(finding.ruleId !== undefined && { ruleId: finding.ruleId }),
+        ...(finding.path !== undefined && { path: finding.path }),
+        ...(typeof page === 'number' && { page }),
+        message: finding.message,
+      };
+    });
+}
+
+/**
+ * Which open findings a verdict's acceptances cover. Matched exactly as a
+ * quality policy's suppressions are, so "this finding is wrong here, and why"
+ * has one spelling across `jto_validate`, `jto_preview` and this tool; an
+ * acceptance with no selector covers nothing, and one that covers nothing is
+ * handed back rather than kept quietly.
+ */
+export function acceptFindings(
+  findings: readonly CritiqueFinding[],
+  acceptances: readonly QualitySuppression[]
+): {
+  accepted: Array<CritiqueFinding & { reason: string }>;
+  open: CritiqueFinding[];
+  unmatched: QualitySuppression[];
+} {
+  const used = new Set<QualitySuppression>();
+  const accepted: Array<CritiqueFinding & { reason: string }> = [];
+  const open: CritiqueFinding[] = [];
+  for (const finding of findings) {
+    const covering = acceptances.find((acceptance) =>
+      isSuppressed(
+        {
+          code: finding.code,
+          ruleId: finding.ruleId ?? '',
+          path: finding.path ?? '',
+        },
+        [acceptance]
+      )
+    );
+    if (covering) {
+      used.add(covering);
+      accepted.push({ ...finding, reason: covering.reason });
+    } else {
+      open.push(finding);
+    }
+  }
+  return {
+    accepted,
+    open,
+    unmatched: acceptances.filter((acceptance) => !used.has(acceptance)),
+  };
+}
+
+/** `CODE (pages 2, 4)` per code, for a message a model reads once. */
+function describeFindings(findings: readonly CritiqueFinding[]): string {
+  const pages = new Map<string, Set<number>>();
+  for (const finding of findings) {
+    const seen = pages.get(finding.code) ?? new Set<number>();
+    if (finding.page !== undefined) seen.add(finding.page);
+    pages.set(finding.code, seen);
+  }
+  return [...pages.entries()]
+    .map(([code, on]) =>
+      on.size === 0
+        ? code
+        : `${code} (page${on.size === 1 ? '' : 's'} ${[...on].sort((a, b) => a - b).join(', ')})`
+    )
+    .join(', ');
 }
 
 /**
@@ -668,6 +816,31 @@ async function recordVerdict(
       }
     );
 
+  // A ship answers for the integrity findings the run showed; a retry of a
+  // verdict already filed is the round it was, whatever it carries.
+  const answered =
+    !already && args.verdict === 'ship'
+      ? acceptFindings(run.integrity ?? [], args.accept ?? [])
+      : undefined;
+  if (answered && answered.open.length > 0)
+    return failure(
+      ERROR_CODES.CRITIQUE_OPEN_FINDINGS,
+      `A ship verdict has to answer for every integrity finding the inspection showed, and ${answered.open.length} on revision ${run.revision} ${answered.open.length === 1 ? 'is' : 'are'} neither repaired nor accepted: ${describeFindings(answered.open)}. Nothing was filed and no round was spent.`,
+      {
+        suggestion:
+          'Repair them and inspect again, or record "iterate". Where a rendered page shows a finding is wrong about this document, record "ship" again with `accept` naming it by code, ruleId or path, and why.',
+        context: {
+          runId: run.id,
+          revision: run.revision,
+          findings: answered.open.map((finding) => ({
+            code: finding.code,
+            ...(finding.page !== undefined && { page: finding.page }),
+            ...(finding.path !== undefined && { path: finding.path }),
+          })),
+        },
+      }
+    );
+
   const filed = deps.critiques.record({
     runId: run.id,
     handle: run.handle,
@@ -675,6 +848,8 @@ async function recordVerdict(
     verdict: args.verdict,
     rationale: args.rationale,
     ...(args.level !== undefined && { level: args.level }),
+    ...(answered &&
+      answered.accepted.length > 0 && { accepted: answered.accepted }),
   });
   const rounds = deps.critiques.rounds(args.handle).length;
   const remaining = Math.max(0, MAX_CRITIQUE_ROUNDS - rounds);
@@ -692,6 +867,12 @@ async function recordVerdict(
         }
       )
     );
+  if (
+    answered &&
+    !filed.duplicate &&
+    (answered.accepted.length > 0 || answered.unmatched.length > 0)
+  )
+    diagnostics.push(acceptanceNote(answered));
   diagnostics.push(stopNote(filed.record, rounds, remaining, stop));
 
   return {
@@ -714,6 +895,36 @@ async function recordVerdict(
     ),
     images: [],
   };
+}
+
+/**
+ * What a ship over accepted findings leaves behind: the findings are still in
+ * the document, and an acceptance that matched nothing is said, not kept.
+ */
+function acceptanceNote(
+  answered: ReturnType<typeof acceptFindings>
+): Diagnostic {
+  const unmatched =
+    answered.unmatched.length > 0
+      ? ` ${answered.unmatched.length} acceptance${answered.unmatched.length === 1 ? '' : 's'} matched no integrity finding of this inspection.`
+      : '';
+  if (answered.accepted.length === 0)
+    return diagnostic(
+      ERROR_CODES.CRITIQUE_FINDINGS_ACCEPTED,
+      `Nothing was accepted.${unmatched}`,
+      { severity: 'info', context: { unmatched: answered.unmatched.length } }
+    );
+  return diagnostic(
+    ERROR_CODES.CRITIQUE_FINDINGS_ACCEPTED,
+    `Filed over ${answered.accepted.length} accepted integrity finding${answered.accepted.length === 1 ? '' : 's'}: ${describeFindings(answered.accepted)}. They are still in the document; the verdict is that they do not stop it being sent.${unmatched}`,
+    {
+      severity: 'warning',
+      context: {
+        accepted: answered.accepted.length,
+        unmatched: answered.unmatched.length,
+      },
+    }
+  );
 }
 
 /**

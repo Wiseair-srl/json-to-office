@@ -116,6 +116,8 @@ The pass is advisory: nothing it finds blocks `jto_generate`, and the fidelity c
 
 The separation is the point. Only `record` creates a round, so inspecting twice is not a second opinion and a retried response after a dropped one is the round already filed, not a new one. A verdict belongs to the revision it was formed against: patch between the looking and the recording and the record is refused, because a round about a document nobody saw is not evidence of anything. Three recorded `iterate` rounds is the limit — past three, subjective polish stops converging — and the third answers with a recommendation to ship or change the structure. It is advice, not a gate: nothing here refuses a later patch or `jto_generate`.
 
+A ship verdict has to answer for the integrity findings the inspection showed: text clipped, spilled, overlapping or missing on the rendered page. The matcher can be wrong about a document, so the verdict stays the model's to give — a finding the rendered page shows is wrong is accepted in `accept`, with the reason, in the selectors a quality policy suppression takes, and filed with the round — but a ship that leaves one unanswered is refused, and spends no round.
+
 **Ship.** `jto_generate` writes the real file. `jto_docx_diff` produces a Word redline with native tracked changes between two versions of a document.
 
 Document defects always come back as structured diagnostics with `ok: false` — never as protocol errors, so an agent can read and repair them instead of retrying blind.
