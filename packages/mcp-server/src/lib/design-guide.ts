@@ -290,7 +290,7 @@ export function renderDesignGuide(
     '',
     '## Rubric',
     '',
-    'What the levels mean, and the question the target is stated against. A higher level never compensates for a failure below it. `jto_critique` returns this same table with the evidence to judge against it.',
+    'What the levels mean, and the question the target is stated against. A higher level never compensates for a failure below it. `jto_critique` returns this same table with the evidence to judge against it, and refuses a ship verdict while an integrity finding it showed — text clipped, spilled, overlapping or missing — is neither repaired nor accepted with the reason it is wrong about the document.',
     '',
     guide.rubric.levels
       .map((entry) => `${entry.level}. **${entry.name}** — ${entry.bar}`)

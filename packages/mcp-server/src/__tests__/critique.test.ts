@@ -21,7 +21,12 @@ import { createServer } from '../server.js';
 import { createToolDeps } from '../lib/deps.js';
 import { createOutputRoot } from '../lib/output-root.js';
 import { MAX_CRITIQUE_ROUNDS, createCritiqueLog } from '../lib/critique-log.js';
-import { choosePages, MAX_EVIDENCE_PAGES } from '../tools/critique.js';
+import {
+  acceptFindings,
+  choosePages,
+  integrityFindings,
+  MAX_EVIDENCE_PAGES,
+} from '../tools/critique.js';
 import { designGuide } from '../lib/design-guide.js';
 import { probePreviewDependencies } from '../preview/dependencies.js';
 
@@ -65,13 +70,40 @@ const DOC = {
   ],
 };
 
-async function open(): Promise<string> {
+async function open(document: unknown = DOC): Promise<string> {
   const created = await call('jto_workspace_create', {
     format: 'docx',
-    document: DOC,
+    document,
   });
   return (created.workspace as { handle: string }).handle;
 }
+
+/**
+ * A framed paragraph placed past the page foot: the rendered pass reports it
+ * clipped at its pointer on every platform LibreOffice runs on.
+ */
+const CLIPPED = {
+  name: 'docx',
+  props: {},
+  children: [
+    {
+      name: 'paragraph',
+      props: {
+        text: `Framed. ${Array.from(
+          { length: 40 },
+          (_, i) => `Sentence ${i} keeps going with several more words`
+        ).join('. ')}`,
+        font: { size: 12 },
+        floating: {
+          width: 4000,
+          height: 800,
+          horizontalPosition: { offset: 720 },
+          verticalPosition: { offset: 14500 },
+        },
+      },
+    },
+  ],
+};
 
 beforeAll(async () => {
   scratch = await fs.mkdtemp(path.join(os.tmpdir(), 'jto-mcp-critique-'));
@@ -163,6 +195,116 @@ describe('choosing what to look at', () => {
   it('returns nothing when nothing was asked for, and never more than it has', () => {
     expect(choosePages([1, 2], [], 0)).toEqual([]);
     expect(choosePages([1, 2], [], MAX_EVIDENCE_PAGES)).toHaveLength(2);
+  });
+});
+
+describe('what a ship verdict has to answer for', () => {
+  const rendered = (
+    code: string,
+    extra: Record<string, unknown> = {}
+  ): Record<string, unknown> => ({
+    severity: 'warning',
+    code,
+    message: `${code} message`,
+    source: 'quality',
+    category: 'integrity',
+    certainty: 'rendered',
+    ...extra,
+  });
+
+  it('is every integrity finding at warning or worse, with its page and pointer', () => {
+    const found = integrityFindings([
+      rendered('W_QUALITY_RENDERED_CLIP', {
+        ruleId: 'rendered/clip',
+        path: '/children/3/children/0',
+        context: { page: 4, mapping: 'mapped' },
+      }),
+      // Information is a note, not a defect the verdict must answer for.
+      rendered('W_QUALITY_RENDERED_EMPTY_PAGE', {
+        ruleId: 'rendered/empty-page',
+        severity: 'info',
+        context: { page: 2 },
+      }),
+      // Page fill is composition, not integrity.
+      rendered('W_QUALITY_RENDERED_PAGE_UNDERFILLED', {
+        ruleId: 'rendered/page-underfilled',
+        category: 'composition',
+        context: { page: 3 },
+      }),
+      { severity: 'info', code: 'W_CRITIQUE_STOP', message: 'Look first.' },
+    ] as never);
+    expect(found).toEqual([
+      {
+        code: 'W_QUALITY_RENDERED_CLIP',
+        ruleId: 'rendered/clip',
+        path: '/children/3/children/0',
+        page: 4,
+        message: 'W_QUALITY_RENDERED_CLIP message',
+      },
+    ]);
+  });
+
+  const open = [
+    {
+      code: 'W_QUALITY_RENDERED_CLIP',
+      ruleId: 'rendered/clip',
+      path: '/children/3/children/0',
+      page: 4,
+      message: 'cut off',
+    },
+    {
+      code: 'W_QUALITY_RENDERED_SPILL',
+      ruleId: 'rendered/spill',
+      path: '/children/3/children/0',
+      page: 4,
+      message: 'drawn wider',
+    },
+    {
+      code: 'W_QUALITY_RENDERED_TEXT_MISSING',
+      ruleId: 'rendered/text-missing',
+      page: 6,
+      message: 'nowhere in the PDF',
+    },
+  ];
+
+  it('accepts by code, rule or pointer, the way a quality policy suppresses, and keeps each reason', () => {
+    const result = acceptFindings(open, [
+      {
+        code: 'W_QUALITY_RENDERED_CLIP',
+        path: '/children/3/children/0',
+        reason: 'The title wraps in PowerPoint; only the render clips it.',
+      },
+      {
+        ruleId: 'rendered/text-missing',
+        reason: 'The string is a speaker note, not slide text.',
+      },
+      { path: '/children/9', reason: 'Nothing is here.' },
+    ]);
+    expect(
+      result.accepted.map((finding) => [finding.code, finding.reason])
+    ).toEqual([
+      [
+        'W_QUALITY_RENDERED_CLIP',
+        'The title wraps in PowerPoint; only the render clips it.',
+      ],
+      [
+        'W_QUALITY_RENDERED_TEXT_MISSING',
+        'The string is a speaker note, not slide text.',
+      ],
+    ]);
+    expect(result.open.map((finding) => finding.code)).toEqual([
+      'W_QUALITY_RENDERED_SPILL',
+    ]);
+    // An acceptance that covers nothing is reported, not silently kept.
+    expect(result.unmatched).toEqual([
+      { path: '/children/9', reason: 'Nothing is here.' },
+    ]);
+  });
+
+  it('never lets an acceptance without a selector cover everything', () => {
+    const result = acceptFindings(open, [{ reason: 'All fine.' }]);
+    expect(result.accepted).toEqual([]);
+    expect(result.open).toHaveLength(3);
   });
 });
 
@@ -331,6 +473,89 @@ describe.skipIf(!canRender)(
         out.diagnostics.find((d) => d.code === 'W_CRITIQUE_STOP')?.message
       ).toContain('sendable');
     }, 300_000);
+
+    it('refuses a ship verdict that leaves an integrity finding unanswered, and files one that accepts it', async () => {
+      const handle = await open(CLIPPED);
+      const inspected = await call('jto_critique', {
+        action: 'inspect',
+        handle,
+        evidencePages: 0,
+      });
+      expect(codes(inspected)).toContain('W_QUALITY_RENDERED_CLIP');
+      // The inspection says up front what a ship will have to answer for.
+      expect(
+        inspected.diagnostics.find((d) => d.code === 'W_CRITIQUE_STOP')?.message
+      ).toContain('W_QUALITY_RENDERED_CLIP');
+      const runId = (inspected.run as { id: string }).id;
+
+      const silent = await call('jto_critique', {
+        action: 'record',
+        handle,
+        runId,
+        verdict: 'ship',
+        rationale: 'Page 1 reads as finished.',
+        level: 5,
+      });
+      expect(silent.ok).toBe(false);
+      expect(codes(silent)).toEqual(['E_CRITIQUE_OPEN_FINDINGS']);
+      expect(silent.diagnostics[0].context).toMatchObject({
+        runId,
+        findings: expect.arrayContaining([
+          expect.objectContaining({
+            code: 'W_QUALITY_RENDERED_CLIP',
+            page: 1,
+            path: '/children/0/props/text',
+          }),
+        ]),
+      });
+
+      // Nothing was filed, so the same run still takes a verdict — one that
+      // accepts the finding, with a reason, and is kept with it.
+      const reason =
+        'The frame is meant to run off the page foot; the clipped tail is decoration.';
+      const accepted = await call('jto_critique', {
+        action: 'record',
+        handle,
+        runId,
+        verdict: 'ship',
+        rationale: 'Page 1 reads as finished; the clip is the intended bleed.',
+        accept: [{ ruleId: 'rendered/clip', reason }],
+      });
+      expect(accepted).toMatchObject({ ok: true, rounds: 0, stop: true });
+      const record = accepted.record as {
+        accepted: Array<{ code: string; page?: number; reason: string }>;
+      };
+      expect(record.accepted.length).toBeGreaterThan(0);
+      for (const finding of record.accepted) {
+        expect(finding).toMatchObject({
+          code: 'W_QUALITY_RENDERED_CLIP',
+          page: 1,
+          reason,
+        });
+      }
+      expect(
+        accepted.diagnostics.find(
+          (d) => d.code === 'W_CRITIQUE_FINDINGS_ACCEPTED'
+        )?.severity
+      ).toBe('warning');
+    }, 180_000);
+
+    it('files an iterate verdict whatever the findings, because it ships nothing', async () => {
+      const handle = await open(CLIPPED);
+      const inspected = await call('jto_critique', {
+        action: 'inspect',
+        handle,
+        evidencePages: 0,
+      });
+      const out = await call('jto_critique', {
+        action: 'record',
+        handle,
+        runId: (inspected.run as { id: string }).id,
+        verdict: 'iterate',
+        rationale: 'Page 1: the framed paragraph runs off the page foot.',
+      });
+      expect(out).toMatchObject({ ok: true, rounds: 1, stop: false });
+    }, 180_000);
 
     it('refuses a run that belongs to another workspace', async () => {
       const mine = await open();
