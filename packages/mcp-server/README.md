@@ -219,13 +219,13 @@ The pixels come from LibreOffice, not from Microsoft Office. Line breaks, pagina
 
 Workspace only: a critique is about a revision, so there has to be one.
 
-**In** — `action` (`inspect` | `record`, required); `handle` (required); `format` (the workspace's own when omitted); `revision`; `evidencePages` (0–4, default 4); and for `record`: `runId`, `verdict` (`ship` | `iterate`), `rationale`, `level` (1–5, optional).
+**In** — `action` (`inspect` | `record`, required); `handle` (required); `format` (the workspace's own when omitted); `revision`; `evidencePages` (0–4, default 4); and for `record`: `runId`, `verdict` (`ship` | `iterate`), `rationale`, `level` (1–5, optional), `accept` (ship only: `{code | ruleId | path, pathMatch?, reason}[]`, the integrity findings you judge wrong about this document — the selectors a quality policy suppression takes).
 
 **Out (inspect)** — `run` `{id, handle, revision, round, roundsRemaining}`, `rubric` `{levels[], shippingQuestion}`, `contactSheet`, `evidence[]` `{page, reason, findings, delivery, artifact}`, `rendered` (the rendered pass's summary), `totalPages`, `dpi`, `renderer`. The rendered pass's findings ride in `diagnostics` with certainty `rendered`. The sheet and the chosen pages come back as image content blocks, sheet first; every page is written under the output root either way, so the evidence is reachable whatever the inline budget allows.
 
-**Out (record)** — `record` `{runId, handle, revision, verdict, rationale, level?, recordedAt}`, `rounds`, `roundsRemaining`, `stop`.
+**Out (record)** — `record` `{runId, handle, revision, verdict, rationale, level?, accepted?, recordedAt}`, `rounds`, `roundsRemaining`, `stop`. `accepted` keeps each finding a ship verdict accepted, with its reason.
 
-The server does not judge — the model in the conversation does. What the server owns is the count, and it owns it strictly: only `record` creates a round, re-sending the same `runId` returns the round already filed rather than a second one (`W_CRITIQUE_DUPLICATE`), and a verdict about a revision the workspace has since moved past is refused with `E_STALE_REVISION` rather than filed against a document nobody saw. Three recorded `iterate` rounds is the limit; the third answers with a stop recommendation. None of it gates `jto_generate`.
+The server does not judge — the model in the conversation does. What the server owns is the count, and it owns it strictly: only `record` creates a round, re-sending the same `runId` returns the round already filed rather than a second one (`W_CRITIQUE_DUPLICATE`), and a verdict about a revision the workspace has since moved past is refused with `E_STALE_REVISION` rather than filed against a document nobody saw. A ship verdict answers for the integrity findings the inspection showed — text clipped, spilled, overlapping or missing on the rendered page, at warning or worse: while one is neither repaired nor accepted in `accept` with a reason, the record is refused with `E_CRITIQUE_OPEN_FINDINGS` and no round is spent. The judgement stays the model's, since the rendered matcher can be wrong about a document; what it cannot be is silent, and a ship filed over accepted findings answers with `W_CRITIQUE_FINDINGS_ACCEPTED`. Three recorded `iterate` rounds is the limit; the third answers with a stop recommendation. None of it gates `jto_generate`.
 
 Needs LibreOffice and poppler, like `jto_preview`.
 
@@ -383,6 +383,8 @@ The cores name their generation warnings in a dialect of their own too — bare 
 | `E_CRITIQUE_RUN_UNKNOWN`           | `jto_critique record` named a run this connection never opened.                                             |
 | `W_CRITIQUE_DUPLICATE`             | A verdict was already filed for this run; the retry changed nothing and did not count.                      |
 | `W_CRITIQUE_STOP`                  | The rounds are spent, or the verdict was to ship.                                                           |
+| `E_CRITIQUE_OPEN_FINDINGS`         | A ship verdict left an integrity finding of the inspection neither repaired nor accepted.                   |
+| `W_CRITIQUE_FINDINGS_ACCEPTED`     | A ship verdict was filed over accepted integrity findings; they are still in the document.                  |
 | `W_PATH_NOT_FOUND`                 | A pointer a read asked for does not resolve in that revision.                                               |
 | `W_SNAPSHOT_NOT_PINNED`            | A snapshot was exported but not pinned: the workspace budget is full.                                       |
 | `W_WORKSPACE_NOT_PERSISTED`        | The edit applied, but the revision did not reach the workspace directory.                                   |

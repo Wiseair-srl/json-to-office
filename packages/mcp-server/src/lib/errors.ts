@@ -157,6 +157,10 @@ export const ERROR_CODES = {
   CRITIQUE_DUPLICATE: 'W_CRITIQUE_DUPLICATE',
   /** The recorded rounds are spent, or the verdict was to ship. */
   CRITIQUE_STOP: 'W_CRITIQUE_STOP',
+  /** A ship verdict left an integrity finding of the inspected revision neither repaired nor accepted. */
+  CRITIQUE_OPEN_FINDINGS: 'E_CRITIQUE_OPEN_FINDINGS',
+  /** A ship verdict was filed over integrity findings it accepted; they are still in the document. */
+  CRITIQUE_FINDINGS_ACCEPTED: 'W_CRITIQUE_FINDINGS_ACCEPTED',
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];

@@ -40,6 +40,19 @@ const MAX_RECORDS = 512;
 
 export type CritiqueVerdict = 'ship' | 'iterate';
 
+/**
+ * An integrity finding an inspection put in front of the model: something
+ * clipped, spilled, overlapping or missing on the rendered page.
+ */
+export interface CritiqueFinding {
+  code: string;
+  ruleId?: string;
+  /** The authored pointer, when the rendered pass could map the finding. */
+  path?: string;
+  page?: number;
+  message: string;
+}
+
 /** One `inspect`: what was looked at, and when. */
 export interface CritiqueRun {
   id: string;
@@ -47,6 +60,8 @@ export interface CritiqueRun {
   format: FormatName;
   /** The workspace revision the evidence was rendered from. */
   revision: number;
+  /** The integrity findings the evidence carried, which a ship verdict must answer for. */
+  integrity?: readonly CritiqueFinding[];
   createdAt: string;
 }
 
@@ -59,6 +74,8 @@ export interface CritiqueRecord {
   rationale: string;
   /** The rubric level the host judged, when it said one. */
   level?: number;
+  /** The integrity findings a ship verdict accepted, each with the reason that covered it. */
+  accepted?: ReadonlyArray<CritiqueFinding & { reason: string }>;
   recordedAt: string;
 }
 
