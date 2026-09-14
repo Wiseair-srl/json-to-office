@@ -1,0 +1,49 @@
+{
+  "source": "/Users/paolobarbato/Documents/Development/json-to-office/.claude/worktrees/host-422/packages/design-evals/evals-out/desktop-pairs/scorecard.json",
+  "judgeModel": "claude-opus-5",
+  "question": "v1",
+  "judgedAt": "2026-09-14T17:33:09.795Z",
+  "promptSha256": "cb2ef80be26c2425baceeed55d293c0e615ec11e2ec54ccef5ef9910e88124a9",
+  "runs": [
+    {
+      "briefId": "cd-growth-strategy-readout",
+      "run": "cd-growth-strategy-readout",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 3
+      }
+    },
+    {
+      "briefId": "cd-sustainability-roadmap",
+      "run": "cd-sustainability-roadmap",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "cr-market-entry-nordics",
+      "run": "cr-market-entry-nordics",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 3,
+        "genericness": 2
+      }
+    },
+    {
+      "briefId": "cr-post-merger-integration",
+      "run": "cr-post-merger-integration",
+      "then": {},
+      "now": {
+        "wouldShip": false,
+        "level": 4,
+        "genericness": 3
+      }
+    }
+  ]
+}
