@@ -129,6 +129,58 @@ export function parseJournal(text: string): ParsedJournal {
   };
 }
 
+/** The workspace a call worked in: named in its arguments, or in what it opened. */
+function workspaceOf(call: JournalCall): string | undefined {
+  if (typeof call.args.handle === 'string') return call.args.handle;
+  for (const key of ['workspace', 'source'] as const) {
+    const identity = call.result[key];
+    if (isRecord(identity) && typeof identity.handle === 'string') {
+      return identity.handle;
+    }
+  }
+  return undefined;
+}
+
+/** Every workspace a session worked in, in the order each first appears. */
+export function sessionWorkspaces(session: JournalSessionRecord): string[] {
+  return [
+    ...new Set(
+      session.calls.flatMap((call) => {
+        const handle = workspaceOf(call);
+        return handle === undefined ? [] : [handle];
+      })
+    ),
+  ];
+}
+
+/**
+ * One conversation out of a session several shared.
+ *
+ * Claude Desktop starts one server per launch and every chat talks to it, so
+ * a brief run beside another conversation shares its session. Each chat
+ * works in its own workspace: the calls that name it are that chat's, and so
+ * are the discovery calls (`jto_info`, `jto_discover`…) whose next
+ * workspace call is one of its own. A call before another chat's workspace
+ * is that chat's, never this one's.
+ */
+export function selectWorkspace(
+  session: JournalSessionRecord,
+  handle: string
+): JournalSessionRecord {
+  if (!sessionWorkspaces(session).includes(handle)) {
+    throw new Error(
+      `Session ${session.id} never worked in workspace ${handle}; it used ${sessionWorkspaces(session).join(', ') || 'none'}.`
+    );
+  }
+  const owners = session.calls.map(workspaceOf);
+  const calls = session.calls.filter((call, index) => {
+    if (owners[index] !== undefined) return owners[index] === handle;
+    const next = owners.slice(index + 1).find((owner) => owner !== undefined);
+    return next === handle;
+  });
+  return { ...session, calls };
+}
+
 /**
  * The session as the agent-SDK events a headless run records: a `tool_use`
  * and its `tool_result` per call, named with the harness's server alias so
@@ -165,6 +217,8 @@ export interface DesktopAccounting {
   delivered?: {
     format?: string;
     artifact?: string;
+    /** `base64` when the file was handed back inline and never written. */
+    artifactMode?: string;
     bytes?: number;
     handle?: string;
     revision?: number;
@@ -208,6 +262,10 @@ export function desktopAccounting(
           ...(isRecord(final.result.artifact) &&
             typeof final.result.artifact.path === 'string' && {
               artifact: final.result.artifact.path,
+            }),
+          ...(isRecord(final.result.artifact) &&
+            typeof final.result.artifact.mode === 'string' && {
+              artifactMode: final.result.artifact.mode,
             }),
           ...(isRecord(final.result.artifact) &&
             typeof final.result.artifact.bytes === 'number' && {
@@ -319,15 +377,29 @@ export function checkDelivery(input: {
   documentSha256: string;
   artifact: { exists: boolean; bytes?: number; sha256?: string };
   expected: { bytes?: number; artifactSha256?: string };
+  /** The file was handed back inline: nothing was written, so nothing can be missing. */
+  inline?: boolean;
 }): {
   documentVerified: boolean;
   artifactExists: boolean;
   artifactVerified?: boolean;
+  artifactInline?: boolean;
   failure?: string;
 } {
   const documentVerified =
     createHash('sha256').update(input.documentText).digest('hex') ===
     input.documentSha256;
+  if (input.inline) {
+    return {
+      documentVerified,
+      artifactExists: false,
+      artifactInline: true,
+      ...(!documentVerified && {
+        failure:
+          'the delivered document does not match the digest the server recorded',
+      }),
+    };
+  }
   const artifactExists = input.artifact.exists;
   const artifactVerified = !artifactExists
     ? false

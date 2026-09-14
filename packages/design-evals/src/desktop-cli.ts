@@ -11,12 +11,14 @@
  *     the blueprint and theme it scaffolded, what it delivered. This is how a
  *     session is matched to the brief it answered.
  *
- *   pnpm desktop import --journal <file> --run <brief>=<session>… --model <id>
- *                       [--app-version <v>] [--skill <dir>] --out <dir>
+ *   pnpm desktop import --journal <file> --run <brief>=<session>[@<workspace>]… --model <id>
+ *                       [--exclude <session>[@<workspace>]=<why>…] [--app-version <v>] [--skill <dir>] --out <dir>
  *     Turn those sessions into a run set shaped exactly like `pnpm evals`
  *     output — runs/<brief>/{transcript,document,desktop}.json, a contact
  *     sheet, a scorecard — with the delivered document checked against the
- *     digest the server recorded and the artifact against its size.
+ *     digest the server recorded and the artifact against its size. A launch
+ *     several chats shared is one session: `@<workspace>` takes one chat out
+ *     of it, and every other workspace there is a run or an exclusion.
  *
  *   pnpm desktop compare --desktop <dir> --headless <dir> --out <file.md>
  *     Brief by brief and format by format: delivery, integrity, iterations,
@@ -40,6 +42,8 @@ import {
   desktopEvents,
   loopUsage,
   parseJournal,
+  selectWorkspace,
+  sessionWorkspaces,
   summarizeSessions,
 } from './desktop.js';
 import {
@@ -89,6 +93,14 @@ async function sessions(argv: readonly string[], line: Line): Promise<number> {
   return 0;
 }
 
+/** `<session>` or `<session>@<workspace>`. */
+function target(value: string): { session: string; workspace?: string } {
+  const at = value.indexOf('@');
+  return at < 0
+    ? { session: value }
+    : { session: value.slice(0, at), workspace: value.slice(at + 1) };
+}
+
 async function importSessions(
   argv: readonly string[],
   repoRoot: string,
@@ -110,13 +122,13 @@ async function importSessions(
   const journalFile = values.journal;
   const out = values.out;
   const model = values.model;
-  const mappings = assignments(values.run, 'run').map(([briefId, session]) => ({
+  const mappings = assignments(values.run, 'run').map(([briefId, value]) => ({
     briefId,
-    session,
+    ...target(value),
   }));
   if (!journalFile || !out || !model || mappings.length === 0) {
     line(
-      'usage: pnpm desktop import --journal <file> --run <brief>=<session>… --model <id> [--exclude <session>=<why>…] [--intervened <brief or brief#n>…] [--app-version <v>] [--skill <dir>] --out <dir>'
+      'usage: pnpm desktop import --journal <file> --run <brief>=<session>[@<workspace>]… --model <id> [--exclude <session>[@<workspace>]=<why>…] [--intervened <brief or brief#n>…] [--app-version <v>] [--skill <dir>] --out <dir>'
     );
     return 1;
   }
@@ -128,20 +140,37 @@ async function importSessions(
 
   // Every session that did something is either a run or an exclusion with a
   // reason: an abandoned attempt dropped quietly would shrink the denominator.
-  const mapped = new Set(mappings.map((mapping) => mapping.session));
-  const unaccounted = journal.sessions.filter(
-    (session) =>
-      session.calls.length > 0 &&
-      !mapped.has(session.id) &&
-      !excluded.has(session.id)
-  );
+  // A session claimed workspace by workspace owes the same for each of them.
+  const claimed = new Set([
+    ...mappings.map((mapping) =>
+      mapping.workspace
+        ? `${mapping.session}@${mapping.workspace}`
+        : mapping.session
+    ),
+    ...excluded.keys(),
+  ]);
+  const unaccounted: string[] = [];
+  for (const session of journal.sessions) {
+    if (session.calls.length === 0 || claimed.has(session.id)) continue;
+    const byWorkspace = [...claimed].some((key) =>
+      key.startsWith(`${session.id}@`)
+    );
+    if (!byWorkspace) {
+      unaccounted.push(`${session.id} (${session.calls.length} calls)`);
+      continue;
+    }
+    for (const workspace of sessionWorkspaces(session)) {
+      const key = `${session.id}@${workspace}`;
+      if (claimed.has(key)) continue;
+      const calls = selectWorkspace(session, workspace).calls.length;
+      unaccounted.push(`${key} (${calls} calls)`);
+    }
+  }
   if (unaccounted.length > 0) {
     line(
-      `${unaccounted.length} journalled session(s) made calls and map to no brief: ${unaccounted
-        .map((session) => `${session.id} (${session.calls.length} calls)`)
-        .join(
-          ', '
-        )}. Map each with --run <brief>=<session>, or --exclude <session>=<why>.`
+      `${unaccounted.length} journalled session(s) or workspace(s) made calls and map to no brief: ${unaccounted.join(
+        ', '
+      )}. Map each with --run <brief>=<session>[@<workspace>], or --exclude <session>[@<workspace>]=<why>.`
     );
     return 1;
   }
@@ -160,14 +189,19 @@ async function importSessions(
   const seen = new Map<string, number>();
 
   const runs: RunMetrics[] = [];
+  const labels: Array<{ label: string; mapping: (typeof mappings)[number] }> =
+    [];
   for (const mapping of mappings) {
     const brief = briefs.find((entry) => entry.id === mapping.briefId)!;
-    const session = journal.sessions.find(
+    const whole = journal.sessions.find(
       (entry) => entry.id === mapping.session
     );
-    if (!session) {
+    if (!whole) {
       throw new Error(`The journal has no session ${mapping.session}.`);
     }
+    const session = mapping.workspace
+      ? selectWorkspace(whole, mapping.workspace)
+      : whole;
     // Labelled the way the runner labels repeats, so the sets line up.
     const pass = (seen.get(brief.id) ?? 0) + 1;
     seen.set(brief.id, pass);
@@ -185,6 +219,7 @@ async function importSessions(
           briefHash: brief.hash,
           host: 'claude-desktop',
           session: session.id,
+          ...(mapping.workspace && { workspace: mapping.workspace }),
           facts: session.facts,
           events: desktopEvents(session),
         },
@@ -215,11 +250,16 @@ async function importSessions(
       );
     } else {
       const text = await fs.readFile(accounting.delivered.documentFile, 'utf8');
-      const artifact = await readArtifact(accounting.delivered.artifact);
+      // Handed back inline, the file went to the host and was never written.
+      const inline = accounting.delivered.artifactMode === 'base64';
+      const artifact = inline
+        ? { exists: false }
+        : await readArtifact(accounting.delivered.artifact);
       const checked = checkDelivery({
         documentText: text,
         documentSha256: accounting.delivered.documentSha256,
         artifact,
+        inline,
         expected: {
           ...(accounting.delivered.bytes !== undefined && {
             bytes: accounting.delivered.bytes,
@@ -257,11 +297,19 @@ async function importSessions(
       }
     }
     runs.push(run);
+    labels.push({ label, mapping });
     await fs.writeFile(
       path.join(runDir, 'desktop.json'),
       JSON.stringify(
         {
           session: session.id,
+          ...(mapping.workspace && {
+            workspace: mapping.workspace,
+            calls: {
+              kept: session.calls.length,
+              inSession: whole.calls.length,
+            },
+          }),
           startedAt: session.startedAt,
           facts: session.facts,
           model,
@@ -276,7 +324,7 @@ async function importSessions(
       )
     );
     line(
-      `  ${label} <- ${session.id}: ${run.outcome}${run.failure ? ` (${run.failure})` : ''}, ` +
+      `  ${label} <- ${session.id}${mapping.workspace ? `@${mapping.workspace}` : ''}: ${run.outcome}${run.failure ? ` (${run.failure})` : ''}, ` +
         `${run.iterations} iteration(s), ${run.toolCalls} call(s)`
     );
   }
@@ -318,6 +366,15 @@ async function importSessions(
           manifest.serverBuild !== undefined &&
           serverBuilds.every((build) => build === manifest.serverBuild),
         excluded: Object.fromEntries(excluded),
+        ...(mappings.some((mapping) => mapping.workspace) && {
+          workspaces: Object.fromEntries(
+            labels.flatMap(({ label, mapping }) =>
+              mapping.workspace
+                ? [[label, `${mapping.session}@${mapping.workspace}`]]
+                : []
+            )
+          ),
+        }),
       },
     },
     corpus: {

@@ -208,6 +208,15 @@ Every journalled session that made a call is either mapped to a brief
 attempt stays in the record. `--intervened <brief>` marks a run where the
 reviewer answered the agent.
 
+A launch is one session for every chat in it, so a brief run while another
+conversation used the server shares its session. Each chat works in its own
+workspace: `--run <brief>=<session>@<workspace>` takes the brief's calls — the
+ones naming its workspace, and the discovery calls that led to it — and every
+other workspace in that session must be a run or an exclusion
+(`--exclude <session>@<workspace>=<why>`). A document handed back inline
+(`outputMode: "base64"`) was never written to disk, so it is checked by the
+document's digest alone.
+
 What Desktop does not report — turns, tokens, and any tool the model reached
 outside the server — is marked unobservable on each imported run, and the
 scorecard's aggregates leave those runs out rather than reading a zero. The

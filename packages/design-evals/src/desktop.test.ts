@@ -10,6 +10,8 @@ import {
   desktopEvents,
   parseJournal,
   READABLE_JOURNAL_VERSION,
+  selectWorkspace,
+  sessionWorkspaces,
   summarizeSessions,
 } from './desktop.js';
 import { countIterations } from './runner.js';
@@ -220,6 +222,110 @@ describe('a Desktop session, measured like a headless run', () => {
   });
 });
 
+describe('a session two chats shared', () => {
+  // Claude Desktop starts one server per launch and every chat talks to it, so
+  // a brief run beside another conversation shares its session. Each chat
+  // works in its own workspace, which is what tells them apart.
+  const MIXED = [
+    session('s-mix00001', '2026-09-14T13:56:37.000Z'),
+    call('s-mix00001', 1, '2026-09-14T13:57:36.000Z', 'jto_info'),
+    call('s-mix00001', 2, '2026-09-14T13:57:40.000Z', 'jto_discover'),
+    call('s-mix00001', 3, '2026-09-14T13:58:00.000Z', 'jto_scaffold', {
+      args: { blueprint: 'client-report', theme: 'consulting' },
+      result: { ok: true, workspace: { handle: 'ws-brief', revision: 1 } },
+    }),
+    call('s-mix00001', 4, '2026-09-14T13:58:10.000Z', 'jto_workspace_patch', {
+      args: { handle: 'ws-own' },
+    }),
+    call('s-mix00001', 5, '2026-09-14T13:59:00.000Z', 'jto_workspace_patch', {
+      args: { handle: 'ws-brief' },
+    }),
+    call('s-mix00001', 6, '2026-09-14T13:59:30.000Z', 'jto_preview', {
+      args: { handle: 'ws-own', contactSheet: true },
+    }),
+    call('s-mix00001', 7, '2026-09-14T14:00:00.000Z', 'jto_validate', {
+      args: { handle: 'ws-brief' },
+    }),
+    call('s-mix00001', 8, '2026-09-14T14:01:00.000Z', 'jto_info'),
+    call('s-mix00001', 9, '2026-09-14T14:01:10.000Z', 'jto_workspace_create', {
+      result: { ok: true, workspace: { handle: 'ws-third', revision: 1 } },
+    }),
+    call('s-mix00001', 10, '2026-09-14T14:02:00.000Z', 'jto_generate', {
+      args: { format: 'docx', handle: 'ws-brief' },
+      result: {
+        ok: true,
+        diagnostics: { total: 0, errors: [], warnings: [] },
+        source: { origin: 'workspace', handle: 'ws-brief', revision: 3 },
+        artifact: { mode: 'path', path: '/out/brief.docx', bytes: 4096 },
+      },
+      delivered: {
+        sha256: 'b'.repeat(64),
+        bytes: 800,
+        file: '/j.documents/b.json',
+        handle: 'ws-brief',
+        revision: 3,
+      },
+    }),
+    call('s-mix00001', 11, '2026-09-14T14:03:00.000Z', 'jto_generate', {
+      args: { format: 'docx', handle: 'ws-own', outputMode: 'base64' },
+      result: {
+        ok: true,
+        diagnostics: { total: 0, errors: [], warnings: [] },
+        source: { origin: 'workspace', handle: 'ws-own', revision: 7 },
+        artifact: { mode: 'base64', bytes: 2048 },
+      },
+      delivered: {
+        sha256: 'c'.repeat(64),
+        bytes: 700,
+        file: '/j.documents/c.json',
+        handle: 'ws-own',
+        revision: 7,
+      },
+    }),
+  ].join('\n');
+  const [mixed] = parseJournal(MIXED).sessions;
+
+  it('names every workspace the session touched, in the order each first appears', () => {
+    expect(sessionWorkspaces(mixed)).toEqual([
+      'ws-brief',
+      'ws-own',
+      'ws-third',
+    ]);
+  });
+
+  it('keeps one chat: its workspace, and the discovery that led to it', () => {
+    const brief = selectWorkspace(mixed, 'ws-brief');
+    expect(brief.calls.map((entry) => entry.seq)).toEqual([1, 2, 3, 5, 7, 10]);
+    expect(desktopAccounting(brief)).toMatchObject({
+      toolCalls: 6,
+      wallMs: 264_000 + 1000,
+      delivered: { handle: 'ws-brief', artifact: '/out/brief.docx' },
+    });
+  });
+
+  it('never gives a chat the discovery another chat made before its own workspace', () => {
+    expect(
+      selectWorkspace(mixed, 'ws-third').calls.map((entry) => entry.seq)
+    ).toEqual([8, 9]);
+    expect(
+      selectWorkspace(mixed, 'ws-own').calls.map((entry) => entry.seq)
+    ).toEqual([4, 6, 11]);
+  });
+
+  it('refuses a workspace the session never touched', () => {
+    expect(() => selectWorkspace(mixed, 'ws-none')).toThrow(/ws-none/);
+  });
+
+  it('records a delivery handed back inline, which wrote no file', () => {
+    const own = desktopAccounting(selectWorkspace(mixed, 'ws-own'));
+    expect(own.delivered).toMatchObject({
+      handle: 'ws-own',
+      artifactMode: 'base64',
+    });
+    expect(own.delivered?.artifact).toBeUndefined();
+  });
+});
+
 describe('checking what a Desktop session delivered', () => {
   const text = '{"name":"docx"}';
   const digest = createHash('sha256').update(text).digest('hex');
@@ -237,6 +343,32 @@ describe('checking what a Desktop session delivered', () => {
       artifactExists: true,
       artifactVerified: true,
     });
+  });
+
+  it('passes a document handed back inline, where no file was ever written', () => {
+    expect(
+      checkDelivery({
+        documentText: text,
+        documentSha256: digest,
+        artifact: { exists: false },
+        expected: { artifactSha256: 'f'.repeat(64) },
+        inline: true,
+      })
+    ).toEqual({
+      documentVerified: true,
+      artifactExists: false,
+      artifactInline: true,
+    });
+    // The document still has to be the one the server recorded.
+    expect(
+      checkDelivery({
+        documentText: '{"name":"pptx"}',
+        documentSha256: digest,
+        artifact: { exists: false },
+        expected: {},
+        inline: true,
+      }).failure
+    ).toMatch(/digest/);
   });
 
   it('fails a run whose file is gone, or changed after it was generated', () => {
