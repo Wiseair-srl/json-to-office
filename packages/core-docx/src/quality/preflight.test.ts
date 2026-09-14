@@ -1036,6 +1036,48 @@ describe('brand consistency', () => {
       }).filter((finding) => finding.code === QUALITY_CODES.OFF_PALETTE)
     ).toEqual([]);
   });
+
+  it('never judges theme overrides as authored content', () => {
+    // Overrides merge into the theme before the palette is read: a style
+    // colour there is the theme's own, and a `mono` or `light` family paints
+    // nothing unless a component asks for it — as in a theme passed by name.
+    const findings = docxDiagnostics({
+      name: 'docx',
+      props: {
+        theme: 'consulting',
+        themeOverrides: {
+          styles: { heading1: { color: '#FF0000' } },
+          fonts: { mono: { family: 'Fira Code' }, light: { family: 'Futura' } },
+        },
+      },
+      children: [
+        {
+          name: 'section',
+          children: [
+            {
+              name: 'paragraph',
+              props: { text: 'Off brand', font: { color: '#FF00FF' } },
+            },
+          ],
+        },
+      ],
+    });
+    expect(
+      findings.filter((finding) =>
+        [finding.path, ...(finding.relatedPaths ?? [])].some(
+          (path) =>
+            path === '/props/themeOverrides' ||
+            path.startsWith('/props/themeOverrides/')
+        )
+      )
+    ).toEqual([]);
+    // What the author painted is still judged.
+    expect(
+      findings
+        .filter((finding) => finding.code === QUALITY_CODES.OFF_PALETTE)
+        .map((finding) => finding.path)
+    ).toEqual(['/children/0/children/0/props/font/color']);
+  });
 });
 
 function chartDoc(name: string, props: Record<string, unknown>) {

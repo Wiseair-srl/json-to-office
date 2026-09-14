@@ -175,6 +175,37 @@ const NESTED_COLUMNS_IN_TEXT_BOX = {
   ],
 };
 
+const DOCX_WITH = (...children: unknown[]) => ({
+  name: 'docx',
+  props: { metadata: { title: 'References' } },
+  children: [
+    {
+      name: 'section',
+      children: [{ name: 'paragraph', props: { text: 'Body.' } }, ...children],
+    },
+  ],
+});
+
+const DOCX_THEMED = (theme: string) => ({
+  ...DOCX_WITH(),
+  props: { metadata: { title: 'Themed' }, theme },
+});
+
+const PPTX_WITH = (...children: unknown[]) => ({
+  ...TEXT_WITH_PROPS,
+  children: [
+    {
+      name: 'slide',
+      children: [{ name: 'text', props: { text: 'Hello' } }, ...children],
+    },
+  ],
+});
+
+const PPTX_THEMED = (theme: string) => ({
+  ...TEXT_WITH_PROPS,
+  props: { ...TEXT_WITH_PROPS.props, theme },
+});
+
 let scratch: string;
 let client: Client;
 
@@ -273,6 +304,55 @@ describe('jto_validate mirrors the generation gate', () => {
           props: {},
           children: [{ name: 'not-a-component', props: {} }],
         },
+      ],
+      // What the document points at. A theme name that matches nothing falls
+      // back and renders; an image file that is not there fails the build —
+      // except where the pipeline itself steps around it: a DOCX table cell
+      // draws a placeholder, and PPTX drops a path outside its base directory
+      // without reading it.
+      ['docx theme that is not one', 'docx', DOCX_THEMED('corporate')],
+      ['pptx theme that is not one', 'pptx', PPTX_THEMED('corporate')],
+      [
+        'docx image file that is not there',
+        'docx',
+        DOCX_WITH({ name: 'image', props: { path: '/nonexistent/chart.png' } }),
+      ],
+      [
+        'docx table-cell image file that is not there',
+        'docx',
+        DOCX_WITH({
+          name: 'table',
+          props: {
+            columns: [
+              {
+                cells: [
+                  {
+                    content: {
+                      name: 'image',
+                      props: { path: '/nonexistent/logo.png', width: 40 },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        }),
+      ],
+      [
+        'pptx image file that is not there',
+        'pptx',
+        PPTX_WITH({
+          name: 'image',
+          props: { path: 'missing/chart.png', x: 1, y: 1, w: 2, h: 2 },
+        }),
+      ],
+      [
+        'pptx image outside its base directory',
+        'pptx',
+        PPTX_WITH({
+          name: 'image',
+          props: { path: '/nonexistent/chart.png', x: 1, y: 1, w: 2, h: 2 },
+        }),
       ],
     ];
 

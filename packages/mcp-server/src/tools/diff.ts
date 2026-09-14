@@ -22,6 +22,7 @@ import {
 
 import { checkRenderer, type GeneratorOptions } from '../lib/adapters.js';
 import { MIME_TYPES, deliverArtifact } from '../lib/artifacts.js';
+import { assetFailures } from '../lib/assets.js';
 import type { ToolDeps } from '../lib/deps.js';
 import { resolveDocumentSource, sourceSummary } from '../lib/doc-source.js';
 import {
@@ -340,7 +341,28 @@ export function register(server: McpServer, deps: ToolDeps): void {
             const generator = await adapter.createGenerator([], options);
             buffer = await generator.generateBuffer(document);
           } catch (error) {
-            const diagnostics = diagnosticsFromThrown(error);
+            // An image that cannot be read fails the render of the redline, a
+            // third document nobody can patch. So each side is checked the way
+            // jto_generate checks its one document, and the answer points into
+            // the document to fix. An image neither check can see is left to
+            // `guarded`, which classifies it by the name the core gave it.
+            let diagnostics = diagnosticsFromThrown(error);
+            if (!diagnostics) {
+              const check = {
+                ...(args.baseDir !== undefined && { baseDir: args.baseDir }),
+              };
+              const unreadable = [
+                ...sideDiagnostics(
+                  'before',
+                  await assetFailures('docx', before.document, check)
+                ),
+                ...sideDiagnostics(
+                  'after',
+                  await assetFailures('docx', after.document, check)
+                ),
+              ];
+              if (unreadable.length > 0) diagnostics = unreadable;
+            }
             if (!diagnostics) throw error;
             return {
               ok: false,

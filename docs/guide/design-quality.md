@@ -214,12 +214,12 @@ the duplicate case, and are.
 ## Font families and palette
 
 `font-count` counts the distinct families a document can paint: the theme's
-`heading` and `body` roles plus every family named in the document. A theme's
-`mono` and `light` roles are not counted — they paint nothing until a component
-asks for them, and counting an unused `Courier New` would flag a report that
-uses one typeface. Past three families a document reads as assembled rather
-than designed, which is a warning; the limit is the `maximumFamilies`
-parameter.
+`heading` and `body` roles plus every family named in the document outside its
+theme. A theme's `mono` and `light` roles are not counted — they paint nothing
+until a component asks for them, and counting an unused `Courier New` would
+flag a report that uses one typeface. Past three families a document reads as
+assembled rather than designed, which is a warning; the limit is the
+`maximumFamilies` parameter.
 
 `palette-adherence` reports a colour written as a literal that the resolved
 theme — named theme plus any in-document overrides — does not define, and
@@ -231,6 +231,11 @@ an otherwise on-theme report; the finding makes the choice visible rather than
 overruling it. A colour is recognised by where it sits — a property whose name
 mentions colour, fill, stroke, background or border — so a hex inside a
 sentence stays prose.
+
+Neither rule judges the theme itself. A deck's inline `props.theme` and a
+report's `props.themeOverrides` define the palette and the families rather than
+paint against them, so a theme written into the document is read exactly as
+the same theme passed by name.
 
 ## Placeholder text and scaffold markers
 

@@ -35,9 +35,14 @@ export interface LoadedImage {
  *
  * A source that could not be loaded is absent rather than recorded as an
  * error: the compiler reports it against the component's own path, which is
- * more use than an error attached to a URL.
+ * more use than an error attached to a URL. Why it failed is kept beside the
+ * images, so that report can say — and so a source that was tried and failed
+ * can be told from one the walk never reached.
  */
-export type ImageResources = ReadonlyMap<string, LoadedImage>;
+export interface ImageResources extends ReadonlyMap<string, LoadedImage> {
+  /** What each source that did not load threw. */
+  readonly failures?: ReadonlyMap<string, unknown>;
+}
 
 /** Load every image source in `components`, following nested content. */
 export async function loadImageResources(
@@ -47,6 +52,7 @@ export async function loadImageResources(
   for (const component of components) collectSources(component, sources);
 
   const loaded = new Map<string, LoadedImage>();
+  const failures = new Map<string, unknown>();
   await Promise.all(
     [...sources].map(async (source) => {
       try {
@@ -61,12 +67,13 @@ export async function loadImageResources(
           ...(result.contentType ? { contentType: result.contentType } : {}),
           ...(intrinsic ? { intrinsic } : {}),
         });
-      } catch {
+      } catch (error) {
         // Left out of the map; the compiler reports it against the component.
+        failures.set(source, error);
       }
     })
   );
-  return loaded;
+  return Object.assign(loaded, { failures });
 }
 
 function readIntrinsic(

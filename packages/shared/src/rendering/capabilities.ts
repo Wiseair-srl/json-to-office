@@ -317,3 +317,46 @@ function missingPackageName(message: string): string | undefined {
     /Failed to resolve (?:module|import)[: ]+['"]?([^'"\s]+)/.exec(message);
   return match?.[1];
 }
+
+/**
+ * `Error.name` marking an image the document names that could not be read: a
+ * file that is not there, a URL that did not answer with the picture.
+ *
+ * The document's defect rather than the pipeline's, which nothing about the
+ * error said before — it left as whatever the read threw, a raw `fs` error or
+ * a status line, and a caller could only guess from the English. A name rather
+ * than a subclass for the reason `RENDERER_DEPENDENCY_MISSING` is one.
+ */
+export const ASSET_UNREADABLE = 'AssetUnreadableError';
+
+/** An `ASSET_UNREADABLE` error: the message says why, `source` says which image. */
+export type AssetUnreadableError = Error & {
+  /** The path or URL the pipeline tried to read. */
+  source: string;
+};
+
+/**
+ * The error to throw for an image that could not be read.
+ *
+ * `cause` is the failure underneath — the `fs` error, the HTTP status — kept
+ * as the error's `cause` and folded into its message, which is the half a
+ * caller reads.
+ */
+export function assetUnreadableError(
+  source: string,
+  cause: unknown
+): AssetUnreadableError {
+  const reason = cause instanceof Error ? cause.message : String(cause);
+  // A data URI is the image itself, so a failed one would put the whole
+  // picture in the message; its first characters say which it was.
+  const label =
+    source.startsWith('data:') && source.length > 50
+      ? `${source.slice(0, 50)}…`
+      : source;
+  const error = new Error(`Failed to load image from ${label}: ${reason}`, {
+    cause,
+  }) as AssetUnreadableError;
+  error.name = ASSET_UNREADABLE;
+  error.source = source;
+  return error;
+}

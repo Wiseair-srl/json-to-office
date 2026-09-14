@@ -7,6 +7,10 @@
  * the vocabulary `checkRenderer` already established — the defect is in the
  * request, not in the JSON — and lives beside it rather than inside
  * `lib/errors.ts`, which owns the vocabulary and not the option semantics.
+ *
+ * The theme checks are the one exception that reads the document: a render's
+ * theme is the `theme` option or the document's `props.theme`, and both
+ * halves are reported by the same builder so they read the same.
  */
 
 import path from 'path';
@@ -14,19 +18,13 @@ import path from 'path';
 import type { FormatAdapter, FormatName } from './adapters.js';
 import { loadCore } from './core.js';
 import {
+  ERROR_CODES,
   OPTION_ERROR_CODES,
   diagnostic,
   failure,
   type Diagnostic,
   type Failure,
 } from './errors.js';
-
-/**
- * A code this module adds. It belongs in `lib/errors.ts`' `OPTION_ERROR_CODES`
- * beside `E_UNKNOWN_RENDERER`, whose shape it deliberately mirrors; it is
- * declared here only because that file is another issue's to edit.
- */
-export const UNKNOWN_THEME = 'W_UNKNOWN_THEME';
 
 /** Earliest instant a ZIP local-file header can express. */
 const ZIP_EPOCH_YEAR = 1980;
@@ -150,11 +148,18 @@ function documentTheme(document: unknown): string | undefined {
   return typeof theme === 'string' && theme.length > 0 ? theme : undefined;
 }
 
+/**
+ * Who is reporting: a render says what it just did, validation what a render
+ * would do. Same finding, in the one tense each of them can vouch for.
+ */
+type ThemeStage = 'render' | 'validation';
+
 function unknownTheme(
   format: FormatName,
   name: string,
   known: readonly string[],
-  source: 'theme' | 'props.theme'
+  source: 'theme' | 'props.theme',
+  stage: ThemeStage = 'render'
 ): Diagnostic {
   const where =
     source === 'theme' ? '.' : "; it came from the document's `props.theme`.";
@@ -164,20 +169,59 @@ function unknownTheme(
   const fell =
     source === 'theme'
       ? "This render kept the document's own theme."
-      : 'This render used the built-in default.';
+      : stage === 'render'
+        ? 'This render used the built-in default.'
+        : 'Generation falls back to the built-in default.';
+  // `theme` accepts a path to a theme file; `props.theme` is only ever looked
+  // up by name, so the file has to arrive as the `themePath` option instead.
+  const orFile =
+    source === 'theme'
+      ? 'or a path to a theme file'
+      : 'or render with your own theme file as `themePath`';
   const names = known.map((id) => `"${id}"`).join(', ');
   return diagnostic(
-    UNKNOWN_THEME,
+    ERROR_CODES.UNKNOWN_THEME,
     `Unknown ${format} theme "${name}"${where}`,
     {
       severity: 'warning',
+      ...(source === 'props.theme' && { path: '/props/theme' }),
       suggestion:
         known.length > 0
-          ? `Use one of: ${names}, or a path to a theme file. ${fell}`
-          : `Use a name from jto_discover.formats[].themes, or a path to a theme file. ${fell}`,
+          ? `Use one of: ${names}, ${orFile}. ${fell}`
+          : `Use a name from jto_discover.formats[].themes, ${orFile}. ${fell}`,
       context: { format, theme: name, themes: [...known], source },
     }
   );
+}
+
+/** A `props.theme` that names no built-in theme, as the finding `stage` reports. */
+async function propsThemeDiagnostics(
+  adapter: FormatAdapter,
+  document: unknown,
+  stage: ThemeStage
+): Promise<Diagnostic[]> {
+  const named = documentTheme(document);
+  if (named === undefined) return [];
+  const known = await builtinThemeNames(adapter);
+  if (known.length === 0 || known.includes(named)) return [];
+  return [unknownTheme(adapter.name, named, known, 'props.theme', stage)];
+}
+
+/**
+ * `props.theme`, checked before anything renders.
+ *
+ * A render can read its verdict off the theme it settled on; validation has no
+ * render to ask, so it asks the question that needs none. It is also the whole
+ * question: neither core loads a file from `props.theme`, and the one registry
+ * besides the built-ins — the theme `themePath` supplies — replaces the
+ * document's theme rather than completing its name. An inline pptx theme
+ * object names nothing and cannot miss.
+ */
+export async function documentThemeDiagnostics(
+  adapter: FormatAdapter,
+  document: unknown
+): Promise<Diagnostic[]> {
+  return propsThemeDiagnostics(adapter, document, 'validation');
 }
 
 /**
@@ -217,12 +261,8 @@ export async function themeDiagnostics(
     ];
   }
 
-  const inDocument = documentTheme(input.document);
-  if (inDocument === undefined) return [];
   if (input.reported.some((entry) => entry.code === CORE_THEME_NOT_FOUND)) {
     return [];
   }
-  const known = await builtinThemeNames(adapter);
-  if (known.length === 0 || known.includes(inDocument)) return [];
-  return [unknownTheme(adapter.name, inDocument, known, 'props.theme')];
+  return propsThemeDiagnostics(adapter, input.document, 'render');
 }

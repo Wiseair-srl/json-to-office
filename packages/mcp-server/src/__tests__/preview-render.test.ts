@@ -9,6 +9,8 @@
 
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { promises as fs } from 'node:fs';
+import { createServer as createHttpServer } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -165,6 +167,114 @@ describe('a document that will not build', () => {
     expect(result.diagnostics[0].code).not.toBe(
       PREVIEW_ERROR_CODES.RENDER_FAILED
     );
+  }, 60_000);
+
+  it('names the image file that is not there, as jto_validate does', async () => {
+    const result = await renderPreview({
+      format: 'docx',
+      document: {
+        name: 'docx',
+        props: {},
+        children: [
+          {
+            name: 'section',
+            children: [
+              { name: 'paragraph', props: { text: 'Fine.' } },
+              { name: 'image', props: { path: '/nonexistent/chart.png' } },
+            ],
+          },
+        ],
+      },
+      getAdapter,
+      cacheDir: null,
+      probe: async () => ({
+        libreoffice: {
+          available: true,
+          path: '/nowhere/soffice',
+          envVar: 'LIBREOFFICE_PATH',
+          searched: [],
+        },
+        pdftoppm: {
+          available: true,
+          path: '/nowhere/pdftoppm',
+          envVar: 'PDFTOPPM_PATH',
+          searched: [],
+        },
+      }),
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    // The schema has nothing to say about this document, so the answer is the
+    // file, at the pointer an agent patches. The build failed over that same
+    // file, and says so by name, so it is not reported again without one.
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({
+        code: ERROR_CODES.ASSET_UNREADABLE,
+        path: '/children/0/children/1/props/path',
+      }),
+    ]);
+  }, 60_000);
+
+  it('names an image URL that does not answer, which only the build can see', async () => {
+    const host = createHttpServer((_request, response) => {
+      response.writeHead(404);
+      response.end();
+    });
+    await new Promise<void>((resolve) =>
+      host.listen(0, '127.0.0.1', () => resolve())
+    );
+    const url = `http://127.0.0.1:${(host.address() as AddressInfo).port}/chart.png`;
+
+    try {
+      const result = await renderPreview({
+        format: 'docx',
+        document: {
+          name: 'docx',
+          props: {},
+          children: [
+            {
+              name: 'section',
+              children: [
+                { name: 'paragraph', props: { text: 'Fine.' } },
+                { name: 'image', props: { path: url } },
+              ],
+            },
+          ],
+        },
+        getAdapter,
+        cacheDir: null,
+        probe: async () => ({
+          libreoffice: {
+            available: true,
+            path: '/nowhere/soffice',
+            envVar: 'LIBREOFFICE_PATH',
+            searched: [],
+          },
+          pdftoppm: {
+            available: true,
+            path: '/nowhere/pdftoppm',
+            envVar: 'PDFTOPPM_PATH',
+            searched: [],
+          },
+        }),
+      });
+
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      // Not the generic stage failure, whose suggestion is jto_validate — which
+      // does not fetch URLs and would find nothing.
+      expect(result.diagnostics).toEqual([
+        expect.objectContaining({
+          code: ERROR_CODES.ASSET_UNREADABLE,
+          context: expect.objectContaining({ source: url, stage: 'build' }),
+        }),
+      ]);
+      expect(result.diagnostics[0].suggestion).not.toContain('jto_validate');
+    } finally {
+      host.closeAllConnections();
+      await new Promise((resolve) => host.close(resolve));
+    }
   }, 60_000);
 
   /**

@@ -24,8 +24,10 @@ import {
   withRenderer,
   type FormatName,
 } from '../lib/adapters.js';
+import { assetDiagnostics } from '../lib/assets.js';
 import type { ToolDeps } from '../lib/deps.js';
 import { resolveDocumentSource, sourceSummary } from '../lib/doc-source.js';
+import { documentThemeDiagnostics } from '../lib/render-options.js';
 import { scaffoldMarkerOccurrences } from '../lib/scaffold-markers.js';
 import {
   countDiagnostics,
@@ -82,6 +84,7 @@ const DEFAULT_MAX_DIAGNOSTICS = 100;
 interface ValidateArgs extends DocumentSourceInput {
   format: FormatName;
   renderer?: string;
+  baseDir?: string;
   maxDiagnostics?: number;
   quality?: QualityOptionsInput;
   includeCompiled?: boolean;
@@ -100,7 +103,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
     {
       title: 'Validate a document',
       description:
-        'Check a document against its format schema and report every defect as a path-addressed diagnostic. Paths are RFC 6901 JSON Pointers into the document you passed, so they can be used directly as patch targets; codes are the stable `E_`/`W_` vocabulary. `ok` mirrors generation: schema and semantic errors block; design-quality `W_QUALITY_*` findings advise by default and block only when `quality.policy.gate` requests it. A broken document is a normal result with `ok: false`, never a protocol error. `includeCompiled` returns the compiled form — every block (`document-local JSON blocks`, …) lowered in place to the primitives the renderer draws — with a source map from compiled pointers back to the authored slots.',
+        'Check a document against its format schema and report every defect as a path-addressed diagnostic. Paths are RFC 6901 JSON Pointers into the document you passed, so they can be used directly as patch targets; codes are the stable `E_`/`W_` vocabulary. `ok` mirrors generation: schema and semantic errors block; design-quality `W_QUALITY_*` findings advise by default and block only when `quality.policy.gate` requests it. What the document points at is checked too: a `props.theme` that names no theme (`W_UNKNOWN_THEME`) and an image file that cannot be read (`E_ASSET_UNREADABLE`), with relative paths resolved against `baseDir` as jto_generate resolves them. A broken document is a normal result with `ok: false`, never a protocol error. `includeCompiled` returns the compiled form — every block (`document-local JSON blocks`, …) lowered in place to the primitives the renderer draws — with a source map from compiled pointers back to the authored slots.',
       annotations: { readOnlyHint: true, openWorldHint: false },
       inputSchema: S<ValidateArgs>({
         type: 'object',
@@ -111,6 +114,11 @@ export function register(server: McpServer, deps: ToolDeps): void {
             ...renderOptionProperties.renderer,
             description:
               "Renderer profile to validate against. Overrides the document's own `renderer` for this check only; omit to validate the document exactly as written.",
+          },
+          baseDir: {
+            ...renderOptionProperties.baseDir,
+            description:
+              'Directory relative image paths resolve against when checking that the files exist — pass the `baseDir` you will generate with. Omit to resolve against the server working directory, as generation does.',
           },
           maxDiagnostics: {
             type: 'integer',
@@ -250,8 +258,20 @@ export function register(server: McpServer, deps: ToolDeps): void {
             ...(unavailable ? [unavailable] : []),
             ...(qualityOption ? [qualityOption] : []),
           ];
+          // Fourth: does what the document points at exist? A theme name and
+          // an image path are plain strings to the schema, so a theme that
+          // matched nothing validated clean and fell back at render, and a
+          // file that was not there validated clean and failed the render as
+          // `E_INTERNAL`. Each is asked the way generation will ask it.
+          const references = [
+            ...(await documentThemeDiagnostics(adapter, resolved.document)),
+            ...(await assetDiagnostics(args.format, resolved.document, {
+              ...(args.baseDir !== undefined && { baseDir: args.baseDir }),
+            })),
+          ];
           const all = [
             ...structural,
+            ...references,
             ...(analysis
               ? [
                   ...qualityAnalysisDiagnostics(analysis),
@@ -286,7 +306,7 @@ export function register(server: McpServer, deps: ToolDeps): void {
           // would still succeed — so the quality half of the verdict is the
           // engine's `blocked`, which is the only thing that decided it.
           const blocked =
-            countDiagnostics(structural).error > 0 ||
+            countDiagnostics([...structural, ...references]).error > 0 ||
             analysis?.blocked === true;
           // The other half of the generation gate: a draft is a legitimate
           // thing to hold and passes here, but jto_generate refuses a marker,

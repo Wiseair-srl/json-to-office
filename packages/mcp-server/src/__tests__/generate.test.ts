@@ -10,8 +10,18 @@
  * testing the SDK.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+  afterEach,
+} from 'vitest';
 import * as fs from 'fs/promises';
+import { createServer, type Server } from 'http';
+import type { AddressInfo } from 'net';
 import * as os from 'os';
 import * as path from 'path';
 
@@ -522,6 +532,282 @@ describe('jto_generate', () => {
         fakeContext({ notified: silent })
       );
       expect(silent).toEqual([]);
+    },
+    GENERATION_TIMEOUT_MS
+  );
+});
+
+/**
+ * An image file that is not there is the document's defect.
+ *
+ * The render used to fail with `E_INTERNAL` "Failed to load image from …" —
+ * the code this server reserves for its own bugs — so an agent was sent to
+ * report one when the repair was a path in its JSON.
+ */
+describe('image files', () => {
+  /** 1×1 transparent PNG. */
+  const PNG = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+    'base64'
+  );
+
+  const codesOf = (result: Record<string, any>): string[] =>
+    result.diagnostics.map((entry: { code: string }) => entry.code);
+
+  it(
+    'blames the missing docx image, at its path, not the server',
+    async () => {
+      const result = await generate({
+        format: 'docx',
+        document: {
+          ...DOCX,
+          children: [
+            ...DOCX.children,
+            {
+              name: 'image',
+              props: { path: '/nonexistent/chart.png', width: 200 },
+            },
+          ],
+        },
+      });
+
+      expect(result.ok).toBe(false);
+      expect(result.artifact).toBeUndefined();
+      expect(codesOf(result)).not.toContain('E_INTERNAL');
+      expect(result.diagnostics).toContainEqual(
+        expect.objectContaining({
+          severity: 'error',
+          code: 'E_ASSET_UNREADABLE',
+          path: '/children/2/props/path',
+          context: expect.objectContaining({
+            value: '/nonexistent/chart.png',
+            reason: 'missing',
+          }),
+        })
+      );
+    },
+    GENERATION_TIMEOUT_MS
+  );
+
+  it(
+    'blames the missing pptx image the same way',
+    async () => {
+      // Inside baseDir, so the pptx pipeline really does go looking for it —
+      // and it is pptxgenjs, at write time, that finds it absent.
+      const result = await generate({
+        format: 'pptx',
+        document: {
+          ...PPTX,
+          children: [
+            {
+              name: 'slide',
+              props: {},
+              children: [
+                { name: 'text', props: { text: 'Q3 results' } },
+                {
+                  name: 'image',
+                  props: { path: 'missing/chart.png', x: 1, y: 1, w: 2, h: 2 },
+                },
+              ],
+            },
+          ],
+        },
+        baseDir: scratch,
+        filename: 'missing-image.pptx',
+      });
+
+      expect(result.ok).toBe(false);
+      expect(codesOf(result)).not.toContain('E_INTERNAL');
+      expect(result.diagnostics).toContainEqual(
+        expect.objectContaining({
+          severity: 'error',
+          code: 'E_ASSET_UNREADABLE',
+          path: '/children/0/children/1/props/path',
+          context: expect.objectContaining({
+            resolved: path.join(scratch, 'missing', 'chart.png'),
+          }),
+        })
+      );
+    },
+    GENERATION_TIMEOUT_MS
+  );
+
+  it(
+    'renders once the file is where baseDir says',
+    async () => {
+      await fs.mkdir(path.join(scratch, 'assets'));
+      await fs.writeFile(path.join(scratch, 'assets', 'chart.png'), PNG);
+      const result = await generate({
+        format: 'docx',
+        document: {
+          ...DOCX,
+          children: [
+            ...DOCX.children,
+            { name: 'image', props: { path: 'assets/chart.png', width: 20 } },
+          ],
+        },
+        baseDir: scratch,
+        filename: 'with-image.docx',
+      });
+      expect(result.ok).toBe(true);
+      expect(result.artifact).toBeDefined();
+    },
+    GENERATION_TIMEOUT_MS
+  );
+});
+
+/**
+ * Images the document check cannot see, which only the render finds.
+ *
+ * The check reads local paths straight out of the document. A URL that does
+ * not answer, or a path that reaches an image through a block's string slot,
+ * is invisible to it, so the render's failure still escaped as `E_INTERNAL`.
+ * What classifies it now is the name the cores give the error.
+ */
+describe('image sources only the render reads', () => {
+  /** A remote host whose every image is gone. */
+  let host: Server;
+  let origin: string;
+
+  beforeAll(async () => {
+    host = createServer((_request, response) => {
+      response.writeHead(404, { 'content-type': 'text/plain' });
+      response.end('not found');
+    });
+    await new Promise<void>((resolve) =>
+      host.listen(0, '127.0.0.1', () => resolve())
+    );
+    origin = `http://127.0.0.1:${(host.address() as AddressInfo).port}`;
+  });
+
+  afterAll(async () => {
+    host.closeAllConnections();
+    await new Promise((resolve) => host.close(resolve));
+  });
+
+  /** The one diagnostic that blames `source`, after checking nothing blames the server. */
+  function unreadable(result: Record<string, any>, source: string) {
+    expect(result.ok).toBe(false);
+    expect(result.artifact).toBeUndefined();
+    expect(
+      result.diagnostics.map((entry: { code: string }) => entry.code)
+    ).not.toContain('E_INTERNAL');
+    const blamed = result.diagnostics.filter(
+      (entry: { code: string; context?: { source?: string } }) =>
+        entry.code === 'E_ASSET_UNREADABLE' && entry.context?.source === source
+    );
+    expect(blamed).toHaveLength(1);
+    expect(blamed[0].severity).toBe('error');
+    return blamed[0];
+  }
+
+  /** A block whose image path is a string slot, and one invocation filling it. */
+  function slotted(format: 'docx' | 'pptx', src: string) {
+    const size = format === 'pptx' ? { x: 1, y: 1, w: 2, h: 2 } : { width: 40 };
+    const invocation = {
+      name: 'block',
+      props: { ref: 'logo', slots: { src } },
+    };
+    return {
+      name: format,
+      props: {
+        blocks: {
+          logo: {
+            slots: { src: { type: 'string', required: true } },
+            body: [
+              { name: 'image', props: { path: { $slot: '/src' }, ...size } },
+            ],
+          },
+        },
+      },
+      children: [
+        format === 'pptx'
+          ? { name: 'slide', props: {}, children: [invocation] }
+          : { name: 'section', children: [invocation] },
+      ],
+    };
+  }
+
+  it(
+    'blames a docx image URL that does not answer, with the status',
+    async () => {
+      const url = `${origin}/chart.png`;
+      const result = await generate({
+        format: 'docx',
+        document: {
+          ...DOCX,
+          children: [
+            ...DOCX.children,
+            { name: 'image', props: { path: url, width: 200 } },
+          ],
+        },
+      });
+
+      const blamed = unreadable(result, url);
+      // The loader used to swallow why; the status is the half an agent needs.
+      expect(blamed.message).toContain('404');
+    },
+    GENERATION_TIMEOUT_MS
+  );
+
+  it(
+    'blames a docx image path that arrives through a block slot',
+    async () => {
+      const result = await generate({
+        format: 'docx',
+        document: slotted('docx', '/nonexistent/logo.png'),
+      });
+
+      unreadable(result, '/nonexistent/logo.png');
+    },
+    GENERATION_TIMEOUT_MS
+  );
+
+  it(
+    'blames a pptx image URL that does not answer, on office-open',
+    async () => {
+      const url = `${origin}/chart.png`;
+      const result = await generate({
+        format: 'pptx',
+        renderer: 'office-open',
+        document: {
+          ...PPTX,
+          children: [
+            {
+              name: 'slide',
+              props: {},
+              children: [
+                { name: 'text', props: { text: 'Q3 results' } },
+                {
+                  name: 'image',
+                  props: { path: url, x: 1, y: 1, w: 2, h: 2 },
+                },
+              ],
+            },
+          ],
+        },
+        filename: 'remote-image.pptx',
+      });
+
+      const blamed = unreadable(result, url);
+      expect(blamed.message).toContain('404');
+    },
+    GENERATION_TIMEOUT_MS
+  );
+
+  it(
+    'blames a pptx image file office-open cannot read, reached through a block slot',
+    async () => {
+      // Inside baseDir, so office-open really does go to read it.
+      const result = await generate({
+        format: 'pptx',
+        renderer: 'office-open',
+        document: slotted('pptx', 'missing/logo.png'),
+        baseDir: scratch,
+        filename: 'slot-image.pptx',
+      });
+
+      unreadable(result, path.join(scratch, 'missing', 'logo.png'));
     },
     GENERATION_TIMEOUT_MS
   );

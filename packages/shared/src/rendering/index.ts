@@ -25,8 +25,14 @@ export {
   rendererWarning,
 } from './diagnostics';
 
-export type { FeatureRequirement, RendererStatus } from './capabilities';
+export type {
+  AssetUnreadableError,
+  FeatureRequirement,
+  RendererStatus,
+} from './capabilities';
 export {
+  ASSET_UNREADABLE,
+  assetUnreadableError,
   FeatureRequirementCollector,
   RENDERER_DEPENDENCY_MISSING,
   RendererRegistry,

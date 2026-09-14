@@ -1403,7 +1403,14 @@ export function preparePptxQualityDocument(
     });
   });
 
-  collectColorLiterals(document).forEach((literal, index) => {
+  // Brand facts are what the author painted. A theme given by value is the
+  // palette's definition, not colours painted against it — named, the same
+  // theme is never walked — and the theme fact below reports its families.
+  // Placeholders, above, still walk it: a marker blocks generation anywhere.
+  const content = { ...document, props: { ...props } };
+  delete content.props.theme;
+
+  collectColorLiterals(content).forEach((literal, index) => {
     addFact({
       id: `pptx:color:${index}:${literal.path}`,
       kind: 'pptx/color',
@@ -1413,7 +1420,7 @@ export function preparePptxQualityDocument(
     });
   });
 
-  collectFontFamilies(document).forEach((use, index) => {
+  collectFontFamilies(content).forEach((use, index) => {
     addFact({
       id: `pptx:font:${index}:${use.path}`,
       kind: 'pptx/font-family',

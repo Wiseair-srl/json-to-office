@@ -273,6 +273,50 @@ describe('jto_docx_diff', () => {
     });
   });
 
+  // The redline is a third document, so a render that fails over an image has
+  // no pointer into either side of its own. Each side is asked the question
+  // jto_validate asks, and the answer says which document to repair.
+  it(
+    'names the side a missing image is on, not the server',
+    async () => {
+      const { result, isError } = await diff({
+        before: { document: BEFORE },
+        after: {
+          document: {
+            ...AFTER,
+            children: [
+              ...AFTER.children,
+              { name: 'image', props: { path: '/nonexistent/seal.png' } },
+            ],
+          },
+        },
+      });
+
+      expect(isError).toBeFalsy();
+      expect(result.ok).toBe(false);
+      expect(result.artifact).toBeUndefined();
+      const codes = result.diagnostics.map(
+        (entry: { code: string }) => entry.code
+      );
+      expect(codes).not.toContain('E_INTERNAL');
+      expect(
+        result.diagnostics.filter(
+          (entry: { code: string }) => entry.code === 'E_ASSET_UNREADABLE'
+        )
+      ).toEqual([
+        expect.objectContaining({
+          severity: 'error',
+          path: '/children/3/props/path',
+          context: expect.objectContaining({
+            side: 'after',
+            value: '/nonexistent/seal.png',
+          }),
+        }),
+      ]);
+    },
+    GENERATION_TIMEOUT_MS
+  );
+
   it('rejects a date it cannot parse before doing any work', async () => {
     const { result } = await diff({
       before: { document: BEFORE },
