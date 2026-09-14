@@ -92,8 +92,10 @@ export interface RunManifest {
     serverBuilds?: string[];
     /** True when every session ran the build this tree's manifest names. */
     matchedBuild?: boolean;
-    /** Sessions left out of the set, each with the reason given. */
+    /** Sessions, or `<session>@<workspace>`s, left out of the set, each with the reason given. */
     excluded?: Record<string, string>;
+    /** Run label → `<session>@<workspace>`, for runs read out of a session several chats shared. */
+    workspaces?: Record<string, string>;
   };
   os: { platform: string; release: string; arch: string };
   node: string;
