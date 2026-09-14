@@ -6,7 +6,12 @@ import { analyzeDocument } from './analyze.js';
 import { RenderError, renderForJudging } from './render.js';
 import { freezeDefinition } from './shipping-calibration.js';
 import { main } from './shipping-cli.js';
-import { CANDIDATE_DEFINITIONS, promptDigest } from './shipping.js';
+import {
+  CANDIDATE_DEFINITIONS,
+  definitionHash,
+  promptDigest,
+  type ShippingDefinition,
+} from './shipping.js';
 
 vi.mock('./analyze.js', async (original) => ({
   ...(await original<typeof import('./analyze.js')>()),
@@ -190,10 +195,51 @@ describe('pnpm shipping verify', () => {
     ]);
     expect(lines.join('\n')).toContain('2 artifact(s) outside the denominator');
   });
+
+  it('refuses verdicts that do not say what the reviewer was asked', async () => {
+    const set = await writeSet([{ briefId: 'tr-a', format: 'docx' }]);
+    const work = await fs.mkdtemp(path.join(os.tmpdir(), 'shipping-verify-'));
+    dirs.push(work);
+    const human = path.join(work, 'human.json');
+    await fs.writeFile(
+      human,
+      JSON.stringify({
+        readAt: '2026-09-14T09:00:00.000Z',
+        verdicts: [{ set: 'verification', run: 'tr-a', wouldShip: true }],
+      })
+    );
+    const definition = path.join(work, 'definition.json');
+    await fs.writeFile(
+      definition,
+      JSON.stringify(
+        freezeDefinition(CANDIDATE_DEFINITIONS[0], {
+          frozenAt: new Date('2026-09-13T20:00:00.000Z'),
+          evidence: { scores: [], chosen: 'x', reason: 'test', briefs: [] },
+        })
+      )
+    );
+    const lines: string[] = [];
+    const code = await main(
+      [
+        'verify',
+        '--definition',
+        definition,
+        '--set',
+        `verification=${set}`,
+        '--human',
+        human,
+        '--record',
+        path.join(work, 'record.json'),
+      ],
+      (text) => lines.push(text)
+    );
+    expect(code).toBe(1);
+    expect(lines.join('\n')).toContain('carries no question');
+  });
 });
 
 describe('pnpm shipping reanalyze', () => {
-  it('names the documents it could not render instead of counting their pages quietly', async () => {
+  it('leaves a document it could not render out of the facts, and fails so it is rerun', async () => {
     const dir = await writeSet([
       { briefId: 'cd-unrenderable', format: 'pptx' },
       { briefId: 'cd-fine', format: 'pptx' },
@@ -209,15 +255,71 @@ describe('pnpm shipping reanalyze', () => {
     const lines: string[] = [];
     const code = await main(['reanalyze', dir], (text) => lines.push(text));
 
-    expect(code).toBe(0);
+    expect(code).toBe(1);
     const output = lines.join('\n');
     expect(output).toContain(
-      'cd-unrenderable: 11 page(s), counted without a render — no rendered findings'
+      'cd-unrenderable: not rendered — left out of facts.json'
     );
     expect(output).toContain('1 of 2 document(s) could not be rendered');
+    // Its findings would read as none, which a definition takes as clean.
     const facts = JSON.parse(
       await fs.readFile(path.join(dir, 'facts.json'), 'utf8')
     );
-    expect(facts.runs['cd-unrenderable'].pageCountSource).toBe('structural');
+    expect(facts.runs['cd-unrenderable']).toBeUndefined();
+    expect(facts.runs['cd-fine'].pageCountSource).toBe('rendered');
+  });
+});
+
+describe('pnpm shipping freeze', () => {
+  const custom: ShippingDefinition = {
+    id: 'custom-level',
+    summary: 'Level three or above, written into this calibration only.',
+    question: 'v1',
+    judgeAnswer: false,
+    minimumLevel: 3,
+    noIntegrityDefect: false,
+  };
+  const manifest = (hash: string, chosen = custom.id) => ({
+    candidates: [{ definition: custom, score: { id: custom.id, hash } }],
+    choice: { chosen, reason: 'highest kappa (0.70)' },
+    allocation: { calibration: [{ briefs: ['cr-a', 'cr-b'] }] },
+    generatedAt: '2026-09-13T20:00:00.000Z',
+    gitSha: 'abc',
+  });
+  const freeze = async (calibration: unknown) => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'shipping-freeze-'));
+    dirs.push(dir);
+    const file = path.join(dir, 'calibration.json');
+    const out = path.join(dir, 'definition.json');
+    await fs.writeFile(file, JSON.stringify(calibration));
+    const lines: string[] = [];
+    const code = await main(
+      ['freeze', '--calibration', file, '--out', out],
+      (text) => lines.push(text)
+    );
+    return { code, lines, out };
+  };
+
+  it('freezes the definition the calibration scored, not the one the code holds now', async () => {
+    const { code, lines, out } = await freeze(manifest(definitionHash(custom)));
+    expect(code, lines.join('\n')).toBe(0);
+    const frozen = JSON.parse(await fs.readFile(out, 'utf8'));
+    expect(frozen.definition).toEqual(custom);
+    expect(frozen.hash).toBe(definitionHash(custom));
+    expect(frozen.calibration.briefs).toEqual(['cr-a', 'cr-b']);
+  });
+
+  it('refuses a definition whose terms or prompt no longer hash as they were scored', async () => {
+    const { code, lines } = await freeze(manifest('f'.repeat(64)));
+    expect(code).toBe(1);
+    expect(lines.join('\n')).toContain('calibrate again');
+  });
+
+  it('refuses a candidate the calibration never scored', async () => {
+    const { code, lines } = await freeze(
+      manifest(definitionHash(custom), 'nowhere')
+    );
+    expect(code).toBe(1);
+    expect(lines.join('\n')).toContain('"nowhere"');
   });
 });

@@ -37,14 +37,16 @@ export interface HostSummary {
   withIntegrityDefect: number;
   withPageDefects: number;
   withEnvironmentFailure: number;
-  medianIterations: number;
-  medianToolCalls: number;
+  /** Over delivered runs; `null` when none delivered, never a zero nobody measured. */
+  medianIterations: number | null;
+  medianToolCalls: number | null;
   scaffolded: number;
   contactSheet: number;
   recordedCritique: number;
   /** Runs the definition ships; failed runs count as not shipped. */
   ships: number;
-  medianLevel: number;
+  /** Over judged runs; `null` when none was judged. */
+  medianLevel: number | null;
   intervened: number;
 }
 
@@ -58,6 +60,10 @@ export interface HostComparison {
   byFormat: Record<string, { desktop: HostSummary; headless: HostSummary }>;
 }
 
+/** A median of nothing is unavailable, not the zero `median` answers for it. */
+const medianOf = (values: readonly number[]): number | null =>
+  values.length === 0 ? null : median(values);
+
 function summarize(runs: readonly HostRun[]): HostSummary {
   const completed = runs.filter((run) => run.outcome === 'completed');
   return {
@@ -69,14 +75,14 @@ function summarize(runs: readonly HostRun[]): HostSummary {
     withPageDefects: runs.filter((run) => run.pageDefects > 0).length,
     withEnvironmentFailure: runs.filter((run) => run.environmentFailures > 0)
       .length,
-    medianIterations: median(completed.map((run) => run.iterations)),
-    medianToolCalls: median(completed.map((run) => run.toolCalls)),
+    medianIterations: medianOf(completed.map((run) => run.iterations)),
+    medianToolCalls: medianOf(completed.map((run) => run.toolCalls)),
     scaffolded: runs.filter((run) => run.loop.scaffolded).length,
     contactSheet: runs.filter((run) => run.loop.contactSheets > 0).length,
     recordedCritique: runs.filter((run) => run.loop.critiqueRecords > 0).length,
     ships: runs.filter((run) => run.outcome === 'completed' && run.ships)
       .length,
-    medianLevel: median(
+    medianLevel: medianOf(
       runs.flatMap((run) => (run.level === undefined ? [] : [run.level]))
     ),
     intervened: runs.filter((run) => run.intervened).length,
@@ -121,6 +127,9 @@ const verdict = (run: HostRun) =>
 
 const mark = (value: boolean) => (value ? 'yes' : 'no');
 
+const measured = (value: number | null) =>
+  value === null ? '—' : String(value);
+
 /** The comparison as a reader checks it: brief by brief and host by host, then per format. */
 export function hostComparisonMarkdown(comparison: HostComparison): string {
   const lines = [
@@ -148,7 +157,7 @@ export function hostComparisonMarkdown(comparison: HostComparison): string {
       ['headless', hosts.headless],
     ] as const) {
       lines.push(
-        `| ${format} | ${host} | ${summary.runs} | ${summary.delivered} | ${summary.withIntegrityDefect} | ${summary.withPageDefects} | ${summary.withEnvironmentFailure} | ${summary.medianIterations} | ${summary.medianToolCalls} | ${summary.scaffolded} | ${summary.contactSheet} | ${summary.recordedCritique} | ${summary.ships} | ${summary.medianLevel} | ${summary.intervened} |`
+        `| ${format} | ${host} | ${summary.runs} | ${summary.delivered} | ${summary.withIntegrityDefect} | ${summary.withPageDefects} | ${summary.withEnvironmentFailure} | ${measured(summary.medianIterations)} | ${measured(summary.medianToolCalls)} | ${summary.scaffolded} | ${summary.contactSheet} | ${summary.recordedCritique} | ${summary.ships} | ${measured(summary.medianLevel)} | ${summary.intervened} |`
       );
     }
   }

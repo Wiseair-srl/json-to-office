@@ -109,6 +109,12 @@ export function calibrationSheetFromReview(input: {
   sheetPath: (set: string, pair: string) => string;
   now?: Date;
 }): { sheet: CalibrationSheet; judgeSkipped: string[] } {
+  // One name for both sides would read every answer as the first side's.
+  if (input.sides.a === input.sides.b) {
+    throw new Error(
+      `The two sides of a calibration need different set names; both are "${input.sides.a}".`
+    );
+  }
   const judged = new Map(
     input.outcomes.map((outcome) => [outcome.briefId, outcome.verdict])
   );

@@ -10,7 +10,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { runsDirArgument, verdictCounts } from './rejudge-cli.js';
+import { main, runsDirArgument, verdictCounts } from './rejudge-cli.js';
 
 describe('runsDirArgument', () => {
   it('takes the positional argument when it comes first', () => {
@@ -100,5 +100,18 @@ describe('verdictCounts', () => {
       compared: 0,
       changed: 0,
     });
+  });
+});
+
+describe('--question', () => {
+  it('names a question the rubric declares, never a name every object inherits', async () => {
+    for (const question of ['constructor', 'toString', 'v3']) {
+      const lines: string[] = [];
+      const code = await main(['runs/foo', '--question', question], (text) =>
+        lines.push(text)
+      );
+      expect(code, question).toBe(1);
+      expect(lines.join('\n')).toContain(`not "${question}"`);
+    }
   });
 });

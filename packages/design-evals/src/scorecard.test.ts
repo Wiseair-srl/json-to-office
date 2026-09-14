@@ -274,5 +274,17 @@ describe('what a host cannot report', () => {
     expect(summary.medianTurns).toBe(20);
     expect(summary.unobservable).toEqual(['foreignTools', 'tokens', 'turns']);
     expect(summary.contaminationObserved).toBe(2);
+    // A host that reports no usage adds nothing to the totals, whatever
+    // number its record happens to carry.
+    const withUsage = totals([
+      run({ briefId: 'a' }),
+      run({
+        briefId: 'b',
+        cost: { inputTokens: 999, outputTokens: 999, usd: 0 },
+        unobservable: ['tokens'],
+      }),
+    ]);
+    expect(withUsage.totalInputTokens).toBe(100);
+    expect(withUsage.totalOutputTokens).toBe(50);
   });
 });

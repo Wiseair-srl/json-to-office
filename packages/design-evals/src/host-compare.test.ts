@@ -107,6 +107,33 @@ describe('compareHosts', () => {
     expect(byFormat.pptx.desktop).toMatchObject({ withPageDefects: 1 });
   });
 
+  it('reports a median it has nothing to take from as unavailable, not as zero', () => {
+    const { byFormat } = compareHosts(
+      [run({ iterations: 0, toolCalls: 0 })],
+      [run({ outcome: 'failed', level: undefined, ships: false })]
+    );
+    // Measured zeros stay zeros.
+    expect(byFormat.docx.desktop).toMatchObject({
+      medianIterations: 0,
+      medianToolCalls: 0,
+    });
+    // A cohort that delivered nothing and was never judged has no median.
+    expect(byFormat.docx.headless).toMatchObject({
+      medianIterations: null,
+      medianToolCalls: null,
+      medianLevel: null,
+    });
+    const markdown = hostComparisonMarkdown(
+      compareHosts(
+        [run({ iterations: 0, toolCalls: 0 })],
+        [run({ outcome: 'failed', level: undefined, ships: false })]
+      )
+    );
+    expect(markdown).toContain(
+      '| docx | headless | 1 | 0 | 1 | 0 | 0 | — | — |'
+    );
+  });
+
   it('renders a table a reader can check by brief', () => {
     const markdown = hostComparisonMarkdown(compareHosts(desktop, headless));
     expect(markdown).toContain(

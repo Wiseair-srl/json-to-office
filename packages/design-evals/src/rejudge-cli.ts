@@ -94,7 +94,8 @@ export async function main(
     return 1;
   }
   const question = value(argv, 'question') ?? 'v1';
-  if (!(question in SHIPPING_QUESTIONS)) {
+  // Own keys only: `in` would take `constructor` or `toString` as a question.
+  if (!Object.keys(SHIPPING_QUESTIONS).includes(question)) {
     line(
       `--question names one of ${Object.keys(SHIPPING_QUESTIONS).join(', ')}, not "${question}".`
     );

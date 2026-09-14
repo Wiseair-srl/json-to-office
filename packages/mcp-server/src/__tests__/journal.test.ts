@@ -23,7 +23,7 @@ import { Client } from '@modelcontextprotocol/client';
 import { createServer } from '../server.js';
 import { createToolDeps } from '../lib/deps.js';
 import { createOutputRoot } from '../lib/output-root.js';
-import { JOURNAL_ENV } from '../lib/journal.js';
+import { createJournal, JOURNAL_ENV } from '../lib/journal.js';
 import { createMemoryWorkspaceStore } from '../workspace/store.js';
 
 let scratch: string;
@@ -74,8 +74,8 @@ async function ok(name: string, args: Record<string, unknown>): Promise<any> {
   return result.structuredContent;
 }
 
-async function lines(): Promise<any[]> {
-  const text = await fs.readFile(journalPath, 'utf8');
+async function lines(file = journalPath): Promise<any[]> {
+  const text = await fs.readFile(file, 'utf8');
   return text
     .split('\n')
     .filter((line) => line.trim() !== '')
@@ -302,4 +302,106 @@ describe('run journal', () => {
     const info = await ok('jto_info', {});
     expect(info.ok).toBe(true);
   });
+
+  const facts = () =>
+    ({
+      server: { name: 'json-to-office', version: '9.9.9-test' },
+      pid: 1,
+      node: process.version,
+      platform: process.platform,
+      outputRoot: scratch,
+    }) as never;
+
+  it('keeps call order in the file when a generation reads its document slower than the next call finishes', async () => {
+    const file = path.join(scratch, 'order', 'journal.jsonl');
+    const journal = createJournal({ path: file })!;
+    const session = journal.openSession(facts());
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const source = {
+      readRevision: async () => {
+        await held;
+        return docx('Delivered.');
+      },
+    };
+    const generated = session.call(
+      {
+        tool: 'jto_generate',
+        args: { handle: 'ws_order' },
+        result: {
+          structuredContent: {
+            ok: true,
+            diagnostics: [],
+            source: { origin: 'workspace', handle: 'ws_order', revision: 1 },
+          },
+        },
+        durationMs: 5,
+      },
+      source
+    );
+    const validated = session.call(
+      {
+        tool: 'jto_validate',
+        args: { handle: 'ws_order' },
+        result: { structuredContent: { ok: true, diagnostics: [] } },
+        durationMs: 1,
+      },
+      source
+    );
+    // The quick call has every chance to land first.
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    release();
+    await Promise.all([generated, validated]);
+    await journal.flush();
+
+    const calls = (await lines(file)).filter((line) => line.type === 'call');
+    expect(calls.map((line) => [line.seq, line.tool])).toEqual([
+      [1, 'jto_generate'],
+      [2, 'jto_validate'],
+    ]);
+    expect(calls[0].delivered).toMatchObject({
+      handle: 'ws_order',
+      revision: 1,
+    });
+  });
+
+  it.skipIf(process.platform === 'win32')(
+    'tightens a journal file and documents directory that already existed with looser permissions',
+    async () => {
+      const file = path.join(scratch, 'loose', 'journal.jsonl');
+      const documents = `${file}.documents`;
+      await fs.mkdir(path.dirname(file), { recursive: true });
+      await fs.writeFile(file, '');
+      await fs.chmod(file, 0o644);
+      await fs.mkdir(documents);
+      await fs.chmod(documents, 0o755);
+
+      const journal = createJournal({ path: file })!;
+      await journal.openSession(facts()).call(
+        {
+          tool: 'jto_generate',
+          args: { document: docx('Inline.') },
+          result: {
+            structuredContent: {
+              ok: true,
+              diagnostics: [],
+              source: { origin: 'inline' },
+            },
+          },
+          durationMs: 1,
+        },
+        { readRevision: async () => undefined }
+      );
+      await journal.flush();
+
+      const mode = async (target: string) =>
+        (await fs.stat(target)).mode & 0o777;
+      expect(await mode(file)).toBe(0o600);
+      expect(await mode(documents)).toBe(0o700);
+      const [kept] = await fs.readdir(documents);
+      expect(await mode(path.join(documents, kept))).toBe(0o600);
+    }
+  );
 });
