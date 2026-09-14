@@ -1,5 +1,4 @@
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { promises as fs } from 'node:fs';
 import os from 'node:os';
@@ -119,11 +118,29 @@ describe('buildManifest', () => {
     expect(assisted.skillFiles).toHaveLength(2);
   });
 
-  it('identifies the server build by the digest of its entry script', () => {
-    const entry = path.join(repoRoot, 'packages/mcp-server/dist/cli.js');
-    expect(manifest.serverBuild).toBe(
-      createHash('sha256').update(readFileSync(entry)).digest('hex')
-    );
+  it('identifies the server build by the digest of its entry script, and records none without one', async () => {
+    // A tree of its own, so the test needs no built server beside it.
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'manifest-build-'));
+    try {
+      const input = {
+        repoRoot: root,
+        model: 'm',
+        modelParameters: {},
+        serverInstructions: 'i',
+        mode: 'cold' as const,
+        maxRetries: 0,
+        agentSdkVersion: '0',
+      };
+      expect(buildManifest(input).serverBuild).toBeUndefined();
+      const entry = path.join(root, 'packages/mcp-server/dist/cli.js');
+      await fs.mkdir(path.dirname(entry), { recursive: true });
+      await fs.writeFile(entry, 'export {};\n');
+      expect(buildManifest(input).serverBuild).toBe(
+        createHash('sha256').update('export {};\n').digest('hex')
+      );
+    } finally {
+      await fs.rm(root, { recursive: true, force: true });
+    }
   });
 
   it('reports the package versions this run was made with', () => {

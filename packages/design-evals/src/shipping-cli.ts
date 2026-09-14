@@ -10,7 +10,8 @@
  *   pnpm shipping reanalyze <set-dir>
  *     Recompute every completed run's facts with the analyzer in this tree and
  *     write `<set-dir>/facts.json`. For fresh artifacts, whose sheets this
- *     tree also renders.
+ *     tree also renders. A document the analyzer could not render is left out
+ *     and the command fails, so a definition never reads it as clean.
  *
  *   pnpm shipping recorded-facts <set-dir> --page-fill <file> --page-fill-set <key>
  *     Write `<set-dir>/facts.json` from what was recorded when the set was
@@ -67,8 +68,10 @@ import {
 } from './shipping-calibration.js';
 import {
   CANDIDATE_DEFINITIONS,
+  definitionHash,
   promptDigest,
   SHIPPING_QUESTIONS,
+  type ShippingDefinition,
   type ShippingQuestionId,
 } from './shipping.js';
 import { formatKappa } from './statistics.js';
@@ -141,7 +144,7 @@ async function reanalyze(
   line: Line
 ): Promise<number> {
   const runs: Record<string, unknown> = {};
-  let unrendered = 0;
+  const unrendered: string[] = [];
   for (const run of await setRuns(dir)) {
     if (run.outcome !== 'completed') continue;
     const documentFile = path.join(dir, 'runs', run.label, 'document.json');
@@ -153,6 +156,14 @@ async function reanalyze(
       run.format,
       await readJson<unknown>(documentFile)
     );
+    // A failed render still yields a page count, from the structure, and no
+    // rendered finding at all. Kept, it would read as a clean document; left
+    // out, a definition that needs it refuses the artifact until it is rerun.
+    if (measured.pageCountSource === 'structural') {
+      unrendered.push(run.label);
+      line(`  ${run.label}: not rendered — left out of facts.json`);
+      continue;
+    }
     const metrics = documentMetrics({
       diagnostics: measured.diagnostics,
       pages: measured.pages,
@@ -163,18 +174,11 @@ async function reanalyze(
       pageCountSource: measured.pageCountSource,
       qualityByCode: metrics.qualityByCode,
     };
-    // A failed render still yields a page count, from the structure, and no
-    // rendered finding at all: say so, or the facts claim a clean document.
-    const structural = measured.pageCountSource === 'structural';
-    if (structural) unrendered += 1;
-    line(
-      `  ${run.label}: ${metrics.pages} page(s)` +
-        (structural ? ', counted without a render — no rendered findings' : '')
-    );
+    line(`  ${run.label}: ${metrics.pages} page(s)`);
   }
-  if (unrendered > 0) {
+  if (unrendered.length > 0) {
     line(
-      `${unrendered} of ${Object.keys(runs).length} document(s) could not be rendered`
+      `${unrendered.length} of ${Object.keys(runs).length + unrendered.length} document(s) could not be rendered; rerun where LibreOffice renders them`
     );
   }
   const out = path.join(dir, 'facts.json');
@@ -192,7 +196,7 @@ async function reanalyze(
     )
   );
   line(out);
-  return 0;
+  return unrendered.length > 0 ? 1 : 0;
 }
 
 async function recorded(
@@ -498,18 +502,30 @@ async function freeze(argv: readonly string[], line: Line): Promise<number> {
     return 1;
   }
   const calibration = await readJson<{
-    candidates: Array<{ definition: { id: string }; score: unknown }>;
+    candidates: Array<{
+      definition: ShippingDefinition;
+      score: { hash?: string };
+    }>;
     choice: { chosen: string; reason: string };
     allocation: { calibration: Array<{ briefs: string[] }> };
     generatedAt: string;
     gitSha: string;
   }>(calibrationFile);
   const id = values.candidate ?? calibration.choice.chosen;
-  const definition = CANDIDATE_DEFINITIONS.find(
-    (candidate) => candidate.id === id
+  // Frozen as it was scored: the candidate list in code may have moved on
+  // since the calibration, and its scores belong to the definition they read.
+  const scored = calibration.candidates.find(
+    (entry) => entry.definition?.id === id
   );
-  if (!definition) {
-    line(`No candidate "${id}".`);
+  if (!scored) {
+    line(`${calibrationFile} scored no candidate "${id}".`);
+    return 1;
+  }
+  const { definition } = scored;
+  if (definitionHash(definition) !== scored.score.hash) {
+    line(
+      `Candidate "${id}" no longer hashes as it was scored: its terms or the judge prompt changed after calibration; calibrate again before freezing.`
+    );
     return 1;
   }
   const frozen = freezeDefinition(definition, {
@@ -562,6 +578,14 @@ async function verify(
   }
   const frozen = await readJson<FrozenDefinition>(definitionFile);
   const [round] = await loadRounds([humanFile]);
+  // Not compared with the frozen question: that is the judge's, and the
+  // reviewer's wording is the review's own. It has to be on the record.
+  if (!round.file.question) {
+    line(
+      `${humanFile} carries no question: the record keeps the wording the reviewer answered, verbatim, so a verdict file has to state it.`
+    );
+    return 1;
+  }
   if (!round.file.readAt) {
     line(
       `${humanFile} carries no readAt: when the verdicts left the review page is what proves they were not seen before freezing.`

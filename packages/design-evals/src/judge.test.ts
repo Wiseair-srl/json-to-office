@@ -341,6 +341,17 @@ describe('the development pairs, rated in the review page', () => {
     expect(calibrationReport(sheet).n).toBe(3);
   });
 
+  it('refuses two sides with one name, which would score every answer as the first', () => {
+    expect(() =>
+      calibrationSheetFromReview({
+        human,
+        outcomes,
+        sides: { a: 'cold', b: 'cold' },
+        sheetPath: () => '',
+      })
+    ).toThrow(/different/);
+  });
+
   it('refuses an answer naming a side that is neither', () => {
     expect(() =>
       calibrationSheetFromReview({

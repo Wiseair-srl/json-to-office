@@ -244,11 +244,12 @@ export function totals(runs: readonly RunMetrics[]): ScorecardTotals {
     ),
     medianPages: median(completed.map((run) => run.pages)),
     totalToolCalls: runs.reduce((sum, run) => sum + run.toolCalls, 0),
-    totalInputTokens: runs.reduce((sum, run) => sum + run.cost.inputTokens, 0),
-    totalOutputTokens: runs.reduce(
-      (sum, run) => sum + run.cost.outputTokens,
-      0
-    ),
+    totalInputTokens: runs
+      .filter((run) => observes(run, 'tokens'))
+      .reduce((sum, run) => sum + run.cost.inputTokens, 0),
+    totalOutputTokens: runs
+      .filter((run) => observes(run, 'tokens'))
+      .reduce((sum, run) => sum + run.cost.outputTokens, 0),
     ...(usd.length > 0 && {
       totalUsd:
         Math.round(usd.reduce((sum, value) => sum + value, 0) * 1e6) / 1e6,

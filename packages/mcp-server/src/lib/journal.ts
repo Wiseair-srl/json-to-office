@@ -351,11 +351,21 @@ export function createJournal(options: {
     tail = tail.then(work).catch(complain);
     return tail;
   };
+  // `mode` only shapes a file or directory the call creates, so one that
+  // already existed is brought down to owner-only before anything is written
+  // into it.
+  let fileSecured = false;
+  let documentsSecured = false;
+  const write = async (line: JournalLine): Promise<void> => {
+    await fs.mkdir(path.dirname(file), { recursive: true, mode: 0o700 });
+    if (!fileSecured) {
+      await ownerOnly(file, 0o600);
+      fileSecured = true;
+    }
+    await fs.appendFile(file, `${JSON.stringify(line)}\n`, { mode: 0o600 });
+  };
   const append = (line: JournalLine): Promise<void> =>
-    enqueue(async () => {
-      await fs.mkdir(path.dirname(file), { recursive: true, mode: 0o700 });
-      await fs.appendFile(file, `${JSON.stringify(line)}\n`, { mode: 0o600 });
-    });
+    enqueue(() => write(line));
 
   const keep = async (
     document: unknown
@@ -366,6 +376,11 @@ export function createJournal(options: {
     const target = path.join(documentsDir, `${hash}.json`);
     try {
       await fs.mkdir(documentsDir, { recursive: true, mode: 0o700 });
+      if (!documentsSecured) {
+        await ownerOnly(documentsDir, 0o700);
+        documentsSecured = true;
+      }
+      await ownerOnly(target, 0o600);
       await fs.writeFile(target, text, { mode: 0o600 });
     } catch (error) {
       complain(error);
@@ -390,10 +405,12 @@ export function createJournal(options: {
       });
       return {
         id,
-        async call(record, source) {
+        call(record, source) {
           seq += 1;
           const position = seq;
           const at = now().toISOString();
+          let line: Omit<JournalCallLine, 'delivered'>;
+          let reading: Promise<JournalDelivered | undefined>;
           try {
             const payload = payloadOf(record.result);
             const summary =
@@ -406,13 +423,7 @@ export function createJournal(options: {
                         : String(record.error).slice(0, MESSAGE_CHARS),
                   }
                 : summarizeResult(payload);
-            const delivered =
-              record.tool === 'jto_generate' &&
-              isRecord(payload) &&
-              payload.ok === true
-                ? await deliveredDocument(record.args, payload, source, keep)
-                : undefined;
-            await append({
+            line = {
               v: JOURNAL_VERSION,
               type: 'call',
               at,
@@ -422,15 +433,45 @@ export function createJournal(options: {
               durationMs: record.durationMs,
               args: summarizeArgs(record.args),
               result: summary,
-              ...(delivered && { delivered }),
-            });
+            };
+            // Read at once, while the generating revision is still the
+            // current one, and never rejecting: a failed read is a line
+            // without a delivered document, not a lost line.
+            reading =
+              record.tool === 'jto_generate' &&
+              isRecord(payload) &&
+              payload.ok === true
+                ? deliveredDocument(record.args, payload, source, keep).catch(
+                    (error: unknown) => {
+                      complain(error);
+                      return undefined;
+                    }
+                  )
+                : Promise.resolve(undefined);
           } catch (error) {
             complain(error);
+            return Promise.resolve();
           }
+          // The line takes its place in the file now, in call order, and is
+          // written when the read it carries is done — so a generation whose
+          // document is slow to read never lands after the call that followed.
+          return enqueue(async () => {
+            const delivered = await reading;
+            await write({ ...line, ...(delivered && { delivered }) });
+          });
         },
       };
     },
   };
+}
+
+/** Narrow an existing path's permissions; a path not there yet is created with them. */
+async function ownerOnly(target: string, mode: number): Promise<void> {
+  try {
+    await fs.chmod(target, mode);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+  }
 }
 
 /**
