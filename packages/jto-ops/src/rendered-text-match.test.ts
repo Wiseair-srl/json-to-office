@@ -222,6 +222,38 @@ describe('assignInventory', () => {
     ]);
   });
 
+  it('never runs upright text on into the rotated text the stream sets after it', () => {
+    // The document's last upright words and a rotated title are neighbours
+    // in the stream only. The paragraph's tail did not render.
+    const pages = [
+      page([
+        word('Quarterly', 10, 700),
+        word('revenue', 50, 700),
+        word('grew', 90, 700),
+        word('twelve', 300, 400, 11, 40),
+        word('percent', 300, 350, 11, 45),
+      ]),
+    ];
+    const { matches } = assignInventory(pages, [
+      { path: '/p', text: 'Quarterly revenue grew twelve percent' },
+    ]);
+    expect([matches[0].status, matches[0].partial]).toEqual([
+      'mapped',
+      { matchedChars: 20, totalChars: 33 },
+    ]);
+  });
+
+  it("never runs one page's rotated text on into the next page's", () => {
+    const pages = [
+      page([word('Sales', 300, 400, 11, 30)]),
+      page([word('volumes', 300, 400, 11, 45)]),
+    ];
+    const { matches } = assignInventory(pages, [
+      { path: '/axis', text: 'Sales volumes' },
+    ]);
+    expect(matches[0].status).toBe('missing');
+  });
+
   it('keeps its place in the page after taking a rotated axis title', () => {
     // The second "Total" is a cell the inventory does not hold; the entry
     // after "Margin" is the third. Taking the axis title, which the stream
