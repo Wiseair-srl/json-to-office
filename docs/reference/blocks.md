@@ -164,7 +164,7 @@ Invoked with the definition copied into `props.blocks`, `key-takeaways` takes it
 }
 ```
 
-A fourth or sixth item, an item past 25 words or one that breaks onto a second line is a `block_slot_budget` issue at the slot that wrote it (`…/props/slots/items/N`), and a quality finding on the compiled list — a rendered clip, say — reports at the same slot. `jto_validate` with `includeCompiled: true` returns the rule, label, list and rule the invocation lowers to.
+Fewer than three items or more than five is a `block_slot_budget` issue at the list (`…/props/slots/items`); an item past 25 words or one that breaks onto a second line is one at the item that wrote it (`…/props/slots/items/N`), and a quality finding on the compiled list — a rendered clip, say — reports at the same slot. `jto_validate` with `includeCompiled: true` returns the rule, label, list and rule the invocation lowers to.
 
 ![cover on consulting](/blocks/cover-consulting.png)
 

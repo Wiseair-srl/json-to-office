@@ -405,7 +405,7 @@ export const QUALITY_RULES: Record<FormatName, readonly QualityRuleInfo[]> = {
           type: 'number',
           default: 0,
           description:
-            'Headings past which a document owes a contents page; 0 disables the rule.',
+            'Heading count at which a document owes a contents page; 0 disables the rule.',
         },
       ],
     },

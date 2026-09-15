@@ -202,6 +202,8 @@ function reachable(blocks: Rec, names: readonly string[]): string[] {
 interface Composed {
   format: Format;
   document: Rec;
+  /** The theme's file, parsed; absent when the theme has none here. */
+  theme?: { page?: { margins?: { left?: number; right?: number } } };
   inputs: unknown;
 }
 
@@ -263,16 +265,21 @@ async function compose(spec: PreviewSpec): Promise<Composed> {
           ROOT,
           `packages/core-pptx/src/themes/${theme}.pptx.theme.json`
         );
+  // A Windows checkout ends the file's lines in CRLF; the theme is the same.
+  const themeText = fs.existsSync(themeFile)
+    ? fs.readFileSync(themeFile, 'utf8').replace(/\r\n/g, '\n')
+    : undefined;
   return {
     format,
     document,
+    ...(themeText !== undefined && {
+      theme: JSON.parse(themeText) as Composed['theme'],
+    }),
     inputs: {
       generator: GENERATOR,
       composition: spec.composition,
       document,
-      theme: fs.existsSync(themeFile)
-        ? fs.readFileSync(themeFile, 'utf8')
-        : theme,
+      theme: themeText ?? theme,
     },
   };
 }
@@ -354,21 +361,24 @@ async function main(): Promise<void> {
 
   if (check) {
     const stale: string[] = [];
+    const staleBlocks = new Set<string>();
     for (const spec of SPECS) {
       const file = fileFor(spec);
       const recorded = previous.find((entry) => entry.file === file);
       const { inputs } = await compose(spec);
-      if (!recorded || !fs.existsSync(path.join(OUTPUT, file)))
+      if (!recorded || !fs.existsSync(path.join(OUTPUT, file))) {
         stale.push(`${file}: never generated`);
-      else if (recorded.hash !== hashOf(inputs))
+        staleBlocks.add(spec.block);
+      } else if (recorded.hash !== hashOf(inputs)) {
         stale.push(`${file}: its definitions, example or theme changed`);
+        staleBlocks.add(spec.block);
+      }
     }
     if (stale.length > 0) {
+      // `--only` names a block, and a deck preview's file name is not one.
       process.stderr.write(
         `Block previews are stale — run pnpm generate:block-previews${
-          stale.length === 1
-            ? ` --only ${stale[0].split('-consulting')[0]}`
-            : ''
+          staleBlocks.size === 1 ? ` --only ${[...staleBlocks][0]}` : ''
         }:\n${stale.map((line) => `  ${line}`).join('\n')}\n`
       );
       process.exit(1);
@@ -391,7 +401,7 @@ async function main(): Promise<void> {
       if (kept) entries.push(kept);
       continue;
     }
-    const { format, document, inputs } = await compose(spec);
+    const { format, document, theme, inputs } = await compose(spec);
     const dpi = format === 'docx' ? DOCX_DPI : PPTX_DPI;
     const rendered = await preview.renderPreview({
       format,
@@ -417,12 +427,10 @@ async function main(): Promise<void> {
     if (spec.composition === 'slide' || spec.composition === 'page') {
       picture = page;
     } else {
-      // The measure the theme gives a section, from its page margins.
-      const theme = JSON.parse((inputs as { theme: string }).theme) as {
-        page?: { margins?: { left?: number; right?: number } };
-      };
-      const left = (theme.page?.margins?.left ?? 1440) / 20;
-      const right = (theme.page?.margins?.right ?? 1440) / 20;
+      // The measure the theme gives a section, from its page margins; a
+      // theme with no file here renders on the default inch.
+      const left = (theme?.page?.margins?.left ?? 1440) / 20;
+      const right = (theme?.page?.margins?.right ?? 1440) / 20;
       const x0 = px(left - PAD_PT);
       const x1 = page.width - px(right - PAD_PT);
       if (spec.composition === 'chrome') {
