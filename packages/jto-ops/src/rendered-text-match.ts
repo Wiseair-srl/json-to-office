@@ -552,7 +552,18 @@ export function findOccurrences(
       end = next + segments[s].length;
     }
     if (!complete || !alignedToFragments(index, at, end)) continue;
-    hits.push(occurrence(index, at, end));
+    const hit = occurrence(index, at, end);
+    // The stream sets the rotated text of every page after all the upright
+    // text: upright text running on into it, or one page's rotated run into
+    // the next page's, is two neighbours of the index, not text of a page.
+    if (
+      at < index.rotatedFrom
+        ? end > index.rotatedFrom
+        : hit.pageIndex !== hit.endPageIndex
+    ) {
+      continue;
+    }
+    hits.push(hit);
     searchFrom = end;
   }
   return hits;
@@ -616,7 +627,8 @@ export const CHROME_BAND = 0.2;
  * on a fragment boundary is extended character by character; the longest
  * extension wins. Given a page, only a prefix starting on it counts, and it
  * ends where the page does: a slide's text never runs on into the next
- * slide's. Upright text never runs on into the rotated text after it.
+ * slide's. Upright text never runs on into the rotated text after it, and
+ * rotated text never past its own page's run.
  */
 export function longestRenderedPrefix(
   index: StreamIndex,
@@ -637,9 +649,12 @@ export function longestRenderedPrefix(
       continue;
     }
     if (page !== undefined && index.refs[first].pageIndex !== page) continue;
+    const rotated = at >= index.rotatedFrom;
     const limit = Math.min(
-      page === undefined ? index.stream.length : pageEnd(index, first),
-      at < index.rotatedFrom ? index.rotatedFrom : index.stream.length
+      page !== undefined || rotated
+        ? pageEnd(index, first)
+        : index.stream.length,
+      rotated ? index.stream.length : index.rotatedFrom
     );
     if (at + MIN_PARTIAL_PREFIX > limit) continue;
     let length = MIN_PARTIAL_PREFIX;
