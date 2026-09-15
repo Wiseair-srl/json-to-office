@@ -111,7 +111,7 @@
   "devDependencies": {
     "@types/lodash.debounce": "4.0.9",
     "@types/mime-types": "2.1.4",
-    "@types/node": "20.11.0",
+    "@types/node": "22.20.2",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "4.3.4",
@@ -121,7 +121,7 @@
     "vscode-json-languageservice": "5.4.0"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "author": "Paolo Barbato",
   "license": "MIT",

@@ -78,7 +78,7 @@
     "@changesets/cli": "^2.30.0",
     "@commitlint/cli": "^20.5.0",
     "@commitlint/config-conventional": "^20.5.0",
-    "@types/node": "20.11.0",
+    "@types/node": "22.20.2",
     "@typescript-eslint/eslint-plugin": "6.21.0",
     "@typescript-eslint/parser": "6.21.0",
     "@vitest/coverage-v8": "1.1.0",
@@ -93,7 +93,7 @@
     "vitest": "1.6.1"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "packageManager": "pnpm@9.15.9",
   "pnpm": {

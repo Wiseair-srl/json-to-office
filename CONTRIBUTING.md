@@ -4,7 +4,7 @@ Thanks for your interest in contributing! This guide will help you get started.
 
 ## Prerequisites
 
-- Node.js >= 20
+- Node.js >= 22
 - [pnpm](https://pnpm.io/) (version specified in `package.json` `packageManager` field)
 
 ## Setup

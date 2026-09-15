@@ -23,6 +23,6 @@ export default defineConfig({
   ],
   esbuildOptions(options) {
     options.platform = 'node';
-    options.target = 'node18';
+    options.target = 'node22';
   },
 });
