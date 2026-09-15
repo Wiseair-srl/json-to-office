@@ -4,7 +4,7 @@ json-to-office is an MIT-licensed pnpm monorepo maintained at [Wiseair-srl/json-
 
 ## Development setup
 
-You need **Node >= 20** and **pnpm** (the repo pins `pnpm@9.15.9` via the `packageManager` field, so [corepack](https://nodejs.org/api/corepack.html) will pick the right version automatically):
+You need **Node >= 22** and **pnpm** (the repo pins `pnpm@9.15.9` via the `packageManager` field, so [corepack](https://nodejs.org/api/corepack.html) will pick the right version automatically):
 
 ```bash
 git clone https://github.com/Wiseair-srl/json-to-office.git

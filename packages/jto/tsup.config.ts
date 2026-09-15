@@ -54,7 +54,7 @@ export default defineConfig([
     // Exclude client directory from server build
     esbuildOptions(options) {
       options.platform = 'node';
-      options.target = 'node18';
+      options.target = 'node22';
     },
     banner: {
       js: '#!/usr/bin/env node',
@@ -80,7 +80,7 @@ export default defineConfig([
     external: commonExternal,
     esbuildOptions(options) {
       options.platform = 'node';
-      options.target = 'node18';
+      options.target = 'node22';
     },
     onSuccess: async () => {
       cpSync(join('src', 'server', 'prompts'), join('dist', 'prompts'), {

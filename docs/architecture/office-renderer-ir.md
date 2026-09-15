@@ -223,7 +223,7 @@ than this pipeline controls, and fails the entire corpus at once on a runtime
 upgrade with nothing to distinguish that from a real regression. Byte stability
 is still asserted, by rendering the same document twice in one process — which
 is exactly the scope at which it holds. The `test` job runs both ends of the
-advertised `>=20` engine range so neither claim is only theoretical.
+advertised `>=22` engine range so neither claim is only theoretical.
 
 If you need a package to be byte-identical across machines — an artefact hash,
 a signature — pin the Node version alongside the input.

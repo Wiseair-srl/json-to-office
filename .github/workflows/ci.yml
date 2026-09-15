@@ -112,26 +112,26 @@ jobs:
             fi
           fi
 
-          # The advertised range is `>=20` and `test` proves it end to end, but
+          # The advertised range is `>=22` and `test` proves it end to end, but
           # it does not have to prove it on every intermediate commit. A PR
           # carries both ends of the range plus the one OS that has ever failed
           # differently (see the concurrency note in `test`); a version-only
-          # push carries a single leg, because the eight-leg proof for this
+          # push carries a single leg, because the six-leg proof for this
           # exact source tree is the run that just published the version PR.
-          # Anything else — every merge to main included — gets all eight, so
+          # Anything else — every merge to main included — gets all six, so
           # what stands in front of `npm publish` is unchanged.
           full="$(jq -cn '{
             include: [
               ["ubuntu-latest", "windows-latest"][] as $os
-              | [20, 22, 24, 26][] as $node
+              | [22, 24, 26][] as $node
               | {os: $os, "node-version": $node}
             ]
           }')"
 
           if [ "$EVENT_NAME" = 'pull_request' ]; then
-            matrix='{"include":[{"os":"ubuntu-latest","node-version":20},{"os":"ubuntu-latest","node-version":26},{"os":"windows-latest","node-version":20}]}'
+            matrix='{"include":[{"os":"ubuntu-latest","node-version":22},{"os":"ubuntu-latest","node-version":26},{"os":"windows-latest","node-version":22}]}'
           elif [ "$version_only" = true ]; then
-            matrix='{"include":[{"os":"ubuntu-latest","node-version":20}]}'
+            matrix='{"include":[{"os":"ubuntu-latest","node-version":22}]}'
           else
             matrix="$full"
           fi
@@ -150,7 +150,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
       # `build` is content-addressed by turbo (see `inputs` in turbo.json), and
@@ -165,9 +165,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .turbo/cache
-          key: turbo-${{ runner.os }}-node20-${{ github.job }}-${{ github.sha }}
+          key: turbo-${{ runner.os }}-node22-${{ github.job }}-${{ github.sha }}
           restore-keys: |
-            turbo-${{ runner.os }}-node20-
+            turbo-${{ runner.os }}-node22-
 
       - run: pnpm install --frozen-lockfile
 
@@ -185,14 +185,14 @@ jobs:
     needs: guard
     if: github.event_name != 'pull_request' || github.head_ref != 'changeset-release/main'
     strategy:
-      # Both ends of the advertised `>=20` range, not just the old end. The
+      # Both ends of the advertised `>=22` range, not just the old end. The
       # corpus goldens are this pipeline's proof that output has not changed,
       # and they used to hash raw package bytes — which include the runtime's
       # deflate output, so a runtime whose zlib differs fails every case at
       # once while changing nothing about any document. The goldens cover part
       # content instead now (#264); these entries are what keeps that claim
       # exercised rather than asserted. Which legs run is decided by `guard`
-      # above; a merge to main always runs the full eight.
+      # above; a merge to main always runs the full six.
       matrix: ${{ fromJSON(needs.guard.outputs.test-matrix) }}
     runs-on: ${{ matrix.os }}
     steps:
@@ -257,7 +257,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
       # Writer and Impress rather than the `libreoffice` metapackage: they pull
@@ -293,9 +293,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .turbo/cache
-          key: turbo-${{ runner.os }}-node20-${{ github.job }}-${{ github.sha }}
+          key: turbo-${{ runner.os }}-node22-${{ github.job }}-${{ github.sha }}
           restore-keys: |
-            turbo-${{ runner.os }}-node20-
+            turbo-${{ runner.os }}-node22-
 
       - run: pnpm install --frozen-lockfile
 
@@ -319,16 +319,16 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
       - name: Restore the turbo cache
         uses: actions/cache@v4
         with:
           path: .turbo/cache
-          key: turbo-${{ runner.os }}-node20-${{ github.job }}-${{ github.sha }}
+          key: turbo-${{ runner.os }}-node22-${{ github.job }}-${{ github.sha }}
           restore-keys: |
-            turbo-${{ runner.os }}-node20-
+            turbo-${{ runner.os }}-node22-
 
       - run: pnpm install --frozen-lockfile
 
@@ -429,7 +429,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
           registry-url: https://registry.npmjs.org
 

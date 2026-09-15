@@ -9,7 +9,7 @@ Complete reference for the `jto` and `jto-cli` command-line tools: every command
 | `@json-to-office/jto`     | `jto`     | All core commands **plus** the `dev` web playground (React, Monaco, Vite, AI assistant) | Local development          |
 | `@json-to-office/jto-cli` | `jto-cli` | Core commands only — no React/Monaco/Vite/AI dependencies                               | CI, serverless, containers |
 
-Both are ESM packages requiring Node >= 20, built on Commander. `jto` depends on `jto-cli` and re-mounts its command set, so flags and behavior are identical for the shared commands. `jto-cli` registers a hidden `dev` placeholder per format that prints a pointer to install `@json-to-office/jto` and exits `1` (instead of Commander's "unknown command").
+Both are ESM packages requiring Node >= 22, built on Commander. `jto` depends on `jto-cli` and re-mounts its command set, so flags and behavior are identical for the shared commands. `jto-cli` registers a hidden `dev` placeholder per format that prints a pointer to install `@json-to-office/jto` and exits `1` (instead of Commander's "unknown command").
 
 ## Command tree
 

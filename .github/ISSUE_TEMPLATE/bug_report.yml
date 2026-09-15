@@ -42,4 +42,4 @@ body:
     id: node
     attributes:
       label: Node.js version
-      placeholder: e.g. 20.11.0
+      placeholder: e.g. 22.20.0

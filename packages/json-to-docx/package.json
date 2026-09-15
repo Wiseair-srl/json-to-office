@@ -45,7 +45,7 @@
     "docx": "9.7.1"
   },
   "devDependencies": {
-    "@types/node": "20.11.0",
+    "@types/node": "22.20.2",
     "tsup": "8.5.0",
     "typescript": "5.3.3"
   },
@@ -60,7 +60,7 @@
   "author": "Paolo Barbato",
   "license": "MIT",
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "repository": {
     "type": "git",

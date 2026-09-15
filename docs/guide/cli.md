@@ -24,7 +24,7 @@ pnpm add --global @json-to-office/jto-cli
 pnpm dlx @json-to-office/jto docx generate report.json
 ```
 
-Both require Node >= 20. Every command is scoped by format: `jto docx <command>` for Word documents, `jto pptx <command>` for PowerPoint presentations.
+Both require Node >= 22. Every command is scoped by format: `jto docx <command>` for Word documents, `jto pptx <command>` for PowerPoint presentations.
 
 ::: tip
 If you run `jto-cli docx dev` by mistake, it doesn't fail with "unknown command" — it prints a pointer to install `@json-to-office/jto` and exits with code 1. The rest of this guide uses `jto`; substitute `jto-cli` freely for everything except `dev`.

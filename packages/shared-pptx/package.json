@@ -40,7 +40,7 @@
     "@sinclair/typebox": "0.34.38"
   },
   "devDependencies": {
-    "@types/node": "20.11.0",
+    "@types/node": "22.20.2",
     "tsup": "8.5.0",
     "typescript": "5.3.3",
     "vscode-json-languageservice": "5.4.0"
@@ -71,6 +71,6 @@
     "powerpoint"
   ],
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   }
 }

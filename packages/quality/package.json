@@ -31,7 +31,7 @@
     "prepublishOnly": "node ../../scripts/copy-license.cjs"
   },
   "devDependencies": {
-    "@types/node": "20.11.0",
+    "@types/node": "22.20.2",
     "tsup": "8.5.0",
     "typescript": "5.3.3",
     "vitest": "1.6.1"
@@ -57,6 +57,6 @@
     "design-system"
   ],
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   }
 }
