@@ -326,6 +326,118 @@ describe('analyzeRenderedDocument', () => {
     ]);
   });
 
+  describe('word boxes are font metrics, not ink', () => {
+    // Geometry measured off the stock deck templates rendered through
+    // LibreOffice, where every one of these read as a spill or an overlap.
+    const slide = (words: PdfTextWord[]) =>
+      page(words, { widthPt: 960, heightPt: 540 });
+    const boxAt = (yMin: number, heightPt: number) => ({
+      page: 0,
+      region: { xMin: 400, yMin, xMax: 700, yMax: yMin + heightPt },
+      box: { widthPt: 300, heightPt },
+    });
+
+    it('lets a display title set tight keep its ascent and descent past a box it fits', () => {
+      const result = analyzeRenderedDocument({
+        format: 'pptx',
+        pages: [
+          slide([
+            word('Welcome', 403, 95.1, 215, 70.3),
+            word('To', 403, 143.7, 60, 70.3),
+            word('Our', 470, 143.7, 90, 70.3),
+          ]),
+        ],
+        inventory: [
+          entry('/title', 'Welcome To Our', 'slide-text', boxAt(100, 103.6)),
+        ],
+      });
+      expect(result.findings).toEqual([]);
+    });
+
+    it('does not call a label set under a large figure an overlap', () => {
+      const result = analyzeRenderedDocument({
+        format: 'pptx',
+        pages: [
+          slide([
+            word('25M', 476, 150, 130, 100),
+            word('TOTAL', 478, 230.3, 60, 21),
+            word('RESOURCE', 541, 230.3, 64, 21),
+          ]),
+        ],
+        inventory: [
+          entry('/figure', '25M', 'slide-text'),
+          entry('/label', 'TOTAL RESOURCE', 'slide-text'),
+        ],
+      });
+      expect(result.findings).toEqual([]);
+    });
+
+    it('still reports a second line in a box drawn for one', () => {
+      const result = analyzeRenderedDocument({
+        format: 'pptx',
+        pages: [
+          slide([
+            word('POTENTIAL', 415, 298, 110, 30.2),
+            word('RISKS', 415, 322, 60, 30.2),
+          ]),
+        ],
+        inventory: [
+          entry('/label', 'POTENTIAL RISKS', 'slide-text', boxAt(300, 29.1)),
+        ],
+      });
+      expect(result.findings).toEqual([
+        expect.objectContaining({
+          code: QUALITY_CODES.RENDERED_SPILL,
+          path: '/label',
+          evidence: expect.objectContaining({
+            values: { edge: 'bottom', overPt: 17.1 },
+          }),
+        }),
+      ]);
+    });
+  });
+
+  it('reports a slide text box drawn over the figure under it as a spill and an overlap, not as missing', () => {
+    // Geometry measured off a stock deck filled past its box; see the
+    // matching test of the same text in rendered-text-match.test.ts.
+    const result = analyzeRenderedDocument({
+      format: 'pptx',
+      pages: [
+        page(
+          [
+            word('strateg', 626, 293, 60, 26),
+            word('y', 676, 315, 10, 26),
+            word('+100%', 626, 331, 60, 25),
+            word('ZQJTO', 626, 336, 60, 26),
+            word('B9X', 651, 358, 35, 26),
+          ],
+          { widthPt: 960, heightPt: 540 }
+        ),
+      ],
+      inventory: [
+        entry('/label', 'strategy ZQJTOB9X', 'slide-text', {
+          page: 0,
+          region: { xMin: 615.7, yMin: 289.7, xMax: 691.1, yMax: 317.1 },
+          box: { widthPt: 75.4, heightPt: 27.4 },
+        }),
+        entry('/figure', '+100%', 'slide-text', {
+          page: 0,
+          region: { xMin: 615.7, yMin: 329, xMax: 691.1, yMax: 360 },
+          box: { widthPt: 75.4, heightPt: 31 },
+        }),
+      ],
+    });
+    expect(
+      result.findings.map((f) => [
+        f.code,
+        [f.path, ...(f.relatedPaths ?? [])].sort(),
+      ])
+    ).toEqual([
+      [QUALITY_CODES.RENDERED_SPILL, ['/label']],
+      [QUALITY_CODES.RENDERED_OVERLAP, ['/figure', '/label']],
+    ]);
+  });
+
   it('notes a page that carries only its running head and footer as empty', () => {
     // The stray trailing page of a report: the section chrome repeats on it,
     // so the page has words, but none of them are body copy.

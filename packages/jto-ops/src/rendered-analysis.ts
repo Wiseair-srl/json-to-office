@@ -181,6 +181,24 @@ export function renderedDraftFor(fact: RenderedGeometryFact): RenderedDraft {
 export const VISIBLE_SPILL_PT = 2;
 /** Two words overlap when their intersection covers this much of the smaller. */
 const OVERLAP_FRACTION = 0.3;
+/**
+ * The share of a word box, at its top and at its bottom, that is font metric
+ * rather than ink. Poppler sizes a word by its face's ascent and descent —
+ * 1.1 to 1.6 times the type size across the bundled and stock faces — while
+ * capitals start well below the ascent and figures sit on the baseline. On
+ * the stock deck templates, display titles set tight run their word boxes up
+ * to 16% of their height past boxes they visibly fit, and 31% into the line
+ * under them; a label under a large figure sits inside the figure's descent.
+ * Text that truly overflows runs 70% of a line or more. Spill and overlap are
+ * judged on the band that is left, the ink.
+ */
+export const WORD_BOX_SLACK = 0.2;
+
+/** A word's vertical extent with its ascent and descent slack taken off. */
+function inkBand(word: PdfTextWord): { yMin: number; yMax: number } {
+  const slack = WORD_BOX_SLACK * Math.max(0, word.yMax - word.yMin);
+  return { yMin: word.yMin + slack, yMax: word.yMax - slack };
+}
 
 interface FindingDraft {
   ruleId: RenderedRuleId;
@@ -217,15 +235,18 @@ function round(value: number): number {
   return Math.round(value * 10) / 10;
 }
 
-/** Area the two word boxes share, in square points; 0 when they miss. */
+/** Ink the two words share, in square points; 0 when they miss. */
 function intersects(a: PdfTextWord, b: PdfTextWord): number {
+  const inkA = inkBand(a);
+  const inkB = inkBand(b);
   const w = Math.min(a.xMax, b.xMax) - Math.max(a.xMin, b.xMin);
-  const h = Math.min(a.yMax, b.yMax) - Math.max(a.yMin, b.yMin);
+  const h = Math.min(inkA.yMax, inkB.yMax) - Math.max(inkA.yMin, inkB.yMin);
   return w > 0 && h > 0 ? w * h : 0;
 }
 
 function area(w: PdfTextWord): number {
-  return Math.max(0, w.xMax - w.xMin) * Math.max(0, w.yMax - w.yMin);
+  const ink = inkBand(w);
+  return Math.max(0, w.xMax - w.xMin) * Math.max(0, ink.yMax - ink.yMin);
 }
 
 /** Text as a message can quote it: whitespace collapsed, length capped. */
@@ -374,11 +395,52 @@ function draftRenderedFindings(input: RenderedAnalysisInput): RenderedDraft {
     );
   }
 
-  // -- Spill: a matched entry drawn larger than the box it declared.
+  // -- Spill: a matched entry drawn larger than the box it declared. Where
+  // the entry says where its box is — a slide text box — the ink is held to
+  // the box's own edges, top and bottom; a box that only states its size is
+  // held to that size.
   for (const match of matches) {
     const box = match.entry.box;
+    const region = match.entry.region;
     if (!box || match.status !== 'mapped') continue;
     for (const o of match.occurrences) {
+      const boxHeight = box.heightPt;
+      const byEdges = region !== undefined && boxHeight !== undefined;
+      if (region && boxHeight !== undefined) {
+        const words = o.parts.flatMap((part) =>
+          part.words.map((w) => pages[part.pageIndex].words[w])
+        );
+        const inkTop = Math.min(...words.map((w) => inkBand(w).yMin));
+        const inkBottom = Math.max(...words.map((w) => inkBand(w).yMax));
+        const edges = [
+          { edge: 'bottom', over: inkBottom - region.yMax, at: inkBottom },
+          { edge: 'top', over: region.yMin - inkTop, at: inkTop },
+        ].sort((a, b) => b.over - a.over);
+        const [worst] = edges;
+        if (worst.over > VISIBLE_SPILL_PT) {
+          findings.push(
+            finding({
+              ruleId: 'rendered/spill',
+              mapping: 'mapped',
+              page: o.pageIndex + 1,
+              path: match.entry.path,
+              message: `"${excerpt(match.entry.text)}" runs ${round(worst.over)} pt past the ${worst.edge} of its ${round(boxHeight)} pt box on page ${o.pageIndex + 1}.`,
+              suggestion:
+                'Shorten the text, reduce its size, or enlarge the box; the renderer let it spill past the edge the author drew.',
+              evidence: {
+                summary: 'Rendered ink against the edge of the declared box',
+                actual: round(worst.at),
+                expected: round(
+                  worst.edge === 'bottom' ? region.yMax : region.yMin
+                ),
+                unit: 'pt',
+                values: { edge: worst.edge, overPt: round(worst.over) },
+              },
+            })
+          );
+          continue;
+        }
+      }
       const extent = unionBox(o.parts);
       const rendered = {
         heightPt: extent.yMax - extent.yMin,
@@ -386,6 +448,7 @@ function draftRenderedFindings(input: RenderedAnalysisInput): RenderedDraft {
       };
       const worst = (['heightPt', 'widthPt'] as const)
         .filter((axis) => box[axis] !== undefined)
+        .filter((axis) => !(byEdges && axis === 'heightPt'))
         .map((axis) => ({
           axis,
           declared: box[axis] as number,

@@ -265,6 +265,33 @@ describe('text overflow', () => {
     });
   });
 
+  it('records the exported page of each slide, with hidden and disabled slides taking none', () => {
+    // The PDF a preview renders leaves hidden slides out, so the page a
+    // slide's text is on counts only the visible slides before it.
+    const slide = (text: string, props: Record<string, unknown> = {}) => ({
+      name: 'slide',
+      ...props,
+      children: [{ name: 'text', props: { text, x: 1, y: 1, w: 3, h: 1 } }],
+    });
+    const prepared = preparePptxQualityDocument(
+      deck(CANVAS, [
+        slide('First'),
+        slide('Hidden', { props: { hidden: true } }),
+        slide('Disabled', { enabled: false }),
+        slide('Third'),
+      ]) as any
+    );
+    expect(
+      prepared.facts
+        .filter((entry) => entry.kind === 'pptx/text')
+        .map((entry: any) => [entry.text, entry.page, entry.slideHidden])
+    ).toEqual([
+      ['First', 0, undefined],
+      ['Hidden', undefined, true],
+      ['Third', 1, undefined],
+    ]);
+  });
+
   it('resolves style-table font sizes: styled text overflows a box its default size would fit', () => {
     // `title` is 36pt in every built-in theme. The same text at the 18pt
     // theme default fits this box; resolved through the style table it wraps

@@ -55,6 +55,17 @@ describe('required chrome under the client-report profile', () => {
       }),
     ]);
     expect(chromeFindings(doc, { profile: profile('general') })).toEqual([]);
+    // Each says what it expected, and that the profile asked for it.
+    expect(
+      chromeFindings(doc, { profile: profile('client-report') })[0].evidence
+    ).toEqual({
+      actual: 'empty',
+      expected: 'takeaway',
+      values: {
+        source: 'profile',
+        required: ['takeaway', 'source'],
+      },
+    });
   });
 
   it('counts a whitespace-only slot as missing', () => {

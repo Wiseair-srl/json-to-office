@@ -393,6 +393,206 @@ describe('assignInventory', () => {
   });
 });
 
+describe('assignInventory where the format knows the page and the box', () => {
+  // A 16:9 slide; geometry below is measured off verification-set decks
+  // whose every clip and spill finding turned out to be one of these.
+  const slide = (words: PdfTextWord[]): PdfTextPage => ({
+    widthPt: 960,
+    heightPt: 540,
+    words,
+    lines: [],
+  });
+
+  it('never hands out a word another entry already holds', () => {
+    // The title claims its whole line first, so the "Revenue" inside it is
+    // taken; the tracker that says "Revenue" keeps the one it painted.
+    const pages = [
+      page([
+        word('Q3', 10, 100),
+        word('revenue', 50, 100),
+        word('missed', 90, 100),
+        word('Revenue', 10, 300),
+      ]),
+    ];
+    const { matches } = assignInventory(pages, [
+      { path: '/title', text: 'Q3 revenue missed' },
+      { path: '/tracker', text: 'Revenue' },
+    ]);
+    expect(matches.map((m) => m.occurrences[0].parts[0].words)).toEqual([
+      [0, 1, 2],
+      [3],
+    ]);
+  });
+
+  it('takes a tracker from its own box, not from the title under it that opens with the same word', () => {
+    // Reading order takes the title's column before the tracker's, and the
+    // tracker comes first in the deck, so order alone hands it the title's
+    // first word — and the title, its start taken, reads as ambiguous.
+    const pages = [
+      slide([
+        word('REVENUE', 882, 25, 42, 12),
+        word('Revenue', 36, 49, 117, 31),
+        word('missed', 160, 49, 97, 31),
+        word('plan', 264, 49, 58, 31),
+      ]),
+    ];
+    const { matches } = assignInventory(pages, [
+      {
+        path: '/children/0/children/0/props/slots/tracker',
+        text: 'Revenue',
+        page: 0,
+        region: { xMin: 658, yMin: 24, xMax: 924, yMax: 46 },
+      },
+      {
+        path: '/children/0/children/0/props/slots/title',
+        text: 'Revenue missed plan',
+        page: 0,
+        region: { xMin: 36, yMin: 49, xMax: 924, yMax: 142 },
+      },
+    ]);
+    expect(
+      matches.map((m) => [m.status, m.occurrences[0].parts[0].words, m.partial])
+    ).toEqual([
+      ['mapped', [0], undefined],
+      ['mapped', [1, 2, 3], undefined],
+    ]);
+  });
+
+  it("looks for a slide's text on its own slide only", () => {
+    // "13 pts" on one slide and "+1.3 pts" on another fold to the same
+    // needle. Neither may take the other's words, and a delta whose slide
+    // shows nothing is missing there — not mapped onto a slide it is not on.
+    const pages = [
+      slide([word('13', 492, 262, 36, 36), word('pts', 537, 262, 48, 36)]),
+      slide([word('+1.3', 264, 303, 30, 15), word('pts', 298, 303, 20, 15)]),
+      slide([word('Other', 36, 49)]),
+    ];
+    const { matches } = assignInventory(pages, [
+      { path: '/value', text: '13 pts', page: 0 },
+      { path: '/delta', text: '+1.3 pts', page: 1 },
+      { path: '/gone', text: '+1.3 pts', page: 2 },
+    ]);
+    expect(
+      matches.map((m) => [
+        m.entry.path,
+        m.status,
+        m.occurrences.map((o) => o.pageIndex),
+      ])
+    ).toEqual([
+      ['/value', 'mapped', [0]],
+      ['/delta', 'mapped', [1]],
+      ['/gone', 'missing', []],
+    ]);
+  });
+
+  it('finds slide text that overflowed its box onto the figure under it', () => {
+    // Measured off a stock deck filled past its box: the label hard-wraps
+    // mid-word and its last lines land on the figure underneath, on the same
+    // row. No stretch of the stream spells it, so it read as never rendered;
+    // down its box's column, skipping the figure it covers, it is all there.
+    const pages = [
+      slide([
+        word('strateg', 626, 293, 60, 26),
+        word('y', 676, 315, 10, 26),
+        word('+100%', 626, 331, 60, 25),
+        word('ZQJTO', 626, 336, 60, 26),
+        word('B9X', 651, 358, 35, 26),
+      ]),
+    ];
+    const { matches } = assignInventory(pages, [
+      {
+        path: '/label',
+        text: 'strategy ZQJTOB9X',
+        page: 0,
+        region: { xMin: 615.7, yMin: 289.7, xMax: 691.1, yMax: 317.1 },
+      },
+      {
+        path: '/figure',
+        text: '+100%',
+        page: 0,
+        region: { xMin: 615.7, yMin: 329, xMax: 691.1, yMax: 360 },
+      },
+    ]);
+    expect(
+      matches.map((m) => [
+        m.entry.path,
+        m.status,
+        m.occurrences[0]?.parts[0].words,
+      ])
+    ).toEqual([
+      ['/label', 'mapped', [0, 1, 3, 4]],
+      ['/figure', 'mapped', [2]],
+    ]);
+  });
+
+  it('never lands slide text on the same words in another box', () => {
+    // Two boxes of one slide open with the same sentence. The first box's
+    // words do not come out in order, so its own occurrence cannot be read;
+    // the second box's words spell it, and taking them reported a spill of
+    // the whole distance between the two boxes.
+    const pages = [
+      slide([
+        word('Lorem', 534, 330, 28, 13),
+        word('ipsum', 565, 330, 28, 13),
+        word('dolor', 596, 330, 24, 13),
+        word('sit', 623, 330, 12, 13),
+      ]),
+    ];
+    const { matches } = assignInventory(pages, [
+      {
+        path: '/top',
+        text: 'Lorem ipsum dolor sit',
+        page: 0,
+        region: { xMin: 531, yMin: 62, xMax: 684, yMax: 94 },
+      },
+    ]);
+    expect([matches[0].status, matches[0].occurrences]).toEqual([
+      'missing',
+      [],
+    ]);
+  });
+
+  it('does not spell a slide text out of words scattered down its column', () => {
+    const pages = [
+      slide([
+        word('Revenue', 36, 100),
+        word('Q1', 36, 120),
+        word('Q2', 36, 140),
+        word('Q3', 36, 160),
+        word('growth', 36, 180),
+      ]),
+    ];
+    const { matches } = assignInventory(pages, [
+      {
+        path: '/p',
+        text: 'Revenue growth',
+        page: 0,
+        region: { xMin: 30, yMin: 95, xMax: 200, yMax: 115 },
+      },
+    ]);
+    expect(matches[0].status).toBe('missing');
+  });
+
+  it('does not call a slide text cut off on the strength of a prefix another slide painted', () => {
+    const pages = [
+      slide([
+        word('Revenue', 36, 49),
+        word('grew', 70, 49),
+        word('twelve', 104, 49),
+        word('percent', 138, 49),
+      ]),
+      slide([word('Other', 36, 49)]),
+    ];
+    const { matches } = assignInventory(pages, [
+      { path: '/p', text: 'Revenue grew twelve percent this year', page: 1 },
+    ]);
+    expect([matches[0].status, matches[0].partial]).toEqual([
+      'missing',
+      undefined,
+    ]);
+  });
+});
+
 describe('readingOrder', () => {
   // Two cells of a table row, each wrapped over two lines, as poppler 24
   // lists them: line by line across the row.
@@ -489,6 +689,60 @@ describe('readingOrder', () => {
     ).toHaveLength(1);
   });
 
+  it('keeps the two lines of small print beside a display title apart', () => {
+    // Measured off a stock deck: a 45pt title's word boxes span both lines
+    // of the caption set beside it. Rowed with the title, the caption read a
+    // word from each of its lines in turn.
+    const beside = [
+      word('Revenue', 34, 55, 190, 70),
+      word('Streams', 240, 55, 188, 70),
+      word('Lorem', 534, 70, 28, 13),
+      word('ipsum', 565, 70, 28, 13),
+      word('dolor', 596, 70, 24, 13),
+      word('consectetur', 534, 84, 50, 13),
+      word('elit.', 588, 84, 18, 13),
+    ];
+    expect(readingOrder(beside).map((i) => beside[i].text)).toEqual([
+      'Revenue',
+      'Streams',
+      'Lorem',
+      'ipsum',
+      'dolor',
+      'consectetur',
+      'elit.',
+    ]);
+  });
+
+  it('reads the cells under a line of prose cell by cell, not row by row', () => {
+    // A grid of figures right under a paragraph, as a stock deck sets it: the
+    // prose line spans all three cells, so one column is already open when
+    // the cells arrive. Kept as that one column, every cell's second line was
+    // read after its neighbours' first, and no two-line label matched.
+    const grid = [
+      word('Lorem', 51, 240, 60, 13),
+      word('ipsum', 115, 240, 60, 13),
+      word('dolor', 179, 240, 51, 13),
+      word('76K', 51, 254, 43, 37),
+      word('46K', 139, 254, 43, 37),
+      word('56K', 228, 254, 43, 37),
+      word('Marketing', 51, 291, 42, 13),
+      word('Brand', 139, 291, 30, 13),
+      word('Direct', 228, 291, 35, 13),
+      word('spend', 51, 302, 25, 13),
+      word('reach', 139, 302, 25, 13),
+      word('sales', 228, 302, 28, 13),
+    ];
+    expect(readingOrder(grid)).toEqual([0, 1, 2, 3, 6, 9, 4, 7, 10, 5, 8, 11]);
+    const index = indexDocument([page(grid)]);
+    for (const text of [
+      'Lorem ipsum dolor',
+      '76K Marketing spend',
+      'Brand reach',
+      'Direct sales',
+    ])
+      expect(findOccurrences(index, needleSegments(text))).toHaveLength(1);
+  });
+
   it('parts a wrapped label from the value centred between its lines', () => {
     // One label column and one value column. The label wraps, the value is
     // centred against the wrap, and so every row here carries a single
@@ -567,6 +821,54 @@ describe('readingOrder', () => {
       'after',
       '1:',
     ]);
+  });
+
+  it('reads a rotated title as one run ahead of the page, never between the lines of a paragraph', () => {
+    // A deck's takeaway beside a chart. Poppler emitted the chart's rotated
+    // value-axis title between the takeaway's second and third lines; kept
+    // in those slots, "held" and "steady." part and the takeaway reads as cut
+    // off. "of" is wider than tall, so only poppler's line says it is rotated.
+    const words = [
+      word('Two', 666, 209, 31, 22),
+      word('renewals', 701, 209, 66, 22),
+      word('slipped', 771, 209, 52, 22),
+      word('into', 666, 232, 29, 22),
+      word('Q4;', 699, 232, 26, 22),
+      word('demand', 729, 232, 60, 22),
+      word('held', 793, 232, 31, 22),
+      word('Cost', 52, 330, 11, 25),
+      word('of', 52, 318, 11, 8),
+      word('ownership', 52, 262, 11, 52),
+      word('steady.', 666, 256, 52, 22),
+    ];
+    const line = (indices: number[]) => ({
+      xMin: Math.min(...indices.map((i) => words[i].xMin)),
+      yMin: Math.min(...indices.map((i) => words[i].yMin)),
+      xMax: Math.max(...indices.map((i) => words[i].xMax)),
+      yMax: Math.max(...indices.map((i) => words[i].yMax)),
+      words: indices,
+    });
+    const lines = [
+      line([0, 1, 2]),
+      line([3, 4, 5, 6]),
+      line([7, 8, 9]),
+      line([10]),
+    ];
+    expect(readingOrder(words, lines)).toEqual([
+      7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 10,
+    ]);
+    const index = indexDocument([
+      { widthPt: 960, heightPt: 540, words, lines },
+    ]);
+    expect(
+      findOccurrences(
+        index,
+        needleSegments('Two renewals slipped into Q4; demand held steady.')
+      )
+    ).toHaveLength(1);
+    expect(
+      findOccurrences(index, needleSegments('Cost of ownership'))
+    ).toHaveLength(1);
   });
   it('leaves prose and a one-line tabbed header as they lie', () => {
     const prose = [

@@ -52,7 +52,7 @@ const WIDEST: Record<(typeof BLOCKS)[number], Record<string, unknown>> = {
     client: words(8),
     date: words(6),
     confidentiality: words(6),
-    logo: { name: 'image', props: { path: PNG_4X2 } },
+    logo: { name: 'image', props: { path: PNG_4X2, alt: 'Client logo' } },
   },
   'kpi-row': {
     title: ACTION_TITLE,
@@ -161,6 +161,45 @@ describe.each(BLOCKS)('the %s block', (ref) => {
       }
     );
   });
+});
+
+describe('the consulting-deck profile on the house blocks', () => {
+  // The profile is calibrated on these definitions, so each block at its
+  // widest fill has to pass it on the house theme and canvas: a size the
+  // fit pass steps down to, a figure at four items, every requirement the
+  // profile names.
+  //
+  // One exception, stated rather than hidden: the cover draws its logo at
+  // the top of its frame, 24pt from the slide edge, in the band the theme's
+  // 36pt safe area keeps for chrome — where content slides draw their
+  // tracker. A logo is chrome, but no slot role says so yet, so the safe area
+  // reports it; whether the logo takes a role or moves inside the margin is a
+  // design call left open.
+  const KNOWN = new Set([
+    'cover W_QUALITY_SAFE_AREA /children/0/children/0/props/slots/logo',
+  ]);
+  it.each(BLOCKS)(
+    'judges the %s block at its widest fill warning-clean',
+    (ref) => {
+      const doc = deck([[ref, WIDEST[ref]]], {
+        theme: 'consulting',
+        slideWidth: 13.333,
+        slideHeight: 7.5,
+      });
+      expect(
+        analyzePptxQuality(doc, {
+          profile: { id: 'consulting-deck', formats: ['pptx'] },
+        })
+          .diagnostics.filter((finding) => finding.severity !== 'info')
+          .filter(
+            (finding) => !KNOWN.has(`${ref} ${finding.code} ${finding.path}`)
+          )
+          .map(
+            (finding) => `${finding.code} ${finding.path} ${finding.message}`
+          )
+      ).toEqual([]);
+    }
+  );
 });
 
 describe('the kpi-row block', () => {

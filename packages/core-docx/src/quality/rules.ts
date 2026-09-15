@@ -160,14 +160,18 @@ export const docxHeadingHierarchyRule: QualityRule<
             },
             // The fact path already addresses `.../props/level`; RFC 6902
             // `add` replaces an existing member, so this works whether the
-            // level was explicit or defaulted.
-            fixes: [
-              {
-                op: 'add' as const,
-                path: fact.path,
-                value: previousLevel + 1,
-              },
-            ],
+            // level was explicit or defaulted. A block's heading maps to the
+            // invocation or a slot instead, and an `add` there would replace
+            // the block itself: its level is the definition's to change.
+            ...(!fact.generated && {
+              fixes: [
+                {
+                  op: 'add' as const,
+                  path: fact.path,
+                  value: previousLevel + 1,
+                },
+              ],
+            }),
           },
         ];
       }),
@@ -905,6 +909,11 @@ export const docxRequiredChromeRule: QualityRule<
           `the ${profile?.id ?? 'selected'} profile expects one on every ${fact.block}.`,
         suggestion: `Fill the "${fact.slot}" slot. The theme already styles it.`,
         context: { block: fact.block, slot: fact.slot, role: fact.role },
+        evidence: {
+          actual: 'empty',
+          expected: fact.role,
+          values: { source: 'profile', required },
+        },
       }));
   },
 };
@@ -1009,6 +1018,11 @@ export const docxRunningHeadRule: QualityRule<
             suggestion:
               'Invoke a running-head block at the top of the first body section: its section effect fills every later section with the title and n / N.',
             context: { section: fact.index, missing },
+            evidence: {
+              actual: required.filter((part) => fact[part]),
+              expected: required,
+              values: { source: 'profile', fromSection: from },
+            },
           },
         ];
       });
@@ -1078,16 +1092,24 @@ export const docxTypeScaleRule: QualityRule<DocxQualityModel, DocxQualityFact> =
   };
 
 /**
- * How many distinct sizes a document paints, blocks included: the count of
- * what reaches the page rather than of what the author typed. Off until a
- * profile turns it on and sets `maximumSizes`: a theme sets no ceiling of its
- * own, the ceiling is an archetype convention.
+ * How many distinct sizes a document paints, blocks, statistics, lists and
+ * contents included: the count of what reaches the page rather than of what
+ * the author typed. Off until a profile turns it on and sets `maximumSizes`:
+ * a theme sets no ceiling of its own, the ceiling is an archetype convention.
+ *
+ * Counted across the document, not per page, by decision (#332). A report's
+ * pages share one type system, and no page can paint a size the document
+ * does not, so the document's ceiling bounds every page's; the static pass
+ * has no page model to count a page by; and one dense page of the house
+ * blueprint already paints most of the house sizes, so a per-page ceiling
+ * lower than the document's would fail the blueprint's own pages. A deck,
+ * whose slide is its page, counts both (`pptx/size-count`).
  */
 export const docxSizeCountRule: QualityRule<DocxQualityModel, DocxQualityFact> =
   {
     id: 'docx/size-count',
     description:
-      'More distinct text sizes than maximumSizes allows, blocks included. Off until a profile or policy enables it.',
+      'More distinct text sizes across the document than maximumSizes allows, blocks, statistics, lists and contents included; counted per document, which bounds every page. Off until a profile or policy enables it.',
     code: QUALITY_CODES.TYPE_SIZE_COUNT,
     category: 'consistency',
     defaultSeverity: 'warning',
@@ -1231,7 +1253,9 @@ export const docxSectionContentRule: QualityRule<
       (fact): fact is DocxSectionFact => fact.kind === 'docx/section'
     );
     return sections.flatMap((fact): QualityRuleFinding[] => {
-      if (fact.words === 0 && fact.exhibits === 0)
+      // A heading alone, or a contents field alone, still renders: only a
+      // section with nothing of its own on the page is empty.
+      if (!fact.rendersText && fact.exhibits === 0)
         return [
           {
             path: fact.path,
@@ -1410,7 +1434,7 @@ export const docxContentsRule: QualityRule<DocxQualityModel, DocxQualityFact> =
   {
     id: 'docx/contents-missing',
     description:
-      'More headings than minimumHeadings with no table of contents. Off at 0.',
+      'minimumHeadings headings or more with no table of contents. Off at 0.',
     code: QUALITY_CODES.CONTENTS_MISSING,
     category: 'hierarchy',
     defaultSeverity: 'info',
@@ -1501,7 +1525,7 @@ export const DOCX_QUALITY_PROFILES = {
     id: 'client-report',
     formats: ['docx'],
     description:
-      'Client or public-administration report: a running head with page numbers on every section after the cover, a takeaway and a source wherever a block declares them, no heading skipped, every size on the theme scale with at most eight in play, a readable measure, no empty or untitled section, every heading bound to what follows and every figure named, no page rendered empty or left half blank under the running head, and at least one chart or table.',
+      'Client or public-administration report: a running head with page numbers on every section after the cover, a takeaway and a source wherever a block declares them, no heading skipped, every size on the theme scale with at most eleven in play, a readable measure, no empty or untitled section, every heading bound to what follows and every figure named, no page rendered empty or left half blank under the running head, and at least one chart or table.',
     rules: {
       'docx/required-chrome': {
         parameters: { required: ['takeaway', 'source'] },
@@ -1514,7 +1538,14 @@ export const DOCX_QUALITY_PROFILES = {
       },
       'docx/heading-hierarchy': { severity: 'warning' },
       'docx/type-scale': { enabled: true },
-      'docx/size-count': { enabled: true, parameters: { maximumSizes: 8 } },
+      // Measured 2026-09-15 with statistics, lists and contents counted: a
+      // client report built from the house blocks paints up to eleven sizes —
+      // body, heading 1 and 2, subtitle, display, table cells and headers,
+      // source and chrome, and the kpi-row's figure, its unit and its label
+      // (28, 14 and 10pt, or 20 and 10 in a row of four). Every one of the
+      // reports of the #360 checkpoint and the #409 verification set came in
+      // at eleven or fewer; a size past the house set is an ad-hoc one.
+      'docx/size-count': { enabled: true, parameters: { maximumSizes: 11 } },
       'docx/role-drift': { enabled: true },
       // The report blocks place every figure in a captioned block, so a page
       // with no text under the running head is a stray break or an empty
@@ -1546,7 +1577,7 @@ export const DOCX_QUALITY_PROFILES = {
     id: 'technical-report',
     formats: ['docx'],
     description:
-      'Technical report or memo: numbered sections under a running head with page numbers on every section after the cover, a source wherever a block declares one, no heading skipped, every size on the theme scale with at most nine in play, a readable measure, no empty or untitled section, every heading bound to what follows, every figure named, a contents page past eight headings, no page rendered empty or left half blank, and at least one chart or table.',
+      'Technical report or memo: numbered sections under a running head with page numbers on every section after the cover, a source wherever a block declares one, no heading skipped, every size on the theme scale with at most nine in play, a readable measure, no empty or untitled section, every heading bound to what follows, every figure named, a contents page from eight headings, no page rendered empty or left half blank, and at least one chart or table.',
     rules: {
       // A figure or table in a technical report cites where its numbers come
       // from; the takeaway is the client report's ask, the caption is the
@@ -1560,8 +1591,10 @@ export const DOCX_QUALITY_PROFILES = {
       },
       'docx/heading-hierarchy': { severity: 'warning' },
       'docx/type-scale': { enabled: true },
-      // One more than the client report: the contents list paints TOC2 and
-      // the sub-headings paint heading 2.
+      // Measured 2026-09-15: a technical report built from the house blocks
+      // paints eight sizes (no kpi-row; the contents entries at body size),
+      // and every one of the #409 verification set came in at eight or
+      // fewer. Nine leaves room for one deliberate size of the author's.
       'docx/size-count': { enabled: true, parameters: { maximumSizes: 9 } },
       'docx/role-drift': { enabled: true },
       'rendered/empty-page': { severity: 'warning' },

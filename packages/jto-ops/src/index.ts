@@ -63,6 +63,10 @@ export {
   type RequestedFont,
 } from './rendered-analysis.js';
 export {
+  renderedInventoryFromFacts,
+  requestedFontsFromFacts,
+} from './rendered-inventory.js';
+export {
   RENDERED_QUALITY_RULES,
   type RenderedRuleId,
 } from './rendered-rules.js';

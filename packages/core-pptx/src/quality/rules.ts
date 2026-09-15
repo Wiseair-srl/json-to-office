@@ -37,6 +37,7 @@ import type {
   PptxFontFact,
   PptxPlaceholderFact,
   PptxQualityFact,
+  PptxRichTextFact,
   PptxQualityModel,
   PptxSlideFact,
   PptxTableColumnFact,
@@ -951,7 +952,8 @@ export const pptxOffCanvasRule: QualityRule<PptxQualityModel, PptxQualityFact> =
     code: QUALITY_CODES.OFF_CANVAS,
     category: 'integrity',
     defaultSeverity: 'warning',
-    defaultCertainty: 'measured',
+    // The box is measured; the ink inside it is the width model's estimate.
+    defaultCertainty: 'estimated',
     formats: ['pptx'],
     defaultParameters: {
       tolerancePt: DEFAULT_OFF_CANVAS_TOLERANCE_PT,
@@ -1120,6 +1122,11 @@ export const pptxRequiredChromeRule: QualityRule<
           `the ${profile?.id ?? 'selected'} profile expects one on every ${fact.block}.`,
         suggestion: `Fill the "${fact.slot}" slot. The theme already styles it.`,
         context: { block: fact.block, slot: fact.slot, role: fact.role },
+        evidence: {
+          actual: 'empty',
+          expected: fact.role,
+          values: { source: 'profile', required },
+        },
       }));
   },
 };
@@ -1183,6 +1190,12 @@ const PPTX_TYPE_VOCABULARY: TypeVocabulary = {
     'Keep to the theme styles — title, heading, body, label, statistic — and drop the ad-hoc sizes.',
 };
 
+const PPTX_SLIDE_TYPE_VOCABULARY: TypeVocabulary = {
+  subject: 'slide',
+  keepTo:
+    'Give the slide fewer levels: let the title, the body and one supporting size carry it, in the theme styles.',
+};
+
 function pptxThemeFact(
   facts: readonly PptxQualityFact[]
 ): PptxThemeFact | undefined {
@@ -1192,14 +1205,44 @@ function pptxThemeFact(
 }
 
 /** Every size a deck paints, in the vocabulary the shared rules speak. */
-function paintedSizes(facts: readonly PptxQualityFact[]): PaintedSize[] {
-  return textFacts(facts).map((fact) => ({
-    path: fact.path,
-    ...(fact.styleName !== undefined && { role: fact.styleName }),
-    fontSizePt: fact.fontSizePt,
-    ...(fact.sizePath !== undefined && { sizePath: fact.sizePath }),
-    generated: fact.generated,
-  }));
+/** A painted size and the slide it reaches. */
+interface SlideSize extends PaintedSize {
+  slidePath: string;
+}
+
+/**
+ * Every size a deck paints on a slide it exports, runs included: a box of
+ * rich text paints each run at its own size. A hidden slide is left out of
+ * the deck the audience sees, and out of the count.
+ */
+function paintedSizes(facts: readonly PptxQualityFact[]): SlideSize[] {
+  const sizes: SlideSize[] = [];
+  for (const fact of textFacts(facts)) {
+    if (fact.slideHidden) continue;
+    sizes.push({
+      path: fact.path,
+      slidePath: fact.slidePath,
+      ...(fact.styleName !== undefined && { role: fact.styleName }),
+      fontSizePt: fact.fontSizePt,
+      ...(fact.sizePath !== undefined && { sizePath: fact.sizePath }),
+      generated: fact.generated,
+    });
+  }
+  for (const fact of facts) {
+    if (fact.kind !== 'pptx/rich-text') continue;
+    const rich = fact as PptxRichTextFact;
+    if (rich.slideHidden) continue;
+    for (const run of rich.runSizes)
+      sizes.push({
+        path: rich.path,
+        slidePath: rich.slidePath,
+        ...(rich.styleName !== undefined && { role: rich.styleName }),
+        fontSizePt: run.fontSizePt,
+        ...(run.sizePath !== undefined && { sizePath: run.sizePath }),
+        generated: rich.generated,
+      });
+  }
+  return sizes;
 }
 
 /**
@@ -1237,31 +1280,63 @@ export const pptxTypeScaleRule: QualityRule<PptxQualityModel, PptxQualityFact> =
   };
 
 /**
- * How many distinct sizes a deck paints, blocks included: the count of what
- * reaches the slides rather than of what the author typed. Off until a
- * profile turns it on and sets `maximumSizes` — a theme sets no ceiling of
- * its own, the ceiling is an archetype convention.
+ * How many distinct sizes a deck paints, blocks and runs included: the count
+ * of what reaches the slides rather than of what the author typed — across
+ * the deck against `maximumSizes`, and on each slide against
+ * `maximumSizesPerSlide`, a slide being the page a deck is read a page at a
+ * time. Off until a profile turns it on: a theme sets no ceiling of its own,
+ * the ceiling is an archetype convention.
  */
 export const pptxSizeCountRule: QualityRule<PptxQualityModel, PptxQualityFact> =
   {
     id: 'pptx/size-count',
     description:
-      'More distinct text sizes than maximumSizes allows, blocks included. Off until a profile or policy enables it.',
+      'More distinct text sizes than maximumSizes allows across the deck, or than maximumSizesPerSlide allows on one slide (0: no per-slide ceiling), blocks and runs included. Off until a profile or policy enables it.',
     code: QUALITY_CODES.TYPE_SIZE_COUNT,
     category: 'consistency',
     defaultSeverity: 'warning',
     defaultCertainty: 'deterministic',
     formats: ['pptx'],
     defaultEnabled: false,
-    defaultParameters: { maximumSizes: 8 },
-    evaluate: ({ facts, configuration, profile }) =>
-      sizeCountFinding(
-        paintedSizes(facts),
+    defaultParameters: { maximumSizes: 8, maximumSizesPerSlide: 0 },
+    evaluate: ({ facts, configuration, profile }) => {
+      const sizes = paintedSizes(facts);
+      const findings = sizeCountFinding(
+        sizes,
         numberParameter(configuration.parameters, 'maximumSizes', 8),
         pptxThemeFact(facts)?.path ?? '/props',
         profile?.id,
         PPTX_TYPE_VOCABULARY
-      ),
+      ).map((finding) => ({
+        ...finding,
+        context: { ...finding.context, scope: 'deck' },
+      }));
+      const perSlide = numberParameter(
+        configuration.parameters,
+        'maximumSizesPerSlide',
+        0
+      );
+      if (perSlide <= 0) return findings;
+      const bySlide = new Map<string, SlideSize[]>();
+      for (const size of sizes)
+        bySlide.set(size.slidePath, [
+          ...(bySlide.get(size.slidePath) ?? []),
+          size,
+        ]);
+      for (const [slidePath, onSlide] of bySlide)
+        for (const finding of sizeCountFinding(
+          onSlide,
+          perSlide,
+          slidePath,
+          profile?.id,
+          PPTX_SLIDE_TYPE_VOCABULARY
+        ))
+          findings.push({
+            ...finding,
+            context: { ...finding.context, scope: 'slide' },
+          });
+      return findings;
+    },
   };
 
 /**
@@ -1513,9 +1588,10 @@ export const pptxBulletRule: QualityRule<PptxQualityModel, PptxQualityFact> = {
 
 /**
  * Content outside the theme's safe area. Chrome lives in the margin band by
- * design — a tracker at the top edge, a page number at the foot — and so
- * does a deliberate bleed, which touches an edge and spans the whole of the
- * other axis. Everything else belongs inside the margin the theme drew.
+ * design — a tracker at the top edge, a page number and a source line at the
+ * foot — and so does a deliberate bleed, which touches an edge and spans the
+ * whole of the other axis. Everything else belongs inside the margin the
+ * theme drew.
  */
 export const pptxSafeAreaRule: QualityRule<PptxQualityModel, PptxQualityFact> =
   {
@@ -1540,29 +1616,32 @@ export const pptxSafeAreaRule: QualityRule<PptxQualityModel, PptxQualityFact> =
       );
       const safe = canvas?.safeAreaPt;
       if (canvas === undefined || safe === undefined || safe <= 0) return [];
-      const chromePaths = new Set(
+      // Chrome is recognised box by box, on the compiled nodes: every box a
+      // block draws reports at the one invocation, so matching on the
+      // author's pointer exempted all of a block's boxes once any of them was
+      // a footer — and none of them when the chrome was a slot.
+      const chromeNodes = new Set(
         facts
           .filter(
             (fact): fact is PptxChromeSlotFact =>
               fact.kind === 'pptx/chrome-slot' &&
-              (fact.role === 'tracker' || fact.role === 'footer')
+              (fact.role === 'tracker' ||
+                fact.role === 'footer' ||
+                fact.role === 'source')
           )
-          .map((fact) => fact.path)
+          .flatMap((fact) => (fact.nodePath ? [fact.nodePath] : []))
       );
-      const chromeStyles = new Set(['footer', 'tracker']);
-      const styledChrome = new Set(
-        textFacts(facts)
-          .filter(
-            (fact) =>
-              fact.styleName !== undefined && chromeStyles.has(fact.styleName)
-          )
-          .map((fact) => fact.path)
-      );
+      const chromeStyles = new Set(['footer', 'tracker', 'source']);
+      for (const fact of facts)
+        if (
+          (fact.kind === 'pptx/text' || fact.kind === 'pptx/rich-text') &&
+          fact.styleName !== undefined &&
+          chromeStyles.has(fact.styleName)
+        )
+          chromeNodes.add(fact.nodePath);
       return facts
         .filter((fact): fact is PptxBoxFact => fact.kind === 'pptx/box')
-        .filter(
-          (fact) => !chromePaths.has(fact.path) && !styledChrome.has(fact.path)
-        )
+        .filter((fact) => !chromeNodes.has(fact.nodePath))
         .flatMap((fact) => {
           const right = fact.xPt + fact.widthPt;
           const bottom = fact.yPt + fact.heightPt;
@@ -1629,8 +1708,13 @@ export const pptxSlideTitleRule: QualityRule<
   evaluate: ({ facts, configuration }) => {
     const styles = stringListParameter(configuration.parameters, 'titleStyles');
     const titledSlides = new Set<string>();
-    for (const fact of textFacts(facts))
-      if (fact.styleName !== undefined && styles.includes(fact.styleName))
+    // A title written as rich-text runs is a title all the same.
+    for (const fact of facts)
+      if (
+        (fact.kind === 'pptx/text' || fact.kind === 'pptx/rich-text') &&
+        fact.styleName !== undefined &&
+        styles.includes(fact.styleName)
+      )
         titledSlides.add(fact.slidePath);
     for (const fact of facts)
       if (
@@ -1660,6 +1744,48 @@ export const pptxSlideTitleRule: QualityRule<
           values: { source: 'profile' },
         },
       }));
+  },
+};
+
+/**
+ * A picture nothing names. A slide rarely captions its images — its title
+ * says what the slide is for — so the alt text is what tells a reader who
+ * cannot see one what it shows. A background that bleeds off the slide
+ * decorates rather than says, and is left alone. Off until a profile turns it
+ * on, as `docx/figure-label` is.
+ */
+export const pptxFigureLabelRule: QualityRule<
+  PptxQualityModel,
+  PptxQualityFact
+> = {
+  id: 'pptx/figure-label',
+  description:
+    'An image with no alt text, a background that bleeds off the slide aside. Off until a profile or policy enables it.',
+  code: QUALITY_CODES.FIGURE_UNLABELLED,
+  category: 'accessibility',
+  defaultSeverity: 'warning',
+  defaultCertainty: 'deterministic',
+  formats: ['pptx'],
+  defaultEnabled: false,
+  evaluate: ({ facts }) => {
+    // One finding per authored pointer: a definition may draw one image slot
+    // at two frames, and the author writes its alt text once.
+    const unlabelled = new Map<string, PptxImageFact>();
+    for (const fact of facts)
+      if (
+        fact.kind === 'pptx/image' &&
+        (fact as PptxImageFact).alt === undefined &&
+        !(fact as PptxImageFact).bleed
+      )
+        unlabelled.set(fact.path, fact as PptxImageFact);
+    return [...unlabelled.values()].map((fact) => ({
+      path: fact.path,
+      message:
+        'This image carries no alt text, so nothing in the deck says what it shows to a reader who cannot see it.',
+      suggestion:
+        'Write `alt` on the image: what it shows, in a sentence. A decorative background can bleed off the slide instead.',
+      context: { slidePath: fact.slidePath },
+    }));
   },
 };
 
@@ -1733,6 +1859,7 @@ export const PPTX_QUALITY_RULES: QualityRulePack<
     pptxBulletRule,
     pptxSafeAreaRule,
     pptxSlideTitleRule,
+    pptxFigureLabelRule,
     pptxImageAspectRule,
   ],
 };
@@ -1760,7 +1887,7 @@ export const PPTX_QUALITY_PROFILES = {
     id: 'consulting-deck',
     formats: ['pptx'],
     description:
-      'Consulting readout: every content slide leads with a two-line action title, every chart carries a takeaway and a source, content stays inside the theme’s safe area, bullets stay under five and under twelve words, every size is on the theme scale with at most eight in play, and titles of one kind hold one line.',
+      'Consulting readout: every content slide leads with a two-line action title, every chart carries a takeaway and a source, content stays inside the theme’s safe area, a box holds at most five bullets of at most twelve words, every figure carries alt text, every size is on the theme scale with at most nine in the deck and six on a slide, and titles of one kind hold one line.',
     rules: {
       'pptx/required-chrome': {
         parameters: { required: ['takeaway', 'source'] },
@@ -1768,7 +1895,14 @@ export const PPTX_QUALITY_PROFILES = {
       'pptx/action-title': { parameters: { maxLines: 2 } },
       'pptx/slide-density': { parameters: { maximumBodyWords: 90 } },
       'pptx/type-scale': { enabled: true },
-      'pptx/size-count': { enabled: true, parameters: { maximumSizes: 8 } },
+      // Measured 2026-09-15, runs included: the house deck paints nine sizes
+      // (9, 10, 12, 14, 16, 18, 28, 32, 40) and six on its busiest slide, and
+      // so did every one of the 22 verification decks built from its blocks.
+      // A size past these is one no house block paints.
+      'pptx/size-count': {
+        enabled: true,
+        parameters: { maximumSizes: 9, maximumSizesPerSlide: 6 },
+      },
       'pptx/role-drift': { enabled: true },
       'pptx/title-drift': {
         enabled: true,
@@ -1779,6 +1913,7 @@ export const PPTX_QUALITY_PROFILES = {
       },
       'pptx/safe-area': { enabled: true },
       'pptx/slide-title': { enabled: true },
+      'pptx/figure-label': { enabled: true },
     },
   },
 } as const satisfies Record<string, QualityProfile>;

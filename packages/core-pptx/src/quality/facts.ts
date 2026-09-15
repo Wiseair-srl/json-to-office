@@ -67,6 +67,15 @@ export interface PptxCanvasFact extends QualityFact {
 export interface PptxTextFact extends QualityFact {
   kind: 'pptx/text';
   slidePath: string;
+  /**
+   * The 0-based page the slide takes in an export that leaves hidden slides
+   * out, as LibreOffice's PDF export does. Absent on a hidden slide.
+   */
+  page?: number;
+  /** The slide is hidden, so no exported page shows this text. */
+  slideHidden?: boolean;
+  /** The node's pointer in the compiled slide, where `path` is the author's. */
+  nodePath: string;
   text: string;
   fontSizePt: number;
   lineSpacingPt: number;
@@ -105,6 +114,30 @@ export interface PptxTextFact extends QualityFact {
   backgroundHexes?: readonly string[];
 }
 
+/**
+ * Text written as rich-text runs. It reaches the slide like any other text,
+ * so the title, size and rendered checks read it; the estimators that assume
+ * one size and one colour for a whole box — fit, contrast, minimum size —
+ * leave it alone.
+ */
+export interface PptxRichTextFact extends QualityFact {
+  kind: 'pptx/rich-text';
+  slidePath: string;
+  page?: number;
+  slideHidden?: boolean;
+  nodePath: string;
+  text: string;
+  styleName?: string;
+  /** Every size a run paints, with the pointer that wrote it when one did. */
+  runSizes: readonly { fontSizePt: number; sizePath?: string }[];
+  generated: boolean;
+  boxXPt?: number;
+  boxYPt?: number;
+  boxWidthPt?: number;
+  boxHeightPt?: number;
+  rotationDeg: number;
+}
+
 export interface PptxSlideFact extends QualityFact {
   kind: 'pptx/slide';
   bodyWords: number;
@@ -130,7 +163,10 @@ export interface PptxBulletsFact extends QualityFact {
  */
 export interface PptxImageFact extends QualityFact {
   kind: 'pptx/image';
+  slidePath: string;
   alt?: string;
+  /** Touches a slide edge and spans the whole other axis: a background. */
+  bleed: boolean;
   drawnRatio?: number;
   naturalRatio?: number;
 }
@@ -139,6 +175,8 @@ export interface PptxImageFact extends QualityFact {
 export interface PptxBoxFact extends QualityFact {
   kind: 'pptx/box';
   slidePath: string;
+  /** The node's pointer in the compiled slide, where `path` is the author's. */
+  nodePath: string;
   componentName: string;
   /** Draw order within the slide; a higher value is painted later, on top. */
   order: number;
@@ -242,6 +280,8 @@ export interface PptxChromeSlotFact extends QualityFact {
   slot: string;
   role: BlockSlotRole;
   present: boolean;
+  /** Compiled pointer of the text node the slot fills, when one does. */
+  nodePath?: string;
   text?: string;
   /** Lines the slot's text takes in the box the definition gave it. */
   estimatedLines?: number;
@@ -253,6 +293,7 @@ export type PptxQualityFact =
   | PptxBlockSlotFact
   | PptxChromeSlotFact
   | PptxTextFact
+  | PptxRichTextFact
   | PptxSlideFact
   | PptxPlaceholderFact
   | PptxBoxFact
@@ -428,6 +469,61 @@ function horizontalAlign(props: Rec, ctx: ThemeContext): PptxTextFact['align'] {
  * component says `bullet` and its lines are the items — or run by run, where
  * each run that asks for a bullet is one. Anything else is prose.
  */
+/** A little short of the slide's edge still reaches it: rounding, hairlines. */
+const BLEED_TOLERANCE_PT = 2;
+
+/** Styles that frame a slide's body rather than being it. */
+const NOT_BODY_STYLES = new Set([
+  'title',
+  'subtitle',
+  'display',
+  'tracker',
+  'footer',
+  'source',
+]);
+
+/**
+ * The box an image is drawn in. A frame hands a child its own width or height
+ * when the child states none, but an image given one side is drawn at the
+ * asset's aspect, not stretched to the frame's other side — so when the
+ * asset can be read, the unstated side follows it, as generation does.
+ */
+function imageBox(
+  node: { componentName: string; props: Rec; path: string },
+  box: Partial<Box>,
+  statedPropsAt: (path: string) => Rec | undefined
+): Partial<Box> {
+  if (node.componentName !== 'image' || !isCompleteBox(box)) return box;
+  const ratio = readablePptxRatio(node.props);
+  if (ratio === undefined || ratio <= 0) return box;
+  const authored = statedPropsAt(node.path) ?? node.props;
+  const statesWidth = authored.w !== undefined;
+  const statesHeight = authored.h !== undefined;
+  if (statesWidth && !statesHeight)
+    return { ...box, heightPt: box.widthPt / ratio };
+  if (statesHeight && !statesWidth)
+    return { ...box, widthPt: box.heightPt * ratio };
+  return box;
+}
+
+/**
+ * Where an author holds a box's text: the slot that filled it, when a block
+ * drew the box from one, else the box. A definition's literal text belongs to
+ * the invocation, which is where the box itself already maps.
+ */
+function slotOrNode(
+  nodePath: string,
+  authoredPath: (path: string) => string
+): string {
+  for (const prop of ['text', 'runs']) {
+    const compiled = `${nodePath}/props/${prop}`;
+    const authored = authoredPath(compiled);
+    if (authored !== compiled && authored.includes('/props/slots/'))
+      return authored;
+  }
+  return nodePath;
+}
+
 function bulletItems(props: Rec): string[] {
   const runs = Array.isArray(props.runs) ? props.runs : undefined;
   const whole = props.bullet !== undefined && props.bullet !== false;
@@ -448,6 +544,8 @@ function bulletItems(props: Rec): string[] {
 
 /**
  * The asset's own aspect, where the document carries it: a base64 data URI.
+ * Inline SVG is not read in a deck: the stock decks draw their icons within a
+ * few percent of the viewBox, under a tolerance calibrated on raster assets.
  * A `path` is resolved against a base directory at generation time and is
  * deliberately not opened here.
  */
@@ -749,6 +847,7 @@ function collectSlideNodes(
   component: unknown,
   path: string,
   text: TextNode[],
+  richText: TextNode[],
   surfaces: Surface[],
   boxes: BoxNode[],
   contentNodes: ContentNode[],
@@ -775,6 +874,21 @@ function collectSlideNodes(
       text.push({ props, path, text: content, order });
     }
   }
+  if (
+    Array.isArray(props.runs) &&
+    (rec.name === 'text' || rec.name === 'shape')
+  ) {
+    const joined = props.runs
+      .map(asRecord)
+      .map((run) =>
+        run && typeof run.text === 'string'
+          ? `${run.text}${run.breakLine === true ? '\n' : ''}`
+          : ''
+      )
+      .join('');
+    if (joined.trim() !== '')
+      richText.push({ props, path, text: joined, order });
+  }
 
   const componentName = typeof rec.name === 'string' ? rec.name : '';
   if (
@@ -800,6 +914,7 @@ function collectSlideNodes(
       child,
       `${path}/children/${index}`,
       text,
+      richText,
       surfaces,
       boxes,
       contentNodes,
@@ -1058,6 +1173,7 @@ function addSlideFacts(
   roots: ComponentAtPath[],
   slidePath: string,
   renderedIndex: number,
+  page: number | undefined,
   grid: GridConfig | undefined,
   slideWidthIn: number,
   slideHeightIn: number,
@@ -1068,10 +1184,12 @@ function addSlideFacts(
   analyzedContentPaths: Set<string>,
   paletteTokens: readonly string[],
   authoredPropsAt: (path: string) => Rec | undefined,
+  statedPropsAt: (path: string) => Rec | undefined,
   authoredPath: (path: string) => string,
   addFact: (fact: PptxQualityFact) => void
 ): void {
   const nodes: TextNode[] = [];
+  const richNodes: TextNode[] = [];
   const surfaces: Surface[] = [];
   const boxes: BoxNode[] = [];
   const contentNodes: ContentNode[] = [];
@@ -1081,6 +1199,7 @@ function addSlideFacts(
       root.component,
       root.path,
       nodes,
+      richNodes,
       surfaces,
       boxes,
       contentNodes,
@@ -1100,13 +1219,18 @@ function addSlideFacts(
     if (fact) addFact(fact);
   }
   boxes.forEach((node, boxIndex) => {
-    const box = resolveBox(node.props, grid, slideWidthIn, slideHeightIn);
+    const box = imageBox(
+      node,
+      resolveBox(node.props, grid, slideWidthIn, slideHeightIn),
+      statedPropsAt
+    );
     if (!isCompleteBox(box)) return;
     addFact({
       id: `pptx:box:${renderedIndex}:${boxIndex}:${node.path}`,
       kind: 'pptx/box',
       path: node.path,
       slidePath,
+      nodePath: node.path,
       componentName: node.componentName,
       order: node.order,
       opaque: node.opaque,
@@ -1124,10 +1248,10 @@ function addSlideFacts(
   let bodyWords = 0;
   nodes.forEach((node, nodeIndex) => {
     const typography = resolveTypography(node.props, ctx);
-    if (
-      typography.styleName !== 'title' &&
-      typography.styleName !== 'subtitle'
-    ) {
+    // Body text is what the audience is asked to read: a title, a display
+    // assertion and the chrome — tracker, source line, page number — frame
+    // it rather than add to it.
+    if (!NOT_BODY_STYLES.has(typography.styleName ?? '')) {
       bodyWords += node.text.split(/\s+/).filter(Boolean).length;
     }
 
@@ -1259,6 +1383,8 @@ function addSlideFacts(
       kind: 'pptx/text',
       path: node.path,
       slidePath,
+      ...(page === undefined ? { slideHidden: true } : { page }),
+      nodePath: node.path,
       text: node.text,
       fontSizePt: typography.fontSize,
       lineSpacingPt: typography.lineSpacing,
@@ -1276,14 +1402,61 @@ function addSlideFacts(
       align: horizontalAlign(node.props, ctx),
       rotationDeg: asNumber(node.props.rotate) ?? 0,
       bold: typography.bold,
-      ...(asNumber(node.props.fontSize) !== undefined && {
-        sizePath: `${node.path}/props/fontSize`,
-      }),
+      // Only a size the author wrote has a pointer: component defaults and
+      // the fit pass also write `fontSize` into the processed props, onto a
+      // member the document does not have.
+      ...(asNumber(node.props.fontSize) !== undefined &&
+        asNumber(authoredPropsAt(node.path)?.fontSize) !== undefined && {
+          sizePath: `${node.path}/props/fontSize`,
+        }),
       generated: authoredPath(node.path) !== node.path,
       autoFit: node.props.h === undefined && gridPos === undefined,
       ...(colorHex !== undefined && { colorHex }),
       ...(!backgroundUnknown &&
         backgroundHexes.length > 0 && { backgroundHexes }),
+    });
+  });
+
+  richNodes.forEach((node, nodeIndex) => {
+    if (analyzedTextPaths.has(node.path)) return;
+    analyzedTextPaths.add(node.path);
+    const typography = resolveTypography(node.props, ctx);
+    const box = resolveBox(node.props, grid, slideWidthIn, slideHeightIn);
+    const runs = (node.props.runs as unknown[]).map(asRecord);
+    addFact({
+      id: `pptx:rich-text:${renderedIndex}:${nodeIndex}:${node.path}`,
+      kind: 'pptx/rich-text',
+      path: node.path,
+      slidePath,
+      ...(page === undefined ? { slideHidden: true } : { page }),
+      nodePath: node.path,
+      text: node.text,
+      ...(typography.styleName && { styleName: typography.styleName }),
+      runSizes: runs.flatMap((run, index) => {
+        if (!run || typeof run.text !== 'string' || run.text.trim() === '')
+          return [];
+        const own = asNumber(run.fontSize);
+        return [
+          {
+            fontSizePt: own ?? typography.fontSize,
+            ...(own !== undefined && {
+              sizePath: `${node.path}/props/runs/${index}/fontSize`,
+            }),
+          },
+        ];
+      }),
+      generated: authoredPath(node.path) !== node.path,
+      ...(box.xPt !== undefined && { boxXPt: box.xPt }),
+      ...(box.yPt !== undefined && { boxYPt: box.yPt }),
+      ...(box.widthPt !== undefined &&
+        box.widthPt > 0 && {
+          boxWidthPt: box.widthPt,
+        }),
+      ...(box.heightPt !== undefined &&
+        box.heightPt > 0 && {
+          boxHeightPt: box.heightPt,
+        }),
+      rotationDeg: asNumber(node.props.rotate) ?? 0,
     });
   });
 
@@ -1330,10 +1503,22 @@ function addSlideFacts(
         !['contain', 'cover'].includes(
           String(asRecord(authored.sizing)?.type ?? '')
         );
+      const widthPt = slideWidthIn * 72;
+      const heightPt = slideHeightIn * 72;
+      // A background runs edge to edge along one axis from the slide's edge,
+      // as the safe area reads a bleed.
+      const bleed =
+        isCompleteBox(resolved) &&
+        ((resolved.xPt <= BLEED_TOLERANCE_PT &&
+          resolved.xPt + resolved.widthPt >= widthPt - BLEED_TOLERANCE_PT) ||
+          (resolved.yPt <= BLEED_TOLERANCE_PT &&
+            resolved.yPt + resolved.heightPt >= heightPt - BLEED_TOLERANCE_PT));
       addFact({
         id: `pptx:image:${renderedIndex}:${box.path}`,
         kind: 'pptx/image',
         path: box.path,
+        slidePath,
+        bleed,
         ...(typeof alt === 'string' && alt.trim() !== '' && { alt }),
         ...(stretched &&
           isCompleteBox(resolved) &&
@@ -1344,11 +1529,11 @@ function addSlideFacts(
       });
     }
     const bullets = bulletItems(box.props);
-    if (bullets.length > 1)
+    if (bullets.length > 0)
       addFact({
         id: `pptx:bullets:${renderedIndex}:${box.path}`,
         kind: 'pptx/bullets',
-        path: box.path,
+        path: slotOrNode(box.path, authoredPath),
         slidePath,
         items: bullets.length,
         longestWords: Math.max(
@@ -1553,11 +1738,17 @@ export function preparePptxQualityDocument(
   // what it inherited; for block content the authored node is the slot.
   const authoredPropsAt = (pointer: string): Rec | undefined =>
     authoredPropsAtPointer(document, authoredPath(pointer));
+  // What the compiled node states before frames lend it their sides: for
+  // block content that is the definition's frame over the slot's props.
+  const statedPropsAt = (pointer: string): Rec | undefined =>
+    authoredPropsAtPointer(expanded.document, pointer);
 
+  let exportedPages = 0;
   processed.slides.forEach((slide, renderedIndex) => {
     const authoredIndex = slideIndexes[renderedIndex];
     if (authoredIndex === undefined) return;
     const slidePath = `/children/${authoredIndex}`;
+    const page = slide.hidden === true ? undefined : exportedPages++;
     const roots: ComponentAtPath[] = slide.components.map(
       (component, index) => ({
         component,
@@ -1569,6 +1760,7 @@ export function preparePptxQualityDocument(
       roots,
       slidePath,
       renderedIndex,
+      page,
       processed.grid,
       processed.slideWidth,
       processed.slideHeight,
@@ -1587,6 +1779,7 @@ export function preparePptxQualityDocument(
       analyzedContentPaths,
       paletteTokens,
       authoredPropsAt,
+      statedPropsAt,
       authoredPath,
       addFact
     );
@@ -1601,11 +1794,12 @@ export function preparePptxQualityDocument(
   }
   const slotTextNodes = textNodesBySlot(processed, slideIndexes, sourceMap);
   for (const role of blockSlotRoles(context.document, expanded.blocks)) {
+    // A slot of nothing but whitespace draws nothing, however it was filled.
     const present =
       role.value !== undefined &&
       role.value !== null &&
-      role.value !== '' &&
       role.value !== false &&
+      (typeof role.value !== 'string' || role.value.trim() !== '') &&
       (!Array.isArray(role.value) || role.value.length > 0);
     const bound = slotTextNodes.get(role.path);
     let measured: { estimatedLines: number; fontSizePt: number } | undefined;
@@ -1640,6 +1834,7 @@ export function preparePptxQualityDocument(
       slot: role.slot,
       role: role.role,
       present,
+      ...(bound && { nodePath: bound.path }),
       ...(typeof role.value === 'string' && { text: role.value }),
       ...measured,
     });
@@ -1677,14 +1872,14 @@ function textNodesBySlot(
   processed: ProcessedPresentation,
   slideIndexes: readonly number[],
   sourceMap: BlockSourceMap
-): Map<string, { props: Rec }> {
-  const found = new Map<string, { props: Rec }>();
+): Map<string, { props: Rec; path: string }> {
+  const found = new Map<string, { props: Rec; path: string }>();
   const visit = (component: PptxComponentInput, path: string): void => {
     if (component.enabled === false) return;
     if (component.name === 'text') {
       const origin = toAuthoredPointer(sourceMap, `${path}/props/text`);
       if (origin !== `${path}/props/text` && !found.has(origin))
-        found.set(origin, { props: asRecord(component.props) ?? {} });
+        found.set(origin, { props: asRecord(component.props) ?? {}, path });
     }
     (component.children ?? []).forEach((child, index) =>
       visit(child, `${path}/children/${index}`)

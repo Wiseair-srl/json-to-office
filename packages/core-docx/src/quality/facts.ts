@@ -48,6 +48,7 @@ import {
   type BlockSourceMap,
 } from '../blocks';
 import { resolveFontSize } from '../styles/utils/styleHelpers';
+import { STATISTIC_SIZE_POINTS } from '../styles/themeToStyles';
 import { getThemeStyles } from '../themes/defaults';
 import { relativeLengthToTwips } from '../utils/widthUtils';
 import probe from 'probe-image-size';
@@ -117,6 +118,12 @@ export interface DocxHeadingFact extends QualityFact {
   kind: 'docx/heading';
   level: number;
   previousLevel?: number;
+  /**
+   * A block compiled the heading. Its level is then the definition's or a
+   * slot's, and `path` names that source — an invocation, a slot — not a
+   * level prop a patch could set.
+   */
+  generated: boolean;
   /**
    * Whether the heading is bound to what follows it, from its own prop or
    * from the style the theme gives its level. Word breaks a page between an
@@ -323,6 +330,8 @@ export interface DocxSectionFact extends QualityFact {
   /** Figures a section carries without words: a chart, a table, an image. */
   exhibits: number;
   headings: number;
+  /** Any text of its own reaches the page: a heading, a contents field, copy. */
+  rendersText: boolean;
 }
 
 /**
@@ -1082,6 +1091,85 @@ function textSizeFact(
 }
 
 /**
+ * Sizes a statistic paints: its figure, the unit and trend set beside the
+ * figure at half its size, and the description under it. None is authored —
+ * the component takes a `size` name, not points — so these count toward what
+ * the page shows and offer nothing to patch. The figure's medium size and the
+ * description follow the theme when it restyles the component's own styles.
+ */
+function statisticSizeFacts(
+  props: Rec,
+  path: string,
+  typography: Typography
+): Array<Omit<DocxTextSizeFact, 'generated'>> {
+  const named = STATISTIC_SIZE_POINTS[String(props.size)];
+  const styled = (id: string): number | undefined =>
+    finiteNumber(asRecord(typography.styles[id])?.size);
+  const numberPoints = named ?? STATISTIC_SIZE_POINTS.medium;
+  const painted =
+    props.size === 'small' || props.size === 'large'
+      ? numberPoints
+      : styled('StatisticNumber') ?? numberPoints;
+  const present = (value: unknown) =>
+    value !== undefined && value !== null && String(value).trim() !== '';
+  const facts: Array<Omit<DocxTextSizeFact, 'generated'>> = [];
+  const add = (suffix: string, role: string, fontSizePt: number) =>
+    facts.push({
+      id: `docx:text-size:${path}:${suffix}`,
+      kind: 'docx/text-size',
+      path,
+      role,
+      fontSizePt,
+      authored: false,
+    });
+  if (present(props.number)) add('number', 'statistic', painted);
+  if (present(props.unit) || present(props.trend) || present(props.trendValue))
+    // The compiler sets unit and trend at half the figure in half-points,
+    // floored at 6pt.
+    add(
+      'suffix',
+      'statistic-suffix',
+      Math.max(12, Math.round(numberPoints)) / 2
+    );
+  if (present(props.description))
+    add(
+      'description',
+      'statistic-description',
+      styled('StatisticDescription') ?? 10
+    );
+  return facts;
+}
+
+/**
+ * Sizes a contents field paints: one per level it collects, where the theme
+ * styles that level's entries at a size of its own. An entry the theme leaves
+ * unstyled reads at the body size the document already counts.
+ */
+function tocSizeFacts(
+  props: Rec,
+  path: string,
+  typography: Typography
+): Array<Omit<DocxTextSizeFact, 'generated'>> {
+  const depth = asRecord(props.depth);
+  const from = finiteNumber(depth?.from) ?? 1;
+  const to = finiteNumber(depth?.to) ?? 3;
+  const facts: Array<Omit<DocxTextSizeFact, 'generated'>> = [];
+  for (let level = from; level <= to; level++) {
+    const size = finiteNumber(asRecord(typography.styles[`TOC${level}`])?.size);
+    if (size === undefined) continue;
+    facts.push({
+      id: `docx:text-size:${path}:toc${level}`,
+      kind: 'docx/text-size',
+      path,
+      role: `toc${level}`,
+      fontSizePt: size,
+      authored: false,
+    });
+  }
+  return facts;
+}
+
+/**
  * Sizes a table paints. Two kinds, because a table has two: the size an
  * author wrote on a cell, a column's defaults or the table's — reported at
  * the pointer that wrote it — and the size every cell nobody touched
@@ -1369,6 +1457,21 @@ export function prepareDocxQualityDocument(
     SERIES_COLOR_TOKENS.filter((token) => paletteHexes[token] !== undefined);
   const authoredPropsAt = (pointer: string): Rec | undefined =>
     asRecord(asRecord(nodeAtPointer(context.document, pointer))?.props);
+  // A size the theme's component defaults merged into the props reaches the
+  // page like an authored one, but the author never wrote it: no pointer to
+  // patch, and no `replace` of a member the document does not have.
+  const ownSize = (
+    fact: Omit<DocxTextSizeFact, 'generated'> | undefined
+  ): Omit<DocxTextSizeFact, 'generated'> | undefined => {
+    if (!fact?.sizePath) return fact;
+    const written = finiteNumber(
+      asRecord(authoredPropsAt(fact.path)?.font)?.size
+    );
+    if (written !== undefined) return fact;
+    const inherited = { ...fact, authored: false };
+    delete inherited.sizePath;
+    return inherited;
+  };
   const roleSizesPt: Record<string, number> = {};
   for (const key of Object.keys(typography.styles)) {
     const size = effectiveFontSize(
@@ -1576,9 +1679,28 @@ export function prepareDocxQualityDocument(
       const fact = lineBoxFact(node, props, path, typography, context.document);
       if (fact) addFact(fact);
       if (typeof props.text === 'string' && props.text.trim() !== '') {
-        const fact = textSizeFact(node, props, path, typography);
+        const fact = ownSize(textSizeFact(node, props, path, typography));
         if (fact) addFact({ ...fact, generated: authoredPath(path) !== path });
       }
+    }
+
+    // Sizes other text components paint, so a count of what reaches the page
+    // counts them too: a list's items share one size, a statistic sets three.
+    if (
+      node.name === 'list' &&
+      Array.isArray(props.items) &&
+      props.items.length > 0
+    ) {
+      const fact = ownSize(textSizeFact(node, props, path, typography, 'list'));
+      if (fact) addFact({ ...fact, generated: authoredPath(path) !== path });
+    }
+    if (node.name === 'statistic') {
+      for (const fact of statisticSizeFacts(props, path, typography))
+        addFact({ ...fact, generated: authoredPath(path) !== path });
+    }
+    if (node.name === 'toc') {
+      for (const fact of tocSizeFacts(props, path, typography))
+        addFact({ ...fact, generated: authoredPath(path) !== path });
     }
 
     if (node.name === 'image' || node.name === 'visual') {
@@ -1610,6 +1732,7 @@ export function prepareDocxQualityDocument(
         kind: 'docx/heading',
         path: `${path}/props/level`,
         level,
+        generated: authoredPath(path) !== path,
         keepNext:
           props.keepNext === true ||
           (props.keepNext === undefined && styleKeepNext === true),
@@ -1667,6 +1790,9 @@ export function prepareDocxQualityDocument(
         .reduce((total, fact) => total + wordsOf(fact.text), 0),
       exhibits: own.filter((fact) => exhibitKinds.has(fact.kind)).length,
       headings: texts.filter((fact) => fact.role === 'heading').length,
+      // Anything the reader sees on the section's own pages: a heading, a
+      // contents field, body copy. Running heads repeat onto any page.
+      rendersText: texts.some((fact) => fact.role !== 'chrome'),
     });
     // A `columns` component gives the copy inside it a measure of its own,
     // which this section-level width is not. Rather than answer with the
@@ -1766,13 +1892,24 @@ function isCaptioned(
   return facts.some((fact) => {
     if (fact.kind !== 'docx/text') return false;
     const text = fact as DocxTextFact;
-    // Beside the image, inside it, or at the block that placed it.
+    // A text fact points at a prop; the paragraph it belongs to is the node.
+    const node = text.path.replace(/\/props(?:\/.*)?$/, '');
+    // Right before or after the image, inside it, or at the block that
+    // placed it. Further away, a "Figure" paragraph captions something else.
+    const beside =
+      siblingOf(node) === siblingOf(image) &&
+      Math.abs(indexIn(node) - indexIn(image)) === 1;
     const near =
-      siblingOf(text.path) === siblingOf(image) ||
+      beside ||
       text.path.startsWith(`${image}/`) ||
-      image.startsWith(`${text.path}/`);
+      image.startsWith(`${node}/`);
     return near && (text.role === 'caption' || CAPTION_LABEL.test(text.text));
   });
+}
+
+/** The index a pointer takes in its array; NaN when it ends in a key. */
+function indexIn(pointer: string): number {
+  return Number(pointer.slice(pointer.lastIndexOf('/') + 1));
 }
 
 /** The array a pointer sits in, so two siblings compare equal. */

@@ -38,6 +38,16 @@
  * 87% of any visible spill flagged, no OVERFLOW false alarms, and zero
  * warnings on the authored reference templates. The remaining misses belong
  * to a `rendered`-certainty pass built on extractPdfTextGeometry.
+ *
+ * That pass is scored here too (#344), on the same PDFs through the inventory
+ * `jto_preview` builds: a rendered clip or spill at the mutated box. Block
+ * slots are not mutated — their budgets refuse the filler before anything
+ * renders. Measured 2026-09-15 (50 comparable measurements over the three
+ * stock decks): the estimator flagged 39% of >1-line spills as OVERFLOW; the
+ * rendered pass flagged 100% (31/31), including all 19 the estimator left
+ * below OVERFLOW, 84% of any visible spill (38/45; the misses cross the box
+ * only with descenders, which the ink band leaves out), and none of the 5
+ * boxes that fit.
  */
 
 import { execFile } from 'child_process';
@@ -45,11 +55,14 @@ import { promises as fs, readdirSync, readFileSync } from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { describe, expect, it } from 'vitest';
+import { QUALITY_CODES } from '@json-to-office/quality';
 import { PptxFormatAdapter } from './format-adapter';
 import {
   extractPdfTextGeometry,
   pdftotextAvailable,
 } from './pdf-text-geometry';
+import { analyzeRenderedDocument } from './rendered-analysis';
+import { renderedInventoryFromFacts } from './rendered-inventory';
 import { normalizeForMatch } from './rendered-text-match';
 
 const TEMPLATES_DIR = path.resolve(
@@ -294,6 +307,8 @@ interface CaseResult {
   fillerChars: number;
   predicted: PredictedVerdict;
   predictedMarginPt: number | undefined;
+  /** Whether the rendered pass reported a clip or spill at the box. */
+  rendered: boolean;
   actual: ActualVerdict | 'missing' | 'ambiguous';
   actualSpillPt: number | undefined;
 }
@@ -400,6 +415,9 @@ describe.skipIf(!RUN)(
               fact.boxWidthPt !== undefined &&
               fact.boxHeightPt !== undefined &&
               !fact.path.startsWith('/props/templates/') &&
+              // A block slot has a budget the filler would break, and the
+              // generator refuses a slot over budget before anything renders.
+              !fact.path.includes('/props/slots/') &&
               mutateBoxText(structuredClone(original), fact.path, 'probe')
           );
           const candidates = measurable.filter(comparableGroundTruthBox);
@@ -529,15 +547,35 @@ describe.skipIf(!RUN)(
         expect(probeWord!.yMin).toBeGreaterThanOrEqual(72 - 1);
         expect(probeWord!.yMax).toBeLessThanOrEqual(180 + 1);
 
-        // -- Score each deck: prediction from analyzeQuality, truth from PDF.
+        // -- Score each deck: prediction from analyzeQuality, the rendered
+        //    pass over the same PDF, truth from the sentinel.
         const results: CaseResult[] = [];
         for (const deck of decks) {
           const analysis = await adapter.analyzeQuality(deck.doc, {
             customThemes: customThemes as any,
           } as any);
-          const pages = await extractPdfTextGeometry(deck.pdfPath).catch(
-            () => null
-          );
+          const pages = await extractPdfTextGeometry(deck.pdfPath, {
+            layout: true,
+          }).catch(() => null);
+          const renderedPaths = new Set<string>();
+          if (pages) {
+            const prepared = corePptx.preparePptxQualityDocument(
+              deck.doc as any,
+              { customThemes: customThemes as any }
+            );
+            const pass = analyzeRenderedDocument({
+              format: 'pptx',
+              pages,
+              inventory: renderedInventoryFromFacts('pptx', prepared.facts),
+            });
+            for (const finding of pass.findings) {
+              if (
+                finding.code === QUALITY_CODES.RENDERED_SPILL ||
+                finding.code === QUALITY_CODES.RENDERED_CLIP
+              )
+                renderedPaths.add(finding.path);
+            }
+          }
           for (const kase of deck.cases) {
             const diag = analysis.diagnostics.find(
               (d: any) =>
@@ -579,6 +617,7 @@ describe.skipIf(!RUN)(
               fillerChars: kase.fillerChars,
               predicted,
               predictedMarginPt,
+              rendered: renderedPaths.has(kase.fact.path),
               actual,
               actualSpillPt,
             });
@@ -646,9 +685,30 @@ describe.skipIf(!RUN)(
         lines.push(
           `  estimator bias (predicted−actual spill, pt):  median ${median.toFixed(1)}  p10 ${biases[Math.floor(biases.length * 0.1)]?.toFixed(1)}  p90 ${biases[Math.floor(biases.length * 0.9)]?.toFixed(1)}`
         );
+        // The rendered pass (#344) on the same PDFs: a clip or spill at the
+        // mutated box, against the same truth.
+        const missedBig = bigSpills.filter((r) => r.predicted !== 'overflow');
+        const missedVisible = anyVisible.filter((r) => r.predicted === 'fit');
+        lines.push('');
+        lines.push('rendered pass (clip or spill at the box):');
+        lines.push(
+          `  big spills flagged:                           ${pct(bigSpills.filter((r) => r.rendered).length, bigSpills.length)}`
+        );
+        lines.push(
+          `  visible spills flagged:                       ${pct(anyVisible.filter((r) => r.rendered).length, anyVisible.length)}`
+        );
+        lines.push(
+          `  big spills the estimator left below OVERFLOW: ${pct(missedBig.filter((r) => r.rendered).length, missedBig.length)}`
+        );
+        lines.push(
+          `  visible spills the estimator did not flag:    ${pct(missedVisible.filter((r) => r.rendered).length, missedVisible.length)}`
+        );
+        lines.push(
+          `  false alarms (flagged on actual fits):        ${pct(actualFits.filter((r) => r.rendered).length, actualFits.length)}`
+        );
         lines.push('');
         lines.push(
-          'template | box | ratio | font | boxWxH | fit | chars | predMargin | predicted | actualSpill | actual'
+          'template | box | ratio | font | boxWxH | fit | chars | predMargin | predicted | rendered | actualSpill | actual'
         );
         for (const r of results) {
           lines.push(
@@ -662,6 +722,7 @@ describe.skipIf(!RUN)(
               r.fillerChars,
               r.predictedMarginPt?.toFixed(1) ?? '≥8',
               r.predicted,
+              r.rendered ? 'flagged' : '—',
               r.actualSpillPt?.toFixed(1) ?? '—',
               r.actual,
             ].join(' | ')

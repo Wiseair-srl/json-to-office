@@ -73,6 +73,40 @@ describe('bullets on a slide', () => {
       }),
     ]);
   });
+  it('hold a single bullet to the same length', () => {
+    const one = deck(
+      slide(
+        title(),
+        bullets([
+          'A lone bullet that keeps going well past the point at which it stopped being a bullet at all.',
+        ])
+      )
+    );
+    expect(onDeck(one, QUALITY_CODES.BULLET_LENGTH)).toEqual([
+      expect.objectContaining({ path: '/children/0/children/1' }),
+    ]);
+    expect(onDeck(one, QUALITY_CODES.BULLET_COUNT)).toEqual([]);
+  });
+  it('are held to the executive profile too', () => {
+    const many = deck(
+      slide(
+        title(),
+        bullets(['One.', 'Two.', 'Three.', 'Four.', 'Five.', 'Six.'])
+      )
+    );
+    expect(
+      findings(many, QUALITY_CODES.BULLET_COUNT, {
+        profile: profile('executive-presentation'),
+      })
+    ).toEqual([expect.objectContaining({ path: '/children/0/children/1' })]);
+  });
+  it('pass at exactly five of exactly twelve words', () => {
+    const twelve =
+      'One two three four five six seven eight nine ten eleven twelve.';
+    const edge = deck(slide(title(), bullets(Array(5).fill(twelve))));
+    expect(onDeck(edge, QUALITY_CODES.BULLET_COUNT)).toEqual([]);
+    expect(onDeck(edge, QUALITY_CODES.BULLET_LENGTH)).toEqual([]);
+  });
   it('say nothing while they stay inside both bounds', () => {
     const fine = deck(
       slide(title(), bullets(['One.', 'Two claims here.', 'Three.']))
@@ -114,6 +148,67 @@ describe('the theme’s safe area', () => {
       })
     );
     expect(onDeck(band, QUALITY_CODES.SAFE_AREA)).toEqual([]);
+  });
+  it('judges every box a block draws on its own, and lets its chrome alone', () => {
+    // One block draws a footer in the margin band and a panel that crosses
+    // the safe area. Both report at the one invocation, so reading chrome off
+    // that pointer used to excuse the panel with the footer.
+    const doc = {
+      name: 'pptx',
+      props: {
+        ...CANVAS,
+        blocks: {
+          framed: {
+            slots: { note: { type: 'string', role: 'source' } },
+            body: [
+              {
+                name: 'text',
+                props: {
+                  text: 'A panel in the margin.',
+                  x: '1%',
+                  y: '40%',
+                  w: '40%',
+                  h: '20%',
+                },
+              },
+              {
+                name: 'text',
+                props: {
+                  text: '1 / 12',
+                  style: 'footer',
+                  x: '1%',
+                  y: '94%',
+                  w: '15%',
+                  h: '4%',
+                },
+              },
+              {
+                name: 'text',
+                props: {
+                  text: { $slot: '/note' },
+                  x: '20%',
+                  y: '94%',
+                  w: '50%',
+                  h: '4%',
+                },
+              },
+            ],
+          },
+        },
+      },
+      children: [
+        slide(title(), {
+          name: 'block',
+          props: { ref: 'framed', slots: { note: 'Source: company data' } },
+        }),
+      ],
+    };
+    expect(onDeck(doc, QUALITY_CODES.SAFE_AREA)).toEqual([
+      expect.objectContaining({
+        path: '/children/0/children/1',
+        message: expect.stringContaining('left'),
+      }),
+    ]);
   });
   it('lets chrome sit in the margin band', () => {
     const footer = deck(
@@ -171,6 +266,41 @@ describe('a slide nothing names', () => {
     expect(onDeck(claim, QUALITY_CODES.SLIDE_UNTITLED)).toEqual([
       expect.objectContaining({ path: '/children/0' }),
     ]);
+  });
+  it('knows a title written as rich-text runs', () => {
+    const runsTitle = deck(
+      slide(
+        {
+          name: 'text',
+          props: {
+            style: 'title',
+            x: 0.5,
+            y: 0.5,
+            w: 11,
+            h: 1,
+            runs: [{ text: 'Revenue ' }, { text: 'grew 12%', bold: true }],
+          },
+        },
+        {
+          name: 'text',
+          props: { text: 'Body.', x: 1, y: 2, w: 8, h: 1 },
+        }
+      )
+    );
+    expect(onDeck(runsTitle, QUALITY_CODES.SLIDE_UNTITLED)).toEqual([]);
+  });
+  it('is reported under the executive profile as well', () => {
+    const untitled = deck(
+      slide({
+        name: 'text',
+        props: { text: 'A claim, unlabelled.', x: 1, y: 2, w: 8, h: 1 },
+      })
+    );
+    expect(
+      findings(untitled, QUALITY_CODES.SLIDE_UNTITLED, {
+        profile: profile('executive-presentation'),
+      })
+    ).toEqual([expect.objectContaining({ path: '/children/0' })]);
   });
   it('is silent on a titled slide, and on a slide carrying only chrome', () => {
     expect(
@@ -245,14 +375,81 @@ describe('a slot a definition draws twice', () => {
       },
     ],
   });
-  it('reports its bullets once, at the invocation that drew them', () => {
+  it('reports its bullets once, at the slot that holds them', () => {
     const doc = twice('One.\nTwo.\nThree.\nFour.\nFive.\nSix.');
-    // The box is the definition's, not the slot's — the definition supplies
-    // the bullet and the frame — so the invocation is what the author holds.
+    // The definition draws the frame and sets the bullet, but the bullets
+    // are the slot's text: cutting them is an edit to the slot.
     expect(onDeck(doc, QUALITY_CODES.BULLET_COUNT)).toEqual([
       expect.objectContaining({
-        path: '/children/0/children/1',
+        path: '/children/0/children/1/props/slots/points',
         evidence: expect.objectContaining({ actual: 6, expected: 5 }),
+      }),
+    ]);
+  });
+});
+
+describe('a picture nothing names', () => {
+  const picture = (props: Record<string, unknown>) => ({
+    name: 'image',
+    props: { base64: PNG_4X2, x: 1, y: 2, w: 4, h: 2, ...props },
+  });
+  it('is reported without alt text under the profile, at the image', () => {
+    const bare = deck(slide(title(), picture({})));
+    expect(findings(bare, QUALITY_CODES.FIGURE_UNLABELLED)).toEqual([]);
+    expect(onDeck(bare, QUALITY_CODES.FIGURE_UNLABELLED)).toEqual([
+      expect.objectContaining({ path: '/children/0/children/1' }),
+    ]);
+  });
+  it('is silent with alt text, and on a background that bleeds off the slide', () => {
+    expect(
+      onDeck(
+        deck(slide(title(), picture({ alt: 'Revenue by region, 2026' }))),
+        QUALITY_CODES.FIGURE_UNLABELLED
+      )
+    ).toEqual([]);
+    expect(
+      onDeck(
+        deck(slide(title(), picture({ x: 0, y: 0, w: 13.333, h: 7.5 }))),
+        QUALITY_CODES.FIGURE_UNLABELLED
+      )
+    ).toEqual([]);
+    expect(
+      onDeck(
+        deck(slide(title(), picture({ alt: '   ' }))),
+        QUALITY_CODES.FIGURE_UNLABELLED
+      )
+    ).toHaveLength(1);
+  });
+  it('asks for the alt text at the slot an image filled', () => {
+    const doc = {
+      name: 'pptx',
+      props: {
+        ...CANVAS,
+        blocks: {
+          framed: {
+            slots: { picture: { type: 'component' } },
+            body: [
+              {
+                $slot: '/picture',
+                props: { x: '10%', y: '30%', w: '40%' },
+              },
+            ],
+          },
+        },
+      },
+      children: [
+        slide(title(), {
+          name: 'block',
+          props: {
+            ref: 'framed',
+            slots: { picture: { name: 'image', props: { base64: PNG_4X2 } } },
+          },
+        }),
+      ],
+    };
+    expect(onDeck(doc, QUALITY_CODES.FIGURE_UNLABELLED)).toEqual([
+      expect.objectContaining({
+        path: '/children/0/children/1/props/slots/picture',
       }),
     ]);
   });
@@ -271,6 +468,19 @@ describe('an image drawn out of shape', () => {
         evidence: expect.objectContaining({ actual: 4, expected: 2 }),
       }),
     ]);
+  });
+  it('says nothing when the asset cannot be read from the deck', () => {
+    expect(
+      findings(
+        deck(
+          slide(title(), {
+            name: 'image',
+            props: { path: 'assets/logo.png', x: 1, y: 2, w: 4, h: 1 },
+          })
+        ),
+        QUALITY_CODES.IMAGE_ASPECT
+      )
+    ).toEqual([]);
   });
   it('says nothing when the shape is the asset’s, when it is fitted, or when one side follows', () => {
     for (const props of [

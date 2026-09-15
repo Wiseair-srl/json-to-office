@@ -361,6 +361,29 @@ describe('the consulting profile against the theme', () => {
     );
   });
 
+  it('counts a slot of whitespace as empty, and says what it expected and why', () => {
+    const doc = actionChart({
+      title: 'Revenue grew in every region',
+      chart,
+      takeaway: 'Every region grew.',
+      source: '   ',
+    });
+    expect(
+      findings(doc, 'consulting-deck').filter(
+        (finding) => finding.code === QUALITY_CODES.CHROME_MISSING
+      )
+    ).toEqual([
+      expect.objectContaining({
+        path: '/children/0/children/0/props/slots/source',
+        evidence: {
+          actual: 'empty',
+          expected: 'source',
+          values: { source: 'profile', required: ['takeaway', 'source'] },
+        },
+      }),
+    ]);
+  });
+
   it('adds no required content to a coordinate-authored deck on the theme', () => {
     const doc = {
       name: 'pptx',

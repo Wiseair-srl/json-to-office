@@ -25,9 +25,16 @@
  * every occurrence. `assignInventory` resolves them by reading order: the
  * inventory is walked in document order and the stream is in page order, so
  * the next unclaimed occurrence at or after the previous claim is the one.
+ * Where the format knows more before rendering — a slide is its own page,
+ * and its text boxes sit where the deck put them — the entry says so, and
+ * only an occurrence on that page, preferably inside that box, is its own.
  */
 
-import type { PdfTextWord, PdfTextPage } from './pdf-text-geometry';
+import type {
+  PdfTextLine,
+  PdfTextWord,
+  PdfTextPage,
+} from './pdf-text-geometry';
 
 /** Fold rendered and authored text into one comparable form. */
 export function normalizeForMatch(value: string): string {
@@ -82,6 +89,8 @@ export interface OccurrencePart {
 export interface TextOccurrence {
   /** Offset into the document stream, for ordering. */
   at: number;
+  /** Offset just past the match: `[at, end)` is the range a claim holds. */
+  end: number;
   /** First and last page the match touches; equal unless it breaks across. */
   pageIndex: number;
   endPageIndex: number;
@@ -112,7 +121,7 @@ export function indexDocument(
   const positions: number[] = [];
   let cursor = 0;
   pages.forEach((page, pageIndex) => {
-    for (const index of readingOrder(page.words)) {
+    for (const index of readingOrder(page.words, page.lines)) {
       const word = page.words[index];
       const key = `${pageIndex}:${index}`;
       const fragment = exclude.has(key) ? '' : normalizeForMatch(word.text);
@@ -146,11 +155,36 @@ interface RowFragment {
  * fragment of their row) and the rows stay a line apart. A block reads
  * column by column, so a cell's lines come out together; a row of one
  * fragment outside any block — prose — reads as it lies.
+ *
+ * Rotated text — a chart's value-axis title — has no rows or columns to
+ * take part in. It reads as one run in the order poppler gave it, ahead of
+ * the page's upright text: anywhere inside that text it could fall between
+ * two lines of a paragraph and cut it in two, and a slide's takeaway set
+ * beside a chart then reads as clipped, or as never rendered at all.
  */
-export function readingOrder(words: readonly PdfTextWord[]): number[] {
-  // Rotated text — a chart's value-axis title — comes as boxes taller than
-  // they are wide; rows and columns mean nothing to it, so it keeps the
-  // order poppler gave it, in the slots it had.
+export function readingOrder(
+  words: readonly PdfTextWord[],
+  lines: readonly PdfTextLine[] = []
+): number[] {
+  const rotated = rotatedWords(words, lines);
+  const upright = uprightOrder(
+    words,
+    words.map((_, i) => i).filter((i) => !rotated.has(i))
+  );
+  return [...[...rotated].sort((a, b) => a - b), ...upright];
+}
+
+/**
+ * Words set on their side. A long enough word says so itself, its box
+ * taller than it is wide; a short one does not — "of" in a rotated title is
+ * still wider than tall — but poppler groups a rotated title into one line
+ * whose words stack along the page instead of across it, and every word of
+ * such a line is rotated.
+ */
+function rotatedWords(
+  words: readonly PdfTextWord[],
+  lines: readonly PdfTextLine[]
+): Set<number> {
   const rotated = new Set(
     words
       .map((_, i) => i)
@@ -160,17 +194,18 @@ export function readingOrder(words: readonly PdfTextWord[]): number[] {
         return w.text.length > 2 && w.yMax - w.yMin > 1.5 * (w.xMax - w.xMin);
       })
   );
-  const upright = uprightOrder(
-    words,
-    words.map((_, i) => i).filter((i) => !rotated.has(i))
-  );
-  const order: number[] = [];
-  let next = 0;
-  for (let i = 0; i < words.length; i++) {
-    if (rotated.has(i)) order.push(i);
-    else order.push(upright[next++]);
+  for (const line of lines) {
+    if (line.words.length < 2) continue;
+    const stacked = line.words.slice(1).every((index, n) => {
+      const a = words[line.words[n]];
+      const b = words[index];
+      const across = Math.min(a.xMax, b.xMax) - Math.max(a.xMin, b.xMin);
+      const along = Math.min(a.yMax, b.yMax) - Math.max(a.yMin, b.yMin);
+      return across > 0 && along <= 0;
+    });
+    if (stacked) for (const index of line.words) rotated.add(index);
   }
-  return order;
+  return rotated;
 }
 
 /** Middle value of a non-empty list, for a row's typical word gap. */
@@ -190,9 +225,26 @@ interface TextRow {
 }
 
 /**
+ * Two words set at sizes this far apart are not one line of text, however
+ * they overlap: a display title's box spans both lines of the small print
+ * beside it.
+ */
+const ROW_SIZE_RATIO = 2;
+
+/** Whether two words are set at sizes one line of text could hold. */
+function comparableSize(a: PdfTextWord, b: PdfTextWord): boolean {
+  const ha = a.yMax - a.yMin;
+  const hb = b.yMax - b.yMin;
+  return Math.max(ha, hb) <= ROW_SIZE_RATIO * Math.min(ha, hb);
+}
+
+/**
  * The given words grouped into the rows they are read on, top down. The
  * reading order and the page-number sweep ask the same question of a page,
- * so they ask it once.
+ * so they ask it once. A word joins a row it overlaps that holds a word of
+ * about its own size; measured only against the row's first word, a title
+ * beside a two-line caption took both caption lines into its row, and they
+ * were read one word from each line at a time.
  */
 function groupRows(
   words: readonly PdfTextWord[],
@@ -205,7 +257,8 @@ function groupRows(
   for (const i of byY) {
     const word = words[i];
     const row = rows[rows.length - 1];
-    if (row && sameRow(words[row.words[0]], word)) {
+    const peer = row?.words.find((w) => comparableSize(words[w], word));
+    if (row && peer !== undefined && sameRow(words[peer], word)) {
       row.words.push(i);
       row.yMin = Math.min(row.yMin, word.yMin);
       row.yMax = Math.max(row.yMax, word.yMax);
@@ -270,28 +323,38 @@ function uprightOrder(
   // exactly as a row of several cells does, and no row of that block has
   // to hold two fragments for the block to exist. A fragment across two
   // columns is prose under the table: it closes the cluster and opens
-  // the next.
+  // the next. The other way round, prose over the table, a row that sets
+  // two fragments in one column shows the column was several all along:
+  // what the column holds so far is read first, whole, and each fragment
+  // opens a column of its own. Left as one column, the cells under the
+  // prose would be read row by row, one cell's second line after its
+  // neighbour's first.
   interface Column {
     xMin: number;
     xMax: number;
     fragments: RowFragment[];
   }
   const order: number[] = [];
+  const read = new Set<RowFragment>();
+  const readColumn = (column: Column): void => {
+    column.fragments.sort(
+      (a, b) =>
+        words[a.words[0]].yMin - words[b.words[0]].yMin || a.xMin - b.xMin
+    );
+    for (const f of column.fragments) {
+      order.push(...f.words);
+      read.add(f);
+    }
+  };
   let cluster: { rows: number[]; columns: Column[] } | null = null;
   const flush = (): void => {
     if (!cluster) return;
     if (cluster.columns.length < 2) {
       for (const r of cluster.rows)
-        for (const f of fragments[r]) order.push(...f.words);
+        for (const f of fragments[r]) if (!read.has(f)) order.push(...f.words);
     } else {
       cluster.columns.sort((a, b) => a.xMin - b.xMin);
-      for (const column of cluster.columns) {
-        column.fragments.sort(
-          (a, b) =>
-            words[a.words[0]].yMin - words[b.words[0]].yMin || a.xMin - b.xMin
-        );
-        for (const f of column.fragments) order.push(...f.words);
-      }
+      for (const column of cluster.columns) readColumn(column);
     }
     cluster = null;
   };
@@ -309,6 +372,16 @@ function uprightOrder(
     if (!adjacent || wide) flush();
     if (!cluster) cluster = { rows: [], columns: [] };
     cluster.rows.push(r);
+    const landing = new Map<Column, number>();
+    for (const f of fragments[r]) {
+      const hit = overlapping(cluster.columns, f)[0];
+      if (hit) landing.set(hit, (landing.get(hit) ?? 0) + 1);
+    }
+    for (const [column, count] of landing) {
+      if (count < 2) continue;
+      readColumn(column);
+      cluster.columns.splice(cluster.columns.indexOf(column), 1);
+    }
     for (const f of fragments[r]) {
       const hit = overlapping(cluster.columns, f)[0];
       if (hit) {
@@ -408,6 +481,7 @@ function occurrence(
   const parts = partsOf(index, at, end);
   return {
     at,
+    end,
     pageIndex: parts[0].pageIndex,
     endPageIndex: parts[parts.length - 1].pageIndex,
     parts,
@@ -462,6 +536,21 @@ export interface InventoryEntry {
    * `missing`, when there is not.
    */
   optional?: boolean;
+  /**
+   * The 0-based page the text is drawn on, when the format knows it before
+   * rendering: a slide is its own page. Only an occurrence starting there
+   * is the entry's — "13 pts" on slide 2 is not "+1.3 pts" on slide 8,
+   * however alike the two fold.
+   */
+  page?: number;
+  /**
+   * Where on that page the text was laid out, in PDF points: a slide text
+   * box. Of the entry's occurrences, one inside this region is its own. A
+   * section tracker that repeats the first word of the title under it is
+   * two occurrences of one word, and reading order cannot say which box
+   * painted which; the boxes can.
+   */
+  region?: { xMin: number; yMin: number; xMax: number; yMax: number };
 }
 
 export type MappingStatus = 'mapped' | 'ambiguous' | 'missing' | 'skipped';
@@ -491,11 +580,13 @@ export const CHROME_BAND = 0.2;
  * whole does not — a paragraph whose tail was clipped still starts where it
  * was written. Every place the first `MIN_PARTIAL_PREFIX` characters occur
  * on a fragment boundary is extended character by character; the longest
- * extension wins.
+ * extension wins. Given a page, only a prefix starting on it counts.
  */
 export function longestRenderedPrefix(
   index: StreamIndex,
-  needle: string
+  needle: string,
+  page?: number,
+  region?: InventoryEntry['region']
 ): { length: number; at: number } | undefined {
   if (needle.length < MIN_PARTIAL_PREFIX) return undefined;
   const anchor = needle.slice(0, MIN_PARTIAL_PREFIX);
@@ -509,6 +600,7 @@ export function longestRenderedPrefix(
     if (first >= index.fragments.length || index.positions[first] !== at) {
       continue;
     }
+    if (page !== undefined && index.refs[first].pageIndex !== page) continue;
     let length = MIN_PARTIAL_PREFIX;
     while (
       length < needle.length &&
@@ -516,9 +608,33 @@ export function longestRenderedPrefix(
     ) {
       length++;
     }
+    if (region && !touchesRegion(partsOf(index, at, at + length), region)) {
+      continue;
+    }
     if (!best || length > best.length) best = { length, at };
   }
   return best;
+}
+
+/** A little past a box's edge still touches it: renderer rounding, insets. */
+const REGION_TOLERANCE_PT = 2;
+
+/**
+ * Whether any part of an occurrence reaches into a region. Slide text starts
+ * inside its box however far it overflows, so an occurrence that nowhere
+ * touches the box is some other box's words that happen to read the same.
+ */
+function touchesRegion(
+  parts: readonly OccurrencePart[],
+  region: NonNullable<InventoryEntry['region']>
+): boolean {
+  return parts.some(
+    (part) =>
+      part.xMax >= region.xMin - REGION_TOLERANCE_PT &&
+      part.xMin <= region.xMax + REGION_TOLERANCE_PT &&
+      part.yMax >= region.yMin - REGION_TOLERANCE_PT &&
+      part.yMin <= region.yMax + REGION_TOLERANCE_PT
+  );
 }
 
 /** Vertical overlap of more than half the shorter box: one row of text. */
@@ -638,6 +754,118 @@ function pageNumberRows(
   );
 }
 
+/**
+ * Of an entry's free occurrences, the one lying most inside its region: the
+ * largest share of its words' box within it. An occurrence that runs out of
+ * the region still counts by the part inside — text overflowing its box
+ * starts in it. Nothing inside, and reading order decides after all.
+ */
+function insideRegion(
+  occurrences: readonly TextOccurrence[],
+  region: NonNullable<InventoryEntry['region']>
+): TextOccurrence | undefined {
+  let best: { occurrence: TextOccurrence; share: number } | undefined;
+  for (const o of occurrences) {
+    let inside = 0;
+    let total = 0;
+    for (const part of o.parts) {
+      const w =
+        Math.min(part.xMax, region.xMax) - Math.max(part.xMin, region.xMin);
+      const h =
+        Math.min(part.yMax, region.yMax) - Math.max(part.yMin, region.yMin);
+      if (w > 0 && h > 0) inside += w * h;
+      total += (part.xMax - part.xMin) * (part.yMax - part.yMin);
+    }
+    const share = total > 0 ? inside / total : 0;
+    if (share > 0 && (!best || share > best.share)) {
+      best = { occurrence: o, share };
+    }
+  }
+  return best?.occurrence;
+}
+
+/**
+ * Slide text that overflowed its box onto other text. No run of the stream
+ * holds it whole: the words it was drawn over share its rows and read in
+ * between. Inside the column the box stands in, from its top down, its own
+ * words still come in order with only those foreign words between them — so
+ * the needle is matched there across whole fragments, skipping the fewest
+ * foreign ones, and never consuming a word another entry already claimed.
+ * A match that skips more words than it keeps is not the text overprinted
+ * but words that happen to spell it, and is refused.
+ */
+function overprintedOccurrence(
+  index: StreamIndex,
+  page: number,
+  region: NonNullable<InventoryEntry['region']>,
+  needle: string,
+  claimed: (offset: number) => boolean
+): TextOccurrence | undefined {
+  const words = index.pages[page]?.words;
+  if (!words) return undefined;
+  const fragmentOf = new Map<number, number>();
+  index.refs.forEach((ref, i) => {
+    if (ref.pageIndex !== page || index.fragments[i] === '') return;
+    const w = words[ref.word];
+    const centre = (w.xMin + w.xMax) / 2;
+    if (centre < region.xMin || centre > region.xMax) return;
+    if (w.yMax < region.yMin) return;
+    fragmentOf.set(ref.word, i);
+  });
+  const sequence = groupRows(words, [...fragmentOf.keys()]).flatMap((row) =>
+    [...row.words].sort((a, b) => words[a].xMin - words[b].xMin)
+  );
+  interface Path {
+    skips: number;
+    words: number[];
+  }
+  let reach = new Map<number, Path>();
+  let best: Path | undefined;
+  for (const word of sequence) {
+    const i = fragmentOf.get(word) as number;
+    const text = index.fragments[i];
+    const usable = !claimed(index.positions[i]);
+    const next = new Map<number, Path>();
+    const offer = (consumed: number, path: Path) => {
+      const held = next.get(consumed);
+      if (!held || path.skips < held.skips) next.set(consumed, path);
+    };
+    // Overflow runs out of the box, never into it: the text starts inside.
+    const inside =
+      words[word].yMin + words[word].yMax <= 2 * region.yMax &&
+      words[word].yMin + words[word].yMax >= 2 * region.yMin;
+    if (usable && inside && needle.startsWith(text)) {
+      offer(text.length, { skips: 0, words: [word] });
+    }
+    for (const [consumed, path] of reach) {
+      if (usable && needle.startsWith(text, consumed)) {
+        offer(consumed + text.length, {
+          skips: path.skips,
+          words: [...path.words, word],
+        });
+      }
+      offer(consumed, { skips: path.skips + 1, words: path.words });
+    }
+    const done = next.get(needle.length);
+    if (done && (!best || done.skips < best.skips)) best = done;
+    next.delete(needle.length);
+    reach = next;
+  }
+  if (!best || best.skips > best.words.length) return undefined;
+  const first = fragmentOf.get(best.words[0]) as number;
+  const part: OccurrencePart = {
+    pageIndex: page,
+    words: best.words,
+    xMin: Math.min(...best.words.map((w) => words[w].xMin)),
+    yMin: Math.min(...best.words.map((w) => words[w].yMin)),
+    xMax: Math.max(...best.words.map((w) => words[w].xMax)),
+    yMax: Math.max(...best.words.map((w) => words[w].yMax)),
+  };
+  // No stream range is claimed: the words skipped between are other text's.
+  const at = index.positions[first];
+  return { at, end: at, pageIndex: page, endPageIndex: page, parts: [part] };
+}
+
 export interface InventoryAssignment<T extends InventoryEntry> {
   matches: InventoryMatch<T>[];
   /** `pageIndex:word` keys of every word chrome claimed — whole rows. */
@@ -655,6 +883,13 @@ export interface InventoryAssignment<T extends InventoryEntry> {
  * finds the second "Total". An entry with no occurrence is `missing` —
  * fully clipped, or never set — unless it is optional, and one whose every
  * occurrence was already claimed is `ambiguous`.
+ *
+ * A claim holds the whole range it matched, not just where it starts: a
+ * rendered word belongs to one authored string, so "Revenue" inside a title
+ * another entry already owns is not free for a tracker that says "Revenue".
+ * An entry that names its page looks only there, and one that names its
+ * region takes the occurrence lying most inside it before reading order is
+ * consulted at all.
  */
 export function assignInventory<T extends InventoryEntry>(
   pages: readonly PdfTextPage[],
@@ -705,8 +940,10 @@ export function assignInventory<T extends InventoryEntry>(
     claimRow(row.pageIndex, row.box);
 
   const body = indexDocument(pages, chromeWords);
-  /** Stream offset → the entry that claimed the occurrence there. */
-  const claimed = new Map<number, T>();
+  /** Every stream range an entry has claimed, and the entry holding it. */
+  const claims: { at: number; end: number; entry: T }[] = [];
+  const claimsOver = (o: TextOccurrence) =>
+    claims.filter((claim) => o.at < claim.end && claim.at < o.end);
   let cursor = 0;
   for (const entry of inventory) {
     if (entry.repeats) continue;
@@ -716,12 +953,37 @@ export function assignInventory<T extends InventoryEntry>(
       results.set(entry, { entry, needle, status: 'skipped', occurrences: [] });
       continue;
     }
-    let all = findOccurrences(body, segments);
+    let all = findOccurrences(body, segments).filter(
+      (o) =>
+        (entry.page === undefined || o.pageIndex === entry.page) &&
+        (!entry.region || touchesRegion(o.parts, entry.region))
+    );
     let partial: InventoryMatch<T>['partial'];
+    if (
+      all.length === 0 &&
+      segments.length === 1 &&
+      entry.page !== undefined &&
+      entry.region
+    ) {
+      const overprinted = overprintedOccurrence(
+        body,
+        entry.page,
+        entry.region,
+        needle,
+        (offset) =>
+          claims.some((claim) => claim.at <= offset && offset < claim.end)
+      );
+      if (overprinted) all = [overprinted];
+    }
     // An optional entry is skipped when absent, so its prefix — the costliest
     // search here — is never worth looking for.
     if (all.length === 0 && segments.length === 1 && !entry.optional) {
-      const prefix = longestRenderedPrefix(body, needle);
+      const prefix = longestRenderedPrefix(
+        body,
+        needle,
+        entry.page,
+        entry.region
+      );
       if (prefix) {
         all = [occurrence(body, prefix.at, prefix.at + prefix.length)];
         partial = { matchedChars: prefix.length, totalChars: needle.length };
@@ -736,22 +998,26 @@ export function assignInventory<T extends InventoryEntry>(
       });
       continue;
     }
-    let free = all.filter((o) => !claimed.has(o.at));
+    let free = all.filter((o) => claimsOver(o).length === 0);
     if (free.length === 0 && !entry.optional) {
       // Every occurrence is taken. One taken by an optional entry — a
       // contents line for a heading the page shows only once — is the
       // author's text, not the field's: the optional claim is released and
       // the entry that was actually written keeps its occurrence.
-      const held = all.find((o) => claimed.get(o.at)?.optional);
+      const held = all.find((o) => {
+        const over = claimsOver(o);
+        return over.length > 0 && over.every((claim) => claim.entry.optional);
+      });
       if (held) {
-        const holder = claimed.get(held.at) as T;
-        claimed.delete(held.at);
-        results.set(holder, {
-          entry: holder,
-          needle: results.get(holder)?.needle ?? '',
-          status: 'skipped',
-          occurrences: [],
-        });
+        for (const claim of claimsOver(held)) {
+          claims.splice(claims.indexOf(claim), 1);
+          results.set(claim.entry, {
+            entry: claim.entry,
+            needle: results.get(claim.entry)?.needle ?? '',
+            status: 'skipped',
+            occurrences: [],
+          });
+        }
         free = [held];
       }
     }
@@ -764,8 +1030,11 @@ export function assignInventory<T extends InventoryEntry>(
       });
       continue;
     }
-    const chosen = free.find((o) => o.at >= cursor) ?? free[0];
-    claimed.set(chosen.at, entry);
+    const chosen =
+      (entry.region && insideRegion(free, entry.region)) ??
+      free.find((o) => o.at >= cursor) ??
+      free[0];
+    claims.push({ at: chosen.at, end: chosen.end, entry });
     cursor = chosen.at;
     results.set(entry, {
       entry,
