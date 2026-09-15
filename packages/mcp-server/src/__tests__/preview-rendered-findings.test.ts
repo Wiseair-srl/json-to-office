@@ -1,18 +1,16 @@
 /**
- * The rendered pass as `jto_preview` wires it (#344): authored inventory and
- * requested fonts read off the prepared facts, findings mapped through them.
+ * The rendered pass as `jto_preview` wires it (#344): findings mapped through
+ * the authored inventory and requested fonts read off the prepared facts.
  * Geometry is captured, so no converter runs here.
  */
 
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import type { PdfTextPage } from '@json-to-office/jto-ops';
+import type { PdfTextPage, PdfTextWord } from '@json-to-office/jto-ops';
 import type { QualityFact } from '@json-to-office/quality';
 
-import {
-  collectRenderedFindings,
-  inventoryFromFacts,
-  requestedFontsFromFacts,
-} from '../preview/rendered-findings.js';
+import { getAdapter } from '../lib/adapters.js';
+import { collectRenderedFindings } from '../preview/rendered-findings.js';
 import { PREVIEW_ERROR_CODES } from '../preview/codes.js';
 
 const facts: QualityFact[] = [
@@ -64,64 +62,80 @@ const page: PdfTextPage = {
   lines: [],
 };
 
-describe('inventoryFromFacts', () => {
-  it('turns docx text facts into entries with role, repetition and frame box', () => {
-    expect(inventoryFromFacts('docx', facts)).toEqual([
-      {
-        path: '/children/0/props/text',
-        text: 'Client report',
-        role: 'chrome',
-        repeats: true,
+describe('a finding inside a block’s compiled output (#334)', () => {
+  it('lands on the key-takeaways slot the author wrote', async () => {
+    // The block compiles to a rule, a label, a list and a rule. A takeaway
+    // whose tail never rendered is a finding on the compiled list item; it
+    // must come back at the slot entry, where the author can shorten it.
+    const document = {
+      name: 'docx',
+      props: {
+        theme: 'consulting',
+        blocks: JSON.parse(
+          readFileSync(
+            new URL(
+              '../../../jto/src/client/public/templates/client-report-blocks.docx.json',
+              import.meta.url
+            ),
+            'utf8'
+          )
+        ).props.blocks,
       },
-      {
-        path: '/children/1/props/text',
-        text: 'Results',
-        role: 'heading',
-        level: 2,
-      },
-      {
-        path: '/children/2/props/text',
-        text: 'Framed note',
-        role: 'body',
-        box: { widthPt: 100, heightPt: 20 },
-      },
-    ]);
-  });
-
-  it('turns pptx text facts into slide entries with their declared box', () => {
-    expect(
-      inventoryFromFacts('pptx', [
+      children: [
         {
-          id: 't',
-          kind: 'pptx/text',
-          path: '/children/0/children/1',
-          text: 'Title',
-          boxWidthPt: 400,
-          boxHeightPt: 60,
-        } as QualityFact,
-      ])
-    ).toEqual([
-      {
-        path: '/children/0/children/1',
-        text: 'Title',
-        role: 'slide-text',
-        box: { widthPt: 400, heightPt: 60 },
+          name: 'section',
+          children: [
+            {
+              name: 'block',
+              props: {
+                ref: 'key-takeaways',
+                slots: {
+                  items: [
+                    'Churn fell to a record low.',
+                    'Delivery reached ninety-four percent of contracted work this quarter.',
+                    'Margin held despite the price review.',
+                  ],
+                },
+              },
+            },
+          ],
+        },
+      ],
+    };
+    let y = 100;
+    const line = (...texts: string[]): PdfTextWord[] => {
+      let x = 72;
+      const words = texts.map((text) => {
+        const word = { text, xMin: x, yMin: y, xMax: x + 40, yMax: y + 12 };
+        x += 44;
+        return word;
+      });
+      y += 20;
+      return words;
+    };
+    const words = [
+      ...line('Key', 'takeaways'),
+      ...line('Churn', 'fell', 'to', 'a', 'record', 'low.'),
+      // The second takeaway stops four words in.
+      ...line('Delivery', 'reached', 'ninety-four', 'percent'),
+      ...line('Margin', 'held', 'despite', 'the', 'price', 'review.'),
+    ];
+    const result = await collectRenderedFindings({
+      format: 'docx',
+      document,
+      render: {},
+      rendered: {
+        pages: [{ widthPt: 595, heightPt: 842, words, lines: [] }],
+        resolvedFonts: [],
       },
-    ]);
-  });
-});
-
-describe('requestedFontsFromFacts', () => {
-  it('lists authored families with pointers first, then resolved ones, without repeats', () => {
+      adapter: getAdapter('docx'),
+    });
     expect(
-      requestedFontsFromFacts('docx', facts, [
-        { family: 'inter', declared: true },
-        { family: 'DM Sans', declared: true },
-        { family: 'Courier New', declared: false },
-      ])
+      result.diagnostics
+        .filter((d) => d.code === 'W_QUALITY_RENDERED_CLIP')
+        .map((d) => [d.path, d.context?.mapping, d.context?.kind])
     ).toEqual([
-      { family: 'Inter', path: '/theme/fonts/body', declared: true },
-      { family: 'DM Sans', declared: true },
+      ['/children/0/children/0/props/slots/items/1', 'mapped', 'truncated'],
     ]);
   });
 });

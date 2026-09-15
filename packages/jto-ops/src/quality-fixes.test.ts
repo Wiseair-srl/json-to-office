@@ -254,6 +254,78 @@ const FIXTURES: readonly Fixture[] = [
     ]),
   },
   {
+    id: 'docx heading loose from the paragraph under it',
+    format: 'docx',
+    code: 'W_QUALITY_HEADING_ORPHAN',
+    document: consultingReport([
+      { name: 'heading', props: { text: 'One', level: 1, keepNext: false } },
+      {
+        name: 'paragraph',
+        props: {
+          text: 'Body copy long enough to follow the heading it belongs to.',
+        },
+      },
+    ]),
+  },
+  {
+    id: 'docx table cell sized off its role',
+    format: 'docx',
+    code: 'W_QUALITY_TYPE_ROLE_DRIFT',
+    document: consultingReport([
+      {
+        name: 'table',
+        props: {
+          columns: [
+            {
+              header: { content: 'Segment', font: { size: 14 } },
+              cells: [{ content: 'North' }],
+            },
+            { header: { content: 'Revenue' }, cells: [{ content: '4.2' }] },
+          ],
+        },
+      },
+    ]),
+  },
+  {
+    id: 'docx table sized off the scale through its cell defaults',
+    format: 'docx',
+    code: 'W_QUALITY_TYPE_OFF_SCALE',
+    document: consultingReport([
+      {
+        name: 'table',
+        props: {
+          cellDefaults: { font: { size: 14 } },
+          columns: [
+            { header: { content: 'Segment' }, cells: [{ content: 'North' }] },
+          ],
+        },
+      },
+    ]),
+  },
+  {
+    id: 'docx running head written at a size the theme never paints',
+    format: 'docx',
+    code: 'W_QUALITY_TYPE_OFF_SCALE',
+    document: {
+      name: 'docx',
+      props: { theme: 'consulting', qualityProfile: 'client-report' },
+      children: [
+        {
+          name: 'section',
+          props: {
+            header: [
+              {
+                name: 'paragraph',
+                props: { text: 'Running head.', font: { size: 14.5 } },
+              },
+            ],
+          },
+          children: [{ name: 'paragraph', props: { text: 'Body.' } }],
+        },
+      ],
+    },
+  },
+  {
     id: 'pptx text at a size off the theme scale',
     format: 'pptx',
     code: 'W_QUALITY_TYPE_OFF_SCALE',
@@ -304,11 +376,15 @@ describe('a rule that offers a fix offers one that works', () => {
         const patched = applyPatch(fixture.document, finding.fixes!);
         const after = await analyze(fixture, patched);
 
-        expect(
-          after
-            .filter((entry) => entry.code === fixture.code)
-            .map((entry) => entry.path)
-        ).not.toContain(finding.path);
+        // Every pointer the finding named is repaired, not just the first:
+        // a size off the scale in three places is patched in three.
+        const standing = after
+          .filter((entry) => entry.code === fixture.code)
+          .flatMap((entry) => [entry.path, ...(entry.relatedPaths ?? [])]);
+        for (const pointer of [finding.path, ...(finding.relatedPaths ?? [])])
+          if (finding.fixes!.some((fix) => fix.path === pointer))
+            expect(standing).not.toContain(pointer);
+        expect(standing).not.toContain(finding.path);
 
         // A repair that trades one defect for another is not a repair.
         const newWarnings = after

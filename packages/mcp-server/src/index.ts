@@ -153,6 +153,9 @@ export {
 export {
   buildContactSheet,
   ContactSheetError,
+  decodePng,
+  downscale,
+  encodePng,
   type ContactSheet,
   type ContactSheetPage,
 } from './preview/contact-sheet.js';

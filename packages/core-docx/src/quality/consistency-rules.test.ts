@@ -109,6 +109,63 @@ describe('a size off the theme scale', () => {
     ).toEqual([]);
   });
 
+  it('offers no patch for a size the theme’s component defaults supplied', () => {
+    // componentDefaults merge into the props before the facts are read. The
+    // size reaches the page, but the document has no member a `replace` could
+    // reach, so the size counts and nothing is patched.
+    const custom = structuredClone(themes.minimal);
+    custom.name = 'custom';
+    custom.componentDefaults = {
+      ...custom.componentDefaults,
+      paragraph: { font: { size: 17.25 } },
+    };
+    const doc = report(para('Body at the default size.'));
+    doc.props.theme = 'custom';
+    const analysis = analyzeDocxQuality(doc, {
+      customThemes: { custom },
+      profile: profile('client-report'),
+    });
+    expect(
+      analysis.diagnostics.flatMap((finding) => finding.fixes ?? [])
+    ).toEqual([]);
+    // Counted all the same: the size is on the page.
+    const [count] = findings(doc, QUALITY_CODES.TYPE_SIZE_COUNT, {
+      customThemes: { custom },
+      policy: {
+        rules: {
+          'docx/size-count': { enabled: true, parameters: { maximumSizes: 0 } },
+        },
+      },
+    });
+    expect(count.context?.sizes).toContain(17.25);
+  });
+
+  it('holds a custom theme’s heading to the custom theme’s own size', () => {
+    const custom = structuredClone(themes.minimal);
+    custom.name = 'custom';
+    custom.styles = {
+      ...custom.styles,
+      heading2: { ...(custom.styles as any).heading2, size: 15 },
+    };
+    const doc = report(
+      heading('Two', 2),
+      para('Body.'),
+      heading('Two again', 2, 13)
+    );
+    doc.props.theme = 'custom';
+    expect(
+      findings(doc, QUALITY_CODES.TYPE_ROLE_DRIFT, {
+        customThemes: { custom },
+        profile: profile('client-report'),
+      })
+    ).toEqual([
+      expect.objectContaining({
+        evidence: expect.objectContaining({ actual: 13, expected: 15 }),
+        fixes: [expect.objectContaining({ value: 15 })],
+      }),
+    ]);
+  });
+
   it('says nothing about sizes a block compiled from its definition', () => {
     const doc = report(invocation('kpi-row'), invocation('cover'));
     expect(onReport(doc, QUALITY_CODES.TYPE_OFF_SCALE)).toEqual([]);
@@ -146,7 +203,9 @@ describe('the number of distinct sizes', () => {
     sized('f', 16),
     sized('g', 18),
     sized('h', 22),
-    sized('i', 26)
+    sized('i', 26),
+    sized('j', 30),
+    sized('k', 34)
   );
 
   it('is capped only where the profile sets a maximum, and names every size it counted', () => {
@@ -158,14 +217,42 @@ describe('the number of distinct sizes', () => {
       severity: 'warning',
       path: '/props',
       evidence: {
-        actual: 10,
-        expected: 8,
+        actual: 12,
+        expected: 11,
         values: { source: 'profile' },
       },
     });
     expect(finding.context?.sizes).toEqual([
-      8, 9, 10.5, 11, 12, 13, 16, 18, 22, 26,
+      8, 9, 10.5, 11, 12, 13, 16, 18, 22, 26, 30, 34,
     ]);
+  });
+
+  it('counts what a statistic, a list and a contents field paint', () => {
+    const doc = report(
+      { name: 'toc', props: {} },
+      {
+        name: 'statistic',
+        props: {
+          number: '42',
+          unit: '%',
+          description: 'of orders shipped on time',
+          size: 'large',
+        },
+      },
+      { name: 'list', props: { items: ['One', 'Two'], font: { size: 12 } } }
+    );
+    const [finding] = findings(doc, QUALITY_CODES.TYPE_SIZE_COUNT, {
+      policy: {
+        rules: {
+          'docx/size-count': { enabled: true, parameters: { maximumSizes: 1 } },
+        },
+      },
+    });
+    // The figure at its large size, its unit at half of it, the description
+    // at the style's 10pt, and the list at the size the author gave it.
+    expect(finding.context?.sizes).toEqual(
+      expect.arrayContaining([10, 12, 20, 40])
+    );
   });
 
   it('counts the sizes a report actually paints, blocks included, and passes a report that keeps to its roles', () => {

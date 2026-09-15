@@ -1,0 +1,116 @@
+{
+  "previews": [
+    {
+      "file": "cover-consulting.png",
+      "block": "cover",
+      "template": "client-report-blocks.docx.json",
+      "composition": "page",
+      "hash": "c190b5c65ee4e37623936e8eb524e69aa6b88a9996469636c13af3073f537c81"
+    },
+    {
+      "file": "key-takeaways-consulting.png",
+      "block": "key-takeaways",
+      "template": "client-report-blocks.docx.json",
+      "composition": "measure",
+      "hash": "9db06af5ce35d13e5b0dbf53f1198c7e5e0e7ba58fadd9d4f21c32e373e4608f"
+    },
+    {
+      "file": "section-opener-consulting.png",
+      "block": "section-opener",
+      "template": "client-report-blocks.docx.json",
+      "composition": "measure",
+      "hash": "654fdb41387377df930fe58416702429699d073c26ac231786a1f8f1b1596bca"
+    },
+    {
+      "file": "running-head-consulting.png",
+      "block": "running-head",
+      "template": "client-report-blocks.docx.json",
+      "composition": "chrome",
+      "hash": "deb39814ec64cbde0c743cf660988e873069d103818ebb5c80f0658625ee69fa"
+    },
+    {
+      "file": "kpi-row-consulting.png",
+      "block": "kpi-row",
+      "template": "client-report-blocks.docx.json",
+      "composition": "measure",
+      "hash": "41b160dd21692c7472db964b7e690dcc31a023a452c711750ed5f98a9dfcec26"
+    },
+    {
+      "file": "callout-consulting.png",
+      "block": "callout",
+      "template": "client-report-blocks.docx.json",
+      "composition": "measure",
+      "hash": "035e181da7d27a74d342b494f2318945e5dc4c5e22fa612f25f4dad762bccd33"
+    },
+    {
+      "file": "data-table-consulting.png",
+      "block": "data-table",
+      "template": "client-report-blocks.docx.json",
+      "composition": "measure",
+      "hash": "65d39af8e4e65c00e59e2a953d5d1a717e0b126501e76c4853cb0213784b626f"
+    },
+    {
+      "file": "chart-figure-consulting.png",
+      "block": "chart-figure",
+      "template": "client-report-blocks.docx.json",
+      "composition": "measure",
+      "hash": "568c443d6bdb201790d903ec90497ef6b74d8ac8e512d78573e13f909a9b6a1c"
+    },
+    {
+      "file": "figure-consulting.png",
+      "block": "figure",
+      "template": "client-report-blocks.docx.json",
+      "composition": "measure",
+      "hash": "9aff9bf110df084f534ee4a98b2bed235cdbb226c5725cee2aeb2a40654ac9c8"
+    },
+    {
+      "file": "footnotes-consulting.png",
+      "block": "footnotes",
+      "template": "client-report-blocks.docx.json",
+      "composition": "notes",
+      "hash": "cdfd6e63736c47350460341508bdda4079ac72102177e78051b20fc5bd02355d"
+    },
+    {
+      "file": "memo-header-consulting.png",
+      "block": "memo-header",
+      "template": "technical-report-blocks.docx.json",
+      "composition": "measure",
+      "hash": "97b3bdc465166b8fc54881a92613f2e1decfcbe83e47f9616acae684e8728d8b"
+    },
+    {
+      "file": "cover-deck-consulting.png",
+      "block": "cover",
+      "template": "consulting-deck-blocks.pptx.json",
+      "composition": "slide",
+      "hash": "4d3f548914d406b97a7b7676091a876fd7bbc48cebdaecb6ef0a81d5cb84c684"
+    },
+    {
+      "file": "kpi-row-deck-consulting.png",
+      "block": "kpi-row",
+      "template": "consulting-deck-blocks.pptx.json",
+      "composition": "slide",
+      "hash": "952b99d5cf75026f73cd4e6d6b7377c723671e3983b300983568fd12147788fb"
+    },
+    {
+      "file": "action-chart-deck-consulting.png",
+      "block": "action-chart",
+      "template": "consulting-deck-blocks.pptx.json",
+      "composition": "slide",
+      "hash": "e7ca46601f5947e6d9ff8503566493f8b553409b5773efc35ca8377878330a17"
+    },
+    {
+      "file": "two-column-deck-consulting.png",
+      "block": "two-column",
+      "template": "consulting-deck-blocks.pptx.json",
+      "composition": "slide",
+      "hash": "a4dfc92c4eadc24159a37910689dc0eeea00815b17395647b7ff3b051010620c"
+    },
+    {
+      "file": "statement-deck-consulting.png",
+      "block": "statement",
+      "template": "consulting-deck-blocks.pptx.json",
+      "composition": "slide",
+      "hash": "eb7c20b02498a79b3655e8b9b744b49b2a0de872992cc8403d00b37221d5bf55"
+    }
+  ]
+}

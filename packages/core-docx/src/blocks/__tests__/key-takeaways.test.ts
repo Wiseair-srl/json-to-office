@@ -5,8 +5,10 @@
  * words each, one line — so a document that copies and edits the definition
  * is judged by its own numbers.
  */
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import AdmZip from 'adm-zip';
+import { blockReferencesFromDocument } from '@json-to-office/shared';
 import { validateDocument } from '@json-to-office/shared-docx';
 import { QUALITY_CODES } from '@json-to-office/quality';
 import { generateBufferFromJson } from '../../core/generator';
@@ -121,5 +123,53 @@ describe('an invalid key-takeaways invocation', () => {
         (finding) => finding.code === QUALITY_CODES.SCAFFOLD_MARKER
       )
     ).toEqual([expect.objectContaining({ path: `${SLOTS}/items/0` })]);
+  });
+});
+
+describe('the key-takeaways reference entry', () => {
+  // docs/reference/blocks.md shows the invocation the template authors, and
+  // the preview beside it is rendered from that same invocation. Both drift
+  // when the template changes; this pins the example, the preview script's
+  // manifest pins the picture.
+  const ROOT = new URL('../../../../../', import.meta.url);
+  const docsExample = () => {
+    const page = readFileSync(
+      new URL('docs/reference/blocks.md', ROOT),
+      'utf8'
+    );
+    const marker = page.indexOf(
+      '<!-- jto-block-example: client-report-blocks.docx.json -->'
+    );
+    expect(marker).toBeGreaterThan(-1);
+    const fence = /```json\n([\s\S]*?)\n```/.exec(page.slice(marker));
+    return JSON.parse(fence![1]);
+  };
+
+  it('shows the invocation the template authors, and it validates clean', () => {
+    const template = JSON.parse(
+      readFileSync(
+        new URL(
+          'packages/jto/src/client/public/templates/client-report-blocks.docx.json',
+          ROOT
+        ),
+        'utf8'
+      )
+    );
+    const reference = blockReferencesFromDocument(template, {
+      template: 'client-report-blocks.docx.json',
+      format: 'docx',
+    }).find((entry) => entry.name === 'key-takeaways');
+    const shown = docsExample();
+    expect(shown).toEqual(reference?.example);
+    const doc = example();
+    doc.props.theme = 'consulting';
+    doc.children = [section(shown)];
+    expect(validateDocument(doc).valid).toBe(true);
+    expect(analyzeDocxQuality(doc).diagnostics).toEqual([]);
+    expect(
+      existsSync(
+        new URL('docs/public/blocks/key-takeaways-consulting.png', ROOT)
+      )
+    ).toBe(true);
   });
 });

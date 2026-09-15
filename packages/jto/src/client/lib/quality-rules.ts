@@ -297,7 +297,7 @@ export const QUALITY_RULES: Record<FormatName, readonly QualityRuleInfo[]> = {
       category: 'consistency',
       defaultSeverity: 'warning',
       description:
-        'More distinct text sizes than maximumSizes allows, blocks included. Off until a profile or policy enables it.',
+        'More distinct text sizes across the document than maximumSizes allows, blocks, statistics, lists and contents included; counted per document, which bounds every page. Off until a profile or policy enables it.',
       parameters: [
         {
           name: 'maximumSizes',
@@ -398,7 +398,7 @@ export const QUALITY_RULES: Record<FormatName, readonly QualityRuleInfo[]> = {
       category: 'hierarchy',
       defaultSeverity: 'info',
       description:
-        'More headings than minimumHeadings with no table of contents. Off at 0.',
+        'minimumHeadings headings or more with no table of contents. Off at 0.',
       parameters: [
         {
           name: 'minimumHeadings',
@@ -685,13 +685,20 @@ export const QUALITY_RULES: Record<FormatName, readonly QualityRuleInfo[]> = {
       category: 'consistency',
       defaultSeverity: 'warning',
       description:
-        'More distinct text sizes than maximumSizes allows, blocks included. Off until a profile or policy enables it.',
+        'More distinct text sizes than maximumSizes allows across the deck, or than maximumSizesPerSlide allows on one slide (0: no per-slide ceiling), blocks and runs included. Off until a profile or policy enables it.',
       parameters: [
         {
           name: 'maximumSizes',
           type: 'number',
           default: 8,
           description: 'Distinct text sizes the deck may paint.',
+        },
+        {
+          name: 'maximumSizesPerSlide',
+          type: 'number',
+          default: 0,
+          description:
+            'Distinct text sizes one slide may paint; 0 sets no per-slide ceiling.',
         },
       ],
     },
@@ -783,6 +790,15 @@ export const QUALITY_RULES: Record<FormatName, readonly QualityRuleInfo[]> = {
           description: 'Named styles that read as a slide title.',
         },
       ],
+    },
+    {
+      id: 'pptx/figure-label',
+      label: 'Figure label',
+      category: 'accessibility',
+      defaultSeverity: 'warning',
+      description:
+        'An image with no alt text, a background that bleeds off the slide aside. Off until a profile or policy enables it.',
+      parameters: [],
     },
     {
       id: 'pptx/image-aspect',

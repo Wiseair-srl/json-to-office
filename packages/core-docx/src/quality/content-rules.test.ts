@@ -42,6 +42,28 @@ describe('a section with nothing in it', () => {
     const filled = report(section(heading('One'), para(words(80))));
     expect(onReport(filled, QUALITY_CODES.SECTION_EMPTY)).toEqual([]);
   });
+  it('counts a heading or a contents field as something the section draws', () => {
+    // The contents rule suggests a contents page of its own, and a divider
+    // carries only its heading: neither renders nothing.
+    const contents = report(
+      section({ name: 'toc', props: { title: 'Contents' } }),
+      section(heading('One'), para(words(80)))
+    );
+    expect(onReport(contents, QUALITY_CODES.SECTION_EMPTY)).toEqual([]);
+    const divider = report(
+      section(heading('Part one')),
+      section(heading('One'), para(words(80)))
+    );
+    expect(onReport(divider, QUALITY_CODES.SECTION_EMPTY)).toEqual([]);
+  });
+  it('is asked for by the executive report too', () => {
+    const empty = report(section(), section(heading('One'), para(words(80))));
+    expect(
+      findings(empty, QUALITY_CODES.SECTION_EMPTY, {
+        profile: profile('executive-report'),
+      })
+    ).toEqual([expect.objectContaining({ path: '/children/0' })]);
+  });
 });
 
 describe('a section no heading opens', () => {
@@ -87,6 +109,34 @@ describe('the measure body copy runs at', () => {
       )
     ).toEqual([]);
   });
+  it('reports a measure too narrow to read, whichever the profile', () => {
+    const narrow = report({
+      name: 'section',
+      props: { page: { size: 'A4', margins: { left: 4400, right: 4400 } } },
+      children: [heading('One'), para(words(80))],
+    });
+    expect(onReport(narrow, QUALITY_CODES.BODY_MEASURE)).toEqual([
+      expect.objectContaining({
+        path: '/children/0',
+        evidence: expect.objectContaining({ unit: 'characters' }),
+      }),
+    ]);
+  });
+  it('holds a caller who opts in directly to its own 45–90 characters', () => {
+    // The report profiles judge at 125 because the bundled themes' own pages
+    // run 97 to 121 characters a line; the rule's defaults stay book
+    // typography for anyone who asks for the rule without a profile.
+    const themePage = report(section(heading('One'), para(words(80))));
+    const direct = findings(themePage, QUALITY_CODES.BODY_MEASURE, {
+      policy: { rules: { 'docx/body-measure': { enabled: true } } },
+    });
+    expect(direct).toEqual([
+      expect.objectContaining({
+        context: expect.objectContaining({ minimum: 45, maximum: 90 }),
+        evidence: expect.objectContaining({ expected: 90 }),
+      }),
+    ]);
+  });
 });
 
 describe('a heading loose from what follows it', () => {
@@ -111,6 +161,39 @@ describe('a heading loose from what follows it', () => {
   });
 });
 
+describe('a heading that skips a level', () => {
+  it('carries the level fix when the author wrote the heading, and none when a block did', () => {
+    const authored = report(
+      section(heading('One'), para(words(10)), heading('Deep', { level: 3 }))
+    );
+    const [own] = findings(authored, QUALITY_CODES.HEADING_SKIP);
+    expect(own.fixes).toEqual([
+      { op: 'add', path: '/children/0/children/2/props/level', value: 2 },
+    ]);
+    // A definition that draws a level-3 heading: its level is the
+    // definition's. The pointer maps to the invocation, and an `add` there
+    // would replace the block with a number.
+    const doc = report(
+      section(heading('One'), {
+        name: 'block',
+        props: { ref: 'deep', slots: { title: 'Deep' } },
+      })
+    );
+    doc.props.blocks = {
+      ...doc.props.blocks,
+      deep: {
+        slots: { title: { type: 'string', required: true } },
+        body: [
+          { name: 'heading', props: { text: { $slot: '/title' }, level: 3 } },
+        ],
+      },
+    };
+    const [generated] = findings(doc, QUALITY_CODES.HEADING_SKIP);
+    expect(generated).toBeDefined();
+    expect(generated.fixes).toBeUndefined();
+  });
+});
+
 describe('a figure nothing names', () => {
   it('is reported with neither caption nor alt text, and cleared by either', () => {
     const bare = report(
@@ -127,6 +210,25 @@ describe('a figure nothing names', () => {
       })
     );
     expect(onReport(described, QUALITY_CODES.FIGURE_UNLABELLED)).toEqual([]);
+  });
+  it('is cleared by a caption paragraph written right beside it, and only there', () => {
+    const image = { name: 'image', props: { base64: PNG_4X2 } };
+    const beside = report(
+      section(heading('One'), image, para('Figure 1. The delivery model.'))
+    );
+    expect(onReport(beside, QUALITY_CODES.FIGURE_UNLABELLED)).toEqual([]);
+    const away = report(
+      section(
+        heading('One'),
+        image,
+        para(words(20)),
+        para(words(20)),
+        para('Figure 2. Something else entirely.')
+      )
+    );
+    expect(onReport(away, QUALITY_CODES.FIGURE_UNLABELLED)).toEqual([
+      expect.objectContaining({ path: '/children/0/children/1' }),
+    ]);
   });
   it('is cleared by the image’s own caption, and by a figure block’s', () => {
     const own = report(
@@ -177,6 +279,31 @@ describe('an image drawn out of shape', () => {
     );
     expect(findings(honest, QUALITY_CODES.IMAGE_ASPECT)).toEqual([]);
   });
+  it('reads an inline SVG’s aspect off its viewBox, and says nothing about a file it cannot open', () => {
+    const svg = report(
+      section({
+        name: 'image',
+        props: {
+          svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100"><rect width="200" height="100"/></svg>',
+          alt: 'Diagram',
+          width: 200,
+          height: 200,
+        },
+      })
+    );
+    expect(findings(svg, QUALITY_CODES.IMAGE_ASPECT)).toEqual([
+      expect.objectContaining({
+        evidence: expect.objectContaining({ actual: 1, expected: 2 }),
+      }),
+    ]);
+    const file = report(
+      section({
+        name: 'image',
+        props: { path: 'assets/logo.png', alt: 'Logo', width: 260, height: 80 },
+      })
+    );
+    expect(findings(file, QUALITY_CODES.IMAGE_ASPECT)).toEqual([]);
+  });
   it('says nothing when only one side is stated', () => {
     const derived = report(
       section({
@@ -198,6 +325,18 @@ describe('a document with no way in', () => {
         ]).flat()
       )
     );
+  it('is reported from the threshold itself, not only past it', () => {
+    const at = (count: number) =>
+      findings(many(count), QUALITY_CODES.CONTENTS_MISSING, {
+        profile: profile('technical-report'),
+      });
+    expect(at(7)).toEqual([]);
+    expect(at(8)).toEqual([
+      expect.objectContaining({
+        evidence: expect.objectContaining({ actual: 8, expected: 8 }),
+      }),
+    ]);
+  });
   it('is reported past the profile’s heading threshold', () => {
     expect(findings(many(9), QUALITY_CODES.CONTENTS_MISSING)).toEqual([]);
     expect(

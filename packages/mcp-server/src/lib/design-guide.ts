@@ -237,7 +237,7 @@ export function renderDesignGuide(
     '',
     '## Rules',
     '',
-    'Every finding is path-addressed and names what it expected; `evidence.values.source` says whether the theme or the profile asked for it. Apply the RFC 6902 fix when a finding carries one.',
+    'Every finding is path-addressed. A finding that holds the document to a theme value or a profile requirement names what it expected, and its `evidence.values.source` says which of the two asked for it. Apply the RFC 6902 fix when a finding carries one.',
     '',
     renderRules(guide.rules),
   ];
