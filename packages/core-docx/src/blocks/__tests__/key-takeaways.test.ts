@@ -141,7 +141,8 @@ describe('the key-takeaways reference entry', () => {
       '<!-- jto-block-example: client-report-blocks.docx.json -->'
     );
     expect(marker).toBeGreaterThan(-1);
-    const fence = /```json\n([\s\S]*?)\n```/.exec(page.slice(marker));
+    // A Windows checkout ends the page's lines in CRLF.
+    const fence = /```json\r?\n([\s\S]*?)\r?\n```/.exec(page.slice(marker));
     return JSON.parse(fence![1]);
   };
 

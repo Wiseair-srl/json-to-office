@@ -105,12 +105,21 @@ export interface StreamIndex {
   /** Offset of each fragment in `stream`; excluded fragments are empty. */
   positions: number[];
   stream: string;
+  /** Where the rotated text of every page starts: all upright text is before. */
+  rotatedFrom: number;
 }
 
 /**
  * Index every word of every page into one stream. Words in `exclude` keep
  * their slot with an empty fragment, so positions stay comparable while a
  * match can never touch them.
+ *
+ * The upright text of every page comes first, page after page, so a
+ * paragraph that turns the page is one run of the stream; the rotated text
+ * of every page follows it all. Anywhere inside the upright text a rotated
+ * run cuts whatever string it lands in: where poppler emitted it, a deck's
+ * takeaway beside a chart; at the top of a page, a report paragraph that
+ * turns onto the page above a chart.
  */
 export function indexDocument(
   pages: readonly PdfTextPage[],
@@ -120,18 +129,31 @@ export function indexDocument(
   const fragments: string[] = [];
   const positions: number[] = [];
   let cursor = 0;
-  pages.forEach((page, pageIndex) => {
-    for (const index of readingOrder(page.words, page.lines)) {
-      const word = page.words[index];
-      const key = `${pageIndex}:${index}`;
-      const fragment = exclude.has(key) ? '' : normalizeForMatch(word.text);
-      refs.push({ pageIndex, word: index });
-      fragments.push(fragment);
-      positions.push(cursor);
-      cursor += fragment.length;
-    }
+  const push = (pageIndex: number, index: number): void => {
+    const word = pages[pageIndex].words[index];
+    const key = `${pageIndex}:${index}`;
+    const fragment = exclude.has(key) ? '' : normalizeForMatch(word.text);
+    refs.push({ pageIndex, word: index });
+    fragments.push(fragment);
+    positions.push(cursor);
+    cursor += fragment.length;
+  };
+  const orders = pages.map((page) => pageOrder(page.words, page.lines));
+  orders.forEach((order, pageIndex) => {
+    for (const index of order.upright) push(pageIndex, index);
   });
-  return { pages, refs, fragments, positions, stream: fragments.join('') };
+  const rotatedFrom = cursor;
+  orders.forEach((order, pageIndex) => {
+    for (const index of order.rotated) push(pageIndex, index);
+  });
+  return {
+    pages,
+    refs,
+    fragments,
+    positions,
+    stream: fragments.join(''),
+    rotatedFrom,
+  };
 }
 
 /** A run of words on one row with no wide gap between them: one cell's line. */
@@ -157,21 +179,33 @@ interface RowFragment {
  * fragment outside any block — prose — reads as it lies.
  *
  * Rotated text — a chart's value-axis title — has no rows or columns to
- * take part in. It reads as one run in the order poppler gave it, ahead of
- * the page's upright text: anywhere inside that text it could fall between
- * two lines of a paragraph and cut it in two, and a slide's takeaway set
- * beside a chart then reads as clipped, or as never rendered at all.
+ * take part in. It reads as one run in the order poppler gave it, after the
+ * page's upright text: inside that text it could fall between two lines of
+ * a paragraph and cut it in two, and a slide's takeaway set beside a chart
+ * then reads as clipped, or as never rendered at all. Across a document the
+ * stream sets it after every page (`indexDocument`).
  */
 export function readingOrder(
   words: readonly PdfTextWord[],
   lines: readonly PdfTextLine[] = []
 ): number[] {
+  const { upright, rotated } = pageOrder(words, lines);
+  return [...upright, ...rotated];
+}
+
+/** A page's upright words in reading order, and its rotated ones apart. */
+function pageOrder(
+  words: readonly PdfTextWord[],
+  lines: readonly PdfTextLine[] = []
+): { upright: number[]; rotated: number[] } {
   const rotated = rotatedWords(words, lines);
-  const upright = uprightOrder(
-    words,
-    words.map((_, i) => i).filter((i) => !rotated.has(i))
-  );
-  return [...[...rotated].sort((a, b) => a - b), ...upright];
+  return {
+    upright: uprightOrder(
+      words,
+      words.map((_, i) => i).filter((i) => !rotated.has(i))
+    ),
+    rotated: [...rotated].sort((a, b) => a - b),
+  };
 }
 
 /**
@@ -580,7 +614,9 @@ export const CHROME_BAND = 0.2;
  * whole does not — a paragraph whose tail was clipped still starts where it
  * was written. Every place the first `MIN_PARTIAL_PREFIX` characters occur
  * on a fragment boundary is extended character by character; the longest
- * extension wins. Given a page, only a prefix starting on it counts.
+ * extension wins. Given a page, only a prefix starting on it counts, and it
+ * ends where the page does: a slide's text never runs on into the next
+ * slide's. Upright text never runs on into the rotated text after it.
  */
 export function longestRenderedPrefix(
   index: StreamIndex,
@@ -601,9 +637,15 @@ export function longestRenderedPrefix(
       continue;
     }
     if (page !== undefined && index.refs[first].pageIndex !== page) continue;
+    const limit = Math.min(
+      page === undefined ? index.stream.length : pageEnd(index, first),
+      at < index.rotatedFrom ? index.rotatedFrom : index.stream.length
+    );
+    if (at + MIN_PARTIAL_PREFIX > limit) continue;
     let length = MIN_PARTIAL_PREFIX;
     while (
       length < needle.length &&
+      at + length < limit &&
       index.stream.charCodeAt(at + length) === needle.charCodeAt(length)
     ) {
       length++;
@@ -614,6 +656,14 @@ export function longestRenderedPrefix(
     if (!best || length > best.length) best = { length, at };
   }
   return best;
+}
+
+/** Offset where the stream leaves the page of fragment `from`. */
+function pageEnd(index: StreamIndex, from: number): number {
+  const page = index.refs[from].pageIndex;
+  let i = from;
+  while (i < index.refs.length && index.refs[i].pageIndex === page) i++;
+  return i < index.positions.length ? index.positions[i] : index.stream.length;
 }
 
 /** A little past a box's edge still touches it: renderer rounding, insets. */
@@ -793,6 +843,10 @@ function insideRegion(
  * foreign ones, and never consuming a word another entry already claimed.
  * A match that skips more words than it keeps is not the text overprinted
  * but words that happen to spell it, and is refused.
+ *
+ * The stream range from its first word to its last holds the words it was
+ * drawn over, which are another entry's, so the occurrence claims no range:
+ * `claims` holds the range of each word it kept, to be claimed one by one.
  */
 function overprintedOccurrence(
   index: StreamIndex,
@@ -800,7 +854,9 @@ function overprintedOccurrence(
   region: NonNullable<InventoryEntry['region']>,
   needle: string,
   claimed: (offset: number) => boolean
-): TextOccurrence | undefined {
+):
+  | { occurrence: TextOccurrence; claims: { at: number; end: number }[] }
+  | undefined {
   const words = index.pages[page]?.words;
   if (!words) return undefined;
   const fragmentOf = new Map<number, number>();
@@ -861,9 +917,23 @@ function overprintedOccurrence(
     xMax: Math.max(...best.words.map((w) => words[w].xMax)),
     yMax: Math.max(...best.words.map((w) => words[w].yMax)),
   };
-  // No stream range is claimed: the words skipped between are other text's.
   const at = index.positions[first];
-  return { at, end: at, pageIndex: page, endPageIndex: page, parts: [part] };
+  return {
+    occurrence: {
+      at,
+      end: at,
+      pageIndex: page,
+      endPageIndex: page,
+      parts: [part],
+    },
+    claims: best.words.map((w) => {
+      const i = fragmentOf.get(w) as number;
+      return {
+        at: index.positions[i],
+        end: index.positions[i] + index.fragments[i].length,
+      };
+    }),
+  };
 }
 
 export interface InventoryAssignment<T extends InventoryEntry> {
@@ -955,10 +1025,13 @@ export function assignInventory<T extends InventoryEntry>(
     }
     let all = findOccurrences(body, segments).filter(
       (o) =>
-        (entry.page === undefined || o.pageIndex === entry.page) &&
+        (entry.page === undefined ||
+          (o.pageIndex === entry.page && o.endPageIndex === entry.page)) &&
         (!entry.region || touchesRegion(o.parts, entry.region))
     );
     let partial: InventoryMatch<T>['partial'];
+    /** The words an overprinted match kept, when that is the match. */
+    let sparse: { at: number; end: number }[] | undefined;
     if (
       all.length === 0 &&
       segments.length === 1 &&
@@ -973,7 +1046,10 @@ export function assignInventory<T extends InventoryEntry>(
         (offset) =>
           claims.some((claim) => claim.at <= offset && offset < claim.end)
       );
-      if (overprinted) all = [overprinted];
+      if (overprinted) {
+        all = [overprinted.occurrence];
+        sparse = overprinted.claims;
+      }
     }
     // An optional entry is skipped when absent, so its prefix — the costliest
     // search here — is never worth looking for.
@@ -1034,8 +1110,11 @@ export function assignInventory<T extends InventoryEntry>(
       (entry.region && insideRegion(free, entry.region)) ??
       free.find((o) => o.at >= cursor) ??
       free[0];
-    claims.push({ at: chosen.at, end: chosen.end, entry });
-    cursor = chosen.at;
+    for (const range of sparse ?? [chosen])
+      claims.push({ at: range.at, end: range.end, entry });
+    // Rotated text sits past every page's upright text: taking it says
+    // nothing about how far reading has got.
+    if (chosen.at < body.rotatedFrom) cursor = chosen.at;
     results.set(entry, {
       entry,
       needle,

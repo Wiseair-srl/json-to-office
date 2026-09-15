@@ -187,6 +187,69 @@ describe('assignInventory', () => {
     expect(matches[2].occurrences[0].endPageIndex).toBe(1);
   });
 
+  it('follows a paragraph onto a page past the rotated axis title of the chart on it', () => {
+    // Measured off the report matrix on Ubuntu's LibreOffice: the notes run
+    // from one page onto the next, which opens above a chart. Read at the
+    // top of that page, the axis title parted the two halves and the notes
+    // read as cut off.
+    const turned = [
+      page([
+        word('Revenue', 10, 700),
+        word('grew', 50, 700),
+        word('across', 90, 700),
+      ]),
+      page([
+        word('Sales', 87, 300, 11, 30),
+        word('(€m)', 87, 270, 11, 26),
+        word('every', 10, 60),
+        word('region', 50, 60),
+      ]),
+    ];
+    const { matches } = assignInventory(turned, [
+      { path: '/p', text: 'Revenue grew across every region' },
+      { path: '/axis', text: 'Sales (€m)' },
+    ]);
+    expect(
+      matches.map((m) => [
+        m.status,
+        m.partial,
+        m.occurrences[0].pageIndex,
+        m.occurrences[0].endPageIndex,
+      ])
+    ).toEqual([
+      ['mapped', undefined, 0, 1],
+      ['mapped', undefined, 1, 1],
+    ]);
+  });
+
+  it('keeps its place in the page after taking a rotated axis title', () => {
+    // The second "Total" is a cell the inventory does not hold; the entry
+    // after "Margin" is the third. Taking the axis title, which the stream
+    // sets after every page, must not send reading back to the first free
+    // "Total".
+    const pages = [
+      page([
+        word('Total', 10, 100),
+        word('Total', 10, 200),
+        word('Margin', 10, 250),
+        word('Total', 10, 300),
+        word('Sales', 300, 300, 11, 30),
+      ]),
+    ];
+    const { matches } = assignInventory(pages, [
+      { path: '/a', text: 'Total' },
+      { path: '/m', text: 'Margin' },
+      { path: '/axis', text: 'Sales' },
+      { path: '/b', text: 'Total' },
+    ]);
+    expect(matches.map((m) => m.occurrences[0].parts[0].words)).toEqual([
+      [0],
+      [2],
+      [4],
+      [3],
+    ]);
+  });
+
   it('maps a paragraph whose tail was cut off by its longest rendered prefix', () => {
     const cut = [
       page([
@@ -525,6 +588,64 @@ describe('assignInventory where the format knows the page and the box', () => {
     ]);
   });
 
+  it('holds the words of overflowed slide text against a later entry that spells them', () => {
+    const pages = [
+      slide([
+        word('strateg', 626, 293, 60, 26),
+        word('y', 676, 315, 10, 26),
+        word('+100%', 626, 331, 60, 25),
+        word('ZQJTO', 626, 336, 60, 26),
+        word('B9X', 651, 358, 35, 26),
+      ]),
+    ];
+    const { matches } = assignInventory(pages, [
+      {
+        path: '/label',
+        text: 'strategy ZQJTOB9X',
+        page: 0,
+        region: { xMin: 615.7, yMin: 289.7, xMax: 691.1, yMax: 317.1 },
+      },
+      { path: '/other', text: 'ZQJTO B9X', page: 0 },
+    ]);
+    expect(
+      matches.map((m) => [
+        m.entry.path,
+        m.status,
+        m.occurrences[0]?.parts[0].words,
+      ])
+    ).toEqual([
+      ['/label', 'mapped', [0, 1, 3, 4]],
+      ['/other', 'ambiguous', [3, 4]],
+    ]);
+  });
+
+  it("does not run a slide's text on into the next slide", () => {
+    // The box's last words did not render; the next slide happens to open
+    // with them. That is a clip on this slide, not the text in full.
+    const pages = [
+      slide([
+        word('Revenue', 36, 49),
+        word('grew', 70, 49),
+        word('across', 104, 49),
+        word('every', 138, 49),
+        word('region', 172, 49),
+      ]),
+      slide([word('this', 36, 49), word('quarter', 70, 49)]),
+    ];
+    const { matches } = assignInventory(pages, [
+      {
+        path: '/p',
+        text: 'Revenue grew across every region this quarter',
+        page: 0,
+      },
+    ]);
+    expect([
+      matches[0].status,
+      matches[0].partial,
+      matches[0].occurrences[0].endPageIndex,
+    ]).toEqual(['mapped', { matchedChars: 28, totalChars: 39 }, 0]);
+  });
+
   it('never lands slide text on the same words in another box', () => {
     // Two boxes of one slide open with the same sentence. The first box's
     // words do not come out in order, so its own occurrence cannot be read;
@@ -814,16 +935,16 @@ describe('readingOrder', () => {
       word('1:', 80, 600, 8, 13),
     ];
     expect(readingOrder(axis).map((i) => axis[i].text)).toEqual([
+      'after',
+      '1:',
       'Item68',
       'contracted',
       'recommendation',
       '(€m)',
-      'after',
-      '1:',
     ]);
   });
 
-  it('reads a rotated title as one run ahead of the page, never between the lines of a paragraph', () => {
+  it('reads a rotated title as one run after the page, never between the lines of a paragraph', () => {
     // A deck's takeaway beside a chart. Poppler emitted the chart's rotated
     // value-axis title between the takeaway's second and third lines; kept
     // in those slots, "held" and "steady." part and the takeaway reads as cut
@@ -855,7 +976,7 @@ describe('readingOrder', () => {
       line([10]),
     ];
     expect(readingOrder(words, lines)).toEqual([
-      7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 10,
+      0, 1, 2, 3, 4, 5, 6, 10, 7, 8, 9,
     ]);
     const index = indexDocument([
       { widthPt: 960, heightPt: 540, words, lines },
