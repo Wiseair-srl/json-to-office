@@ -1,5 +1,32 @@
 # @json-to-office/jto-ops
 
+## 6.8.0
+
+### Minor Changes
+
+- 02e10f2: Close the design checks: the rendered pass reads decks, and the consistency and content rules count and point where they should (#344, #332, #347, #334).
+
+  **Deck clip and spill findings were the matcher's, and are gone.** Every clip and spill the rendered pass reported on the 20 decks of the #409/#422 verification sets that render — 91 findings — came from matching, not layout: a chart's rotated axis title read between two lines of the takeaway beside it, a section tracker took the word the title under it opens with, and a figure on one slide folded into a delta on another. Re-mapped, each of those strings rendered whole, on its own slide, inside its box. Slide text is now looked for only on the page its slide exports to (hidden slides are left out) and inside the box the deck put it in; a claim holds every word it matched; rotated text reads as a run of its own; prose over a row of cells no longer merges the cells into one column; a word joins a row only beside a word of about its size; and text that overflowed onto other text is matched down its box's column, so it reports as a spill and an overlap rather than as never rendered. Spill and overlap are judged on a word's ink rather than its font-metric box, which took the stock deck templates from 100 rendered findings to 6, each confirmed on the page. On the ground-truth harness's mutated decks the pass flags every spill of more than a line, including all those the static estimator leaves below `W_QUALITY_TEXT_OVERFLOW`. The labelled mapping corpus gains deck cases — among them text placed off the slide, the fully clipped text a report cannot produce portably — and scores 1.000 over 59 entries. `renderedInventoryFromFacts` and `requestedFontsFromFacts` move from `mcp-server` to `jto-ops`.
+
+  **Size counts count what the page shows.** PPTX counts rich-text runs and leaves hidden slides out; DOCX counts statistics, lists and styled contents entries. `pptx/size-count` also holds each slide to `maximumSizesPerSlide`, a slide being the page a deck is read by; `docx/size-count` stays document-wide by decision, recorded in its description. The profile ceilings are measured on the house blocks and the verification documents: `consulting-deck` nine in the deck and six on a slide, `client-report` eleven, `technical-report` nine. A size the theme's component defaults or the fit pass wrote is never offered as a patch to a member the author does not have.
+
+  **Content rules point where the author can act.** `pptx/figure-label` asks for alt text on an image under `consulting-deck`, at the slot an image filled. A single long bullet is checked; bullets report at the slot a block filled them from; the safe area judges every box of a block on its own, with source lines exempt as chrome; a title written as rich-text runs counts as a title; `pptx/off-canvas` is `estimated`, as a width-model check. A contents field or a heading alone no longer reads as an empty section; a `Figure …` paragraph captions only the image right beside it; `docx/heading-hierarchy` offers no fix on a heading a block compiled, where the patch would have replaced the block; chrome requirements name what they expected, and a slot of whitespace counts as empty.
+
+  **Block previews are generated.** `pnpm generate:block-previews` renders the reference page's pictures from the invocation each template authors, deck blocks included, and `pnpm validate:assets` fails when a definition, an example or the theme changes under a preview. The catalog stays pictureless by decision, recorded in the blocks reference.
+
+- dbbf33e: **Node.js 22 or later is required.** Node 20 reached end of life in April 2026, and every package's `engines` range is now `>=22.0.0`. CI tests Node 22, 24 and 26 on Linux and Windows, the CLI, operations and MCP server bundles target Node 22, and the types are `@types/node` 22. Nothing else changes: upgrade the runtime and install as before.
+
+### Patch Changes
+
+- Updated dependencies [02e10f2]
+- Updated dependencies [dbbf33e]
+  - @json-to-office/core-docx@6.8.0
+  - @json-to-office/core-pptx@6.8.0
+  - @json-to-office/quality@6.8.0
+  - @json-to-office/shared@6.8.0
+  - @json-to-office/shared-docx@6.8.0
+  - @json-to-office/shared-pptx@6.8.0
+
 ## 6.2.0
 
 ### Minor Changes
