@@ -1,5 +1,19 @@
 # @json-to-office/json-to-pptx
 
+## 6.8.0
+
+### Minor Changes
+
+- dbbf33e: **Node.js 22 or later is required.** Node 20 reached end of life in April 2026, and every package's `engines` range is now `>=22.0.0`. CI tests Node 22, 24 and 26 on Linux and Windows, the CLI, operations and MCP server bundles target Node 22, and the types are `@types/node` 22. Nothing else changes: upgrade the runtime and install as before.
+
+### Patch Changes
+
+- Updated dependencies [02e10f2]
+- Updated dependencies [dbbf33e]
+  - @json-to-office/core-pptx@6.8.0
+  - @json-to-office/shared@6.8.0
+  - @json-to-office/shared-pptx@6.8.0
+
 ## 6.0.0
 
 ### Patch Changes
