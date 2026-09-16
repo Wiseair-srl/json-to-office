@@ -190,7 +190,9 @@ export async function buildDocumentOptions(
 
   return {
     styles: emitStyles(ir.styles),
-    sections: ir.sections.map((value) => section(value, ctx)),
+    sections: ir.sections.map((value, index) =>
+      section(value, ctx, index === ir.sections.length - 1)
+    ),
     ...coreProperties(ir),
     features: {
       updateFields: ir.settings.updateFields,
