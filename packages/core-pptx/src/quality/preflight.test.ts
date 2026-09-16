@@ -885,7 +885,7 @@ describe('text contrast', () => {
 
   it('warns on white text over a light solid background', () => {
     const findings = contrastFindings(
-      deck({ ...CANVAS, theme: 'default' }, [
+      deck({ ...CANVAS, theme: 'consulting' }, [
         {
           name: 'slide',
           props: { background: { color: light } },
@@ -922,7 +922,7 @@ describe('text contrast', () => {
     // attributing the slide here is what makes a contrast rule cry wolf.
     expect(
       contrastFindings(
-        deck({ ...CANVAS, theme: 'default' }, [
+        deck({ ...CANVAS, theme: 'consulting' }, [
           {
             name: 'slide',
             props: { background: { color: '#FFFFFF' } },
@@ -950,7 +950,7 @@ describe('text contrast', () => {
   it('looks through to a covering shape drawn under the text', () => {
     expect(
       contrastFindings(
-        deck({ ...CANVAS, theme: 'default' }, [
+        deck({ ...CANVAS, theme: 'consulting' }, [
           {
             name: 'slide',
             props: { background: { color: '#FFFFFF' } },
@@ -982,7 +982,7 @@ describe('text contrast', () => {
     // Radial from the bottom-right: the last stop is reached half a diagonal
     // out, so the top-left corner is pure light and the focus corner is dark.
     const gradientSlide = (x: number, y: number) =>
-      deck({ ...CANVAS, theme: 'default' }, [
+      deck({ ...CANVAS, theme: 'consulting' }, [
         {
           name: 'slide',
           props: {
@@ -1027,7 +1027,7 @@ describe('text contrast', () => {
   it('says nothing when an image hides the background', () => {
     expect(
       contrastFindings(
-        deck({ ...CANVAS, theme: 'default' }, [
+        deck({ ...CANVAS, theme: 'consulting' }, [
           {
             name: 'slide',
             props: { background: { color: light } },
@@ -1058,7 +1058,7 @@ describe('text contrast', () => {
   it('allows 3:1 for large text but holds small text to 4.5:1', () => {
     const at = (fontSize: number) =>
       contrastFindings(
-        deck({ ...CANVAS, theme: 'default' }, [
+        deck({ ...CANVAS, theme: 'consulting' }, [
           {
             name: 'slide',
             props: { background: { color: '#898989' } },
@@ -1088,7 +1088,7 @@ describe('text contrast', () => {
     // thing separating these two cases is whether bold moves the boundary.
     const at = (fontSize: number, extra: Record<string, unknown>) =>
       contrastFindings(
-        deck({ ...CANVAS, theme: 'default' }, [
+        deck({ ...CANVAS, theme: 'consulting' }, [
           {
             name: 'slide',
             props: { background: { color: '#898989' } },
@@ -1124,7 +1124,7 @@ describe('text contrast', () => {
     // its fractions never reach the later stops, so the light end that makes
     // white text illegible would go unseen.
     const findings = contrastFindings(
-      deck({ ...CANVAS, theme: 'default' }, [
+      deck({ ...CANVAS, theme: 'consulting' }, [
         {
           name: 'slide',
           props: { background: { color: '#101820' } },
@@ -1730,17 +1730,21 @@ describe('chart information design', () => {
   });
 
   it('names one theme token per series when the palette is unstated', () => {
-    const findings = pptxDiagnostics(
-      chartSlide({
-        type: 'bar',
-        valAxisTitle: 'Revenue (€m)',
-        data: [
-          { name: 'A', labels: ['Q1'], values: [1] },
-          { name: 'B', labels: ['Q1'], values: [2] },
-          { name: 'C', labels: ['Q1'], values: [3] },
-        ],
-      })
-    ).filter((finding) => finding.code === QUALITY_CODES.CHART_SERIES_COLORS);
+    // A theme with no chart palette of its own: the fix falls back to the
+    // semantic slots, in the order a palette hands them out.
+    const doc = chartSlide({
+      type: 'bar',
+      valAxisTitle: 'Revenue (€m)',
+      data: [
+        { name: 'A', labels: ['Q1'], values: [1] },
+        { name: 'B', labels: ['Q1'], values: [2] },
+        { name: 'C', labels: ['Q1'], values: [3] },
+      ],
+    });
+    (doc as { props: Record<string, unknown> }).props.theme = 'minimal';
+    const findings = pptxDiagnostics(doc).filter(
+      (finding) => finding.code === QUALITY_CODES.CHART_SERIES_COLORS
+    );
     expect(findings[0]).toMatchObject({
       severity: 'warning',
       path: '/children/0/children/0/props/chartColors',

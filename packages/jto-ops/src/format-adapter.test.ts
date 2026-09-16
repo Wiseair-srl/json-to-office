@@ -373,13 +373,13 @@ describe('requested theme wins over props.theme', () => {
 
   it('applies the theme on the pptx path without plugins', async () => {
     const adapter = new PptxFormatAdapter();
-    const generator = await adapter.createGenerator([], { theme: 'default' });
+    const generator = await adapter.createGenerator([], { theme: 'minimal' });
 
     const requested = await generator.generateBuffer(themedDeck('dark'));
-    const fallback = await adapter.generateBuffer(themedDeck('default'), {});
+    const minimal = await adapter.generateBuffer(themedDeck('minimal'), {});
     const dark = await adapter.generateBuffer(themedDeck('dark'), {});
 
-    expect(requested.equals(fallback)).toBe(true);
+    expect(requested.equals(minimal)).toBe(true);
     expect(requested.equals(dark)).toBe(false);
   });
 
@@ -569,12 +569,12 @@ describe('plugins do not restyle the document', () => {
     const generator = await adapter.createGenerator([pptxPlugin], {});
 
     const dark = await generator.generateBuffer(themedDeck('dark'));
-    const fallback = await generator.generateBuffer(themedDeck('default'));
+    const consulting = await generator.generateBuffer(themedDeck('consulting'));
     const withoutPlugins = await (
       await adapter.createGenerator([], {})
     ).generateBuffer(themedDeck('dark'));
 
-    expect(dark.equals(fallback)).toBe(false);
+    expect(dark.equals(consulting)).toBe(false);
     expect(dark.equals(withoutPlugins)).toBe(true);
   });
 
@@ -598,7 +598,7 @@ describe('plugins do not restyle the document', () => {
       theme: 'dark',
     });
 
-    const requested = await generator.generateBuffer(themedDeck('default'));
+    const requested = await generator.generateBuffer(themedDeck('consulting'));
     const own = await (
       await adapter.createGenerator([pptxPlugin], {})
     ).generateBuffer(themedDeck('dark'));

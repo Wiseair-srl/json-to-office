@@ -873,7 +873,7 @@ describe('references outside the document', () => {
       [
         'pptx',
         VALID_PPTX,
-        ['consulting', 'dark', 'default', 'devportal', 'minimal', 'vermilion'],
+        ['consulting', 'dark', 'devportal', 'minimal', 'vermilion'],
       ],
     ] as const)(
       'warns that a %s theme name matches nothing, and names the ones that would',

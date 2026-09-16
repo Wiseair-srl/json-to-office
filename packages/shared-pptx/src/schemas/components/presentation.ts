@@ -33,18 +33,18 @@ export const PresentationPropsSchema = Type.Object(
         [
           Type.String({
             description:
-              'Theme name to apply (default: "default"). Built-ins: ' +
+              'Theme name to apply (default: "consulting"). Built-ins: ' +
               `${BUILT_IN_PPTX_THEME_NAMES.join(', ')} ` +
               '(consulting is the house style).',
             examples: [...BUILT_IN_PPTX_THEME_NAMES],
-            default: 'default',
+            default: 'consulting',
           }),
           ThemeConfigSchema,
         ],
         {
           description:
             'Theme to apply: a built-in/custom theme name (default: ' +
-            '"default"), or an inline theme config object so the document ' +
+            '"consulting"), or an inline theme config object so the document ' +
             'stays self-contained',
         }
       )

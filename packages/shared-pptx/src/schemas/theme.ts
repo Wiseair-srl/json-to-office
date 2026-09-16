@@ -39,7 +39,6 @@ export type { StyleName } from '@json-to-office/shared/schemas/slide-content';
 export const BUILT_IN_PPTX_THEME_NAMES = [
   'consulting',
   'dark',
-  'default',
   'devportal',
   'minimal',
   'vermilion',

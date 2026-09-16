@@ -24,8 +24,11 @@ const LONG = Array.from(
   (_, i) => `Sentence ${i} keeps going with several more words`
 ).join('. ');
 
+// On `minimal`: the page geometry these documents were measured against (a
+// stub last page needs a tail of known length), not the house theme a report
+// gets when it names none.
 function report(children: unknown[]) {
-  return { name: 'docx', props: {}, children };
+  return { name: 'docx', props: { theme: 'minimal' }, children };
 }
 
 async function renderWithFindings(document: unknown) {

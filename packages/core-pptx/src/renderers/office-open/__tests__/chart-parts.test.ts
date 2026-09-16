@@ -46,10 +46,12 @@ const chart = (extra: Record<string, unknown> = {}) => ({
   },
 });
 
+// On `minimal`, a theme with no chart defaults, so the parts below are the
+// ones the authored chart asked for.
 const deck = (elements: unknown[] = [chart()]) =>
   ({
     name: 'pptx',
-    props: {},
+    props: { theme: 'minimal' },
     children: [{ name: 'slide', children: elements }],
   }) as unknown as PresentationComponentDefinition;
 

@@ -21,10 +21,12 @@ import type { PresentationComponentDefinition } from '../../types';
 import { PPTX_FEATURES } from '../features';
 import { createOfficeOpenPptxRenderer } from '../../renderers/office-open';
 
+// On `minimal`, a theme with no chart defaults: what a chart demands here is
+// what its author wrote, not what a theme's componentDefaults add.
 const deck = (chartProps: Record<string, unknown> = {}) =>
   ({
     name: 'pptx',
-    props: {},
+    props: { theme: 'minimal' },
     children: [
       {
         name: 'slide',
