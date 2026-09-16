@@ -13,7 +13,10 @@
  * Grotesk and rendered in DejaVu breaks every line somewhere else, and a
  * spill it reports there says nothing about the template. So a render that
  * substituted a family the deck asks for skips its case and names the
- * families; providing the faces to the converter-dependent CI job is #343's.
+ * families. The converter-dependent CI job has none of them: the faces are
+ * open-licensed but not in the repository, and shipping them with a font
+ * registry in each deck is still to decide (#343). The block matrix's
+ * manifest records, per render, which requested faces were substituted.
  */
 
 import { describe, expect, it } from 'vitest';
