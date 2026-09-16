@@ -30,10 +30,10 @@
       },
       "externalAssets": ["media/client-report-blocks/delivery-model.png"],
       "externalFonts": [],
-      "hash": "c92b2b1304dae07e34f5c637ed66ff0edb8867087b4de48ee02c47d43e6e5e96",
+      "hash": "0fd5afaf9fca9bec3f82c1f11e6c44401dac3e60dd38f21660af57f29353d0af",
       "bytes": {
         "document": 56217,
-        "gzipped": 6841,
+        "gzipped": 6839,
         "thumbnail": 31313
       }
     },
@@ -366,10 +366,10 @@
       },
       "externalAssets": [],
       "externalFonts": [],
-      "hash": "718e70b8285c082a47805651a6d7e8f909fcdc2c93f878391089b2459d5fe92b",
+      "hash": "783068f525aaf4f2352a6940e751562f8380eb52ef8bfb9975f76d10ec20d51b",
       "bytes": {
         "document": 60939,
-        "gzipped": 7597,
+        "gzipped": 7595,
         "thumbnail": 65681
       }
     },

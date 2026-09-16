@@ -261,7 +261,30 @@ const DECK_FIT_DEFECTS: readonly {
   { code: 'W_QUALITY_RENDERED_CLIP', ref: 'action-chart' },
 ];
 
+/**
+ * A matcher false positive, not a render defect (measured 2026-09-17 on the
+ * CI converters, LibreOffice 24.2 and poppler 24.02): devportal centres the
+ * four kpi-row labels, each wraps to two or three lines, and the generated
+ * labels share words with their neighbours, so one baseline reads
+ * `delivery retention operating operating programme` across two columns and
+ * the fourth label's words are claimed by the third. Every word is on the
+ * page. Tolerated at that slot on devportal's wide edge only.
+ */
+function toleratedKpiLabel(
+  c: MatrixCase,
+  d: { code: string; path?: string }
+): boolean {
+  return (
+    c.template === 'client-report-blocks.docx.json' &&
+    c.theme === 'devportal' &&
+    c.edge === 'max' &&
+    d.code === 'W_QUALITY_RENDERED_CLIP' &&
+    /\/props\/slots\/items\/\d+\/label$/.test(d.path ?? '')
+  );
+}
+
 function tolerated(c: MatrixCase, d: { code: string; path?: string }): boolean {
+  if (toleratedKpiLabel(c, d)) return true;
   if (c.template !== 'consulting-deck-blocks.pptx.json' || c.edge !== 'max')
     return false;
   const at =
@@ -403,8 +426,26 @@ describe.skipIf(!RUN_CONVERTERS || !docxCore || !pptxCore)(
     });
 
     for (const c of matrix) {
-      it(`${c.id} renders warning-clean and fully mapped`, async () => {
+      it(`${c.id} renders warning-clean and fully mapped`, async (context) => {
         const { findings, pages } = await render(c);
+        // In its design faces a case is only as good as the host's copy of
+        // them: a deck set in Space Grotesk and rendered in DejaVu breaks
+        // every line somewhere else, as preview-stock-decks says. The CI
+        // converter job has no stock deck faces, so such a case skips and
+        // names them; the fallback cases hold the bar in faces it has.
+        const substituted = findings.diagnostics
+          .filter(
+            (d) =>
+              rendered(d) && d.code === 'W_QUALITY_RENDERED_FONT_SUBSTITUTED'
+          )
+          .map((d) => String(d.evidence?.expected ?? d.message));
+        if (c.font === 'design' && substituted.length > 0) {
+          // eslint-disable-next-line no-console
+          console.log(
+            `${c.id}: skipped, this host substitutes ${[...new Set(substituted)].join(', ')}`
+          );
+          context.skip();
+        }
         const warnings = findings.diagnostics
           .filter(
             (d) => d.severity === 'warning' && rendered(d) && !tolerated(c, d)

@@ -40,7 +40,7 @@
           "confidentiality": {
             "type": "string",
             "oneLine": true,
-            "maxWords": 4,
+            "maxWords": 3,
             "required": false
           },
           "logo": {
