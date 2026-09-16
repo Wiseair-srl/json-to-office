@@ -225,7 +225,7 @@ export class PluginConfigService {
       pluginDirs: ['./plugins', './custom-components'],
       autoDiscover: false,
       aliases: {},
-      theme: 'minimal',
+      theme: 'consulting',
       discovery: {
         maxDepth: 5,
         includeNodeModules: false,

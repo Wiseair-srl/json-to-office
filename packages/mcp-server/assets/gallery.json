@@ -248,7 +248,7 @@
       "format": "docx",
       "archetype": "annual-report",
       "whenToUse": "The densest of the three: multi-column spreads and stacked figures. Use when the report is mostly data and the reader is going to study it rather than read it through.",
-      "theme": "default",
+      "theme": "minimal",
       "pages": 24,
       "components": {
         "docx": 1,
@@ -278,11 +278,11 @@
         "media/modern-annual-report-3/pct30-7256x6807-v2.png"
       ],
       "externalFonts": [],
-      "hash": "000cf193458e39be7f21cce24f82676d80e8deff30e93a1b4f1d6ff826003394",
+      "hash": "256a431c80b05cffb841d2e65a3c5a7ed251161bafa4f647e974a72f2e467399",
       "bytes": {
-        "document": 406107,
-        "gzipped": 18002,
-        "thumbnail": 572254
+        "document": 406131,
+        "gzipped": 18014,
+        "thumbnail": 572217
       }
     },
     {

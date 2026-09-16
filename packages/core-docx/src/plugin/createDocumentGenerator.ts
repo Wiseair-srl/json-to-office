@@ -125,10 +125,10 @@ function createBuilderImpl<
    * A document explicitly naming a known built-in gets it; the constructor
    * `theme` object fills in when the document names nothing or names
    * something nothing recognizes (#141). The `authored` guard on the
-   * built-in step matters twice over: the unauthored 'minimal' fallback
+   * built-in step matters twice over: the unauthored 'consulting' default
    * must not shadow the constructor theme, and an authored UNKNOWN name
    * must still reach the constructor theme rather than silently rendering
-   * the resolver's minimal fallback.
+   * the resolver's consulting fallback.
    */
   function resolveDocumentTheme(
     themeName: string,

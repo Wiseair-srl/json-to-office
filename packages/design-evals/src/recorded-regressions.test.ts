@@ -138,7 +138,9 @@ async function findings(doc: unknown) {
 const STUBS = [
   { fixture: 'last-page-workforce-1', section: 5, fill: 0.1 },
   { fixture: 'last-page-workforce-3', section: 7, fill: 0.22 },
-  { fixture: 'last-page-market-entry-3', section: 3, fill: 0.1 },
+  // 0.1 before the kpi-row's figures took the theme's lighter stat role
+  // (#454): a shorter row leaves less of the tail on the last page.
+  { fixture: 'last-page-market-entry-3', section: 3, fill: 0.05 },
   { fixture: 'last-page-post-merger-2', section: 4, fill: 0.21 },
 ] as const;
 

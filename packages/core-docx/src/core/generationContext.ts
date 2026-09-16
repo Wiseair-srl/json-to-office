@@ -32,8 +32,8 @@ export interface ThemeContextOptions {
    * Theme lookup for the base `props.theme` name. The plugin builder passes
    * its own (customThemes → doc-named built-in → constructor-supplied theme →
    * built-in); omit it to use customThemes → built-in. `authored` is true when
-   * the name came from the document's own `props.theme` (not the 'minimal'
-   * fallback), so the lookup can honor an explicitly doc-named built-in
+   * the name came from the document's own `props.theme` (not the
+   * 'consulting' default), so the lookup can honor an explicitly doc-named built-in
    * without the constructor theme being shadowed for unnamed docs (#141).
    */
   resolveNamedTheme?: (
@@ -98,7 +98,8 @@ export function resolveThemeContext(
     documentIn.props === undefined ? { ...documentIn, props: {} } : documentIn;
 
   const authoredThemeName = document.props.theme || undefined;
-  const baseThemeName = authoredThemeName ?? 'minimal';
+  // A document that names no theme is set in the house style (#331).
+  const baseThemeName = authoredThemeName ?? 'consulting';
   let theme = resolveNamedTheme
     ? resolveNamedTheme(
         baseThemeName,

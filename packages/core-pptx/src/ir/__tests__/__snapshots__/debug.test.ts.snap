@@ -33,20 +33,20 @@ exports[`PptxIR debug snapshots > matches a recorded snapshot 1`] = `
           "runs": [
             {
               "color": {
-                "hex": "333333"
+                "hex": "1A1F26"
               },
-              "fontFamily": "Arial",
-              "fontSize": 18,
+              "fontFamily": "Calibri",
+              "fontSize": 14,
               "text": "Hello"
             }
           ],
           "style": {
             "defaults": {
               "color": {
-                "hex": "333333"
+                "hex": "1A1F26"
               },
-              "fontFamily": "Arial",
-              "fontSize": 18
+              "fontFamily": "Calibri",
+              "fontSize": 14
             },
             "insetPoints": 0,
             "verticalAlign": "top"
@@ -78,20 +78,20 @@ exports[`PptxIR debug snapshots > matches a recorded snapshot 1`] = `
     }
   ],
   "theme": {
-    "bodyFont": "Arial",
+    "bodyFont": "Calibri",
     "headingFont": "Arial",
-    "name": "default",
+    "name": "consulting",
     "palette": {
-      "accent": "70AD47",
-      "accent4": "FFC000",
-      "accent5": "5B9BD5",
-      "accent6": "70AD47",
+      "accent": "1B4F8A",
+      "accent4": "5B8DC9",
+      "accent5": "A9C4E4",
+      "accent6": "7B8794",
       "background": "FFFFFF",
-      "background2": "E7E6E6",
-      "primary": "4472C4",
-      "secondary": "ED7D31",
-      "text": "333333",
-      "text2": "44546A"
+      "background2": "F2F4F7",
+      "primary": "1A1F26",
+      "secondary": "4B5563",
+      "text": "1A1F26",
+      "text2": "4B5563"
     }
   }
 }

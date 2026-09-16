@@ -33,7 +33,8 @@ export interface ThemeContextOptions {
   warnings?: PipelineWarning[];
   /**
    * Base theme name when the document doesn't name one. The plugin builder
-   * passes its constructor-supplied string theme; defaults to 'default'.
+   * passes its constructor-supplied string theme; defaults to the house
+   * style, 'consulting' (#331).
    */
   defaultThemeName?: string;
   /**
@@ -41,7 +42,7 @@ export interface ThemeContextOptions {
    * its own (customThemes → doc-named built-in → constructor theme object →
    * built-in); omit it to use customThemes → built-in. `authored` is true
    * when the name came from the document's own `props.theme` (as opposed to
-   * `defaultThemeName` or the 'default' fallback), so the lookup can honor
+   * `defaultThemeName` or the 'consulting' default), so the lookup can honor
    * an explicitly doc-named built-in without the constructor object
    * swallowing the default name too (#141).
    */
@@ -98,7 +99,7 @@ export function resolveThemeContext(
     typeof document.props.theme === 'string' ? document.props.theme : undefined;
   const baseThemeName = inlineTheme
     ? inlineTheme.name || 'inline-theme'
-    : authoredThemeName ?? defaultThemeName ?? 'default';
+    : authoredThemeName ?? defaultThemeName ?? 'consulting';
   let theme =
     inlineTheme ??
     (resolveNamedTheme

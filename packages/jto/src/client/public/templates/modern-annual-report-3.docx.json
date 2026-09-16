@@ -1,6 +1,7 @@
 {
   "name": "docx",
   "props": {
+    "theme": "minimal",
     "metadata": {
       "title": "Integrated Annual Report 2050",
       "author": "Nova Axis Corporation",

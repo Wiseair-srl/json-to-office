@@ -705,13 +705,14 @@ describe('user-defined blocks and plugin composition', () => {
       ],
     };
     const { ir } = await compileDocumentToIr(doc as never);
+    // The deck names no theme, so `primary` is the house theme's ink.
     expect(ir.slides[0].background).toEqual({
       kind: 'solid',
-      color: { hex: '4472C4' },
+      color: { hex: '1A1F26' },
     });
     expect(ir.slides[1].background).toEqual({
       kind: 'solid',
-      color: { hex: '70AD47' },
+      color: { hex: '1B4F8A' },
     });
   });
 });

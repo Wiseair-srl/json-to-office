@@ -19,11 +19,11 @@ export const createReportPropsSchema = (_componentRef?: TSchema) =>
       theme: Type.Optional(
         Type.String({
           description:
-            'Theme name to apply (default: "minimal"). Built-ins: ' +
+            'Theme name to apply (default: "consulting"). Built-ins: ' +
             `${BUILT_IN_DOCX_THEME_NAMES.join(', ')} ` +
             '(consulting is the house style).',
           examples: [...BUILT_IN_DOCX_THEME_NAMES],
-          default: 'minimal',
+          default: 'consulting',
         })
       ),
       themeOverrides: Type.Optional(ThemeOverridesSchema),

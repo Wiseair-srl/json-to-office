@@ -182,8 +182,8 @@ describe('constructor theme precedence (#141)', () => {
   });
 
   it('constructor theme object fills in for a doc-named unknown theme', async () => {
-    // resolveBuiltInTheme never misses (it falls back to minimal), so without
-    // this rule an unknown name would silently render minimal instead of the
+    // resolveBuiltInTheme never misses (it falls back to consulting), so without
+    // this rule an unknown name would silently render consulting instead of the
     // app's theme.
     const styles = await stylesXml(headingDoc('wiseair'), {
       theme: ctorTheme(),

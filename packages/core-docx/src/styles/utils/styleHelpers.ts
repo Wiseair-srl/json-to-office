@@ -45,8 +45,8 @@ export function resolveTheme(
     return getTheme(themeName);
   }
 
-  // Default to minimal theme if nothing else works
-  return getTheme('minimal');
+  // The house theme, as for any document that names none (#331)
+  return getTheme('consulting');
 }
 
 /**

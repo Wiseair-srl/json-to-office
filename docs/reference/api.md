@@ -169,7 +169,7 @@ const { buffer, warnings } = await generateBufferWithWarnings({
   name: 'pptx',
   props: {
     title: 'Demo',
-    theme: 'default',
+    theme: 'consulting',
     slideWidth: 13.33,
     slideHeight: 7.5,
   },
