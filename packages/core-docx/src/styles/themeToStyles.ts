@@ -8,7 +8,12 @@
  */
 
 import { getTheme } from '../templates/themes';
-import { capsFormatting, synthesizeFamilyName } from '@json-to-office/shared';
+import {
+  capsFormatting,
+  designCanvas,
+  synthesizeFamilyName,
+  typeScaleSizes,
+} from '@json-to-office/shared';
 
 /**
  * A right tab at the text-measure edge, which is where a TOC page number sits.
@@ -42,6 +47,71 @@ export const STATISTIC_SIZE_POINTS: Readonly<Record<string, number>> = {
   medium: 28,
   large: 40,
 };
+
+/** What a statistic paints, in points, on one theme. */
+export interface StatisticSizes {
+  /** The figure at the size the component names. */
+  number: number;
+  /** The figure at `medium`: what the number style itself carries. */
+  medium: number;
+  /** The unit and the trend set beside the figure. */
+  suffix: number;
+  /** The description under the figure. */
+  description: number;
+}
+
+/**
+ * The sizes a statistic paints on a theme, decided once for the style set,
+ * the compiler and the quality facts.
+ *
+ * A theme that restyles the component's own styles decides the figure and
+ * the description. Else a theme with type roles paints the figure in its
+ * `stat` role — `small` and `large` a step of its type scale either side —
+ * and the unit, trend and description in its `label` role, so a report built
+ * from statistics stays on the theme's scale (#454). A theme with neither
+ * keeps the built-in sizes, the unit and trend at half the figure.
+ */
+export function statisticSizes(
+  theme: ThemeConfig,
+  size: unknown
+): StatisticSizes {
+  const sizeOf = (style: string): number | undefined => {
+    const value = (
+      theme.styles as Record<string, { size?: unknown }> | undefined
+    )?.[style]?.size;
+    return typeof value === 'number' && Number.isFinite(value) && value > 0
+      ? value
+      : undefined;
+  };
+  const role = sizeOf('stat');
+  const medium =
+    sizeOf(STATISTIC_NUMBER_STYLE_ID) ?? role ?? STATISTIC_SIZE_POINTS.medium;
+  const scale =
+    role === undefined
+      ? undefined
+      : theme.typography?.scale?.[designCanvas('docx', theme.page?.size)];
+  const steps = scale ? typeScaleSizes(scale) : [];
+  const below = [...steps].reverse().find((step) => step < medium - 0.01);
+  const above = steps.find((step) => step > medium + 0.01);
+  const number =
+    size === 'small'
+      ? role !== undefined && below !== undefined
+        ? below
+        : STATISTIC_SIZE_POINTS.small
+      : size === 'large'
+        ? role !== undefined && above !== undefined
+          ? above
+          : STATISTIC_SIZE_POINTS.large
+        : medium;
+  const label = sizeOf('label');
+  return {
+    number,
+    medium,
+    // Half-points in the document, floored at 6pt.
+    suffix: label ?? Math.max(12, Math.round(number)) / 2,
+    description: sizeOf(STATISTIC_DESCRIPTION_STYLE_ID) ?? label ?? 10,
+  };
+}
 
 import type {
   DocxIrAlignment,
@@ -1013,14 +1083,24 @@ export function createDocumentStyles(
 export function createStatisticStyles(
   theme: ThemeConfig
 ): DocxIrParagraphStyle[] {
+  const sizes = statisticSizes(theme, 'medium');
+  // A theme with a `stat` role paints the figure in it: its face, weight and
+  // colour as well as its size, so a light figure is a theme decision.
+  const stat = (
+    theme.styles as Record<string, Record<string, unknown>> | undefined
+  )?.stat;
+  const face = stat?.font === 'body' ? ('body' as const) : ('heading' as const);
+  const weight =
+    typeof stat?.fontWeight === 'number' ? stat.fontWeight : undefined;
   const definitions = [
     {
       id: STATISTIC_NUMBER_STYLE_ID,
       name: 'Statistic Number',
-      font: 'heading' as const,
-      sizePoints: STATISTIC_SIZE_POINTS.medium,
-      color: theme.colors.primary,
-      bold: true,
+      font: face,
+      sizePoints: sizes.medium,
+      color:
+        typeof stat?.color === 'string' ? stat.color : theme.colors.primary,
+      bold: weight === undefined ? true : weight >= 600,
       // Space above separates the figure from whatever preceded it; none below,
       // because the description is the other half of the same block.
       spacing: { before: 12, after: 0 },
@@ -1033,7 +1113,7 @@ export function createStatisticStyles(
       id: STATISTIC_DESCRIPTION_STYLE_ID,
       name: 'Statistic Description',
       font: 'body' as const,
-      sizePoints: 10,
+      sizePoints: sizes.description,
       color: theme.colors.textMuted,
       bold: false,
       spacing: { before: 0, after: 12 },

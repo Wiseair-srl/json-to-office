@@ -19,21 +19,21 @@
 
 export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'blocks/figures-consulting':
-    '38819d948cdb15f3c53514fe394546d58d588ec37f4b46ecaf1eae949f88dbe3',
+    '1546afc9340cf9aa8646d90ce39d524f61cde64f3f581bd5a2cc6e858608ad3f',
   'blocks/figures-fallback':
     'b9bf8afbe07a269bf749185cb8b08093b43feddb098fa5e44dfcf5653647d0cf',
   'blocks/report-data-consulting':
-    'c2248b73e48731fcf27d983aa559e4f2d27275d679d10d191f7e1b01b92e8e66',
+    '3bca02124e6c22476cc3255a6239a8ef7afc594c1847652ec1ba3be1ee545534',
   'blocks/report-data-fallback':
     '6f67732028bb3cb3ad5630c1c3b2acbecf85f88897dac88e8afc16100cedc239',
   'blocks/report-chrome-fallback':
     '19275b66c2126d5c82f2b6872fa4a4b9192e9bb838022b1c8cdf40fcb1a6137c',
   'blocks/report-chrome-consulting':
-    'd6254d0f5c51239018f155ad0fd397e50fcdbda031ee412624f6334360457e91',
+    'cba0c3be100743efab4ab3cf87a4a5ed1caa86e91d9af89ee73f58648def4dd6',
   'blocks/key-takeaways-fallback':
     '115089a644b634aa0f606742d49f585ddbd1e70daf8f6abc4e5db9e1ff632be7',
   'blocks/key-takeaways-consulting':
-    'ac09a8312040588a393da667c6e1d70dd7fe4e08393f11292aaa3011dbeadb63',
+    '3fc8f842713c3a431fd018086e75528b5c04f8e6f7fd6c8f1cec1c2653af1dc3',
   'theme/shared-foundation':
     '65ff601111ac9002b9a34e17efad8efada373bdee737ffca6df272f8306aca32',
   'text/plain':
@@ -533,11 +533,11 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'theme/builtin-minimal':
     'cefb0c9d628e9ac68d9db4e932f6f47ce9c88bc593b77c2c776f99d54b6e48ef',
   'theme/builtin-devportal':
-    '7de63130f469bfdedd48c65ea67753c3686bdabb94b49a94f140c6a5bfe0e9d9',
+    '9ccc78711637ec37486c6dee16cecd029228cc8a873e4bb17a4d84de109abe9c',
   'theme/builtin-vermilion':
-    'bddc3cd92cde612dc1249f1e42936178a2d7c412e2040e3c69ef33309c0dfcf7',
+    'c917edceff70f877d2d6291d6c1aa8d3ba2ca4b05aa0bd149a4ab30dd8375ba4',
   'theme/builtin-consulting':
-    '0d53b391ed7fb2c88ea17a9b98c4824deb51f233cf4a0c07aeeaed11a5c872df',
+    '5e09680b2d8be2051f7d502eccbc9f8f80217ce6ab4616a96f4cd92d94a33785',
   'theme/name-omitted':
     'cefb0c9d628e9ac68d9db4e932f6f47ce9c88bc593b77c2c776f99d54b6e48ef',
   'theme/name-unknown-falls-back':
@@ -555,7 +555,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'theme/overrides-empty':
     'cefb0c9d628e9ac68d9db4e932f6f47ce9c88bc593b77c2c776f99d54b6e48ef',
   'theme/overrides-over-named-theme':
-    '727744904e3de0d3c6105a830e7ee2b74dc3ab7ba869665f715e62518e5d1629',
+    '996f1035ae152ae7a64297cc5a38790aebb57dd7b0ceb824eaa701e2eb057f37',
   'theme/color-tokens-in-components':
     'e2bff6016c48e8abe26887ee1a5befe92b52b19656b582fff8c83041eefd60e5',
   'theme/color-hex-literals':

@@ -350,3 +350,49 @@ describe('components/statistic — the styles it names', () => {
     expect(figure?.paragraph?.keepNext).toBe(true);
   });
 });
+
+describe('components/statistic — on a theme with type roles (#454)', () => {
+  async function compiled(props: Record<string, unknown>) {
+    return compileDocumentToIr({
+      name: 'docx',
+      props: { theme: 'consulting' },
+      children: [{ name: 'statistic', props }],
+    } as unknown as ReportComponentDefinition);
+  }
+
+  it('paints the figure in the stat role and the caption at the label size', async () => {
+    const { ir } = await compiled({ number: '94', description: 'Retention' });
+    const byId = new Map(ir.styles.paragraph.map((style) => [style.id, style]));
+    const figure = byId.get('StatisticNumber');
+    const caption = byId.get('StatisticDescription');
+    // The consulting stat role: 22pt, regular, in the accent.
+    expect(figure?.run?.sizeHalfPoints).toBe(44);
+    expect(figure?.run?.bold).toBe(false);
+    expect(figure?.run?.color).toEqual({ hex: '1B4F8A' });
+    // The label role's 9pt, in the component's own muted caption colour.
+    expect(caption?.run?.sizeHalfPoints).toBe(18);
+    expect(caption?.run?.bold).toBe(false);
+  });
+
+  it('steps a small figure down the theme scale and sets its unit at the label size', async () => {
+    const { ir } = await compiled({
+      number: '8.8',
+      unit: ' €m',
+      trend: 'up',
+      trendValue: '+16.9%',
+      description: 'Revenue',
+      size: 'small',
+    });
+    const [figureLine] = ir.sections[0].children as Array<{
+      children: Array<{
+        text: string;
+        formatting?: { sizeHalfPoints?: number };
+      }>;
+    }>;
+    const [figure, unit, trend] = figureLine.children;
+    // One step below 22pt on the consulting scale (…16, 18, 22…).
+    expect(figure.formatting?.sizeHalfPoints).toBe(36);
+    expect(unit.formatting?.sizeHalfPoints).toBe(18);
+    expect(trend.formatting?.sizeHalfPoints).toBe(18);
+  });
+});
