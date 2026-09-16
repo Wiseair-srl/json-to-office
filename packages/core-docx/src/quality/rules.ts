@@ -1561,7 +1561,7 @@ export const DOCX_QUALITY_PROFILES = {
     id: 'client-report',
     formats: ['docx'],
     description:
-      'Client or public-administration report: a running head with page numbers on every section after the cover, a takeaway and a source wherever a block declares them, no heading skipped, every size on the theme scale with at most eleven in play, a readable measure, no empty or untitled section, every heading bound to what follows and every figure named, no page rendered empty or left half blank under the running head, and at least one chart or table.',
+      'Client or public-administration report: a running head with page numbers on every section after the cover, a takeaway and a source wherever a block declares them, no heading skipped, every size on the theme scale with at most nine in play, a readable measure, no empty or untitled section, every heading bound to what follows and every figure named, no page rendered empty or left half blank under the running head, and at least one chart or table.',
     rules: {
       'docx/required-chrome': {
         parameters: { required: ['takeaway', 'source'] },
@@ -1574,14 +1574,15 @@ export const DOCX_QUALITY_PROFILES = {
       },
       'docx/heading-hierarchy': { severity: 'warning' },
       'docx/type-scale': { enabled: true },
-      // Measured 2026-09-15 with statistics, lists and contents counted: a
-      // client report built from the house blocks paints up to eleven sizes —
-      // body, heading 1 and 2, subtitle, display, table cells and headers,
-      // source and chrome, and the kpi-row's figure, its unit and its label
-      // (28, 14 and 10pt, or 20 and 10 in a row of four). Every one of the
-      // reports of the #360 checkpoint and the #409 verification set came in
-      // at eleven or fewer; a size past the house set is an ad-hoc one.
-      'docx/size-count': { enabled: true, parameters: { maximumSizes: 11 } },
+      // Measured 2026-09-16 with statistics, lists and contents counted, once
+      // a statistic paints in the theme's roles (#454): a client report built
+      // from the house blocks paints up to nine sizes — 8 (source, chrome),
+      // 9 (labels, the kpi-row's unit and caption), 9.5 (table cells), 10.5
+      // (body), 12.5 and 16 (headings), 13 (subtitle), 18 (a four-up kpi
+      // figure) and 22 (display, the kpi figure). The 155 client reports of
+      // the checkpoint, host-study and verification runs came in at nine or
+      // fewer; a size past the house set is an ad-hoc one.
+      'docx/size-count': { enabled: true, parameters: { maximumSizes: 9 } },
       'docx/role-drift': { enabled: true },
       // The report blocks place every figure in a captioned block, so a page
       // with no text under the running head is a stray break or an empty

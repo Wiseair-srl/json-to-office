@@ -48,7 +48,7 @@ import {
   createStatisticStyles,
   STATISTIC_DESCRIPTION_STYLE_ID,
   STATISTIC_NUMBER_STYLE_ID,
-  STATISTIC_SIZE_POINTS,
+  statisticSizes,
 } from '../styles/themeToStyles';
 import { resolveFontFamily } from '../styles/utils/styleHelpers';
 import {
@@ -2225,13 +2225,14 @@ function compileStatistic(
   // The style pins the medium size, so only the other two need stating on the
   // run — a document that never sets `size` carries no run properties at all
   // and stays restylable from the style set alone.
-  const numberPoints =
-    STATISTIC_SIZE_POINTS[String(props.size)] ?? STATISTIC_SIZE_POINTS.medium;
-  const resized = numberPoints !== STATISTIC_SIZE_POINTS.medium;
+  const sizes = statisticSizes(ctx.theme, props.size);
+  const numberPoints = sizes.number;
+  const resized = numberPoints !== sizes.medium;
 
-  // Unit and trend ride at half the figure, floored at 6pt: a percent sign set
-  // at the number's own size competes with the number.
-  const suffixHalfPoints = Math.max(12, Math.round(numberPoints));
+  // Unit and trend ride smaller than the figure — the theme's label size, or
+  // half the figure floored at 6pt: a percent sign set at the number's own
+  // size competes with the number.
+  const suffixHalfPoints = Math.round(sizes.suffix * 2);
 
   const numberRuns: DocxIrTextRun[] = [];
   const numberText = text(props.number);

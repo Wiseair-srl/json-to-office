@@ -69,7 +69,8 @@
       },
       "stat": {
         "face": "heading",
-        "weight": 700,
+        "size": 22,
+        "weight": 400,
         "color": "accent",
         "lineHeight": 1
       },
