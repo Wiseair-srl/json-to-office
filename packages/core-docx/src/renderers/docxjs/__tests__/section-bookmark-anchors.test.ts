@@ -7,7 +7,9 @@
  * already full, when it turned into an empty page carrying only the running
  * head and footer — the defect the client-report checkpoint judge named most
  * often. The anchors now ride inside the edge paragraphs, and only a section
- * that begins or ends with a table gets a paragraph of its own, one point tall.
+ * that begins or ends with a table gets a paragraph of its own, one point tall
+ * — or the document's last section when it ends on a text frame, which
+ * `trailing-frame.test.ts` covers for both backends.
  */
 
 import { describe, it, expect } from 'vitest';

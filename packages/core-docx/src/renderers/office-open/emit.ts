@@ -1128,7 +1128,11 @@ function borders(value: DocxIrBorders): Opts {
  * Sections
  * ------------------------------------------------------------------ */
 
-export function section(value: DocxIrSection, ctx: EmitContext): Opts {
+export function section(
+  value: DocxIrSection,
+  ctx: EmitContext,
+  closesDocument = false
+): Opts {
   const { page, columns } = value.properties;
   return {
     properties: {
@@ -1214,7 +1218,7 @@ export function section(value: DocxIrSection, ctx: EmitContext): Opts {
           }
         : {}),
     },
-    children: sectionChildren(value, ctx),
+    children: sectionChildren(value, ctx, closesDocument),
     ...(value.headers ? { headers: headerFooterSet(value.headers, ctx) } : {}),
     ...(value.footers ? { footers: headerFooterSet(value.footers, ctx) } : {}),
   };
@@ -1243,9 +1247,28 @@ function headerFooterSet(
  * docx.js adapter there are no anchor paragraphs to carry it — the range opens
  * and closes between blocks, which is what OOXML allows and what a reader
  * expects to find.
+ *
+ * The document's last section still ends in a paragraph after a text frame:
+ * one point tall, exact, no spacing, as the docx.js adapter sets it. When the
+ * body ends on consecutive framed paragraphs in a section with its own header
+ * or footer, LibreOffice drops the frame of the one before last and sets its
+ * text at the top of the page. An earlier section never ends the body, since
+ * its section properties close it in a paragraph of their own.
  */
-function sectionChildren(value: DocxIrSection, ctx: EmitContext): Opts[] {
+function sectionChildren(
+  value: DocxIrSection,
+  ctx: EmitContext,
+  closesDocument = false
+): Opts[] {
   const blocks = value.children.map((child) => block(child, ctx));
+  const last = value.children[value.children.length - 1];
+  if (closesDocument && last?.kind === 'paragraph' && last.frame !== undefined)
+    blocks.push({
+      paragraph: {
+        children: [],
+        spacing: { before: 0, after: 0, line: 20, lineRule: 'exact' },
+      },
+    });
   const bookmark = value.bookmark;
   if (!bookmark) return blocks;
 

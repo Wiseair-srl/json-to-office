@@ -141,7 +141,9 @@ export function buildDocument(
 ): Document {
   return new Document({
     styles: emitStyles(ir.styles),
-    sections: ir.sections.map((section) => sectionOptions(section, resources)),
+    sections: ir.sections.map((section, index) =>
+      sectionOptions(section, resources, index === ir.sections.length - 1)
+    ),
     ...coreProperties(ir),
     features: {
       updateFields: ir.settings.updateFields,
@@ -365,7 +367,8 @@ function collectImagePlacements(ir: DocxIR): Map<string, Set<string>> {
 
 function sectionOptions(
   section: DocxIrSection,
-  resources: EmitResources
+  resources: EmitResources,
+  closesDocument = false
 ): ISectionOptions {
   const { page, columns } = section.properties;
   const options: Record<string, unknown> = {
@@ -422,7 +425,7 @@ function sectionOptions(
           }
         : {}),
     },
-    children: sectionChildren(section, resources),
+    children: sectionChildren(section, resources, closesDocument),
   };
 
   const headers = chromeSlots(section.headers, Header, resources);
@@ -469,17 +472,27 @@ function partChildren(part: DocxIrHeaderFooter, resources: EmitResources) {
  * tall, exact, no spacing — because a bare Normal paragraph there costs a
  * full line, and a section whose last page was already full pushed that line
  * onto an empty page carrying nothing but the running head.
+ *
+ * The document's last section gets that paragraph after a text frame too,
+ * bookmark or not. When the body ends on consecutive framed paragraphs in a
+ * section with its own header or footer, LibreOffice drops the frame of the
+ * one before last and sets its text at the top of the page: the back cover of
+ * the modern annual report lost its "Follow Us" label that way once the
+ * bookmark end moved into the last frame. An earlier section never ends the
+ * body, since its section properties close it in a paragraph of their own.
  */
 function sectionChildren(
   section: DocxIrSection,
-  resources: EmitResources
+  resources: EmitResources,
+  closesDocument = false
 ): (Paragraph | Table)[] {
   const blocks = section.children.map((block) => emitBlock(block, resources));
   const bookmark = section.bookmark;
-  if (!bookmark) return blocks;
+  const endsInFrame = closesDocument && lastBlockIsFrame(section);
+  if (!bookmark && !endsInFrame) return blocks;
 
   const out: (Paragraph | Table)[] = [...blocks];
-  if (bookmark.opens) {
+  if (bookmark?.opens) {
     const start = new BookmarkStart(bookmark.name, bookmark.id);
     const first = out[0];
     if (first instanceof Paragraph) {
@@ -491,22 +504,33 @@ function sectionChildren(
       out.unshift(anchorParagraph(start));
     }
   }
-  if (bookmark.closes) {
+  if (bookmark?.closes) {
     const end = new BookmarkEnd(bookmark.id);
     const last = out[out.length - 1];
-    if (last instanceof Paragraph) {
+    if (last instanceof Paragraph && !endsInFrame) {
       last.addChildElement(end);
     } else {
       out.push(anchorParagraph(end));
     }
+  } else if (endsInFrame) {
+    out.push(anchorParagraph());
   }
   return out;
 }
 
-/** A paragraph that exists only to hold a bookmark anchor next to a table. */
-function anchorParagraph(anchor: BookmarkStart | BookmarkEnd): Paragraph {
+/** Whether a section's last block is a paragraph set as a text frame. */
+function lastBlockIsFrame(section: DocxIrSection): boolean {
+  const last = section.children[section.children.length - 1];
+  return last?.kind === 'paragraph' && last.frame !== undefined;
+}
+
+/**
+ * A paragraph that exists only to hold a bookmark anchor next to a table, or
+ * to end the body after a text frame: one point tall, exact, no spacing.
+ */
+function anchorParagraph(anchor?: BookmarkStart | BookmarkEnd): Paragraph {
   return new Paragraph({
-    children: [anchor],
+    children: anchor ? [anchor] : [],
     spacing: { before: 0, after: 0, line: 20, lineRule: LineRuleType.EXACT },
   });
 }
