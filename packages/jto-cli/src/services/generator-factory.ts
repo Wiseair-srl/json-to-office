@@ -33,6 +33,11 @@ export class GeneratorFactory {
     return await generator.generateBuffer(document);
   }
 
+  /** The registered components, for quality preparation to expand. */
+  getPlugins(): readonly any[] {
+    return this.registry.getPlugins();
+  }
+
   getPluginInfo(): {
     hasPlugins: boolean;
     count: number;

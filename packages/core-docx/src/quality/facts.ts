@@ -16,6 +16,7 @@ import {
   type TableInfoDesign,
 } from '@json-to-office/quality';
 import type {
+  ExpandedBlocks,
   FontRuntimeOpts,
   GenerationWarning,
 } from '@json-to-office/shared';
@@ -419,6 +420,14 @@ export interface PrepareDocxQualityOptions {
   warnings?: GenerationWarning[];
   context?: GenerationThemeContext;
   renderer?: string;
+  /**
+   * The expansion a plugin host already ran over `context.document`: blocks
+   * and registered code components lowered together, with the source map
+   * back to what the author wrote. Given, preparation reads it instead of
+   * expanding blocks alone, so a fact about a plugin's output reports at the
+   * invocation that emitted it.
+   */
+  expanded?: ExpandedBlocks<ReportComponentDefinition>;
 }
 
 function asRecord(value: unknown): Rec | undefined {
@@ -1291,9 +1300,10 @@ export function prepareDocxQualityDocument(
   // Blocks lower here, once, for every consumer: the facts below, the IR
   // compiler and the renderers all read the expanded tree, and a caller that
   // hands in a context of its own gets the same expansion.
-  const expanded = expandBlocks(themed.document, themed.theme);
+  const expanded =
+    options.expanded ?? expandBlocks(themed.document, themed.theme);
   const context: GenerationThemeContext =
-    expanded.blocks.length > 0
+    options.expanded !== undefined || expanded.blocks.length > 0
       ? { ...themed, document: expanded.document }
       : themed;
   const resolved = resolveDocumentTree(context.document, context.theme);
@@ -1312,7 +1322,7 @@ export function prepareDocxQualityDocument(
   const authoredPath = (path: string): string =>
     toAuthoredPointer(
       themed.sourceMap ?? {},
-      toAuthoredPointer(expanded.sourceMap, path)
+      toAuthoredPointer(expanded.sourceMap, path, expanded.pluginOutputs)
     );
   const addFact = (raw: DocxQualityFact): void => {
     const fact: DocxQualityFact = {

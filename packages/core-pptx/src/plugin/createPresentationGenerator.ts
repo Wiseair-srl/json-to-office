@@ -19,8 +19,10 @@ import type {
   GenerateFileOptions,
   GenerateOptions,
   GenerationValidationOptions,
+  QualityPreparationResult,
   ValidationResult,
 } from './types';
+import { preparePptxQualityDocument } from '../quality/facts';
 import { validatePresentation, cleanComponentProps } from './validation';
 import { expandPptxBlocksWithPlugins } from '../blocks/document';
 import { generatePluginPresentationSchema, exportPluginSchema } from './schema';
@@ -213,6 +215,189 @@ function createBuilderImpl<
   }
 
   /**
+   * The front half every entry point shares: validation, theme context, the
+   * bounded block and plugin expansion, and the expanded tree validated once
+   * more. Rendering and quality preparation start from the same tree.
+   */
+  async function expandPresentation(
+    document: ExtendedPresentationComponent<TComponents>,
+    options?: GenerateOptions
+  ) {
+    let internalDocument =
+      document as unknown as PresentationComponentDefinition;
+    const renderer =
+      options?.renderer ?? state.renderer ?? internalDocument.renderer;
+    const validationDocument =
+      renderer === undefined
+        ? internalDocument
+        : { ...internalDocument, renderer };
+
+    const validationOptions: GenerationValidationOptions = {
+      ...state.validation,
+      ...options?.validation,
+    };
+    if (validationOptions.enabled !== false) {
+      const result = validatePresentation(
+        validationDocument,
+        state.components as unknown as CustomComponent<TSchema>[],
+        { allowUnknownFields: validationOptions.allowUnknownFields }
+      );
+      if (!result.valid) {
+        throw new ComponentValidationError(result.errors, internalDocument);
+      }
+    } else if (!internalDocument || internalDocument.name !== 'pptx') {
+      throw new Error('Top-level component must be a pptx component');
+    }
+
+    const warnings: PipelineWarning[] = [];
+
+    // Props defaulting, inline-theme normalization, theme resolution
+    // (customThemes → constructor theme → built-in) and export-mode pre-pass
+    // — shared with the core pipeline so the two
+    // cannot drift (see core/generationContext.ts). The pre-pass runs
+    // BEFORE custom-component expansion so any component that reads
+    // `theme.fonts.*` during render sees the substituted names, not the
+    // original non-safe ones.
+    //
+    // Theme precedence: customThemes[name] → doc-named built-in →
+    // constructor `state.theme` object → built-in, with the lookup name
+    // taken from doc-level `props.theme` (or `defaultThemeName` when the
+    // doc names none). A document explicitly naming a known built-in gets
+    // it; the constructor object fills in when the doc names nothing or
+    // names something nothing recognizes (#141). The `authored` guard on
+    // the built-in step matters twice over: an unauthored default name
+    // must not shadow the constructor object, and an authored UNKNOWN name
+    // must still reach the constructor object (getPptxTheme never misses —
+    // a doc naming "wiseair" must render the app's theme, not silently
+    // fall back to default). Matches the DOCX plugin
+    // (resolveDocumentTheme) exactly.
+    const context = resolveThemeContext(internalDocument, {
+      customThemes: state.customThemes,
+      fonts: state.fonts,
+      warnings,
+      defaultThemeName:
+        typeof state.theme === 'string' ? state.theme : undefined,
+      resolveNamedTheme: (name, authored) =>
+        state.customThemes?.[name] ??
+        (authored && hasPptxTheme(name) ? getPptxTheme(name) : undefined) ??
+        (typeof state.theme === 'object' && state.theme !== null
+          ? state.theme
+          : getPptxTheme(name)),
+    });
+    const modedRoot = context.document;
+    const resolvedTheme = context.theme;
+
+    // A custom render() creates a new, previously unseen boundary in the
+    // component tree. Validate its output in the authored parent context so
+    // dead props and illegal placement cannot reach the renderer silently.
+    const validateEmitted: ValidateEmitted | undefined =
+      validationOptions.enabled === false
+        ? undefined
+        : (emitted, componentLabel, parentName) => {
+            let validationDocument: PresentationComponentDefinition;
+            if (parentName === 'pptx') {
+              validationDocument = {
+                ...modedRoot,
+                ...(renderer !== undefined ? { renderer } : {}),
+                children: emitted,
+              };
+            } else if (parentName === 'slide') {
+              validationDocument = {
+                ...modedRoot,
+                ...(renderer !== undefined ? { renderer } : {}),
+                children: [{ name: 'slide', props: {}, children: emitted }],
+              };
+            } else {
+              // Custom container semantics are plugin-defined. The complete
+              // expanded-tree pass below validates the final standard tree.
+              return;
+            }
+
+            const result = validatePresentation(
+              validationDocument,
+              state.components as unknown as CustomComponent<TSchema>[],
+              { allowUnknownFields: validationOptions.allowUnknownFields }
+            );
+            if (!result.valid) {
+              throw new ComponentValidationError(
+                result.errors.map((error) => ({
+                  ...error,
+                  message: `custom component '${componentLabel}' emitted invalid output — ${error.message}`,
+                })),
+                emitted
+              );
+            }
+          };
+
+    // Document-local JSON blocks and registered code share one bounded
+    // expansion, in both directions: a plugin can emit a block, a block can
+    // name a plugin. Nothing here loads code by name; a missing
+    // registration is a validation error.
+    const expanded = await expandPptxBlocksWithPlugins(
+      modedRoot,
+      resolvedTheme,
+      new Set(componentMap.keys()),
+      pluginRenderer(warnings, resolvedTheme, validateEmitted)
+    );
+    const processedDocument = expanded.document;
+
+    // Validate the fully expanded tree once more. This covers output from
+    // nested custom containers whose intermediate parent semantics are
+    // plugin-defined and therefore cannot be checked at render time.
+    if (validationOptions.enabled !== false) {
+      const result = validatePresentation(
+        {
+          ...processedDocument,
+          ...(renderer !== undefined ? { renderer } : {}),
+        },
+        [],
+        {
+          allowUnknownFields: validationOptions.allowUnknownFields,
+        }
+      );
+      if (!result.valid) {
+        throw new ComponentValidationError(
+          result.errors.map((error) => ({
+            ...error,
+            message: `expanded plugin output failed validation — ${error.message}`,
+          })),
+          processedDocument
+        );
+      }
+    }
+
+    return { context, expanded, warnings, renderer };
+  }
+
+  /**
+   * The quality model of a presentation with its registered components
+   * expanded the way generation expands them, so a fact about a plugin's
+   * output is reported at the invocation that emitted it. Nothing renders.
+   */
+  async function prepareQuality(
+    document: ExtendedPresentationComponent<TComponents>,
+    options?: GenerateOptions
+  ): Promise<QualityPreparationResult> {
+    const { context, expanded, warnings, renderer } = await expandPresentation(
+      document,
+      options
+    );
+    const prepared = preparePptxQualityDocument(
+      document as unknown as PresentationComponentDefinition,
+      {
+        context,
+        expanded,
+        customThemes: state.customThemes,
+        fonts: state.fonts,
+        services: state.services,
+        ...(renderer !== undefined && { renderer }),
+        warnings,
+      }
+    );
+    return { prepared, warnings };
+  }
+
+  /**
    * Generate a presentation buffer
    */
   async function generate(
@@ -220,148 +405,10 @@ function createBuilderImpl<
     options?: GenerateOptions
   ): Promise<BufferGenerationResult> {
     try {
-      let internalDocument =
-        document as unknown as PresentationComponentDefinition;
-      const renderer =
-        options?.renderer ?? state.renderer ?? internalDocument.renderer;
-      const validationDocument =
-        renderer === undefined
-          ? internalDocument
-          : { ...internalDocument, renderer };
-
-      const validationOptions: GenerationValidationOptions = {
-        ...state.validation,
-        ...options?.validation,
-      };
-      if (validationOptions.enabled !== false) {
-        const result = validatePresentation(
-          validationDocument,
-          state.components as unknown as CustomComponent<TSchema>[],
-          { allowUnknownFields: validationOptions.allowUnknownFields }
-        );
-        if (!result.valid) {
-          throw new ComponentValidationError(result.errors, internalDocument);
-        }
-      } else if (!internalDocument || internalDocument.name !== 'pptx') {
-        throw new Error('Top-level component must be a pptx component');
-      }
-
-      const warnings: PipelineWarning[] = [];
-
-      // Props defaulting, inline-theme normalization, theme resolution
-      // (customThemes → constructor theme → built-in) and export-mode pre-pass
-      // — shared with the core pipeline so the two
-      // cannot drift (see core/generationContext.ts). The pre-pass runs
-      // BEFORE custom-component expansion so any component that reads
-      // `theme.fonts.*` during render sees the substituted names, not the
-      // original non-safe ones.
-      //
-      // Theme precedence: customThemes[name] → doc-named built-in →
-      // constructor `state.theme` object → built-in, with the lookup name
-      // taken from doc-level `props.theme` (or `defaultThemeName` when the
-      // doc names none). A document explicitly naming a known built-in gets
-      // it; the constructor object fills in when the doc names nothing or
-      // names something nothing recognizes (#141). The `authored` guard on
-      // the built-in step matters twice over: an unauthored default name
-      // must not shadow the constructor object, and an authored UNKNOWN name
-      // must still reach the constructor object (getPptxTheme never misses —
-      // a doc naming "wiseair" must render the app's theme, not silently
-      // fall back to default). Matches the DOCX plugin
-      // (resolveDocumentTheme) exactly.
-      const context = resolveThemeContext(internalDocument, {
-        customThemes: state.customThemes,
-        fonts: state.fonts,
-        warnings,
-        defaultThemeName:
-          typeof state.theme === 'string' ? state.theme : undefined,
-        resolveNamedTheme: (name, authored) =>
-          state.customThemes?.[name] ??
-          (authored && hasPptxTheme(name) ? getPptxTheme(name) : undefined) ??
-          (typeof state.theme === 'object' && state.theme !== null
-            ? state.theme
-            : getPptxTheme(name)),
-      });
-      const modedRoot = context.document;
+      const { context, expanded, warnings, renderer } =
+        await expandPresentation(document, options);
       const resolvedTheme = context.theme;
-
-      // A custom render() creates a new, previously unseen boundary in the
-      // component tree. Validate its output in the authored parent context so
-      // dead props and illegal placement cannot reach the renderer silently.
-      const validateEmitted: ValidateEmitted | undefined =
-        validationOptions.enabled === false
-          ? undefined
-          : (emitted, componentLabel, parentName) => {
-              let validationDocument: PresentationComponentDefinition;
-              if (parentName === 'pptx') {
-                validationDocument = {
-                  ...modedRoot,
-                  ...(renderer !== undefined ? { renderer } : {}),
-                  children: emitted,
-                };
-              } else if (parentName === 'slide') {
-                validationDocument = {
-                  ...modedRoot,
-                  ...(renderer !== undefined ? { renderer } : {}),
-                  children: [{ name: 'slide', props: {}, children: emitted }],
-                };
-              } else {
-                // Custom container semantics are plugin-defined. The complete
-                // expanded-tree pass below validates the final standard tree.
-                return;
-              }
-
-              const result = validatePresentation(
-                validationDocument,
-                state.components as unknown as CustomComponent<TSchema>[],
-                { allowUnknownFields: validationOptions.allowUnknownFields }
-              );
-              if (!result.valid) {
-                throw new ComponentValidationError(
-                  result.errors.map((error) => ({
-                    ...error,
-                    message: `custom component '${componentLabel}' emitted invalid output — ${error.message}`,
-                  })),
-                  emitted
-                );
-              }
-            };
-
-      // Document-local JSON blocks and registered code share one bounded
-      // expansion, in both directions: a plugin can emit a block, a block can
-      // name a plugin. Nothing here loads code by name; a missing
-      // registration is a validation error.
-      const expanded = await expandPptxBlocksWithPlugins(
-        modedRoot,
-        resolvedTheme,
-        new Set(componentMap.keys()),
-        pluginRenderer(warnings, resolvedTheme, validateEmitted)
-      );
       const processedDocument = expanded.document;
-
-      // Validate the fully expanded tree once more. This covers output from
-      // nested custom containers whose intermediate parent semantics are
-      // plugin-defined and therefore cannot be checked at render time.
-      if (validationOptions.enabled !== false) {
-        const result = validatePresentation(
-          {
-            ...processedDocument,
-            ...(renderer !== undefined ? { renderer } : {}),
-          },
-          [],
-          {
-            allowUnknownFields: validationOptions.allowUnknownFields,
-          }
-        );
-        if (!result.valid) {
-          throw new ComponentValidationError(
-            result.errors.map((error) => ({
-              ...error,
-              message: `expanded plugin output failed validation — ${error.message}`,
-            })),
-            processedDocument
-          );
-        }
-      }
 
       // resolveDocumentFonts fires `fonts.onResolved` internally when a
       // listener is registered (LibreOffice preview stager). The PPTX
@@ -513,6 +560,7 @@ function createBuilderImpl<
     generate,
     generateBuffer: generate,
     generateFile,
+    prepareQuality,
     getComponentNames,
     validate,
     generateSchema,

@@ -538,16 +538,24 @@ export class GeneratorService {
     const registry = PluginRegistry.getInstance();
     const quality = (options as { quality?: GeneratorOptions['quality'] })
       ?.quality;
+    // Registered plugins are expanded for quality the way generation expands
+    // them, so what a plugin emits is analysed and reported at its
+    // invocation (#453). The plugins then render a second time for the bytes.
+    const plugins = registry.hasPlugins() ? registry.getPlugins() : [];
+    const validForPreparation =
+      plugins.length > 0 && this.adapter.validateDocumentWithPlugins
+        ? (await this.adapter.validateDocumentWithPlugins(config, plugins))
+            .valid
+        : this.adapter.validateDocument(config).valid;
     const prepared =
-      !registry.hasPlugins() &&
-      this.adapter.prepareDocument &&
-      this.adapter.validateDocument(config).valid
+      this.adapter.prepareDocument && validForPreparation
         ? await this.adapter.prepareDocument(config, {
             customThemes,
             fonts: fontOpts,
             baseDir,
             renderer,
             warnings: coreWarnings,
+            ...(plugins.length > 0 && { plugins }),
           })
         : undefined;
     const qualityOptions: GeneratorOptions = {
@@ -557,6 +565,7 @@ export class GeneratorService {
       renderer,
       quality,
       prepared,
+      ...(plugins.length > 0 && { plugins }),
     };
     let qualityWarnings: GenerationWarning[] = [];
     try {
@@ -736,12 +745,14 @@ export class GeneratorService {
     if (!result.valid) return result;
     if (this.adapter.analyzeQuality) {
       try {
+        const withPlugins =
+          plugins.length > 0 ? { ...options, plugins } : options;
         const prepared = this.adapter.prepareDocument
-          ? await this.adapter.prepareDocument(config, options)
+          ? await this.adapter.prepareDocument(config, withPlugins)
           : undefined;
         const qualityAnalysis = await this.adapter.analyzeQuality(
           config,
-          prepared ? { ...options, prepared } : options
+          prepared ? { ...withPlugins, prepared } : withPlugins
         );
         return {
           ...result,

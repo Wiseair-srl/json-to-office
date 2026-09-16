@@ -9,8 +9,10 @@ import type {
   ReportComponent,
   GenerationWarning,
 } from '@json-to-office/shared-docx';
+import type { PreparedDocument } from '@json-to-office/quality';
 import type { ReportComponentDefinition } from '../types';
 import type { DocxRendererId } from '../renderers/types';
+import type { DocxQualityFact, DocxQualityModel } from '../quality/facts';
 
 /**
  * Helper to infer the versions map type from a CustomComponent
@@ -229,6 +231,16 @@ export interface StandardDefinitionResult {
 }
 
 /**
+ * Result of `prepareQuality` — the quality model of the expanded document,
+ * ready for `analyzeDocxQuality(document, { prepared })`.
+ */
+export interface QualityPreparationResult {
+  prepared: PreparedDocument<DocxQualityModel, DocxQualityFact>;
+  /** Warnings collected during expansion, null if no warnings */
+  warnings: GenerationWarning[] | null;
+}
+
+/**
  * Result of document validation
  */
 export interface ValidationResult {
@@ -270,6 +282,16 @@ export interface DocumentGenerator<
     document: ExtendedReportComponent<TCustomComponents>,
     options?: GenerateOptions
   ) => Promise<StandardDefinitionResult>;
+
+  /**
+   * Prepare the document's quality model with registered components expanded
+   * as generation expands them: plugin output is analyzed, and its findings
+   * point at the invocation that emitted it. Nothing renders.
+   */
+  prepareQuality: (
+    document: ExtendedReportComponent<TCustomComponents>,
+    options?: GenerateOptions
+  ) => Promise<QualityPreparationResult>;
 
   getComponentNames: () => string[];
 

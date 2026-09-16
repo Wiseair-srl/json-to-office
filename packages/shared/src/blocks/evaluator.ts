@@ -43,8 +43,22 @@ export function blockValueAt(root: unknown, path: string): unknown {
 }
 export function toAuthoredBlockPointer(
   map: Readonly<Record<string, string>>,
-  pointer: string
+  pointer: string,
+  /**
+   * Compiled pointers under which a registered code component's output sits.
+   * Nothing below one was authored: a pointer into that output lands on the
+   * invocation that emitted it, not on a path the document does not have.
+   */
+  pluginOutputs: readonly string[] = []
 ): string {
+  let opaque: string | undefined;
+  for (const prefix of pluginOutputs)
+    if (
+      (pointer === prefix || pointer.startsWith(`${prefix}/`)) &&
+      (opaque === undefined || prefix.length > opaque.length)
+    )
+      opaque = prefix;
+  if (opaque !== undefined) return toAuthoredBlockPointer(map, opaque);
   let best: string | undefined;
   for (const path of Object.keys(map)) {
     if (
@@ -661,6 +675,8 @@ export interface BlockEvaluatorOptions {
 export class JsonBlockEvaluator {
   readonly sourceMap: Record<string, string> = {};
   readonly blocks: string[] = [];
+  /** Compiled pointers holding a registered component's output. */
+  readonly pluginOutputs: string[] = [];
   private readonly blockSources = new Set<string>();
   private nodes = 0;
   constructor(
