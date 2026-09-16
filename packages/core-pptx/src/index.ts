@@ -147,6 +147,7 @@ export type {
   GenerateFileOptions as PluginGenerateFileOptions,
   GenerateOptions as PluginGenerateOptions,
   GenerationValidationOptions as PluginGenerationValidationOptions,
+  QualityPreparationResult as PluginQualityPreparationResult,
   ValidationResult as PluginValidationResult,
   ExtractCustomComponentType,
   CustomComponentUnion,

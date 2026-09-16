@@ -49,8 +49,9 @@ the selected quality gate is not satisfied.
 
 The format core first resolves the authored document into a prepared model. It
 applies the information the renderer will use — themes, defaults, blocks,
-groups, grids, disabled state and section geometry — while preserving RFC
-6901 pointers back to the source JSON, through block expansion. Rules then inspect facts from that model.
+registered code components, groups, grids, disabled state and section geometry
+— while preserving RFC 6901 pointers back to the source JSON, through block and
+plugin expansion. Rules then inspect facts from that model.
 
 This makes checks such as effective font size and available table width more
 useful than scanning raw props. It also lets generation and quality analysis
@@ -852,6 +853,33 @@ These functions are not re-exported by `@json-to-office/json-to-docx` or
 not automatically enforce a quality policy either: analyze explicitly and act on
 `blocked`. The CLI, HTTP server and MCP server integrate analysis into their
 validation/generation flows.
+
+### Registered code components
+
+A document that invokes registered code components is analysed through the
+generator that registers them. `prepareQuality` runs the same validation, theme
+context and bounded block and plugin expansion as generation, and nothing
+renders; hand its result to the analyzer:
+
+```ts
+import {
+  analyzeDocxQuality,
+  createDocumentGenerator,
+} from '@json-to-office/core-docx';
+
+const generator = createDocumentGenerator({}).addComponent(revenueTable);
+const { prepared } = await generator.prepareQuality(report);
+const analysis = analyzeDocxQuality(report, { prepared });
+```
+
+`createPresentationGenerator(...).prepareQuality` does the same for decks.
+Every rule judges what a plugin emitted, and a finding inside that output is
+reported at the invocation the author wrote — on a slide, in a section, or at
+the block whose definition invokes the plugin — with no patch, because the
+author owns the invocation's props, not the emitted tree. The CLI and the
+playground pass their loaded plugins to the analysis this way; the MCP server
+registers none. The plugins render once for the analysis and once for the
+bytes.
 
 For advanced integrations, the cores also export their prepared-document
 functions, built-in rule packs, profiles and engines. The

@@ -285,9 +285,13 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
             if (adapter.analyzeQuality) {
               let blocked = false;
               try {
+                // Registered plugins are expanded for analysis the way the
+                // generator expands them, so what they emit is judged (#453).
                 const analysis = await adapter.analyzeQuality(
                   documentDefinition,
-                  generatorOptions
+                  pluginInfo.hasPlugins
+                    ? { ...generatorOptions, plugins: factory.getPlugins() }
+                    : generatorOptions
                 );
                 blocked = analysis.blocked;
                 for (const finding of analysis.diagnostics) {

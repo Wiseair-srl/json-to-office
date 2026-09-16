@@ -369,5 +369,6 @@ export async function expandBlocksWithPlugins<T>(
     preserved: first.preserved as T,
     sourceMap: evaluator.sourceMap,
     blocks: evaluator.blocks,
+    pluginOutputs: evaluator.pluginOutputs,
   };
 }

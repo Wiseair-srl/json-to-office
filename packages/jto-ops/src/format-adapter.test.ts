@@ -904,3 +904,87 @@ describe('quality analysis of a malformed document', () => {
     expect(pptx.blocked).toBe(true);
   });
 });
+
+describe('quality analysis of registered plugins (#453)', () => {
+  const smallPrint = createPptxComponent({
+    name: 'small-print',
+    versions: {
+      '1.0.0': createPptxVersion({
+        propsSchema: Type.Object(
+          { text: Type.String() },
+          { additionalProperties: false }
+        ),
+        render: async ({ props }) => [
+          {
+            name: 'text',
+            props: {
+              text: props.text,
+              x: 1,
+              y: 6.8,
+              w: 8,
+              h: 0.4,
+              fontSize: 5,
+            },
+          },
+        ],
+      }),
+    },
+  });
+  const loosePlan = createComponent({
+    name: 'loose-plan',
+    versions: {
+      '1.0.0': createVersion({
+        propsSchema: Type.Object({}, { additionalProperties: false }),
+        render: async () => [
+          { name: 'heading', props: { text: 'Plan', level: 1 } },
+          { name: 'heading', props: { text: 'Detail', level: 3 } },
+        ],
+      }),
+    },
+  });
+
+  it('judges what a deck plugin emits at the invocation', async () => {
+    const document = {
+      name: 'pptx',
+      props: { slideWidth: 13.333, slideHeight: 7.5 },
+      children: [
+        {
+          name: 'slide',
+          children: [{ name: 'small-print', props: { text: 'Source: data.' } }],
+        },
+      ],
+    };
+    const adapter = new PptxFormatAdapter();
+    const analysis = await adapter.analyzeQuality(document, {
+      plugins: [smallPrint],
+    });
+    expect(
+      analysis.diagnostics
+        .filter((finding) => finding.code === 'W_QUALITY_FONT_SIZE_MIN')
+        .map((finding) => finding.path)
+    ).toEqual(['/children/0/children/0']);
+    // The prepared document carries the same facts to a caller who reuses it.
+    const prepared = await adapter.prepareDocument(document, {
+      plugins: [smallPrint],
+    });
+    expect(
+      prepared.facts.some((fact) => fact.path === '/children/0/children/0')
+    ).toBe(true);
+  });
+
+  it('judges what a report plugin emits at the invocation', async () => {
+    const document = {
+      name: 'docx',
+      props: {},
+      children: [{ name: 'loose-plan', props: {} }],
+    };
+    const analysis = await new DocxFormatAdapter().analyzeQuality(document, {
+      plugins: [loosePlan],
+    });
+    expect(
+      analysis.diagnostics
+        .filter((finding) => finding.code === 'W_QUALITY_HEADING_SKIP')
+        .map((finding) => finding.path)
+    ).toEqual(['/children/0']);
+  });
+});

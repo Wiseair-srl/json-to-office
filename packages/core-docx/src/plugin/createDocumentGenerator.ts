@@ -16,6 +16,7 @@ import type {
   BufferGenerationResult,
   FileGenerationResult,
   StandardDefinitionResult,
+  QualityPreparationResult,
   ValidationResult,
   GenerationValidationOptions,
 } from './types';
@@ -31,6 +32,7 @@ import { generatePluginDocumentSchema, exportPluginSchema } from './schema';
 import { generateBufferViaIr } from '../core/generateFromIr';
 import { normalizeDocument } from '../json/normalizer';
 import { expandBlocksWithPlugins } from '../blocks/document';
+import { prepareDocxQualityDocument } from '../quality/facts';
 import { validateComponentProps } from './validation';
 
 /**
@@ -430,7 +432,13 @@ function createBuilderImpl<
    */
   async function expandDocument(
     document: ExtendedReportComponent<TComponents>,
-    options?: GenerateOptions
+    options?: GenerateOptions,
+    /**
+     * Always take the combined block/plugin expansion, which keeps a source
+     * map back to each invocation, even for a document that defines no
+     * blocks. Quality preparation needs the map; rendering does not.
+     */
+    provenance = false
   ): Promise<{
     modedRoot: ReportComponentDefinition;
     modedTheme: ThemeConfig;
@@ -442,6 +450,7 @@ function createBuilderImpl<
     modedDoc: ReportComponentDefinition;
     blockPaths?: readonly string[];
     sourceMap?: Readonly<Record<string, string>>;
+    pluginOutputs?: readonly string[];
     warnings: GenerationWarning[];
     preserveSet: ReadonlySet<string> | undefined;
   }> {
@@ -553,7 +562,7 @@ function createBuilderImpl<
     });
 
     // Document-local JSON and registered code share one bounded expansion.
-    if (modedRoot.props.blocks !== undefined) {
+    if (modedRoot.props.blocks !== undefined || provenance) {
       const expanded = await expandBlocksWithPlugins(
         modedRoot,
         modedTheme,
@@ -604,6 +613,7 @@ function createBuilderImpl<
         modedDoc,
         sourceMap: expanded.sourceMap,
         blockPaths: expanded.blocks,
+        pluginOutputs: expanded.pluginOutputs,
         warnings,
         preserveSet,
         processed: {
@@ -672,6 +682,46 @@ function createBuilderImpl<
       }
       throw error;
     }
+  }
+
+  /**
+   * The quality model of a document with its registered components expanded
+   * the way generation expands them: the same validation, theme context and
+   * bounded block and plugin expansion, so a fact about a plugin's output is
+   * reported at the invocation that emitted it, and a fact inside a block at
+   * the slot the author filled. Nothing renders.
+   */
+  async function prepareQuality(
+    document: ExtendedReportComponent<TComponents>,
+    options?: GenerateOptions
+  ): Promise<QualityPreparationResult> {
+    const {
+      modedRoot,
+      modedTheme,
+      themeName,
+      modedDoc,
+      sourceMap,
+      blockPaths,
+      pluginOutputs,
+      warnings,
+    } = await expandDocument(document, options, true);
+    const prepared = prepareDocxQualityDocument(
+      document as unknown as ReportComponentDefinition,
+      {
+        context: { document: modedRoot, theme: modedTheme, themeName },
+        expanded: {
+          document: modedDoc,
+          sourceMap: sourceMap ?? {},
+          blocks: blockPaths ?? [],
+          ...(pluginOutputs && { pluginOutputs }),
+        },
+        customThemes: state.customThemes,
+        fonts: state.fonts,
+        renderer: options?.renderer ?? state.renderer ?? modedRoot.renderer,
+        warnings,
+      }
+    );
+    return { prepared, warnings: warnings.length > 0 ? warnings : null };
   }
 
   /**
@@ -875,6 +925,7 @@ function createBuilderImpl<
     generateBuffer,
     generateFile,
     expandStandardDefinition,
+    prepareQuality,
     getComponentNames,
     validate,
     generateSchema,

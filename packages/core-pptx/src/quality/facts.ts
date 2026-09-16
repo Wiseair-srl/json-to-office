@@ -16,7 +16,11 @@ import {
   type TableColumnInfoDesign,
   type TableInfoDesign,
 } from '@json-to-office/quality';
-import type { FontRuntimeOpts, ServicesConfig } from '@json-to-office/shared';
+import type {
+  ExpandedBlocks,
+  FontRuntimeOpts,
+  ServicesConfig,
+} from '@json-to-office/shared';
 import {
   DEFAULT_PPTX_RENDERER_ID,
   SEMANTIC_COLOR_NAMES,
@@ -39,7 +43,10 @@ import type {
 import probe from 'probe-image-size';
 import { resolveColor } from '../utils/color';
 import { resolveGridPosition } from '../core/grid';
-import { resolveThemeContext } from '../core/generationContext';
+import {
+  resolveThemeContext,
+  type GenerationThemeContext,
+} from '../core/generationContext';
 import { processPresentation } from '../core/structure';
 import {
   blockSlotBudgets,
@@ -111,6 +118,13 @@ export interface PptxTextFact extends QualityFact {
    * rather than a size they can patch.
    */
   generated: boolean;
+  /**
+   * The component at `path` is one whose props the author wrote: the node
+   * itself, or a component placed in a block slot. False where `path` is an
+   * invocation — a definition's literal text, a plugin's output — whose props
+   * are the block's or the plugin's, not the text's.
+   */
+  ownsProps: boolean;
   /** Resolved run colour, bare hex, when the document states one. */
   colorHex?: string;
   /**
@@ -364,6 +378,16 @@ export interface PreparePptxQualityOptions {
   services?: ServicesConfig;
   warnings?: PipelineWarning[];
   renderer?: string;
+  /** The theme context a plugin host already resolved for `expanded`. */
+  context?: GenerationThemeContext;
+  /**
+   * The expansion a plugin host already ran over `context.document`: blocks
+   * and registered code components lowered together, with the source map
+   * back to what the author wrote. Given, preparation reads it instead of
+   * expanding blocks alone, so a fact about a plugin's output reports at the
+   * invocation that emitted it.
+   */
+  expanded?: ExpandedBlocks<PresentationComponentDefinition>;
 }
 
 interface ThemeContext {
@@ -1219,6 +1243,21 @@ function tableFact(
  * than what it inherited, and those need the authored node at the same pointer
  * the fact reports.
  */
+/** The `name` of the component at an authored pointer, if one is there. */
+function authoredNameAtPointer(
+  root: unknown,
+  pointer: string
+): string | undefined {
+  let node: unknown = root;
+  for (const token of pointer.split('/').slice(1)) {
+    const key = token.replace(/~1/g, '/').replace(/~0/g, '~');
+    node = Array.isArray(node) ? node[Number(key)] : asRecord(node)?.[key];
+    if (node === undefined) return undefined;
+  }
+  const name = asRecord(node)?.name;
+  return typeof name === 'string' ? name : undefined;
+}
+
 function authoredPropsAtPointer(
   root: unknown,
   pointer: string
@@ -1257,7 +1296,8 @@ function addSlideFacts(
   authoredPropsAt: (path: string) => Rec | undefined,
   statedPropsAt: (path: string) => Rec | undefined,
   authoredPath: (path: string) => string,
-  addFact: (fact: PptxQualityFact) => void
+  addFact: (fact: PptxQualityFact) => void,
+  ownsProps: (path: string) => boolean = () => true
 ): void {
   const nodes: TextNode[] = [];
   const richNodes: TextNode[] = [];
@@ -1500,6 +1540,7 @@ function addSlideFacts(
           sizePath: `${node.path}/props/fontSize`,
         }),
       generated: authoredPath(node.path) !== node.path,
+      ownsProps: ownsProps(node.path),
       autoFit: node.props.h === undefined && gridPos === undefined,
       ...(colorHex !== undefined && { colorHex }),
       ...(!backgroundUnknown &&
@@ -1651,7 +1692,7 @@ export function preparePptxQualityDocument(
   // they never saw.
   let sourceMap: BlockSourceMap = {};
   const authoredPath = (path: string): string =>
-    toAuthoredPointer(sourceMap, path);
+    toAuthoredPointer(sourceMap, path, options.expanded?.pluginOutputs);
   const addFact = (raw: PptxQualityFact): void => {
     const fact: PptxQualityFact = {
       ...raw,
@@ -1710,12 +1751,15 @@ export function preparePptxQualityDocument(
   });
 
   const warnings = options.warnings ?? [];
-  const context = resolveThemeContext(document, {
-    customThemes: options.customThemes,
-    fonts: options.fonts,
-    warnings,
-  });
-  const expanded = expandPptxBlocks(context.document, context.theme);
+  const context =
+    options.context ??
+    resolveThemeContext(document, {
+      customThemes: options.customThemes,
+      fonts: options.fonts,
+      warnings,
+    });
+  const expanded =
+    options.expanded ?? expandPptxBlocks(context.document, context.theme);
   sourceMap = expanded.sourceMap;
   const processed = processPresentation(expanded.document, {
     theme: context.theme,
@@ -1833,6 +1877,13 @@ export function preparePptxQualityDocument(
   // what it inherited; for block content the authored node is the slot.
   const authoredPropsAt = (pointer: string): Rec | undefined =>
     authoredPropsAtPointer(document, authoredPath(pointer));
+  // Whether the component a compiled node reports at is the author's own: a
+  // pointer into a plugin's output, or onto a block invocation, is not.
+  const pluginOutputs = options.expanded?.pluginOutputs ?? [];
+  const ownsProps = (pointer: string): boolean =>
+    !pluginOutputs.some(
+      (prefix) => pointer === prefix || pointer.startsWith(`${prefix}/`)
+    ) && authoredNameAtPointer(document, authoredPath(pointer)) !== 'block';
   // What the compiled node states before frames lend it their sides: for
   // block content that is the definition's frame over the slot's props.
   const statedPropsAt = (pointer: string): Rec | undefined =>
@@ -1876,7 +1927,8 @@ export function preparePptxQualityDocument(
       authoredPropsAt,
       statedPropsAt,
       authoredPath,
-      addFact
+      addFact,
+      ownsProps
     );
   });
 

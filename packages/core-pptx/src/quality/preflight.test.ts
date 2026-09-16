@@ -505,18 +505,25 @@ describe('renderer normalization parity', () => {
         ]
       )
     );
-    expect(findings).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: QUALITY_CODES.FONT_SIZE_MIN,
-          path: '/children/0/children/0/props',
-        }),
-        expect.objectContaining({
-          code: QUALITY_CODES.FONT_SIZE_MIN,
-          path: '/children/0/children/1/props',
-        }),
-      ])
+    // A definition's literal text reports at the invocation, whose props
+    // hold no fontSize to lift; the text written on the slide owns its props.
+    const tooSmall = findings.filter(
+      (finding) => finding.code === QUALITY_CODES.FONT_SIZE_MIN
     );
+    expect(tooSmall).toEqual([
+      expect.objectContaining({ path: '/children/0/children/0' }),
+      expect.objectContaining({
+        path: '/children/0/children/1/props',
+        fixes: [
+          {
+            op: 'add',
+            path: '/children/0/children/1/props/fontSize',
+            value: 7,
+          },
+        ],
+      }),
+    ]);
+    expect(tooSmall[0].fixes).toBeUndefined();
   });
 
   it('counts block content toward every slide that invokes it', () => {
@@ -556,7 +563,7 @@ describe('renderer normalization parity', () => {
       findings
         .filter((finding) => finding.code === QUALITY_CODES.FONT_SIZE_MIN)
         .map((finding) => finding.path)
-    ).toEqual(['/children/0/children/0/props', '/children/1/children/0/props']);
+    ).toEqual(['/children/0/children/0', '/children/1/children/0']);
     expect(
       findings
         .filter((finding) => finding.code === QUALITY_CODES.SLIDE_DENSITY)
@@ -601,9 +608,18 @@ describe('renderer normalization parity', () => {
     );
     expect(findings).toEqual(
       expect.arrayContaining([
+        // A component the author placed in the slot owns its props: its own
+        // fontSize wins over the definition's, so the patch lands there.
         expect.objectContaining({
           code: QUALITY_CODES.FONT_SIZE_MIN,
           path: '/children/0/children/0/props/slots/body/props',
+          fixes: [
+            {
+              op: 'add',
+              path: '/children/0/children/0/props/slots/body/props/fontSize',
+              value: 7,
+            },
+          ],
         }),
       ])
     );
