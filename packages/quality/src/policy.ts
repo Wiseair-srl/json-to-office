@@ -6,6 +6,7 @@ import type {
   QualityRule,
   QualityRuleConfiguration,
   QualitySuppression,
+  QualityConfigurationSource,
   ResolvedQualityRuleConfiguration,
 } from './types';
 
@@ -177,6 +178,21 @@ export function resolveRuleConfiguration(
 ): ResolvedQualityRuleConfiguration {
   const profileRule = profile?.rules?.[rule.id];
   const policyRule = policy?.rules?.[rule.id];
+  const layers: Array<
+    [QualityConfigurationSource, Readonly<Record<string, unknown>> | undefined]
+  > = [
+    ['rule', rule.defaultParameters],
+    ['profile', profile?.parameters],
+    ['profile', profileRule?.parameters],
+    ['policy', policyRule?.parameters],
+  ];
+  const parameters: Record<string, unknown> = {};
+  const parameterSources: Record<string, QualityConfigurationSource> = {};
+  for (const [source, values] of layers)
+    for (const [name, value] of Object.entries(values ?? {})) {
+      parameters[name] = value;
+      parameterSources[name] = source;
+    }
 
   return {
     enabled:
@@ -184,16 +200,56 @@ export function resolveRuleConfiguration(
       profileRule?.enabled ??
       rule.defaultEnabled ??
       true,
+    enabledSource:
+      policyRule?.enabled !== undefined
+        ? 'policy'
+        : profileRule?.enabled !== undefined
+          ? 'profile'
+          : 'rule',
     severity:
       policyRule?.severity ?? profileRule?.severity ?? rule.defaultSeverity,
     severityOverride: policyRule?.severity ?? profileRule?.severity,
-    parameters: {
-      ...(rule.defaultParameters ?? {}),
-      ...(profile?.parameters ?? {}),
-      ...(profileRule?.parameters ?? {}),
-      ...(policyRule?.parameters ?? {}),
-    },
+    parameters,
+    parameterSources,
   };
+}
+
+const SOURCE_RANK: Readonly<Record<QualityConfigurationSource, number>> = {
+  rule: 0,
+  profile: 1,
+  policy: 2,
+};
+
+/**
+ * Who set what a finding measures against: the latest layer among whoever
+ * switched the rule on and whoever set the named parameters. A ceiling a
+ * policy tightened over a profile is the policy's; a rule a profile switched
+ * on at its default bounds is the profile's to ask.
+ */
+export function configurationSource(
+  configuration: Pick<
+    ResolvedQualityRuleConfiguration,
+    'parameterSources' | 'enabledSource'
+  >,
+  ...parameters: readonly string[]
+): QualityConfigurationSource {
+  return parameters
+    .map((name) => configuration.parameterSources[name] ?? 'rule')
+    .reduce(
+      (latest, source) =>
+        SOURCE_RANK[source] > SOURCE_RANK[latest] ? source : latest,
+      configuration.enabledSource
+    );
+}
+
+/** The configuration a finding names: `the consulting-deck profile`, `the policy`. */
+export function configurationLabel(
+  source: QualityConfigurationSource,
+  profile: Pick<QualityProfile, 'id'> | undefined
+): string {
+  if (source === 'policy') return 'the quality policy';
+  if (source === 'profile') return `the ${profile?.id ?? 'selected'} profile`;
+  return 'the rule default';
 }
 
 function matchesPath(

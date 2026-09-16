@@ -131,13 +131,14 @@ true.
 | `pptx/off-canvas`        | `W_QUALITY_OFF_CANVAS`                                                                                                                                                      | warning                                                 | estimated     | Text ink, placed by its alignment and estimated with the fit width model, more than `tolerancePt` (2) past a slide edge                                                                  |
 | `pptx/slot-budget`       | `W_QUALITY_SLOT_BUDGET`                                                                                                                                                     | warning                                                 | deterministic | A block slot over the word budget its definition declares                                                                                                                                |
 | `pptx/required-chrome`   | `W_QUALITY_CHROME_MISSING`                                                                                                                                                  | warning; off unless a profile names `required` roles    | deterministic | A block slot with a role the profile requires left empty                                                                                                                                 |
+| `pptx/slide-footer`      | `W_QUALITY_CHROME_MISSING`                                                                                                                                                  | warning; off unless a profile names `required` parts    | deterministic | A block-built slide from `fromSlide` (1) on without the page number or footer line the profile expects; slides drawn by coordinates and hidden slides aside                              |
 | `pptx/action-title`      | `W_QUALITY_ACTION_TITLE_LENGTH`                                                                                                                                             | warning; off unless a profile sets `maxLines`           | estimated     | An action-title slot wrapping past the lines the profile allows                                                                                                                          |
 | `pptx/type-scale`        | `W_QUALITY_TYPE_OFF_SCALE`                                                                                                                                                  | warning; off unless a profile enables it                | deterministic | An authored size the theme never paints; the fix snaps it to the nearest size on its scale                                                                                               |
 | `pptx/size-count`        | `W_QUALITY_TYPE_SIZE_COUNT`                                                                                                                                                 | warning; off unless a profile enables it                | deterministic | More distinct text sizes in the deck than `maximumSizes` (8), or on one slide than `maximumSizesPerSlide` (0: no ceiling), blocks and rich-text runs included, hidden slides not; no fix |
 | `pptx/role-drift`        | `W_QUALITY_TYPE_ROLE_DRIFT`                                                                                                                                                 | warning; off unless a profile enables it                | deterministic | A named style or type role painted at two sizes; the fix restores the theme's size                                                                                                       |
-| `pptx/title-drift`       | `W_QUALITY_TITLE_DRIFT`                                                                                                                                                     | warning; off unless a profile enables it                | deterministic | A title away from the left edge or baseline the deck's other titles of that kind share                                                                                                   |
+| `pptx/title-drift`       | `W_QUALITY_TITLE_DRIFT`                                                                                                                                                     | warning; off unless a profile enables it                | estimated     | A title whose laid-out first baseline or aligned edge is away from where the deck's other titles of that kind land                                                                       |
 | `pptx/bullet-density`    | `W_QUALITY_BULLET_COUNT`, `W_QUALITY_BULLET_LENGTH`                                                                                                                         | warning; off unless a profile sets a bound              | deterministic | More bullets in one box, or more words in one bullet — a lone bullet included — than the profile allows; reported at the slot a block filled the box from                                |
-| `pptx/safe-area`         | `W_QUALITY_SAFE_AREA`                                                                                                                                                       | warning; off unless a profile enables it                | measured      | A box outside the theme's safe area that is neither chrome (a tracker, footer or source, by slot role or style) nor a full bleed; judged box by box inside a block                       |
+| `pptx/safe-area`         | `W_QUALITY_SAFE_AREA`                                                                                                                                                       | warning; off unless a profile enables it                | measured      | A box outside the theme's safe area that is neither chrome (a tracker, footer, source or logo, by slot role or style) nor a full bleed; judged box by box inside a block                 |
 | `pptx/slide-title`       | `W_QUALITY_SLIDE_UNTITLED`                                                                                                                                                  | warning; off unless a profile enables it                | deterministic | A slide carrying content with no action title and no title-styled box, rich-text titles included                                                                                         |
 | `pptx/figure-label`      | `W_QUALITY_FIGURE_UNLABELLED`                                                                                                                                               | warning; off unless a profile enables it                | deterministic | An image with no alt text, a background that bleeds off the slide aside; reported at the slot an image filled                                                                            |
 | `pptx/image-aspect`      | `W_QUALITY_IMAGE_ASPECT`                                                                                                                                                    | warning                                                 | deterministic | An image drawn at an aspect the asset does not have                                                                                                                                      |
@@ -148,9 +149,21 @@ onto it, the deck's default size, and each step of the theme's type scale for
 the canvas in play. A custom theme is therefore judged by its own sizes.
 `pptx/title-drift` has no theme value to read — no theme states where a title
 goes — so it compares each title with the deck's other titles _of the same
-kind_: titles placed by one block, or hand-placed boxes sharing one of the
-`titleStyles`. A statement slide that centres its assertion is a different
-kind and is not drift.
+kind_: the same style, set at the same size, with the same alignment, whether
+an `actionTitle` slot of any block or a box in one of the `titleStyles` placed
+by hand. It judges the laid-out title rather than the box: the first baseline
+estimated with the fit width model at the size the fit pass left, inside the
+text insets and under the vertical anchor, and the edge the alignment holds
+(the left edge, the centre line or the right edge). Titles more than two of
+their lines apart are separate placements — a statement slide's assertion in
+the middle of the slide is not a content title that drifted — and a finding's
+`relatedPaths` name the titles that agree.
+
+`pptx/slide-footer` is the deck twin of `docx/running-head`. It judges only
+slides a block builds, from `fromSlide` on: a page number is a text carrying
+the `{PAGE_NUMBER}` field, a footer is a text in the theme's footer type or a
+filled `footer` slot. `consulting-deck` requires the page number, which every
+house content block draws; the cover is slide 0 and exempt.
 
 The canvas rule recognizes these deliberate presets: 16:9 standard
 (`13.333 × 7.5`), 16:9 small (`10 × 5.625`), square (`7.5 × 7.5`), 4:5
@@ -177,6 +190,10 @@ the safety buffer is `W_QUALITY_TEXT_TIGHT`.
 - Disabled components do not contribute facts.
 - Minimum-font and density checks can inspect positioned or unpositioned plain
   text. Text-fit additionally needs a resolved width and height.
+- Rule evidence names who set what a finding measures against in
+  `evidence.values.source`: `profile`, `policy` or `rule` (the rule's default),
+  the latest layer among whoever switched the rule on and whoever set the
+  parameters it read; a ceiling a policy tightened over a profile says `policy`.
 - Text authored with `runs` has facts of its own: each run's size counts for
   `pptx/type-scale`, `pptx/size-count` and `pptx/role-drift`, a title set in
   runs titles its slide, and a box of runs styled as chrome is exempt from the
@@ -322,7 +339,24 @@ the document carries it: a base64 data URI, and in DOCX an inline SVG's viewBox.
 `path` is resolved against a base directory at generation time, so a distorted
 file-backed image is the rendered pass's to catch. Neither rule speaks when one
 side is left for the asset to supply, or when PPTX `sizing` fits the image to
-its box.
+its box. Where the author wrote both sides as plain numbers — pixels in DOCX,
+inches on a slide — the finding carries a fix that rewrites the side the asset
+should have supplied to the value its shape gives, rounded towards the box, so
+the picture shrinks into the box it was given rather than past it.
+
+PPTX does not read an inline SVG's viewBox, by measurement (#452): of 74 decks
+— the stock templates, the 2.0.0 baselines and every checkpoint and
+verification run — only the three stock decks place inline SVG images, and the
+twelve that miss their viewBox by more than 2% are icons a quarter to half an
+inch across, 0.4 to 2.4pt off. The 2% tolerance was calibrated on raster
+pictures; a tolerance for icons would have to be measured on what a reader
+sees, and no authored deck yet gives that measurement anything to protect.
+
+`pptx/safe-area` offers a fix only where moving the box is the whole repair: a
+box placed directly on the slide with plain inch coordinates and no larger than
+the safe area. The fix moves `x` and `y` just inside the margin. A box too big
+for the margin needs a smaller box or a bleed, which is a design call, and a
+box a group or a block places sits in a frame the fix does not rewrite.
 
 `docx/type-scale` reads every size the resolved theme paints — its named
 styles, its font roles, every step of its declared type scale — so a custom
@@ -354,6 +388,14 @@ never leaves the role at two sizes.
 a `themeStyle` — and reports an authored size that departs from the theme's
 size for that role while the role is painted at more than one size; a role
 overridden the same way everywhere is a choice, not drift.
+`pptx/role-drift` groups by named style and type role only: text with no
+`style` has no role on a slide, measured rather than assumed (#452). Treated
+as the deck default, unstyled text would report nothing on the sixteen
+verification decks built from the house blocks, which style every box, and
+115 boxes on the three stock decks and about 1,980 on the 2.0.0 baselines,
+where nearly every one is a deliberately sized figure or label rather than one
+role at two sizes. `pptx/type-scale` and `pptx/size-count` already judge those
+sizes.
 
 All three read every surface that paints text, not only body paragraphs:
 headings and paragraphs, table cells and header cells — including a component

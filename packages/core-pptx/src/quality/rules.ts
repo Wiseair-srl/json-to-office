@@ -1,5 +1,7 @@
 import {
   chartInfoDesignFindings,
+  configurationLabel,
+  configurationSource,
   DEFAULT_MAXIMUM_CHART_SERIES,
   DEFAULT_MAXIMUM_PIE_SLICES,
   fontCountFinding,
@@ -32,6 +34,7 @@ import type {
   PptxImageFact,
   PptxCanvasFact,
   PptxChromeSlotFact,
+  PptxSlideChromeFact,
   PptxChartFact,
   PptxColorFact,
   PptxFontFact,
@@ -1114,20 +1117,95 @@ export const pptxRequiredChromeRule: QualityRule<
         (fact): fact is PptxChromeSlotFact => fact.kind === 'pptx/chrome-slot'
       )
       .filter((fact) => required.includes(fact.role) && !fact.present)
-      .map((fact) => ({
-        path: fact.path,
-        relatedPaths: [fact.invocation],
-        message:
-          `${fact.block} states no ${fact.role} in its "${fact.slot}" slot; ` +
-          `the ${profile?.id ?? 'selected'} profile expects one on every ${fact.block}.`,
-        suggestion: `Fill the "${fact.slot}" slot. The theme already styles it.`,
-        context: { block: fact.block, slot: fact.slot, role: fact.role },
-        evidence: {
-          actual: 'empty',
-          expected: fact.role,
-          values: { source: 'profile', required },
-        },
-      }));
+      .map((fact) => {
+        const source = configurationSource(configuration, 'required');
+        return {
+          path: fact.path,
+          relatedPaths: [fact.invocation],
+          message:
+            `${fact.block} states no ${fact.role} in its "${fact.slot}" slot; ` +
+            `${configurationLabel(source, profile)} expects one on every ${fact.block}.`,
+          suggestion: `Fill the "${fact.slot}" slot. The theme already styles it.`,
+          context: { block: fact.block, slot: fact.slot, role: fact.role },
+          evidence: {
+            actual: 'empty',
+            expected: fact.role,
+            values: { source, required },
+          },
+        };
+      });
+  },
+};
+
+const SLIDE_CHROME_PARTS = ['pageNumber', 'footer'] as const;
+
+/**
+ * A deck's running chrome where the profile expects it: every slide from
+ * `fromSlide` on that a block builds must carry the parts in `required` — a
+ * page number, a footer line. The first slide is exempt by default, so a
+ * cover stays clean; a slide drawn by coordinates is not judged, its chrome
+ * is its author's to place; a hidden slide is never shown. Off by default:
+ * the theme only paints a footer, the archetype asks for one.
+ */
+export const pptxSlideFooterRule: QualityRule<
+  PptxQualityModel,
+  PptxQualityFact
+> = {
+  id: 'pptx/slide-footer',
+  description:
+    'A block-built slide without the running chrome a profile or policy expects: a page number, a footer line. Off until one names parts.',
+  code: QUALITY_CODES.CHROME_MISSING,
+  category: 'consistency',
+  defaultSeverity: 'warning',
+  defaultCertainty: 'deterministic',
+  formats: ['pptx'],
+  defaultParameters: { required: [], fromSlide: 1 },
+  evaluate: ({ facts, configuration, profile }) => {
+    const required = stringListParameter(
+      configuration.parameters,
+      'required'
+    ).filter((part): part is (typeof SLIDE_CHROME_PARTS)[number] =>
+      (SLIDE_CHROME_PARTS as readonly string[]).includes(part)
+    );
+    if (required.length === 0) return [];
+    const from = numberParameter(configuration.parameters, 'fromSlide', 1);
+    return facts
+      .filter(
+        (fact): fact is PptxSlideChromeFact =>
+          fact.kind === 'pptx/slide-chrome' &&
+          fact.blocks > 0 &&
+          fact.hidden !== true &&
+          fact.index >= from
+      )
+      .flatMap((fact) => {
+        const missing = required.filter((part) => !fact[part]);
+        if (missing.length === 0) return [];
+        const parts = missing
+          .map((part) => (part === 'pageNumber' ? 'page number' : 'footer'))
+          .join(' or ');
+        const source = configurationSource(
+          configuration,
+          'required',
+          'fromSlide'
+        );
+        return [
+          {
+            path: fact.path,
+            message:
+              `Slide ${fact.index + 1} carries no ${parts}; ` +
+              `${configurationLabel(source, profile)} expects one on every ` +
+              `slide a block builds from slide ${from + 1} on.`,
+            suggestion:
+              'Build the slide with a block that draws the running footer — the house blocks set {PAGE_NUMBER} / {PAGE_COUNT} in the footer role — or add that text to the definition the slide invokes.',
+            context: { slide: fact.index, missing },
+            evidence: {
+              actual: required.filter((part) => fact[part]),
+              expected: required,
+              values: { source, fromSlide: from },
+            },
+          },
+        ];
+      });
   },
 };
 
@@ -1180,8 +1258,22 @@ export const pptxActionTitleRule: QualityRule<
   },
 };
 
-/** How far two title boxes may sit apart before the deck reads as unaligned. */
+/** How far two laid-out titles may sit apart before the deck reads as unaligned. */
 const TITLE_DRIFT_TOLERANCE_PT = 2;
+
+/**
+ * The first baseline under the top of the text, in ems. The width model sets
+ * a first line one em tall, and a line of type puts its baseline at about
+ * four fifths of that.
+ */
+const FIRST_BASELINE_EM = 0.8;
+
+/**
+ * Two titles of one kind further apart than this many of their lines are two
+ * placements, not one title drifting from the other: a content title at the
+ * top, a statement's assertion in the middle, a title over a side column.
+ */
+const TITLE_PLACEMENT_LINES = 2;
 
 /** A deck names its styles and paints them on slides. */
 const PPTX_TYPE_VOCABULARY: TypeVocabulary = {
@@ -1301,11 +1393,15 @@ export const pptxSizeCountRule: QualityRule<PptxQualityModel, PptxQualityFact> =
     defaultParameters: { maximumSizes: 8, maximumSizesPerSlide: 0 },
     evaluate: ({ facts, configuration, profile }) => {
       const sizes = paintedSizes(facts);
+      const setBy = (parameter: string) => {
+        const source = configurationSource(configuration, parameter);
+        return { source, label: configurationLabel(source, profile) };
+      };
       const findings = sizeCountFinding(
         sizes,
         numberParameter(configuration.parameters, 'maximumSizes', 8),
         pptxThemeFact(facts)?.path ?? '/props',
-        profile?.id,
+        setBy('maximumSizes'),
         PPTX_TYPE_VOCABULARY
       ).map((finding) => ({
         ...finding,
@@ -1328,7 +1424,7 @@ export const pptxSizeCountRule: QualityRule<PptxQualityModel, PptxQualityFact> =
           onSlide,
           perSlide,
           slidePath,
-          profile?.id,
+          setBy('maximumSizesPerSlide'),
           PPTX_SLIDE_TYPE_VOCABULARY
         ))
           findings.push({
@@ -1346,6 +1442,12 @@ export const pptxSizeCountRule: QualityRule<PptxQualityModel, PptxQualityFact> =
  * repaired to it. A style that is consistently overridden is not drift. Off
  * until a profile turns it on, for the same reason as `pptx/type-scale`,
  * which yields to this rule on any pointer it reports.
+ *
+ * Text with no `style` has no role here, unlike DOCX's `normal`. Measured
+ * (#452): as the deck default it reports nothing on the verification decks
+ * the house blocks build, and nearly every hand-sized figure and label on
+ * the stock decks (115) and the 2.0.0 baselines (about 1,980) — a size
+ * choice per box, which type-scale and size-count already judge.
  */
 export const pptxRoleDriftRule: QualityRule<PptxQualityModel, PptxQualityFact> =
   {
@@ -1366,70 +1468,187 @@ export const pptxRoleDriftRule: QualityRule<PptxQualityModel, PptxQualityFact> =
     },
   };
 
+/** A slide title as the renderer lays it out, not as its box declares it. */
+interface LaidOutTitle {
+  fact: PptxTextFact;
+  /** What the author patches: the title slot of a block, else the box. */
+  path: string;
+  /** Style, set size and alignment: only titles of one kind are compared. */
+  kind: string;
+  style: string;
+  /** The size the title was set at, before a bounded fit stepped it down. */
+  setSizePt: number;
+  align: 'left' | 'center' | 'right';
+  lines: number;
+  /** Estimated first baseline, from the slide's top edge. */
+  baselinePt: number;
+  /** The line the alignment holds still: left edge, centre or right edge. */
+  edgePt: number;
+  /** Deck order, for the tie-break: the earliest slide states the line. */
+  order: number;
+}
+
+const EDGE_NAMES = {
+  left: 'left edge',
+  center: 'centre line',
+  right: 'right edge',
+} as const;
+
 /**
- * The text a slide leads with, and what kind of slide it leads: an
- * `actionTitle` slot, grouped by the block that placed it, and a box set in
- * one of the theme's title styles where the slide was drawn by hand. Titles
- * are only comparable within a group — a statement slide centres its
- * assertion on purpose, and it is not drifting from the content slides.
+ * Where a title's text lands: its lines estimated at the size the fit pass
+ * left it, inside its insets, dropped by its vertical anchor, its edge the
+ * one its alignment holds. A text box without a height grows from its top.
  */
-function titleGroups(
+function laidOutTitle(
+  fact: PptxTextFact,
+  path: string,
+  order: number
+): LaidOutTitle | undefined {
+  if (
+    fact.boxXPt === undefined ||
+    fact.boxYPt === undefined ||
+    fact.boxWidthPt === undefined ||
+    fact.rotationDeg % 360 !== 0
+  )
+    return undefined;
+  const [top, right, bottom, left] = fact.insetsPt;
+  const innerWidth = Math.max(1, fact.boxWidthPt - left - right);
+  const { heightPt, lines } = estimateHeight(
+    fact.text,
+    innerWidth,
+    fact.fontSizePt,
+    fact.lineSpacingPt,
+    fact.paraSpaceBeforePt,
+    fact.paraSpaceAfterPt
+  );
+  let textTop = fact.boxYPt + top;
+  if (fact.boxHeightPt !== undefined && !fact.autoFit) {
+    const room = fact.boxHeightPt - top - bottom - heightPt;
+    if (fact.verticalAlign === 'middle') textTop += room / 2;
+    else if (fact.verticalAlign === 'bottom') textTop += room;
+  }
+  const align = fact.align === 'justify' ? 'left' : fact.align;
+  const edgePt =
+    align === 'center'
+      ? fact.boxXPt + left + innerWidth / 2
+      : align === 'right'
+        ? fact.boxXPt + fact.boxWidthPt - right
+        : fact.boxXPt + left;
+  const style = fact.styleName ?? 'unstyled';
+  // A cover title set larger than the slide titles is another kind of title,
+  // wherever it lands; a slide title the fit pass stepped down is not.
+  const setSizePt = fact.fitFromPt ?? fact.fontSizePt;
+  return {
+    fact,
+    path,
+    kind: `${style}|${setSizePt}|${align}`,
+    style,
+    setSizePt,
+    align,
+    lines,
+    baselinePt: textTop + FIRST_BASELINE_EM * fact.fontSizePt,
+    edgePt,
+    order,
+  };
+}
+
+/**
+ * The titles a deck shows: the text of every `actionTitle` slot, whatever
+ * block placed it, and every box set in one of the title styles, block-built
+ * or placed by hand. A hidden slide shows nothing.
+ */
+function deckTitles(
   facts: readonly PptxQualityFact[],
   styles: readonly string[]
-): Map<string, PptxTextFact[]> {
-  const texts = textFacts(facts).filter(
-    (fact) => fact.boxXPt !== undefined && fact.boxYPt !== undefined
+): LaidOutTitle[] {
+  const texts = textFacts(facts).filter((fact) => !fact.slideHidden);
+  const slideIndex = (fact: PptxTextFact): number =>
+    Number(/^\/children\/(\d+)/.exec(fact.slidePath)?.[1] ?? 0);
+  const order = new Map(
+    texts.map((fact, index) => [fact, slideIndex(fact) * 10_000 + index])
   );
-  const groups = new Map<string, PptxTextFact[]>();
+  const byNode = new Map(texts.map((fact) => [fact.nodePath, fact]));
+  const titles: LaidOutTitle[] = [];
   const claimed = new Set<PptxTextFact>();
-  const push = (key: string, fact: PptxTextFact): void => {
+  const add = (fact: PptxTextFact, path: string): void => {
     if (claimed.has(fact)) return;
     claimed.add(fact);
-    groups.set(key, [...(groups.get(key) ?? []), fact]);
+    const title = laidOutTitle(fact, path, order.get(fact)!);
+    if (title) titles.push(title);
   };
-  for (const slot of facts) {
+  for (const slot of facts)
     if (
-      slot.kind !== 'pptx/chrome-slot' ||
-      (slot as PptxChromeSlotFact).role !== 'actionTitle'
-    )
-      continue;
-    const chrome = slot as PptxChromeSlotFact;
-    if (chrome.text === undefined) continue;
-    // A block's slot compiles to a box whose own pointer is the invocation,
-    // not the slot: the slot's text on the slot's slide is what identifies it.
-    const painted = texts.find(
-      (fact) => fact.slidePath === chrome.slidePath && fact.text === chrome.text
-    );
-    if (painted) push(chrome.block, painted);
-  }
+      slot.kind === 'pptx/chrome-slot' &&
+      (slot as PptxChromeSlotFact).role === 'actionTitle' &&
+      (slot as PptxChromeSlotFact).nodePath !== undefined
+    ) {
+      // The compiled node the slot filled, not a box with the same words: a
+      // tracker may read like its title.
+      const painted = byNode.get((slot as PptxChromeSlotFact).nodePath!);
+      if (painted) add(painted, slot.path);
+    }
   for (const fact of texts)
     if (fact.styleName !== undefined && styles.includes(fact.styleName))
-      push(`style:${fact.styleName}`, fact);
-  return groups;
-}
-
-/** The value the most titles agree on, ties broken by the earliest slide. */
-function prevailing(values: readonly number[]): number | undefined {
-  const counts = new Map<number, number>();
-  for (const value of values) counts.set(value, (counts.get(value) ?? 0) + 1);
-  let best: number | undefined;
-  let bestCount = 0;
-  for (const value of values) {
-    const count = counts.get(value)!;
-    if (count > bestCount) {
-      best = value;
-      bestCount = count;
-    }
-  }
-  return best;
+      add(fact, fact.path);
+  return titles.sort((a, b) => a.order - b.order);
 }
 
 /**
- * Titles of one kind that do not start where the deck's other titles of that
- * kind start. A theme says nothing about where a title sits — a block
- * definition or the author places it — so the prevailing edge among the
- * deck's own titles is the expected value, and the profile is what asks them
- * to agree. Off until one turns it on.
+ * Titles of one kind, split into placements. The reference of a placement
+ * is the title the most others land on within the tolerance, the earliest
+ * slide on a tie; the placement takes every title within a couple of lines
+ * of it. What lies further away is placed on purpose and starts its own.
+ */
+function titlePlacements(
+  titles: readonly LaidOutTitle[],
+  tolerance: number
+): Array<{ reference: LaidOutTitle; members: LaidOutTitle[] }> {
+  const lands = (a: LaidOutTitle, b: LaidOutTitle): boolean =>
+    Math.abs(a.baselinePt - b.baselinePt) <= tolerance &&
+    Math.abs(a.edgePt - b.edgePt) <= tolerance;
+  const byKind = new Map<string, LaidOutTitle[]>();
+  for (const title of titles)
+    byKind.set(title.kind, [...(byKind.get(title.kind) ?? []), title]);
+  const placements: Array<{
+    reference: LaidOutTitle;
+    members: LaidOutTitle[];
+  }> = [];
+  for (const kind of byKind.values()) {
+    let pending = kind;
+    while (pending.length > 0) {
+      let reference = pending[0];
+      let most = 0;
+      for (const candidate of pending) {
+        const count = pending.filter((other) => lands(other, candidate)).length;
+        if (count > most) {
+          reference = candidate;
+          most = count;
+        }
+      }
+      const reach = TITLE_PLACEMENT_LINES * reference.fact.lineSpacingPt;
+      const members = pending.filter(
+        (title) =>
+          Math.abs(title.baselinePt - reference.baselinePt) <= reach &&
+          Math.abs(title.edgePt - reference.edgePt) <= reach
+      );
+      placements.push({ reference, members });
+      pending = pending.filter((title) => !members.includes(title));
+    }
+  }
+  return placements;
+}
+
+/**
+ * Titles of one kind that do not land where the deck's other titles of that
+ * kind land. Judged on the laid-out title — its estimated first baseline and
+ * the edge its alignment holds, at the size the fit pass left it, inside its
+ * insets, under its vertical anchor — so two boxes drawn differently that set
+ * their text on one line agree, and two identical boxes whose titles anchor
+ * to the foot at different lengths do not. Titles compare across blocks and
+ * with titles placed by hand; a title a couple of lines or more away is a
+ * placement of its own. A theme says nothing about where a title sits, so
+ * the deck's prevailing placement is the expected value, and the profile is
+ * what asks titles to agree. Off until one turns it on.
  */
 export const pptxTitleDriftRule: QualityRule<
   PptxQualityModel,
@@ -1437,11 +1656,11 @@ export const pptxTitleDriftRule: QualityRule<
 > = {
   id: 'pptx/title-drift',
   description:
-    'A slide title away from the left edge or baseline the deck’s other titles of that kind share. Off until a profile or policy enables it.',
+    'A slide title whose laid-out first baseline or aligned edge is away from where the deck’s other titles of that kind land. Off until a profile or policy enables it.',
   code: QUALITY_CODES.TITLE_DRIFT,
   category: 'consistency',
   defaultSeverity: 'warning',
-  defaultCertainty: 'deterministic',
+  defaultCertainty: 'estimated',
   formats: ['pptx'],
   defaultEnabled: false,
   defaultParameters: {
@@ -1456,48 +1675,64 @@ export const pptxTitleDriftRule: QualityRule<
       TITLE_DRIFT_TOLERANCE_PT
     );
     const findings: QualityRuleFinding[] = [];
-    for (const [kind, titles] of titleGroups(facts, styles)) {
+    for (const { reference, members } of titlePlacements(
+      deckTitles(facts, styles),
+      tolerance
+    )) {
       // One title is nothing to compare; with two, the first states the line.
-      if (titles.length < 2) continue;
-      const axes = [
-        {
-          key: 'left edge',
-          prop: 'boxXPt' as const,
-          value: prevailing(titles.map((fact) => fact.boxXPt!)),
-        },
-        {
-          key: 'baseline',
-          prop: 'boxYPt' as const,
-          value: prevailing(titles.map((fact) => fact.boxYPt!)),
-        },
-      ];
-      for (const fact of titles) {
-        const off = axes.filter(
-          (axis) =>
-            axis.value !== undefined &&
-            Math.abs(fact[axis.prop]! - axis.value) > tolerance
+      if (members.length < 2) continue;
+      const agreeing = members.filter(
+        (title) =>
+          Math.abs(title.baselinePt - reference.baselinePt) <= tolerance &&
+          Math.abs(title.edgePt - reference.edgePt) <= tolerance
+      );
+      for (const title of members) {
+        if (agreeing.includes(title)) continue;
+        const edge = EDGE_NAMES[title.align];
+        const off = [
+          {
+            axis: 'first baseline',
+            actual: title.baselinePt,
+            expected: reference.baselinePt,
+          },
+          { axis: edge, actual: title.edgePt, expected: reference.edgePt },
+        ].filter(
+          (entry) => Math.abs(entry.actual - entry.expected) > tolerance
         );
-        if (off.length === 0) continue;
         const [first] = off;
+        const size =
+          title.fact.fontSizePt !== reference.fact.fontSizePt
+            ? ` The fit pass sets it at ${title.fact.fontSizePt}pt, where they set at ${reference.fact.fontSizePt}pt.`
+            : '';
         findings.push({
-          path: fact.path,
+          path: title.path,
+          relatedPaths: agreeing.map((other) => other.path),
           message:
-            `This ${kind.startsWith('style:') ? kind.slice(6) : kind} title sits at ${off
-              .map((axis) => `${axis.key} ${round(fact[axis.prop]!)}pt`)
-              .join(', ')}; the deck's others share ` +
-            `${off.map((axis) => `${axis.key} ${round(axis.value!)}pt`).join(', ')}.`,
+            `This ${title.style} title lays out at ${off
+              .map((entry) => `${entry.axis} ${round(entry.actual)}pt`)
+              .join(', ')}; the deck's other titles of that kind land at ` +
+            `${off.map((entry) => `${entry.axis} ${round(entry.expected)}pt`).join(', ')}.${size}`,
           suggestion:
-            'Place every title of one kind with the same block or the same coordinates, so the deck holds one line down the page.',
+            'Place every title of one kind with the same block or the same coordinates, anchor them alike, and keep each short enough to set at the size the others keep.',
           context: {
-            kind,
-            axes: off.map((axis) => axis.key),
-            slide: fact.slidePath,
+            style: title.style,
+            setSizePt: title.setSizePt,
+            align: title.align,
+            axes: off.map((entry) => entry.axis),
+            slide: title.fact.slidePath,
           },
           evidence: {
-            actual: round(fact[first.prop]!),
-            expected: round(first.value!),
+            summary: 'estimated first baseline and aligned edge',
+            actual: round(first.actual),
+            expected: round(first.expected),
             unit: 'pt',
-            values: { axis: first.key, source: 'profile' },
+            values: {
+              axis: first.axis,
+              lines: title.lines,
+              fontSizePt: title.fact.fontSizePt,
+              verticalAlign: title.fact.verticalAlign,
+              source: configurationSource(configuration, 'tolerancePt'),
+            },
           },
         });
       }
@@ -1561,7 +1796,9 @@ export const pptxBulletRule: QualityRule<PptxQualityModel, PptxQualityFact> = {
             actual: bullets.items,
             expected: maximumBullets,
             unit: 'bullets',
-            values: { source: 'profile' },
+            values: {
+              source: configurationSource(configuration, 'maximumBullets'),
+            },
           },
         });
       if (maximumWords > 0 && bullets.longestWords > maximumWords)
@@ -1578,13 +1815,53 @@ export const pptxBulletRule: QualityRule<PptxQualityModel, PptxQualityFact> = {
             actual: bullets.longestWords,
             expected: maximumWords,
             unit: 'words',
-            values: { source: 'profile' },
+            values: {
+              source: configurationSource(
+                configuration,
+                'maximumWordsPerBullet'
+              ),
+            },
           },
         });
     }
     return findings;
   },
 };
+
+/**
+ * The box moved back inside the margin, where that is all it takes: a box the
+ * author placed directly on the slide with plain numbers, no larger than the
+ * safe area itself. A box too big for the margin needs a smaller box or a
+ * bleed, and which is a design call; a box a group or a block places is
+ * placed in a frame this pass does not rewrite.
+ */
+function safeAreaFixes(
+  fact: PptxBoxFact,
+  canvas: PptxCanvasFact,
+  safe: number
+): JsonPatchOperation[] {
+  const position = fact.authoredPositionIn;
+  if (
+    position === undefined ||
+    fact.widthPt > canvas.widthPt - 2 * safe ||
+    fact.heightPt > canvas.heightPt - 2 * safe
+  )
+    return [];
+  // Inches at three decimals, rounded towards the inside of the margin.
+  const clamp = (valuePt: number, sizePt: number, extentPt: number) => {
+    const low = Math.ceil((safe / 72) * 1000) / 1000;
+    const high = Math.floor(((extentPt - safe - sizePt) / 72) * 1000) / 1000;
+    return Math.min(Math.max(valuePt / 72, low), high);
+  };
+  const fixes: JsonPatchOperation[] = [];
+  const x = clamp(fact.xPt, fact.widthPt, canvas.widthPt);
+  const y = clamp(fact.yPt, fact.heightPt, canvas.heightPt);
+  if (Math.abs(x - position.x) > 0.0005)
+    fixes.push({ op: 'replace', path: `${fact.path}/props/x`, value: x });
+  if (Math.abs(y - position.y) > 0.0005)
+    fixes.push({ op: 'replace', path: `${fact.path}/props/y`, value: y });
+  return fixes;
+}
 
 /**
  * Content outside the theme's safe area. Chrome lives in the margin band by
@@ -1597,7 +1874,7 @@ export const pptxSafeAreaRule: QualityRule<PptxQualityModel, PptxQualityFact> =
   {
     id: 'pptx/safe-area',
     description:
-      'Content outside the theme’s safe area that is neither chrome nor a full bleed. Off until a profile or policy enables it.',
+      'Content outside the theme’s safe area that is neither chrome (a tracker, footer, source or logo) nor a full bleed. Off until a profile or policy enables it.',
     code: QUALITY_CODES.SAFE_AREA,
     category: 'composition',
     defaultSeverity: 'warning',
@@ -1619,7 +1896,8 @@ export const pptxSafeAreaRule: QualityRule<PptxQualityModel, PptxQualityFact> =
       // Chrome is recognised box by box, on the compiled nodes: every box a
       // block draws reports at the one invocation, so matching on the
       // author's pointer exempted all of a block's boxes once any of them was
-      // a footer — and none of them when the chrome was a slot.
+      // a footer — and none of them when the chrome was a slot. A logo is
+      // chrome too: a cover places it in the band a slide keeps its tracker.
       const chromeNodes = new Set(
         facts
           .filter(
@@ -1627,7 +1905,8 @@ export const pptxSafeAreaRule: QualityRule<PptxQualityModel, PptxQualityFact> =
               fact.kind === 'pptx/chrome-slot' &&
               (fact.role === 'tracker' ||
                 fact.role === 'footer' ||
-                fact.role === 'source')
+                fact.role === 'source' ||
+                fact.role === 'logo')
           )
           .flatMap((fact) => (fact.nodePath ? [fact.nodePath] : []))
       );
@@ -1665,6 +1944,7 @@ export const pptxSafeAreaRule: QualityRule<PptxQualityModel, PptxQualityFact> =
             right - (canvas.widthPt - safe),
             bottom - (canvas.heightPt - safe)
           );
+          const fixes = safeAreaFixes(fact, canvas, safe);
           return [
             {
               path: fact.path,
@@ -1680,6 +1960,7 @@ export const pptxSafeAreaRule: QualityRule<PptxQualityModel, PptxQualityFact> =
                 unit: 'pt',
                 values: { source: 'theme' },
               },
+              ...(fixes.length > 0 && { fixes }),
             },
           ];
         });
@@ -1741,7 +2022,7 @@ export const pptxSlideTitleRule: QualityRule<
           actual: 0,
           expected: 1,
           unit: 'titles',
-          values: { source: 'profile' },
+          values: { source: configurationSource(configuration) },
         },
       }));
   },
@@ -1822,6 +2103,19 @@ export const pptxImageAspectRule: QualityRule<
             path: fact.path,
             drawn: fact.drawnRatio!,
             natural: fact.naturalRatio!,
+            ...(fact.authoredSizeIn && {
+              sides: {
+                width: {
+                  path: `${fact.path}/props/w`,
+                  value: fact.authoredSizeIn.w,
+                },
+                height: {
+                  path: `${fact.path}/props/h`,
+                  value: fact.authoredSizeIn.h,
+                },
+                decimals: 3,
+              },
+            }),
           },
           'slide',
           tolerance
@@ -1851,6 +2145,7 @@ export const PPTX_QUALITY_RULES: QualityRulePack<
     pptxOffCanvasRule,
     pptxSlotBudgetRule,
     pptxRequiredChromeRule,
+    pptxSlideFooterRule,
     pptxActionTitleRule,
     pptxTypeScaleRule,
     pptxSizeCountRule,
@@ -1887,11 +2182,12 @@ export const PPTX_QUALITY_PROFILES = {
     id: 'consulting-deck',
     formats: ['pptx'],
     description:
-      'Consulting readout: every content slide leads with a two-line action title, every chart carries a takeaway and a source, content stays inside the theme’s safe area, a box holds at most five bullets of at most twelve words, every figure carries alt text, every size is on the theme scale with at most nine in the deck and six on a slide, and titles of one kind hold one line.',
+      'Consulting readout: every content slide leads with a two-line action title, every chart carries a takeaway and a source, every slide a block builds after the cover carries its page number, content stays inside the theme’s safe area, a box holds at most five bullets of at most twelve words, every figure carries alt text, every size is on the theme scale with at most nine in the deck and six on a slide, and titles of one kind hold one line.',
     rules: {
       'pptx/required-chrome': {
         parameters: { required: ['takeaway', 'source'] },
       },
+      'pptx/slide-footer': { parameters: { required: ['pageNumber'] } },
       'pptx/action-title': { parameters: { maxLines: 2 } },
       'pptx/slide-density': { parameters: { maximumBodyWords: 90 } },
       'pptx/type-scale': { enabled: true },

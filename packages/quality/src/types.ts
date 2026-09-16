@@ -163,12 +163,22 @@ export interface QualityRuleConfiguration {
   parameters?: Readonly<Record<string, unknown>>;
 }
 
+/** Who set a rule's value: its own default, the profile, or a policy. */
+export type QualityConfigurationSource = 'rule' | 'profile' | 'policy';
+
 export interface ResolvedQualityRuleConfiguration {
   enabled: boolean;
+  /** Who switched the rule on or off. */
+  enabledSource: QualityConfigurationSource;
   severity: DiagnosticSeverity;
   /** Set only when a profile or policy explicitly overrode this rule. */
   severityOverride?: DiagnosticSeverity;
   parameters: Readonly<Record<string, unknown>>;
+  /**
+   * Who set each parameter, so evidence can say where a ceiling came from:
+   * a policy layered over a profile is not the profile.
+   */
+  parameterSources: Readonly<Record<string, QualityConfigurationSource>>;
 }
 
 export interface QualityProfile {

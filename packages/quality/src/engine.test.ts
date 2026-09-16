@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { QualityEngine, QualityGateError, QualityProfileError } from './engine';
-import { QualityPolicyError } from './policy';
+import {
+  configurationLabel,
+  configurationSource,
+  QualityPolicyError,
+  resolveRuleConfiguration,
+} from './policy';
 import type {
   PreparedDocument,
   QualityFact,
@@ -49,6 +54,52 @@ const minimumRule: QualityRule<{}, TestFact> = {
       }));
   },
 };
+
+describe('where a rule’s configuration came from', () => {
+  const offByDefault: QualityRule<{}, TestFact> = {
+    ...minimumRule,
+    defaultEnabled: false,
+    defaultParameters: { minimum: 10, maximum: 20 },
+  };
+  const profile: QualityProfile = {
+    id: 'house',
+    rules: { 'test/minimum': { enabled: true, parameters: { minimum: 12 } } },
+  };
+
+  it('names the layer that set each parameter and switched the rule on', () => {
+    const configuration = resolveRuleConfiguration(offByDefault, profile, {
+      rules: { 'test/minimum': { parameters: { maximum: 30 } } },
+    });
+    expect(configuration.parameters).toEqual({ minimum: 12, maximum: 30 });
+    expect(configuration.parameterSources).toEqual({
+      minimum: 'profile',
+      maximum: 'policy',
+    });
+    expect(configuration.enabledSource).toBe('profile');
+  });
+
+  it('answers for the latest layer among the parameters a finding reads and the switch', () => {
+    const byProfile = resolveRuleConfiguration(
+      offByDefault,
+      profile,
+      undefined
+    );
+    expect(configurationSource(byProfile, 'minimum')).toBe('profile');
+    // The profile switched it on, so a bound left at its default is still
+    // the profile's to ask.
+    expect(configurationSource(byProfile, 'maximum')).toBe('profile');
+    expect(configurationSource(byProfile)).toBe('profile');
+    const tightened = resolveRuleConfiguration(offByDefault, profile, {
+      rules: { 'test/minimum': { parameters: { minimum: 14 } } },
+    });
+    expect(configurationSource(tightened, 'minimum')).toBe('policy');
+    const onByDefault = resolveRuleConfiguration(minimumRule, undefined, {});
+    expect(configurationSource(onByDefault, 'minimum')).toBe('rule');
+    expect(configurationLabel('policy', profile)).toBe('the quality policy');
+    expect(configurationLabel('profile', profile)).toBe('the house profile');
+    expect(configurationLabel('rule', undefined)).toBe('the rule default');
+  });
+});
 
 describe('QualityEngine', () => {
   it('resolves profile parameters and policy severity/gating', async () => {

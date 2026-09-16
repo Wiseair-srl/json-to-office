@@ -686,6 +686,17 @@ export interface ImageAspect {
   drawn: number;
   /** The shape the asset itself has, where the document carries it. */
   natural: number;
+  /**
+   * The two sides as the author wrote them, where both are plain numbers at
+   * the finding's pointer: what a fix can rewrite. Absent when a side is a
+   * percentage or comes from a block, and then no fix is offered.
+   */
+  sides?: {
+    width: { path: string; value: number };
+    height: { path: string; value: number };
+    /** Decimal places the format keeps a side at: 0 for pixels, 3 for inches. */
+    decimals: number;
+  };
 }
 
 export const DEFAULT_IMAGE_ASPECT_TOLERANCE = 0.02;
@@ -719,5 +730,33 @@ export function imageAspectFinding(
       expected: Math.round(image.natural * 1000) / 1000,
       values: { source: 'asset' },
     },
+    ...(image.sides && { fixes: [aspectFix(image, image.sides)] }),
   };
+}
+
+/**
+ * The side the asset should have supplied, rewritten to the value its shape
+ * gives: the height under an asset wider than its box, the width under a
+ * taller one. Either way the picture shrinks into the box it was given, and
+ * the value is written rather than left to a renderer to derive.
+ */
+function aspectFix(
+  image: ImageAspect,
+  sides: NonNullable<ImageAspect['sides']>
+): JsonPatchOperation {
+  const scale = 10 ** sides.decimals;
+  // Rounded towards the box, so the fix never grows the picture past it.
+  const inward = (value: number): number =>
+    Math.max(1 / scale, Math.floor(value * scale) / scale);
+  return image.natural > image.drawn
+    ? {
+        op: 'replace',
+        path: sides.height.path,
+        value: inward(sides.width.value / image.natural),
+      }
+    : {
+        op: 'replace',
+        path: sides.width.path,
+        value: inward(sides.height.value * image.natural),
+      };
 }
