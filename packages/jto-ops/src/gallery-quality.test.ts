@@ -1,18 +1,22 @@
 /**
- * The quality rules, calibrated against the reference stock templates (#216).
+ * The gallery templates, judged by the quality rules: coverage of what the
+ * gallery ships (#216, reduced under #343).
  *
- * The acceptance bar for a design lint is that known-good documents come back
- * clean: a rule that flags reference-quality documents trains every consumer
- * to ignore it. Warning-severity findings must therefore be zero across the
- * reference templates *under the default profile*; infos (tight fits) are
- * advisory and allowed. A rule change that breaks this suite is mistuned
- * until proven otherwise — fix the threshold, not the template, unless the
- * template is genuinely wrong.
+ * These templates used to be the rules' false-positive bar on their own — a
+ * hand-kept list of reference-quality documents that had to come back clean
+ * under the default profile. That bar is the block matrix now: every
+ * supported boundary case of every definition a template embeds must come
+ * back warning-clean, statically and rendered (`block-matrix.test.ts`, and
+ * `preview-block-matrix.test.ts` in mcp-server), and it covers every theme,
+ * canvas and font a definition is supported on rather than the one each
+ * template happens to use.
  *
- * Only `STOCK_REFERENCE_TEMPLATES` participate. The other playground
- * templates (the legacy 16:9/4:3 decks) are starting points, not quality
- * references — findings on them are acceptable and must never bend a
- * threshold.
+ * What stays here is justified by the gallery itself: every template it ships
+ * is a document someone copies, so none may carry a warning-severity finding
+ * under its default profile beyond the true findings and illustrative
+ * placeholders recorded for it below. The list of templates is the directory,
+ * not a curated set, and every allowance is exact: a new finding fails, and so
+ * does an allowance that stopped firing.
  *
  * The bar is deliberately not extended to every profile. `executive-presentation`
  * flags most stock templates and is right to: they are reusable layouts, not
@@ -26,7 +30,6 @@ import { readFileSync, readdirSync } from 'fs';
 import * as path from 'path';
 import { describe, expect, it } from 'vitest';
 import { DocxFormatAdapter, PptxFormatAdapter } from './format-adapter';
-import { STOCK_REFERENCE_TEMPLATES } from './quality-reference-corpus';
 
 const TEMPLATES_DIR = path.resolve(
   __dirname,
@@ -53,6 +56,25 @@ const KNOWN_TRUE_FINDINGS: Readonly<Record<string, readonly string[]>> = {
   // real defect, and the fix is a redesign of the template rather than a
   // threshold. Listed so it cannot grow quietly.
   'standard-annual-report.docx.json': ['W_QUALITY_FONT_COUNT at /props'],
+  // Numeric table columns set flush left and rounded two ways, and four
+  // families: a starting-point template that predates the table rules (#326).
+  'vermilion-annual-report.docx.json': [
+    'W_QUALITY_TABLE_NUMERIC_ALIGN at /children/9/children/5/props/columns/1',
+    'W_QUALITY_TABLE_NUMERIC_ALIGN at /children/9/children/5/props/columns/2',
+    'W_QUALITY_TABLE_MIXED_DECIMALS at /children/9/children/5/props/columns/2',
+    'W_QUALITY_TABLE_NUMERIC_ALIGN at /children/9/children/5/props/columns/3',
+    'W_QUALITY_TABLE_NUMERIC_ALIGN at /children/9/children/5/props/columns/4',
+    'W_QUALITY_TABLE_MIXED_DECIMALS at /children/9/children/5/props/columns/4',
+    'W_QUALITY_TABLE_NUMERIC_ALIGN at /children/9/children/7/props/columns/1',
+    'W_QUALITY_TABLE_NUMERIC_ALIGN at /children/9/children/7/props/columns/2',
+    'W_QUALITY_TABLE_NUMERIC_ALIGN at /children/9/children/7/props/columns/3',
+    'W_QUALITY_TABLE_NUMERIC_ALIGN at /children/9/children/7/props/columns/4',
+    'W_QUALITY_TABLE_NUMERIC_ALIGN at /children/10/children/17/props/columns/1',
+    'W_QUALITY_TABLE_NUMERIC_ALIGN at /children/10/children/17/props/columns/2',
+    'W_QUALITY_TABLE_NUMERIC_ALIGN at /children/10/children/17/props/columns/3',
+    'W_QUALITY_TABLE_NUMERIC_ALIGN at /children/10/children/17/props/columns/4',
+    'W_QUALITY_FONT_COUNT at /props',
+  ],
   'minimalist-pitch-deck.pptx.json': [
     'W_QUALITY_TEXT_CONTRAST at /children/0/children/1',
     'W_QUALITY_TEXT_CONTRAST at /children/2/children/3',
@@ -99,14 +121,21 @@ const ILLUSTRATIVE_PLACEHOLDERS: Readonly<Record<string, number>> = {
   'data-report-presentation.pptx.json': 47,
   'management-plan.pptx.json': 53,
   'minimalist-pitch-deck.pptx.json': 42,
+  'vermilion-annual-report.docx.json': 50,
 };
 
-const files = STOCK_REFERENCE_TEMPLATES;
+const files = readdirSync(TEMPLATES_DIR)
+  .filter((file) => /\.(docx|pptx)\.json$/.test(file))
+  .sort();
 
-describe('reference stock templates pass the quality rules clean', () => {
-  it('found the corpus', () => {
-    const present = new Set(readdirSync(TEMPLATES_DIR));
-    expect(files.filter((file) => !present.has(file))).toEqual([]);
+describe('gallery templates carry no warning beyond what is recorded for them', () => {
+  it('reads the gallery, and records allowances only for templates it ships', () => {
+    expect(files.length).toBeGreaterThan(0);
+    for (const file of [
+      ...Object.keys(KNOWN_TRUE_FINDINGS),
+      ...Object.keys(ILLUSTRATIVE_PLACEHOLDERS),
+    ])
+      expect(files).toContain(file);
   });
 
   for (const file of files) {

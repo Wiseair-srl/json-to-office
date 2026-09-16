@@ -848,3 +848,66 @@ describe('wrong-typed sibling keys fail everywhere the schema types them', () =>
     expect(result.valid).toBe(true);
   });
 });
+
+describe('syntax the block engine replaced fails with what replaced it (#343)', () => {
+  const blocks = {
+    'key-takeaways': {
+      slots: { items: { type: 'array', items: { type: 'string' } } },
+      body: [{ name: 'paragraph', props: { text: 'Takeaways' } }],
+    },
+  };
+
+  it('says to invoke a definition the report invokes by its own name', () => {
+    const result = validateDocument({
+      name: 'docx',
+      props: { theme: 'consulting', blocks },
+      children: [
+        {
+          name: 'section',
+          children: [{ name: 'key-takeaways', props: { items: ['A'] } }],
+        },
+      ],
+    });
+    expect(result.valid).toBe(false);
+    const unknown = (result.errors ?? []).find(
+      (e) => e.code === 'unknown_component'
+    );
+    expect(unknown?.path).toBe('/children/0/children/0/name');
+    expect(unknown?.suggestion).toMatch(
+      /JSON block this document defines.*"ref": "key-takeaways"/
+    );
+  });
+
+  it('points a component nobody defines at the block catalogue, conditionally', () => {
+    const result = validateDocument({
+      name: 'docx',
+      props: { theme: 'consulting' },
+      children: [
+        { name: 'section', children: [{ name: 'running-head', props: {} }] },
+      ],
+    });
+    const unknown = (result.errors ?? []).find(
+      (e) => e.code === 'unknown_component'
+    );
+    expect(unknown?.suggestion).toMatch(/If "running-head" is a JSON block/);
+  });
+
+  it('says a block invocation names its definition with ref', () => {
+    const result = validateDocument({
+      name: 'docx',
+      props: { theme: 'consulting', blocks },
+      children: [
+        {
+          name: 'section',
+          children: [{ name: 'block', props: { name: 'key-takeaways' } }],
+        },
+      ],
+    });
+    const named = (result.errors ?? []).find(
+      (e) => e.path === '/children/0/children/0/props/name'
+    );
+    expect(named?.suggestion).toMatch(
+      /names its definition with ref.*"ref": "key-takeaways"/
+    );
+  });
+});
