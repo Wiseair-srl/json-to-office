@@ -61,6 +61,7 @@ describe('public API surface', () => {
       'generateSchema',
       'getComponentNames',
       'getStandardComponentsDefinition',
+      'prepareQuality',
       'validate',
     ]);
   });

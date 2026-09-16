@@ -232,5 +232,9 @@ export async function expandPptxBlocksWithPlugins<T>(
     preserve,
   });
   const finished = finishPptxBlocks(composed.standard as T, evaluator, effects);
-  return { ...finished, preserved: composed.preserved as T };
+  return {
+    ...finished,
+    preserved: composed.preserved as T,
+    pluginOutputs: evaluator.pluginOutputs,
+  };
 }

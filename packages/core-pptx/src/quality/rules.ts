@@ -220,19 +220,24 @@ export const pptxMinimumFontRule: QualityRule<
       .filter((fact) => fact.fontSizePt < minimum)
       .map((fact) => ({
         message: `Effective font size is ${fact.fontSizePt}pt — unreadable on a projected slide.`,
-        path: `${fact.path}/props`,
+        // Text a definition or a plugin generated reports at the invocation
+        // the author wrote, whose props are the block's or the plugin's: no
+        // fontSize of theirs to lift, so no patch.
+        path: fact.ownsProps ? `${fact.path}/props` : fact.path,
         suggestion: `Use at least ${minimum}pt; captions rarely work below 10pt.`,
         context: { fontSize: fact.fontSizePt, threshold: minimum },
         evidence: { actual: fact.fontSizePt, expected: minimum, unit: 'pt' },
         // `add` replaces an existing member, so this lifts an explicit
         // fontSize and overrides an inherited style value alike.
-        fixes: [
-          {
-            op: 'add' as const,
-            path: `${fact.path}/props/fontSize`,
-            value: minimum,
-          },
-        ],
+        ...(fact.ownsProps && {
+          fixes: [
+            {
+              op: 'add' as const,
+              path: `${fact.path}/props/fontSize`,
+              value: minimum,
+            },
+          ],
+        }),
       }));
   },
 };

@@ -89,6 +89,7 @@ export async function composeBlocksWithPlugins(
       const source = toAuthoredBlockPointer(evaluator.sourceMap, path);
       const emitted = await options.render(standard, source);
       evaluator.sourceMap[`${path}/children`] = source;
+      evaluator.pluginOutputs.push(`${path}/children`);
       const processed = await walk(emitted, `${path}/children`, depth + 1);
       return {
         standard: { name: 'group', children: processed.standard },

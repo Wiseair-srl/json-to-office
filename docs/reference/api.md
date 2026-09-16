@@ -333,6 +333,7 @@ const { buffer, warnings } = await generator.generateBuffer({
 | `generateBuffer(document, options?)`                                     | `Promise<{ buffer, warnings, standardDefinition, ... }>` | Expand plugins and pack a `.docx` buffer. `standardDefinition` is the fully-expanded standard-component tree.                      |
 | `generateFile(document, outputPath, options?)`                           | `Promise<{ warnings, standardDefinition, ... }>`         | Same, written to disk.                                                                                                             |
 | `expandStandardDefinition(document, options?)`                           | `Promise<{ standardDefinition, warnings }>`              | Expansion only — no fonts, no layout, no rendering, no external services. Use it when you want the JSON tree and not a document.   |
+| `prepareQuality(document, options?)`                                     | `Promise<{ prepared, warnings }>`                        | The quality model with plugins expanded as generation expands them; pass `prepared` to `analyzeDocxQuality`. Nothing renders.      |
 | `validate(document)`                                                     | `{ valid, errors? }`                                     | Validate against the enriched (standard + custom) schema.                                                                          |
 | `getComponentNames()`                                                    | `string[]`                                               | Registered custom component names.                                                                                                 |
 | `generateSchema(includeStandardComponents = true)`                       | `TSchema`                                                | The enriched TypeBox schema.                                                                                                       |
@@ -360,7 +361,7 @@ await generator.generateFile(deckJson, './deck.pptx'); // → { warnings }
 
 **Options** (`PresentationGeneratorOptions`): `theme?` (`PptxThemeConfig | string`), `customThemes?`, `debug?`, `services?`, `fonts?`.
 
-**Builder methods:** `addComponent(component)`, `generate(document)` → `Promise<{ buffer, warnings }>`, `generateFile(document, outputPath)` → `Promise<{ warnings }>`, `getComponentNames()`, `validate(document)` → `{ valid, errors? }`, `generateSchema()` → `TSchema`, `exportSchema(outputPath, { prettyPrint? })`.
+**Builder methods:** `addComponent(component)`, `generate(document)` → `Promise<{ buffer, warnings }>`, `generateFile(document, outputPath)` → `Promise<{ warnings }>`, `prepareQuality(document)` → `Promise<{ prepared, warnings }>` (plugins expanded for `analyzePptxQuality`, nothing rendered), `getComponentNames()`, `validate(document)` → `{ valid, errors? }`, `generateSchema()` → `TSchema`, `exportSchema(outputPath, { prettyPrint? })`.
 
 ## Shared option shapes
 

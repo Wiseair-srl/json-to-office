@@ -50,6 +50,7 @@ export {
   type GenerateFileOptions,
   type GenerateOptions,
   type GenerationValidationOptions,
+  type QualityPreparationResult,
   type ValidationResult,
   type ExtractCustomComponentType,
   type CustomComponentUnion,

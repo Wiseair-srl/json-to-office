@@ -10,8 +10,10 @@ import type {
   SlideComponentDefinition,
   PipelineWarning,
 } from '../types';
+import type { PreparedDocument } from '@json-to-office/quality';
 import type { PptxRendererId } from '../renderers/types';
 import type { PresentationPackagingOptions } from '../core/finalizePackage';
+import type { PptxQualityFact, PptxQualityModel } from '../quality/facts';
 
 // ---- Helper types ----
 
@@ -169,6 +171,15 @@ export type GenerateFileOptions = GenerateOptions;
 /**
  * Presentation generator with custom components and full type safety
  */
+/**
+ * Result of `prepareQuality` — the quality model of the expanded
+ * presentation, ready for `analyzePptxQuality(document, { prepared })`.
+ */
+export interface QualityPreparationResult {
+  prepared: PreparedDocument<PptxQualityModel, PptxQualityFact>;
+  warnings: PipelineWarning[];
+}
+
 export interface PresentationGenerator<
   TCustomComponents extends readonly CustomComponent<
     any,
@@ -191,6 +202,16 @@ export interface PresentationGenerator<
     outputPath: string,
     options?: GenerateFileOptions
   ) => Promise<FileGenerationResult>;
+
+  /**
+   * Prepare the presentation's quality model with registered components
+   * expanded as generation expands them: plugin output is analyzed, and its
+   * findings point at the invocation that emitted it. Nothing renders.
+   */
+  prepareQuality: (
+    document: ExtendedPresentationComponent<TCustomComponents>,
+    options?: GenerateOptions
+  ) => Promise<QualityPreparationResult>;
 
   getComponentNames: () => string[];
 

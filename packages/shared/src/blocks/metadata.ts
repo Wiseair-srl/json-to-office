@@ -90,6 +90,11 @@ export interface ExpandedBlocks<T> {
   sourceMap: BlockSourceMap;
   /** Authored pointers of every expanded invocation, in document order. */
   blocks: readonly string[];
+  /**
+   * Compiled pointers under which a registered code component's output sits,
+   * when plugins expanded with the blocks; see `toAuthoredBlockPointer`.
+   */
+  pluginOutputs?: readonly string[];
 }
 
 export interface BlockSlotBudget {

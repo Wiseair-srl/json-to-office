@@ -368,6 +368,12 @@ export interface GeneratorOptions {
   };
   /** Opaque canonical prologue output shared by analysis and rendering. */
   prepared?: PreparedDocument;
+  /**
+   * Registered code components. Quality preparation expands them the way
+   * generation does, so `analyzeQuality` and `prepareDocument` judge what a
+   * plugin emits and report it at the invocation the author wrote (#453).
+   */
+  plugins?: readonly any[];
 }
 
 export interface GeneratorResult {
@@ -796,15 +802,39 @@ export class DocxFormatAdapter implements FormatAdapter {
       resolved.requested,
       resolved.customThemes
     );
-    const prepared = core.prepareDocxQualityDocument(
-      normalized.document as any,
-      {
-        customThemes: normalized.customThemes,
-        fonts: options.fonts,
-        renderer: options.renderer ?? documentRenderer(parsed),
-        warnings,
-      }
-    );
+    const prepared =
+      options.plugins && options.plugins.length > 0
+        ? await (async () => {
+            // The generator `createGenerator` builds for these plugins, so
+            // the tree analysed is the tree that renders.
+            let generator: any = core.createDocumentGenerator({
+              theme: resolved.requested,
+              customThemes: resolved.requested
+                ? {
+                    ...resolved.customThemes,
+                    [CLI_THEME_KEY]: resolved.requested,
+                  }
+                : resolved.customThemes,
+              fonts: options.fonts,
+              validation: {
+                allowUnknownFields: options.validation?.allowUnknownFields,
+              },
+              renderer: options.renderer as DocxRendererId | undefined,
+            });
+            for (const plugin of options.plugins!)
+              generator = generator.addComponent(plugin);
+            const result = await generator.prepareQuality(normalized.document);
+            warnings.push(...(result.warnings ?? []));
+            return result.prepared as ReturnType<
+              typeof core.prepareDocxQualityDocument
+            >;
+          })()
+        : core.prepareDocxQualityDocument(normalized.document as any, {
+            customThemes: normalized.customThemes,
+            fonts: options.fonts,
+            renderer: options.renderer ?? documentRenderer(parsed),
+            warnings,
+          });
     return stampPrepared(
       {
         ...prepared,
@@ -1246,19 +1276,45 @@ export class PptxFormatAdapter implements FormatAdapter {
       resolved.requested,
       resolved.customThemes
     );
-    const prepared = core.preparePptxQualityDocument(
-      normalized.document as any,
-      {
-        customThemes: normalized.customThemes,
-        fonts: options.fonts,
-        services: withRequestedServices(
-          buildServicesFromEnv(),
-          options.services
-        ),
-        renderer: options.renderer ?? documentRenderer(parsed),
-        warnings,
-      }
+    const services = withRequestedServices(
+      buildServicesFromEnv(),
+      options.services
     );
+    const prepared =
+      options.plugins && options.plugins.length > 0
+        ? await (async () => {
+            // The generator `createGenerator` builds for these plugins, so
+            // the tree analysed is the tree that renders.
+            let generator: any = core.createPresentationGenerator({
+              theme: resolved.requested,
+              customThemes: resolved.requested
+                ? {
+                    ...resolved.customThemes,
+                    [CLI_THEME_KEY]: resolved.requested,
+                  }
+                : resolved.customThemes,
+              services,
+              fonts: options.fonts,
+              validation: {
+                allowUnknownFields: options.validation?.allowUnknownFields,
+              },
+              renderer: options.renderer as PptxRendererId | undefined,
+            });
+            for (const plugin of options.plugins!)
+              generator = generator.addComponent(plugin);
+            const result = await generator.prepareQuality(normalized.document);
+            warnings.push(...(result.warnings ?? []));
+            return result.prepared as ReturnType<
+              typeof core.preparePptxQualityDocument
+            >;
+          })()
+        : core.preparePptxQualityDocument(normalized.document as any, {
+            customThemes: normalized.customThemes,
+            fonts: options.fonts,
+            services,
+            renderer: options.renderer ?? documentRenderer(parsed),
+            warnings,
+          });
     return stampPrepared(
       {
         ...prepared,
