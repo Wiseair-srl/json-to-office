@@ -1,5 +1,7 @@
 import {
   chartInfoDesignFindings,
+  configurationLabel,
+  configurationSource,
   DEFAULT_MAXIMUM_CHART_SERIES,
   DEFAULT_MAXIMUM_PIE_SLICES,
   fontCountFinding,
@@ -901,20 +903,23 @@ export const docxRequiredChromeRule: QualityRule<
         (fact): fact is DocxChromeSlotFact => fact.kind === 'docx/chrome-slot'
       )
       .filter((fact) => required.includes(fact.role) && !fact.present)
-      .map((fact) => ({
-        path: fact.path,
-        relatedPaths: [fact.invocation],
-        message:
-          `${fact.block} states no ${fact.role} in its "${fact.slot}" slot; ` +
-          `the ${profile?.id ?? 'selected'} profile expects one on every ${fact.block}.`,
-        suggestion: `Fill the "${fact.slot}" slot. The theme already styles it.`,
-        context: { block: fact.block, slot: fact.slot, role: fact.role },
-        evidence: {
-          actual: 'empty',
-          expected: fact.role,
-          values: { source: 'profile', required },
-        },
-      }));
+      .map((fact) => {
+        const source = configurationSource(configuration, 'required');
+        return {
+          path: fact.path,
+          relatedPaths: [fact.invocation],
+          message:
+            `${fact.block} states no ${fact.role} in its "${fact.slot}" slot; ` +
+            `${configurationLabel(source, profile)} expects one on every ${fact.block}.`,
+          suggestion: `Fill the "${fact.slot}" slot. The theme already styles it.`,
+          context: { block: fact.block, slot: fact.slot, role: fact.role },
+          evidence: {
+            actual: 'empty',
+            expected: fact.role,
+            values: { source, required },
+          },
+        };
+      });
   },
 };
 
@@ -1008,12 +1013,17 @@ export const docxRunningHeadRule: QualityRule<
         const parts = missing
           .map((part) => (part === 'pageNumber' ? 'page-number field' : part))
           .join(', ');
+        const source = configurationSource(
+          configuration,
+          'required',
+          'fromSection'
+        );
         return [
           {
             path: fact.path,
             message:
-              `Section ${fact.index + 1} carries no ${parts}; the ` +
-              `${profile?.id ?? 'selected'} profile expects a running head ` +
+              `Section ${fact.index + 1} carries no ${parts}; ` +
+              `${configurationLabel(source, profile)} expects a running head ` +
               `on every section after the cover.`,
             suggestion:
               'Invoke a running-head block at the top of the first body section: its section effect fills every later section with the title and n / N.',
@@ -1021,7 +1031,7 @@ export const docxRunningHeadRule: QualityRule<
             evidence: {
               actual: required.filter((part) => fact[part]),
               expected: required,
-              values: { source: 'profile', fromSection: from },
+              values: { source, fromSection: from },
             },
           },
         ];
@@ -1117,14 +1127,16 @@ export const docxSizeCountRule: QualityRule<DocxQualityModel, DocxQualityFact> =
     formats: ['docx'],
     defaultEnabled: false,
     defaultParameters: { maximumSizes: 8 },
-    evaluate: ({ facts, configuration, profile }) =>
-      sizeCountFinding(
+    evaluate: ({ facts, configuration, profile }) => {
+      const source = configurationSource(configuration, 'maximumSizes');
+      return sizeCountFinding(
         paintedSizes(facts),
         numberParameter(configuration.parameters, 'maximumSizes', 8),
         themeFact(facts)?.path ?? '/props',
-        profile?.id,
+        { source, label: configurationLabel(source, profile) },
         DOCX_TYPE_VOCABULARY
-      ),
+      );
+    },
   };
 
 /**
@@ -1220,7 +1232,12 @@ export const docxBodyMeasureRule: QualityRule<
               actual: fact.charactersPerLine,
               expected: wide ? maximum : minimum,
               unit: 'characters',
-              values: { source: 'profile' },
+              values: {
+                source: configurationSource(
+                  configuration,
+                  wide ? 'maximumCharacters' : 'minimumCharacters'
+                ),
+              },
             },
           };
         })
@@ -1284,7 +1301,12 @@ export const docxSectionContentRule: QualityRule<
               actual: 0,
               expected: 1,
               unit: 'headings',
-              values: { source: 'profile' },
+              values: {
+                source: configurationSource(
+                  configuration,
+                  'minimumWordsForHeading'
+                ),
+              },
             },
           },
         ];
@@ -1312,7 +1334,7 @@ export const docxHeadingKeepNextRule: QualityRule<
   defaultCertainty: 'deterministic',
   formats: ['docx'],
   defaultEnabled: false,
-  evaluate: ({ facts }) =>
+  evaluate: ({ facts, configuration }) =>
     facts
       .filter(
         (fact): fact is DocxHeadingFact =>
@@ -1333,7 +1355,7 @@ export const docxHeadingKeepNextRule: QualityRule<
             ? 'Set keepNext on the heading, or give the theme’s heading style keepNext so every level is bound.'
             : 'Give the theme’s heading style keepNext, or set it in the block definition that draws this heading.',
           context: { level: fact.level },
-          evidence: { values: { source: 'profile' } },
+          evidence: { values: { source: configurationSource(configuration) } },
           ...(heading && {
             fixes: [
               {
@@ -1416,6 +1438,19 @@ export const docxImageAspectRule: QualityRule<
             path: fact.path,
             drawn: fact.drawnRatio!,
             natural: fact.naturalRatio!,
+            ...(fact.authoredSizePx && {
+              sides: {
+                width: {
+                  path: `${fact.path}/props/width`,
+                  value: fact.authoredSizePx.width,
+                },
+                height: {
+                  path: `${fact.path}/props/height`,
+                  value: fact.authoredSizePx.height,
+                },
+                decimals: 0,
+              },
+            }),
           },
           'page',
           tolerance
@@ -1452,12 +1487,13 @@ export const docxContentsRule: QualityRule<DocxQualityModel, DocxQualityFact> =
         (fact): fact is DocxOutlineFact => fact.kind === 'docx/outline'
       );
       if (!outline || outline.contents || outline.headings < minimum) return [];
+      const source = configurationSource(configuration, 'minimumHeadings');
       return [
         {
           path: outline.path,
           message:
             `The document carries ${outline.headings} headings and no table of contents; ` +
-            `the ${profile?.id ?? 'selected'} profile expects one from ${minimum}.`,
+            `${configurationLabel(source, profile)} expects one from ${minimum}.`,
           suggestion:
             'Add a `toc` component after the cover. Word fills it from the headings already there.',
           context: { headings: outline.headings, minimum },
@@ -1465,7 +1501,7 @@ export const docxContentsRule: QualityRule<DocxQualityModel, DocxQualityFact> =
             actual: outline.headings,
             expected: minimum,
             unit: 'headings',
-            values: { source: 'profile' },
+            values: { source },
           },
         },
       ];

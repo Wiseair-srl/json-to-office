@@ -87,6 +87,10 @@ function applyPatch(
 
 const CANVAS = { slideWidth: 13.333, slideHeight: 7.5 };
 
+/** A 4 × 2 pixel PNG: an asset twice as wide as it is tall. */
+const PNG_4X2 =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAABytg0kAAAAFElEQVR42mNk+M9QzwAFjDAGACPuA/8fMSCgAAAAAElFTkSuQmCC';
+
 interface Fixture {
   id: string;
   format: FormatName;
@@ -337,6 +341,79 @@ const FIXTURES: readonly Fixture[] = [
       {
         name: 'text',
         props: { text: 'Body two.', style: 'body', fontSize: 15 },
+      },
+    ]),
+  },
+  {
+    id: 'pptx image stretched out of its asset’s shape',
+    format: 'pptx',
+    code: 'W_QUALITY_IMAGE_ASPECT',
+    document: {
+      name: 'pptx',
+      props: CANVAS,
+      children: [
+        {
+          name: 'slide',
+          children: [
+            {
+              name: 'image',
+              props: { path: PNG_4X2, x: 1, y: 1, w: 3, h: 3, alt: 'Chart' },
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    id: 'pptx image squeezed narrower than its asset',
+    format: 'pptx',
+    code: 'W_QUALITY_IMAGE_ASPECT',
+    document: {
+      name: 'pptx',
+      props: CANVAS,
+      children: [
+        {
+          name: 'slide',
+          children: [
+            {
+              name: 'image',
+              props: { path: PNG_4X2, x: 1, y: 1, w: 6, h: 1, alt: 'Chart' },
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    id: 'docx image stretched out of its asset’s shape',
+    format: 'docx',
+    code: 'W_QUALITY_IMAGE_ASPECT',
+    document: {
+      name: 'docx',
+      props: {},
+      children: [
+        {
+          name: 'image',
+          props: { base64: PNG_4X2, width: 300, height: 300, alt: 'Chart' },
+        },
+      ],
+    },
+  },
+  {
+    id: 'pptx box placed in the margin band',
+    format: 'pptx',
+    code: 'W_QUALITY_SAFE_AREA',
+    document: consultingDeck([
+      {
+        name: 'text',
+        props: {
+          text: 'A note placed too close to the edge.',
+          style: 'body',
+          x: 0.2,
+          y: 0.2,
+          w: 5,
+          h: 0.6,
+        },
       },
     ]),
   },

@@ -130,8 +130,44 @@ describe('the theme’s safe area', () => {
         path: '/children/0/children/1',
         context: expect.objectContaining({ edges: ['left'], safeAreaPt: 36 }),
         evidence: expect.objectContaining({ values: { source: 'theme' } }),
+        fixes: [
+          { op: 'replace', path: '/children/0/children/1/props/x', value: 0.5 },
+        ],
       }),
     ]);
+  });
+  it('moves a box back inside the margin only where moving is the whole repair', () => {
+    const margin = { text: 'In the margin.', x: 0.1, y: 3, h: 1 };
+    // Wider than the safe area: a smaller box or a bleed is a design call.
+    const tooWide = deck(
+      slide(title(), { name: 'text', props: { ...margin, w: 12.9 } })
+    );
+    // Inside a group, x is the group frame's, not the slide's.
+    const grouped = deck(
+      slide(title(), {
+        name: 'group',
+        props: { x: 0, y: 0, w: 13.333, h: 7.5 },
+        children: [{ name: 'text', props: { ...margin, w: 4 } }],
+      })
+    );
+    // Placed in percentages: a fix in inches would change the unit.
+    const percent = deck(
+      slide(title(), {
+        name: 'text',
+        props: {
+          text: 'In the margin.',
+          x: '1%',
+          y: '40%',
+          w: '30%',
+          h: '10%',
+        },
+      })
+    );
+    for (const doc of [tooWide, grouped, percent]) {
+      const reported = onDeck(doc, QUALITY_CODES.SAFE_AREA);
+      expect(reported.length).toBeGreaterThan(0);
+      expect(reported.flatMap((finding) => finding.fixes ?? [])).toEqual([]);
+    }
   });
   it('lets a full bleed run edge to edge', () => {
     const band = deck(

@@ -1,4 +1,8 @@
-import { type JsonPatchOperation, type QualityRuleFinding } from './types';
+import {
+  type JsonPatchOperation,
+  type QualityConfigurationSource,
+  type QualityRuleFinding,
+} from './types';
 
 /**
  * Type consistency shared by both formats: whether a size is one the theme
@@ -147,7 +151,7 @@ export function sizeCountFinding(
   sizes: readonly PaintedSize[],
   maximum: number,
   themePath: string,
-  profileId: string | undefined,
+  setBy: { source: QualityConfigurationSource; label: string },
   vocabulary: TypeVocabulary
 ): QualityRuleFinding[] {
   const firstPathBySize = new Map<number, string>();
@@ -163,13 +167,13 @@ export function sizeCountFinding(
       relatedPaths: painted.map((size) => firstPathBySize.get(size)!),
       message:
         `The ${vocabulary.subject} paints ${painted.length} distinct text sizes ` +
-        `(${painted.join(', ')}pt); the ${profileId ?? 'selected'} profile allows ${maximum}.`,
+        `(${painted.join(', ')}pt); ${setBy.label} allows ${maximum}.`,
       suggestion: vocabulary.keepTo,
       context: { sizes: painted, maximum },
       evidence: {
         actual: painted.length,
         expected: maximum,
-        values: { source: 'profile' },
+        values: { source: setBy.source },
       },
     },
   ];

@@ -11,6 +11,7 @@ export {
   type QualityCategory,
   type QualityCertainty,
   type QualityCode,
+  type QualityConfigurationSource,
   type QualityCounts,
   type QualityDiagnostic,
   type QualityEvidence,
@@ -32,6 +33,8 @@ export {
 export {
   assertValidQualityPolicy,
   assertValidQualityProfile,
+  configurationLabel,
+  configurationSource,
   isBlocking,
   isSuppressed,
   mergeQualityProfiles,

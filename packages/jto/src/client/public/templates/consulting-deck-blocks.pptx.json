@@ -41,7 +41,8 @@
           },
           "logo": {
             "type": "component",
-            "description": "An image; the definition frames it top right at 18% of the width."
+            "role": "logo",
+            "description": "An image; the definition frames it top right at 18% of the width, in the chrome band above the safe area."
           }
         },
         "body": [

@@ -357,6 +357,8 @@ export interface DocxImageFact extends QualityFact {
   captioned: boolean;
   drawnRatio?: number;
   naturalRatio?: number;
+  /** `width` and `height` as the author wrote them, when both are pixels. */
+  authoredSizePx?: { width: number; height: number };
 }
 
 /**
@@ -1707,6 +1709,7 @@ export function prepareDocxQualityDocument(
       for (const fact of svgTextFacts(props, path)) addFact(fact);
       const drawn = drawnRatio(props);
       const natural = readableRatio(props);
+      const authored = authoredPropsAt(path);
       addFact({
         id: `docx:image:${path}`,
         kind: 'docx/image',
@@ -1716,6 +1719,14 @@ export function prepareDocxQualityDocument(
         captioned: isCaptioned(facts, authoredPath(path)),
         ...(drawn !== undefined && { drawnRatio: drawn }),
         ...(natural !== undefined && { naturalRatio: natural }),
+        ...(authoredPath(path) === path &&
+          finiteNumber(authored?.width) !== undefined &&
+          finiteNumber(authored?.height) !== undefined && {
+            authoredSizePx: {
+              width: authored!.width as number,
+              height: authored!.height as number,
+            },
+          }),
       });
     }
 

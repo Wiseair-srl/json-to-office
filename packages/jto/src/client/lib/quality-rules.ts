@@ -649,7 +649,31 @@ export const QUALITY_RULES: Record<FormatName, readonly QualityRuleInfo[]> = {
           type: 'string-list',
           default: [],
           description:
-            'Slot roles every block that declares them must fill: actionTitle, takeaway, source, tracker, footer.',
+            'Slot roles every block that declares them must fill: actionTitle, takeaway, source, tracker, footer, logo.',
+        },
+      ],
+    },
+    {
+      id: 'pptx/slide-footer',
+      label: 'Slide footer',
+      category: 'consistency',
+      defaultSeverity: 'warning',
+      description:
+        'A block-built slide without the running chrome a profile or policy expects: a page number, a footer line. Off until one names parts.',
+      parameters: [
+        {
+          name: 'required',
+          type: 'string-list',
+          default: [],
+          description:
+            'Parts every block-built slide must carry: pageNumber, footer.',
+        },
+        {
+          name: 'fromSlide',
+          type: 'number',
+          default: 1,
+          description:
+            'The first slide judged, 0-based; the default leaves the cover out.',
         },
       ],
     },
@@ -717,7 +741,7 @@ export const QUALITY_RULES: Record<FormatName, readonly QualityRuleInfo[]> = {
       category: 'consistency',
       defaultSeverity: 'warning',
       description:
-        'A slide title away from the left edge or baseline the deck\u2019s other titles of that kind share. Off until a profile or policy enables it.',
+        'A slide title whose laid-out first baseline or aligned edge is away from where the deck\u2019s other titles of that kind land. Off until a profile or policy enables it.',
       parameters: [
         {
           name: 'titleStyles',
@@ -731,7 +755,7 @@ export const QUALITY_RULES: Record<FormatName, readonly QualityRuleInfo[]> = {
           type: 'number',
           default: 2,
           description:
-            'How far two titles may sit apart before the deck reads as unaligned.',
+            'How far two laid-out titles may sit apart before the deck reads as unaligned.',
         },
       ],
     },
@@ -764,7 +788,7 @@ export const QUALITY_RULES: Record<FormatName, readonly QualityRuleInfo[]> = {
       category: 'composition',
       defaultSeverity: 'warning',
       description:
-        'Content outside the theme\u2019s safe area that is neither chrome nor a full bleed. Off until a profile or policy enables it.',
+        'Content outside the theme\u2019s safe area that is neither chrome (a tracker, footer, source or logo) nor a full bleed. Off until a profile or policy enables it.',
       parameters: [
         {
           name: 'tolerancePt',
