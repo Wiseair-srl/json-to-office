@@ -488,6 +488,68 @@ describe('assignInventory', () => {
   });
 });
 
+describe('assignInventory on lines the reading order takes for a table', () => {
+  // A memo header: label and value set on one line by a tab, line under
+  // line. Two lines of two fragments read as a table, column by column.
+  const memo = page([
+    word('From', 72, 100, 28),
+    word('Finance', 130, 100, 50),
+    word('team', 185, 100, 30),
+    word('Date', 72, 115, 25),
+    word('September', 130, 115, 60),
+    word('2026', 195, 115, 30),
+  ]);
+
+  it('finds each line in the rows as they lie, and leaves the reading order alone', () => {
+    expect(readingOrder(memo.words).map((i) => memo.words[i].text)).toEqual([
+      'From',
+      'Date',
+      'Finance',
+      'team',
+      'September',
+      '2026',
+    ]);
+    const { matches } = assignInventory(
+      [memo],
+      [
+        { path: '/from', text: '**From**\tFinance team' },
+        { path: '/date', text: '**Date**\tSeptember 2026' },
+      ]
+    );
+    expect(matches.map((m) => m.status)).toEqual(['mapped', 'mapped']);
+    expect(matches[1].occurrences[0].parts[0].words).toEqual([3, 4, 5]);
+  });
+
+  it('still hands each cell of a real table its own occurrence', () => {
+    const { matches } = assignInventory(
+      [memo],
+      [
+        { path: '/a', text: 'From' },
+        { path: '/b', text: 'Date' },
+        { path: '/c', text: 'Finance team' },
+        { path: '/d', text: 'September 2026' },
+      ]
+    );
+    expect(matches.map((m) => m.status)).toEqual([
+      'mapped',
+      'mapped',
+      'mapped',
+      'mapped',
+    ]);
+  });
+
+  it('never takes a line whose words another string already holds', () => {
+    const { matches } = assignInventory(
+      [memo],
+      [
+        { path: '/date-label', text: 'Date' },
+        { path: '/line', text: 'Date September 2026' },
+      ]
+    );
+    expect(matches.map((m) => m.status)).toEqual(['mapped', 'missing']);
+  });
+});
+
 describe('assignInventory where the format knows the page and the box', () => {
   // A 16:9 slide; geometry below is measured off verification-set decks
   // whose every clip and spill finding turned out to be one of these.

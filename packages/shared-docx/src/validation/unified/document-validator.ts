@@ -14,6 +14,7 @@ import {
   STANDARD_COMPONENTS_REGISTRY,
 } from '../../schemas/component-registry';
 import {
+  explainRemovedBlockSyntax,
   readBlockDefinitions,
   validateBlockInvocations,
   extractStandardComponentNames,
@@ -262,6 +263,7 @@ export function validateDocument(
     finalErrors = [...finalErrors, ...semanticConflicts];
     finalValid = false;
   }
+  finalErrors = explainRemovedBlockSyntax(data, 'docx', finalErrors);
 
   // Add document-specific metadata. Keep `data` populated whenever `valid` is
   // true so `isValidDocument()` (which requires both) stays consistent — when
@@ -334,6 +336,7 @@ export function validateJsonDocument(
     finalErrors = [...finalErrors, ...semanticConflicts];
     finalValid = false;
   }
+  finalErrors = explainRemovedBlockSyntax(result.parsed, 'docx', finalErrors);
 
   // Add document-specific metadata. Keep `data` populated whenever `valid` is
   // true so `isValidDocument()` (which requires both) stays consistent — when

@@ -9,6 +9,7 @@
 import { Value } from '@sinclair/typebox/value';
 import type { ValidationError } from '@json-to-office/shared';
 import {
+  explainRemovedBlockSyntax,
   readBlockDefinitions,
   transformValueErrors,
   validateBlockInvocations,
@@ -83,7 +84,7 @@ export function validatePresentationDocument(
   const valid = errors.length === 0;
   return {
     valid,
-    errors,
+    errors: explainRemovedBlockSyntax(data, 'pptx', errors),
     documentType: 'pptx',
     data: valid ? data : undefined,
   };

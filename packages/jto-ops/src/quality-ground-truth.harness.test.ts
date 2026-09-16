@@ -1,9 +1,9 @@
 /**
  * Ground-truth harness for the pptx text-fit estimator (#216 follow-up).
  *
- * The calibration suite pins one direction: the reference templates
- * (`STOCK_REFERENCE_TEMPLATES`) come back warning-clean (false-positive
- * control). Nothing measures the other direction — whether the estimator
+ * The block matrix and the gallery coverage suite pin one direction: every
+ * supported block boundary case, and every gallery template beyond what is
+ * recorded for it, comes back warning-clean (false-positive control). Nothing measures the other direction — whether the estimator
  * actually fires on real overflows. This harness renders mutated stock
  * templates through the real pipeline (core-pptx → soffice → PDF), reads
  * exact word geometry back out of the PDF with `pdftotext -bbox`, and scores
@@ -31,7 +31,7 @@
  * It is a measurement, not (yet) a regression gate: the summary prints
  * detection/false-positive rates and the estimator's signed bias. Once those
  * numbers are accepted, thresholds can be pinned here the way
- * quality-calibration.test.ts pins the clean-template invariant.
+ * gallery-quality.test.ts pins the clean-template invariant.
  *
  * Accepted baseline (2026-08, factor 0.46; 130 comparable measurements): 52%
  * of >1-line-height spills flagged as OVERFLOW, 91% flagged at least TIGHT,
