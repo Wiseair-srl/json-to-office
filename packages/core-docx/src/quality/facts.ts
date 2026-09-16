@@ -49,7 +49,7 @@ import {
   type BlockSourceMap,
 } from '../blocks';
 import { resolveFontSize } from '../styles/utils/styleHelpers';
-import { STATISTIC_SIZE_POINTS } from '../styles/themeToStyles';
+import { statisticSizes } from '../styles/themeToStyles';
 import { getThemeStyles } from '../themes/defaults';
 import { relativeLengthToTwips } from '../utils/widthUtils';
 import probe from 'probe-image-size';
@@ -1102,25 +1102,18 @@ function textSizeFact(
 }
 
 /**
- * Sizes a statistic paints: its figure, the unit and trend set beside the
- * figure at half its size, and the description under it. None is authored —
+ * Sizes a statistic paints: its figure, the unit and trend set beside it, and
+ * the description under it, as `statisticSizes` decides them for the theme —
+ * the one resolver the style set and the compiler share. None is authored —
  * the component takes a `size` name, not points — so these count toward what
- * the page shows and offer nothing to patch. The figure's medium size and the
- * description follow the theme when it restyles the component's own styles.
+ * the page shows and offer nothing to patch.
  */
 function statisticSizeFacts(
   props: Rec,
   path: string,
   typography: Typography
 ): Array<Omit<DocxTextSizeFact, 'generated'>> {
-  const named = STATISTIC_SIZE_POINTS[String(props.size)];
-  const styled = (id: string): number | undefined =>
-    finiteNumber(asRecord(typography.styles[id])?.size);
-  const numberPoints = named ?? STATISTIC_SIZE_POINTS.medium;
-  const painted =
-    props.size === 'small' || props.size === 'large'
-      ? numberPoints
-      : styled('StatisticNumber') ?? numberPoints;
+  const sizes = statisticSizes(typography.theme as ThemeConfig, props.size);
   const present = (value: unknown) =>
     value !== undefined && value !== null && String(value).trim() !== '';
   const facts: Array<Omit<DocxTextSizeFact, 'generated'>> = [];
@@ -1133,21 +1126,11 @@ function statisticSizeFacts(
       fontSizePt,
       authored: false,
     });
-  if (present(props.number)) add('number', 'statistic', painted);
+  if (present(props.number)) add('number', 'statistic', sizes.number);
   if (present(props.unit) || present(props.trend) || present(props.trendValue))
-    // The compiler sets unit and trend at half the figure in half-points,
-    // floored at 6pt.
-    add(
-      'suffix',
-      'statistic-suffix',
-      Math.max(12, Math.round(numberPoints)) / 2
-    );
+    add('suffix', 'statistic-suffix', sizes.suffix);
   if (present(props.description))
-    add(
-      'description',
-      'statistic-description',
-      styled('StatisticDescription') ?? 10
-    );
+    add('description', 'statistic-description', sizes.description);
   return facts;
 }
 

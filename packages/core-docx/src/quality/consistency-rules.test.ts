@@ -218,7 +218,7 @@ describe('the number of distinct sizes', () => {
       path: '/props',
       evidence: {
         actual: 12,
-        expected: 11,
+        expected: 9,
         values: { source: 'profile' },
       },
     });
@@ -248,9 +248,21 @@ describe('the number of distinct sizes', () => {
         },
       },
     });
-    // The figure at its large size, its unit at half of it, the description
-    // at the style's 10pt, and the list at the size the author gave it.
-    expect(finding.context?.sizes).toEqual(
+    // On a theme with type roles the figure takes the `stat` role — `large`
+    // a scale step above its 22pt — and the unit and description the 9pt
+    // `label` role; the list keeps the size the author gave it.
+    expect(finding.context?.sizes).toEqual(expect.arrayContaining([9, 12, 26]));
+    // A theme without roles keeps the built-in sizes: the figure at 40pt,
+    // the unit at half of it, the description at the style's 10pt.
+    doc.props.theme = 'minimal';
+    const [plain] = findings(doc, QUALITY_CODES.TYPE_SIZE_COUNT, {
+      policy: {
+        rules: {
+          'docx/size-count': { enabled: true, parameters: { maximumSizes: 1 } },
+        },
+      },
+    });
+    expect(plain.context?.sizes).toEqual(
       expect.arrayContaining([10, 12, 20, 40])
     );
   });

@@ -5,77 +5,77 @@
       "block": "cover",
       "template": "client-report-blocks.docx.json",
       "composition": "page",
-      "hash": "c190b5c65ee4e37623936e8eb524e69aa6b88a9996469636c13af3073f537c81"
+      "hash": "a641002ae322d6bd35b7c6606e0eb0b9848d1578bf00ab2a89dcc9a83aa3b0ba"
     },
     {
       "file": "key-takeaways-consulting.png",
       "block": "key-takeaways",
       "template": "client-report-blocks.docx.json",
       "composition": "measure",
-      "hash": "9db06af5ce35d13e5b0dbf53f1198c7e5e0e7ba58fadd9d4f21c32e373e4608f"
+      "hash": "9c0bae362658a4a9d33d0d8c0a76b74a2f5c24379de024a686cc56f13f8f1ea6"
     },
     {
       "file": "section-opener-consulting.png",
       "block": "section-opener",
       "template": "client-report-blocks.docx.json",
       "composition": "measure",
-      "hash": "654fdb41387377df930fe58416702429699d073c26ac231786a1f8f1b1596bca"
+      "hash": "8d5fc72bce8f9edd00f99e34f80f69ad93646d4c466c73e7a69502e61a6e21c8"
     },
     {
       "file": "running-head-consulting.png",
       "block": "running-head",
       "template": "client-report-blocks.docx.json",
       "composition": "chrome",
-      "hash": "deb39814ec64cbde0c743cf660988e873069d103818ebb5c80f0658625ee69fa"
+      "hash": "c5d8a5244a9057db13008dc8dd322c6bdc83686930958859929620b810b8e0a6"
     },
     {
       "file": "kpi-row-consulting.png",
       "block": "kpi-row",
       "template": "client-report-blocks.docx.json",
       "composition": "measure",
-      "hash": "41b160dd21692c7472db964b7e690dcc31a023a452c711750ed5f98a9dfcec26"
+      "hash": "2e98c499f7914e5c03d338638f08fb55b95a573be7aa61a5ae289ee270ce9301"
     },
     {
       "file": "callout-consulting.png",
       "block": "callout",
       "template": "client-report-blocks.docx.json",
       "composition": "measure",
-      "hash": "035e181da7d27a74d342b494f2318945e5dc4c5e22fa612f25f4dad762bccd33"
+      "hash": "2e8aec8b5b08c62e599b3c8044a1c00ba2e666e9ed61b8479a22e86966dfcaaf"
     },
     {
       "file": "data-table-consulting.png",
       "block": "data-table",
       "template": "client-report-blocks.docx.json",
       "composition": "measure",
-      "hash": "65d39af8e4e65c00e59e2a953d5d1a717e0b126501e76c4853cb0213784b626f"
+      "hash": "b6c4cf13d66af5999383336a2983a5206462bfcffa7ef233ae6e2628a74316e0"
     },
     {
       "file": "chart-figure-consulting.png",
       "block": "chart-figure",
       "template": "client-report-blocks.docx.json",
       "composition": "measure",
-      "hash": "568c443d6bdb201790d903ec90497ef6b74d8ac8e512d78573e13f909a9b6a1c"
+      "hash": "42dcaa63b62dfb8e731031468a6d760357748a3cb694c5b7b7893467fbdf66f2"
     },
     {
       "file": "figure-consulting.png",
       "block": "figure",
       "template": "client-report-blocks.docx.json",
       "composition": "measure",
-      "hash": "9aff9bf110df084f534ee4a98b2bed235cdbb226c5725cee2aeb2a40654ac9c8"
+      "hash": "a13b9349817f946a76eef977b3d6fee2b2e0b1c032ac72ad32c23f2fe4faf675"
     },
     {
       "file": "footnotes-consulting.png",
       "block": "footnotes",
       "template": "client-report-blocks.docx.json",
       "composition": "notes",
-      "hash": "cdfd6e63736c47350460341508bdda4079ac72102177e78051b20fc5bd02355d"
+      "hash": "2c4c847b75f1e9c04d6ff1d3c7c931cb613615d0836ba7b48bd3df7b0208cb77"
     },
     {
       "file": "memo-header-consulting.png",
       "block": "memo-header",
       "template": "technical-report-blocks.docx.json",
       "composition": "measure",
-      "hash": "97b3bdc465166b8fc54881a92613f2e1decfcbe83e47f9616acae684e8728d8b"
+      "hash": "467d767d4cc74a5f455f7b4187c0611c1548d5b3a3b8197a5e1359d14e040c9c"
     },
     {
       "file": "cover-deck-consulting.png",

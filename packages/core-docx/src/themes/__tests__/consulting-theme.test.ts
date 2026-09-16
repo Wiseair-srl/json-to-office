@@ -98,7 +98,9 @@ describe('the consulting house theme', () => {
     const resolved = resolveDocxDesignSystem(consultingTheme);
     expect(resolved.styles).toMatchObject({
       display: { size: 22, fontWeight: 700, font: 'heading' },
-      stat: { size: 18, fontWeight: 700, color: 'accent' },
+      // Paolo's KPI treatment (#454): light figures in the accent, a scale step
+      // below display rather than a banner.
+      stat: { size: 22, fontWeight: 400, color: 'accent' },
       quote: { size: 12 },
       chartLabel: { size: 9, fontWeight: 400 },
       source: { size: 8, color: 'textMuted' },
