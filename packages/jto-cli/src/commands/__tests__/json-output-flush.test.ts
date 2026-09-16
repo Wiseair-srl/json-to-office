@@ -28,7 +28,7 @@ const SLIDE_COUNT = 60;
 const oversizedDeck = {
   name: 'pptx',
   props: {
-    theme: 'default',
+    theme: 'consulting',
     grid: { columns: 12, rows: 6 },
   },
   children: Array.from({ length: SLIDE_COUNT }, (_, slide) => ({

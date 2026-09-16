@@ -66,8 +66,8 @@ export interface ResolvePluginThemeOptions {
 }
 
 const DEFAULT_THEME_NAME: Record<PluginFormat, string> = {
-  docx: 'minimal',
-  pptx: 'default',
+  docx: 'consulting',
+  pptx: 'consulting',
 };
 
 export interface ResolvedPluginTheme {

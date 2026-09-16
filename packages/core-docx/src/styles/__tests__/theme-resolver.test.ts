@@ -16,8 +16,9 @@ describe('styles/theme-resolver', () => {
       const warnings: GenerationWarning[] = [];
       const theme = resolveBuiltInTheme('non-existent', { warnings });
 
-      // The fallback stays — a bad name must not fail an otherwise valid render.
-      expect(theme.name).toBe('minimal');
+      // The fallback stays — a bad name must not fail an otherwise valid
+      // render — and it is the house theme a document gets when it names none.
+      expect(theme.name).toBe('consulting');
       expect(warnings).toHaveLength(1);
       expect(warnings[0]).toMatchObject({
         component: 'theme',
@@ -25,7 +26,7 @@ describe('styles/theme-resolver', () => {
         context: { code: 'theme_not_found', requested: 'non-existent' },
       });
       expect(warnings[0].message).toContain('non-existent');
-      expect(warnings[0].message).toContain('minimal');
+      expect(warnings[0].message).toContain('consulting');
     });
 
     it('lists custom theme names as available in the warning', () => {

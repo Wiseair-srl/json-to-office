@@ -157,7 +157,7 @@ function themeOf(document: unknown): string {
   const theme = props?.theme;
   if (typeof theme === 'string') return theme;
   if (theme !== undefined) return 'inline';
-  return 'default';
+  return 'consulting';
 }
 
 function slideCount(document: unknown): number {

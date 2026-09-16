@@ -165,7 +165,7 @@ Repeating the same props on every node gets tedious, so defaults cascade from br
 {
   "name": "pptx",
   "props": {
-    "theme": "default",
+    "theme": "consulting",
     "componentDefaults": {
       "text": { "fontSize": 14, "color": "text" },
       "chart": { "showLegend": true, "legendPos": "b" }

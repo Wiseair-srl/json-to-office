@@ -296,7 +296,13 @@ describe('generate command contract', () => {
     const line = await summarizedTheme('jto-theme-own-', report('vermilion'));
 
     expect(line).toContain('vermilion');
-    expect(line).not.toContain('default');
+    expect(line).not.toContain('consulting');
+  });
+
+  it('reports the house theme when nothing names one', async () => {
+    const line = await summarizedTheme('jto-theme-none-', report());
+
+    expect(line).toContain('consulting');
   });
 });
 

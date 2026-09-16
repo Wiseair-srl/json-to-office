@@ -276,7 +276,7 @@ describe('constructor default theme', () => {
   // A constructor-supplied string theme fills in when the document names no
   // theme. Before the shared context, the injected customThemes entry was
   // keyed under that name while `props.theme` stayed undefined, so slide
-  // processing re-resolved to 'default' — fonts resolved against the
+  // processing re-resolved to the built-in default — fonts resolved against the
   // constructor theme, slides rendered without it. The context normalizes
   // `props.theme` to the effective name, closing the gap.
   it('applies a constructor string theme naming a customThemes entry', async () => {

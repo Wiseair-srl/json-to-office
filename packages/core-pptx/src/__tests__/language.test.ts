@@ -22,7 +22,7 @@ describe('pptx language', () => {
   it('applies the presentation default and a per-text override', async () => {
     const doc: PresentationComponentDefinition = {
       name: 'pptx',
-      props: { theme: 'default', language: 'en-US' },
+      props: { theme: 'consulting', language: 'en-US' },
       children: [
         {
           name: 'slide',

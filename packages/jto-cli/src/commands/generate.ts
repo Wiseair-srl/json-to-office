@@ -80,7 +80,8 @@ function themeSummary(themeLabel: string | undefined, document: any): string {
   const own = document?.props?.theme;
   if (typeof own === 'string' && own) return own;
   if (own && typeof own === 'object') return own.name || 'custom';
-  return 'default';
+  // A document that names no theme renders on the house theme (#331).
+  return 'consulting';
 }
 
 export function defaultOutputName(input: string, extension: string): string {

@@ -55,7 +55,7 @@ To keep a slide in the file but skip it during the slideshow, use the slide prop
 | `author`            | string                 | —                                    | Author (file metadata).                                                                                                                                                                                                                              |
 | `subject`           | string                 | —                                    | Subject (file metadata).                                                                                                                                                                                                                             |
 | `company`           | string                 | —                                    | Company (file metadata).                                                                                                                                                                                                                             |
-| `theme`             | string \| theme object | `"default"`                          | Name of a built-in/custom theme, **or** a full inline theme object. See below.                                                                                                                                                                       |
+| `theme`             | string \| theme object | `"consulting"`                       | Name of a built-in/custom theme, **or** a full inline theme object. See below.                                                                                                                                                                       |
 | `slideWidth`        | number (inches)        | `10`                                 | Slide width. Use `13.33` for 16:9.                                                                                                                                                                                                                   |
 | `slideHeight`       | number (inches)        | `7.5`                                | Slide height.                                                                                                                                                                                                                                        |
 | `rtlMode`           | boolean                | `false`                              | Right-to-left text mode for the whole presentation.                                                                                                                                                                                                  |
@@ -74,7 +74,7 @@ All props are optional; a bare `{ "name": "pptx", "children": [...] }` is a vali
 
 ### `theme` — named or inline
 
-As a **string**, `theme` selects a built-in theme (`default`, `dark`, `minimal`) or a custom theme supplied through `GenerationOptions.customThemes`. Unknown names fall back to the default theme.
+As a **string**, `theme` selects a built-in theme (`consulting`, `dark`, `minimal`, `vermilion`, `devportal`) or a custom theme supplied through `GenerationOptions.customThemes`. Unknown names fall back to `consulting`, the default.
 
 As an **object**, `theme` embeds the entire theme configuration in the document itself — colors, fonts, defaults, style presets, and component defaults (full field list in the [theme schema reference](/reference/theme-schema)):
 
@@ -199,7 +199,7 @@ A `block` invokes a definition from the root `props.blocks` and supplies content
   "name": "pptx",
   "props": {
     "title": "Demo",
-    "theme": "default",
+    "theme": "consulting",
     "slideWidth": 13.33,
     "slideHeight": 7.5
   },

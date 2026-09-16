@@ -870,7 +870,7 @@ export class DocxFormatAdapter implements FormatAdapter {
   async resolveTheme(options: GeneratorOptions): Promise<any> {
     const core = await import('@json-to-office/core-docx');
     const { requested } = await this.resolveThemes(options);
-    return requested ?? (core.themes as any)?.minimal ?? {};
+    return requested ?? (core.themes as any)?.consulting ?? {};
   }
 
   /**
@@ -1350,7 +1350,7 @@ export class PptxFormatAdapter implements FormatAdapter {
     const core = await import('@json-to-office/core-pptx');
     const themes = (core as any).pptxThemes || {};
     const { requested } = await this.resolveThemes(options);
-    return requested ?? themes.minimal ?? {};
+    return requested ?? themes.consulting ?? {};
   }
 
   /**

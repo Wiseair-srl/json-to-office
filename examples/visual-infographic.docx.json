@@ -38,6 +38,7 @@
             "canvas": {
               "width": 7.2,
               "height": 2.6,
+              "theme": "vermilion",
               "background": {
                 "color": "F4F8FF"
               }
