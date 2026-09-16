@@ -26,7 +26,7 @@ async function readAllSlideXml(buf: Buffer): Promise<string> {
 
 const DOC_REFERENCING_INTER: PresentationComponentDefinition = {
   name: 'pptx',
-  props: { theme: 'default' },
+  props: { theme: 'consulting' },
   children: [
     {
       name: 'slide',
@@ -45,7 +45,7 @@ describe('pptx output contains no font bytes', () => {
   it('produces no ppt/fonts/ entries for a basic presentation', async () => {
     const doc: PresentationComponentDefinition = {
       name: 'pptx',
-      props: { theme: 'default' },
+      props: { theme: 'consulting' },
       children: [
         {
           name: 'slide',

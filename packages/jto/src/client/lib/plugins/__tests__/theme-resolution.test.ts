@@ -7,7 +7,7 @@ import {
 
 const builtin = {
   minimal: { name: 'minimal', colors: { primary: '#000000' } },
-  default: { name: 'default', colors: { primary: '#4472C4' } },
+  consulting: { name: 'consulting', colors: { primary: '#1A1F26' } },
 };
 
 describe('resolvePluginTheme', () => {
@@ -24,7 +24,7 @@ describe('resolvePluginTheme', () => {
         { props: { theme: 'brand' } },
         { format: 'pptx', customThemes: custom, builtinThemes: builtin }
       )
-    ).toBe(builtin.default);
+    ).toBe(builtin.consulting);
   });
 
   it('falls back to the built-in the document names, then the format default', () => {
@@ -39,13 +39,13 @@ describe('resolvePluginTheme', () => {
         { props: {} },
         { format: 'pptx', customThemes: {}, builtinThemes: builtin }
       )
-    ).toBe(builtin.default);
+    ).toBe(builtin.consulting);
     expect(
       resolvePluginTheme(
         { props: { theme: 'nope' } },
         { format: 'docx', customThemes: {}, builtinThemes: builtin }
       )
-    ).toBe(builtin.minimal);
+    ).toBe(builtin.consulting);
     expect(
       resolvePluginTheme(
         {},
@@ -108,13 +108,13 @@ describe('resolvePluginTheme', () => {
         builtinThemes: builtin,
       }
     );
-    expect(resolved.theme).toBe(builtin.minimal);
+    expect(resolved.theme).toBe(builtin.consulting);
     expect(resolved.warning).toMatchObject({
       message: expect.stringContaining('Theme "nope" not found'),
       context: {
         code: 'theme_not_found',
         requested: 'nope',
-        available: expect.arrayContaining(['corp', 'minimal']),
+        available: expect.arrayContaining(['corp', 'minimal', 'consulting']),
       },
     });
     expect(

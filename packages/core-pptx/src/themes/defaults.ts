@@ -39,39 +39,14 @@ const DEFAULT_STYLES: Partial<Record<StyleName, TextStyle>> = {
   caption: { fontSize: 10, italic: true, fontColor: 'text2' },
 };
 
-export const DEFAULT_PPTX_THEME: PptxThemeConfig = {
-  name: 'default',
-  displayName: 'Office Default',
-  description:
-    'The stock Office look: blue primary, orange and green accents, Arial throughout, centred titles',
-  whenToUse:
-    'A deck that has to match a plain PowerPoint look; pick a designed theme for anything a client will see.',
-  colors: {
-    primary: '#4472C4',
-    secondary: '#ED7D31',
-    accent: '#70AD47',
-    background: '#FFFFFF',
-    text: '#333333',
-    text2: '#44546A',
-    background2: '#E7E6E6',
-    accent4: '#FFC000',
-    accent5: '#5B9BD5',
-    accent6: '#70AD47',
-  },
-  fonts: {
-    heading: 'Arial',
-    body: 'Arial',
-  },
-  defaults: {
-    fontSize: 18,
-    fontColor: '#333333',
-  },
-  styles: DEFAULT_STYLES,
-  componentDefaults: { table: DEFAULT_TABLE },
-};
+/**
+ * The theme a deck gets when it names none: the house style (#331). The
+ * stock Office look that used to answer to `default` is gone — it is the look
+ * the design program replaces — so the name no longer resolves to a theme.
+ */
+export const DEFAULT_PPTX_THEME: PptxThemeConfig = CONSULTING_PPTX_THEME;
 
 const PPTX_THEMES: Record<string, PptxThemeConfig> = {
-  default: DEFAULT_PPTX_THEME,
   consulting: CONSULTING_PPTX_THEME,
   vermilion: VERMILION_PPTX_THEME,
   devportal: DEVPORTAL_PPTX_THEME,
@@ -143,7 +118,7 @@ export function getPptxTheme(name: string): PptxThemeConfig {
 
 /**
  * Whether `name` is a known built-in theme. `getPptxTheme` never misses (it
- * falls back to the default theme), so callers that need to distinguish "a
+ * falls back to the house theme), so callers that need to distinguish "a
  * real built-in" from "an unknown name" must check here first.
  */
 export function hasPptxTheme(name: string): boolean {

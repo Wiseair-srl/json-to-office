@@ -18,7 +18,8 @@ async function statisticBlocks(
 ): Promise<DocxIrBlock[]> {
   const compiled = await compileDocumentToIr({
     name: 'docx',
-    props: {},
+    // A theme without type roles: the built-in sizes.
+    props: { theme: 'minimal' },
     children: [{ name: 'statistic', props }],
   } as unknown as ReportComponentDefinition);
   return compiled.ir.sections[0].children;
@@ -303,7 +304,7 @@ describe('components/statistic — the styles it names', () => {
   async function styleIds(children: unknown[]): Promise<string[]> {
     const compiled = await compileDocumentToIr({
       name: 'docx',
-      props: {},
+      props: { theme: 'minimal' },
       children,
     } as unknown as ReportComponentDefinition);
     return compiled.ir.styles.paragraph.map((style) => style.id);
@@ -332,7 +333,7 @@ describe('components/statistic — the styles it names', () => {
   it('sets the figure larger and bolder than its caption', async () => {
     const compiled = await compileDocumentToIr({
       name: 'docx',
-      props: {},
+      props: { theme: 'minimal' },
       children: [
         { name: 'statistic', props: { number: '1', description: 'One' } },
       ],

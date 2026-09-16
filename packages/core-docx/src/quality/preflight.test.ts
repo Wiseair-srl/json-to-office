@@ -760,8 +760,9 @@ describe('exact line boxes', () => {
   });
 
   it('falls back to the size the paragraph style supplies', () => {
-    // Nothing states a size, so the run inherits `normal` (10pt) — which is
-    // the size Word lays out, and the only one worth comparing against.
+    // Nothing states a size, so the run inherits `normal` (10.5pt on the house
+    // theme a document gets when it names none) — which is the size Word lays
+    // out, and the only one worth comparing against.
     const findings = docxDiagnostics(
       doc([
         {
@@ -774,7 +775,7 @@ describe('exact line boxes', () => {
       ])
     );
     expect(findings).toHaveLength(1);
-    expect(findings[0].context).toMatchObject({ fontSizePt: 10 });
+    expect(findings[0].context).toMatchObject({ fontSizePt: 10.5 });
     expect(findings[0].message).toContain('inherited from the paragraph style');
   });
 
@@ -1143,9 +1144,13 @@ describe('chart information design', () => {
   });
 
   it('names one theme token per series when the palette is unstated', () => {
-    const findings = docxDiagnostics(
-      chartDoc('chart', { ...CLEAN_CHART, chartColors: undefined })
-    ).filter((finding) => finding.code === QUALITY_CODES.CHART_SERIES_COLORS);
+    // A theme with no chart palette of its own: the fix falls back to the
+    // semantic slots, in the order a palette hands them out.
+    const doc = chartDoc('chart', { ...CLEAN_CHART, chartColors: undefined });
+    (doc as { props: Record<string, unknown> }).props.theme = 'minimal';
+    const findings = docxDiagnostics(doc).filter(
+      (finding) => finding.code === QUALITY_CODES.CHART_SERIES_COLORS
+    );
     expect(findings[0]).toMatchObject({
       severity: 'warning',
       path: '/children/0/props/chartColors',

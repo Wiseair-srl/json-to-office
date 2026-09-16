@@ -96,7 +96,7 @@ jto docx generate report.json --plugin-dir ./plugins   # search a directory
 jto docx generate report.json --dry-run                # summary, no file written
 ```
 
-`--dry-run` prints a boxed summary without writing anything — handy for checking what a CI invocation would do. The lines are `Input:`, `Output:`, `Format:`, `Theme:`, `Plugins:` (only when at least one loaded), and `Validation: passed`, which appears on dry runs only — the document is validated either way, but only a dry run says so. The `Theme:` line names the theme that actually rendered: the theme file path when `--theme-path` wins, the resolved `--theme` name otherwise, and — with nothing requested anywhere — the document's own `props.theme`, or `default` when it names none. A misspelled name shows up in the warning, never on this line.
+`--dry-run` prints a boxed summary without writing anything — handy for checking what a CI invocation would do. The lines are `Input:`, `Output:`, `Format:`, `Theme:`, `Plugins:` (only when at least one loaded), and `Validation: passed`, which appears on dry runs only — the document is validated either way, but only a dry run says so. The `Theme:` line names the theme that actually rendered: the theme file path when `--theme-path` wins, the resolved `--theme` name otherwise, and — with nothing requested anywhere — the document's own `props.theme`, or `consulting` — the house default — when it names none. A misspelled name shows up in the warning, never on this line.
 
 ::: info Charts
 Chart components render through a Highcharts export service. Point the CLI at one with the `HIGHCHARTS_SERVER_URL` environment variable (plus `HIGHCHARTS_API_KEY` if it needs auth). See [Charts](/guide/charts) and the [render server guide](/guide/render-server).

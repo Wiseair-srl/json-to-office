@@ -13,7 +13,7 @@ Every document starts with a root component named `pptx`. Its `props` carry meta
     "title": "Q3 Business Review",
     "author": "Jane Doe",
     "company": "Acme Inc.",
-    "theme": "default"
+    "theme": "consulting"
   },
   "children": [
     {
@@ -306,7 +306,7 @@ The slide only supplies **content**; position, type and the theme bindings come 
 
 ## Inline themes: self-contained decks
 
-The root `theme` prop normally names a built-in theme (`consulting`, `default`, `dark`, `minimal`) or a custom theme registered via generation options. But it can also be a **full theme object inline**, which makes the JSON document completely self-contained — no external theme file, no registration code, one artifact you can store, diff, and ship:
+The root `theme` prop normally names a built-in theme (`consulting` — the default — `dark`, `minimal`, `vermilion`, `devportal`) or a custom theme registered via generation options. But it can also be a **full theme object inline**, which makes the JSON document completely self-contained — no external theme file, no registration code, one artifact you can store, diff, and ship:
 
 ```json
 {

@@ -108,13 +108,13 @@ export const getTheme = (themeName: string): ThemeConfigJson | undefined => {
 /**
  * Get theme configuration with safe fallback
  * @param themeName - Name of the theme to retrieve
- * @param fallbackTheme - Fallback theme name (default: 'minimal')
+ * @param fallbackTheme - Fallback theme name (default: 'consulting')
  * @returns Theme configuration (guaranteed to be defined)
  * @throws Error if neither theme nor fallback can be found
  */
 export const getThemeWithFallback = (
   themeName: string,
-  fallbackTheme: string = 'minimal'
+  fallbackTheme: string = 'consulting'
 ): ThemeConfigJson => {
   const theme = getTheme(themeName) || getTheme(fallbackTheme);
 

@@ -77,7 +77,7 @@ export function createInitCommand(adapter: FormatAdapter): Command {
                     props: {
                       title: 'Welcome to JSON-to-Office',
                       subtitle: `Your ${adapter.label} generation project`,
-                      theme: 'minimal',
+                      theme: 'consulting',
                     },
                     children: [
                       { name: 'heading', props: { text: 'Welcome', level: 1 } },

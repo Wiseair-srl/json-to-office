@@ -490,12 +490,12 @@ function chromeRun(
 }
 
 export function createDocumentStyles(
-  themeNameOrObject: string | ThemeConfig = 'minimal',
+  themeNameOrObject: string | ThemeConfig = 'consulting',
   language?: string
 ): DocxIrStyles {
   const theme: ThemeConfig =
     typeof themeNameOrObject === 'string'
-      ? getTheme(themeNameOrObject) || getTheme('minimal')!
+      ? getTheme(themeNameOrObject) || getTheme('consulting')!
       : themeNameOrObject;
 
   const paragraphStyles: DocxIrParagraphStyle[] = [

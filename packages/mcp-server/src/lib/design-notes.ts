@@ -20,7 +20,7 @@ import type { FormatName } from './adapters.js';
 export type DesignNotes = Readonly<Record<string, string>>;
 
 const DOCX_DESIGN_NOTES: DesignNotes = {
-  docx: 'Set metadata.title and a theme on the root, and let the theme carry type and colour — a document that names no theme inherits defaults nobody chose.',
+  docx: 'Set metadata.title and a theme on the root, and let the theme carry type and colour — name it even when it is consulting, the house default, so the look is chosen rather than inherited.',
   section:
     'One section per part of the argument, in reading order; a new section for a page setup change, not for every heading.',
   columns:
