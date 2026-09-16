@@ -673,8 +673,8 @@ describe('user-defined blocks and plugin composition', () => {
         },
       ],
     };
-    expect(() => expandPptxBlocks(doc, pptxThemes.default)).toThrow(
-      /block_expansion_limit|depth/
+    expect(() => expandPptxBlocks(doc, pptxThemes.consulting)).toThrow(
+      /\/props\/blocks\/loop\/body\/0\/props\/ref: .*invokes itself/
     );
   });
 

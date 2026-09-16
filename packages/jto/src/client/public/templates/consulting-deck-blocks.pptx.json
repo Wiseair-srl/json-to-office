@@ -49,9 +49,13 @@
           {
             "name": "group",
             "props": {
-              "x": "3.75%",
+              "grid": {
+                "column": 0,
+                "row": 0,
+                "columnSpan": 12,
+                "rowSpan": 12
+              },
               "y": "4.5%",
-              "w": "92.5%",
               "h": "91%"
             },
             "children": [
@@ -233,13 +237,13 @@
         ]
       },
       "action-chart": {
-        "description": "The consulting workhorse: an action title over one chart, an optional takeaway beside it and an optional source beneath. Copy and adapt this document-local example; the consulting-deck quality profile requires the takeaway and the source, the theme only styles them. Geometry is a frame of the slide in percentages, so the same definition lays out on every canvas; sizes bind to the theme's type roles with safe defaults, so it renders on any bundled theme.",
+        "description": "The consulting workhorse: an action title over one chart, an optional takeaway beside it and an optional source beneath. Copy and adapt this document-local example; the consulting-deck quality profile requires the takeaway and the source, the theme only styles them. Geometry spans the theme's safe area across and a band of the slide down, placed in percentages within it, so the same definition lays out on every canvas; sizes bind to the theme's type roles with safe defaults, so it renders on any bundled theme.",
         "slots": {
           "title": {
             "type": "string",
             "required": true,
             "oneLine": true,
-            "maxWords": 24,
+            "maxWords": 17,
             "role": "actionTitle",
             "description": "The claim the chart proves: a sentence with a number or a verb, two lines at most. Longer titles step down to 24 then 22pt, then fail."
           },
@@ -272,9 +276,13 @@
           {
             "name": "group",
             "props": {
-              "x": "3.75%",
+              "grid": {
+                "column": 0,
+                "row": 0,
+                "columnSpan": 12,
+                "rowSpan": 12
+              },
               "y": "4.5%",
-              "w": "92.5%",
               "h": "91%"
             },
             "children": [
@@ -537,7 +545,7 @@
             "type": "string",
             "required": true,
             "oneLine": true,
-            "maxWords": 24,
+            "maxWords": 17,
             "role": "actionTitle",
             "description": "The claim the slide proves: a sentence with a number or a verb, two lines at most. Longer titles step down to 24 then 22pt, then fail."
           },
@@ -593,9 +601,13 @@
           {
             "name": "group",
             "props": {
-              "x": "3.75%",
+              "grid": {
+                "column": 0,
+                "row": 0,
+                "columnSpan": 12,
+                "rowSpan": 12
+              },
               "y": "4.5%",
-              "w": "92.5%",
               "h": "91%"
             },
             "children": [
@@ -883,7 +895,7 @@
             "type": "string",
             "required": true,
             "oneLine": true,
-            "maxWords": 24,
+            "maxWords": 17,
             "role": "actionTitle",
             "description": "The claim the slide proves: a sentence with a number or a verb, two lines at most. Longer titles step down to 24 then 22pt, then fail."
           },
@@ -925,9 +937,13 @@
           {
             "name": "group",
             "props": {
-              "x": "3.75%",
+              "grid": {
+                "column": 0,
+                "row": 0,
+                "columnSpan": 12,
+                "rowSpan": 12
+              },
               "y": "4.5%",
-              "w": "92.5%",
               "h": "91%"
             },
             "children": [
@@ -1188,7 +1204,7 @@
         ]
       },
       "statement": {
-        "description": "One assertion in the display role, at most fourteen words, with up to thirty words of support beneath it in the quote role: a section divider or a closing slide. Copy and adapt this document-local example.",
+        "description": "One assertion in the display role, at most eleven words, with up to thirty words of support beneath it in the quote role: a section divider or a closing slide. Copy and adapt this document-local example.",
         "slots": {
           "tracker": {
             "type": "string",
@@ -1200,9 +1216,9 @@
           "assertion": {
             "type": "string",
             "required": true,
-            "maxWords": 14,
+            "maxWords": 11,
             "role": "actionTitle",
-            "description": "The one sentence, at most fourteen words; steps down to 24 then 22pt."
+            "description": "The one sentence, at most eleven words; steps down to 24 then 22pt."
           },
           "support": {
             "type": "string",
@@ -1214,9 +1230,13 @@
           {
             "name": "group",
             "props": {
-              "x": "3.75%",
+              "grid": {
+                "column": 0,
+                "row": 0,
+                "columnSpan": 12,
+                "rowSpan": 12
+              },
               "y": "4.5%",
-              "w": "92.5%",
               "h": "91%"
             },
             "children": [

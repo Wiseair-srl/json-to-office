@@ -81,7 +81,7 @@ const WIDEST: Record<(typeof BLOCKS)[number], Record<string, unknown>> = {
     },
     source: words(24),
   },
-  statement: { tracker: words(4), assertion: words(14), support: words(30) },
+  statement: { tracker: words(4), assertion: words(11), support: words(30) },
 };
 
 function deck(
@@ -186,6 +186,29 @@ describe('the consulting-deck profile on the house blocks', () => {
           .map(
             (finding) => `${finding.code} ${finding.path} ${finding.message}`
           )
+      ).toEqual([]);
+    }
+  );
+
+  it.each(BLOCKS)(
+    'keeps the %s block inside the safe area on a 4:3 slide',
+    (ref) => {
+      // The frame spans the theme's grid across rather than a percentage of
+      // the slide: 3.75% of a 16:9 slide is the half-inch safe area, of a
+      // 4:3 slide it is 27pt, and every block crossed the band by 9pt.
+      const doc = deck([[ref, WIDEST[ref]]], {
+        theme: 'consulting',
+        slideWidth: 10,
+        slideHeight: 7.5,
+      });
+      expect(
+        analyzePptxQuality(doc, {
+          profile: { id: 'consulting-deck', formats: ['pptx'] },
+        })
+          .diagnostics.filter(
+            (finding) => finding.code === 'W_QUALITY_SAFE_AREA'
+          )
+          .map((finding) => `${finding.path} ${finding.message}`)
       ).toEqual([]);
     }
   );
@@ -372,7 +395,7 @@ describe('the cover and statement blocks', () => {
     const long = validatePresentationDocument(
       deck([
         ['cover', { title: words(17) }],
-        ['statement', { assertion: words(15) }],
+        ['statement', { assertion: words(12) }],
       ])
     ).errors;
     expect(long.map((error) => error.path)).toEqual(
