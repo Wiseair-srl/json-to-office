@@ -81,27 +81,53 @@ export {
   type TextOccurrence,
 } from './rendered-text-match.js';
 
-// Block boundary matrix (#343) — boundary documents for every embedded
-// JSON block definition, for the static and rendered calibration suites.
+// Block boundary matrix (#343) — the inventory of every JSON block definition
+// the playground templates embed, with the conditions each is supported on,
+// and the boundary documents the static and rendered suites judge.
 export {
   enumerateBlockDefinitions,
   generateBlockMatrix,
+  generateMatrixCases,
   blockCaseDocument,
   reportCaseDocument,
+  deckBlockCaseDocument,
+  deckReportCaseDocument,
   boundaryInvocation,
   boundarySlotValue,
   overBudgetInvocation,
   widestNumber,
   FALLBACK_FONTS,
+  PPTX_FALLBACK_FONTS,
+  PPTX_CANVAS_SIZE,
   MATRIX_IMAGE,
   type BlockMatrixCase,
   type BlockMatrixDefinition,
   type BlockMatrixOptions,
   type CaseConditions,
+  type DeckCaseConditions,
+  type MatrixCase,
   type MatrixCanvas,
   type MatrixEdge,
   type MatrixFont,
+  type MatrixSelection,
 } from './block-matrix.js';
+export {
+  buildMatrixInventory,
+  describeInventory,
+  inventoryGaps,
+  matrixUniverse,
+  templateFormat,
+  type MatrixBlueprintSource,
+  type MatrixConditions,
+  type MatrixExclusion,
+  type MatrixFormat,
+  type MatrixInventory,
+  type MatrixInventoryEntry,
+  type MatrixInventoryOptions,
+  type MatrixInventoryTemplate,
+  type MatrixProfileSource,
+  type MatrixTemplateSource,
+} from './matrix-inventory.js';
 
 // LibreOffice font staging — used by the rasterizer above and by the
 // playground's PDF-preview converter in `@json-to-office/jto`.

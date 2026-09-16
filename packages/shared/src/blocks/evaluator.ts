@@ -571,6 +571,101 @@ export function validateBlockDefinitions(
       checkTemplate(def.section, `${path}/section`, def.slots, issues);
     if (def.slide) checkTemplate(def.slide, `${path}/slide`, def.slots, issues);
   }
+  issues.push(...checkDefinitionReferences(definitions));
+  return issues;
+}
+
+interface DefinitionReference {
+  ref: string;
+  /** Authored pointer of the `ref` inside the definition. */
+  path: string;
+  /** Under a directive, so it runs only when the data asks for it. */
+  guarded: boolean;
+}
+
+function definitionReferences(
+  value: unknown,
+  path: string,
+  found: DefinitionReference[],
+  guarded = false
+): void {
+  if (Array.isArray(value)) {
+    value.forEach((v, i) =>
+      definitionReferences(v, `${path}/${i}`, found, guarded)
+    );
+    return;
+  }
+  if (!isBlockRecord(value)) return;
+  if (
+    value.name === 'block' &&
+    isBlockRecord(value.props) &&
+    typeof value.props.ref === 'string'
+  )
+    found.push({ ref: value.props.ref, path: `${path}/props/ref`, guarded });
+  const directive = Object.keys(value).some((key) => key.startsWith('$'));
+  for (const [key, child] of Object.entries(value))
+    definitionReferences(
+      child,
+      `${path}/${blockPointerKey(key)}`,
+      found,
+      guarded || directive
+    );
+}
+
+/**
+ * What one definition says about another. A body naming a block the
+ * document does not define, and a definition that reaches itself on every
+ * expansion, used to surface only when a document was expanded — at a
+ * pointer into the expanded tree rather than at the definition that made the
+ * mistake, and for a cycle only after 64 levels. An invocation under `$if`
+ * or `$each` is left to the runtime limits: data may end that recursion.
+ */
+function checkDefinitionReferences(
+  definitions: Record<string, JsonBlockDefinition>
+): BlockIssue[] {
+  const issues: BlockIssue[] = [];
+  const references = new Map<string, DefinitionReference[]>();
+  for (const [name, def] of Object.entries(definitions)) {
+    const path = `/props/blocks/${blockPointerKey(name)}`;
+    const found: DefinitionReference[] = [];
+    definitionReferences(def.body, `${path}/body`, found);
+    if (def.section)
+      definitionReferences(def.section, `${path}/section`, found);
+    if (def.slide) definitionReferences(def.slide, `${path}/slide`, found);
+    references.set(name, found);
+    for (const reference of found)
+      if (!own(definitions, reference.ref))
+        issues.push({
+          path: reference.path,
+          code: 'block_unknown_reference',
+          message: `Block '${reference.ref}' is not defined in this document.`,
+        });
+  }
+  const done = new Set<string>();
+  const trail: string[] = [];
+  const visit = (name: string): void => {
+    if (done.has(name)) return;
+    trail.push(name);
+    for (const reference of references.get(name) ?? []) {
+      if (reference.guarded || !own(definitions, reference.ref)) continue;
+      const start = trail.indexOf(reference.ref);
+      if (start !== -1) {
+        issues.push({
+          path: reference.path,
+          code: 'block_expansion_limit',
+          message: `Block '${reference.ref}' invokes itself on every expansion (${[
+            ...trail.slice(start),
+            reference.ref,
+          ].join(' → ')}), so expansion could only stop at its limit.`,
+        });
+        continue;
+      }
+      visit(reference.ref);
+    }
+    trail.pop();
+    done.add(name);
+  };
+  for (const name of Object.keys(definitions)) visit(name);
   return issues;
 }
 
