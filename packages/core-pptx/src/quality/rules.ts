@@ -54,8 +54,8 @@ const RENDERER_DEFAULT_HEIGHT_IN = 7.5;
 // Calibrated against rendered ground truth (jto-ops quality ground-truth
 // harness, 2026-08: 130 comparable mutated-template measurements plus per-box
 // adjudication of every comparable authored flag, all measured from the
-// soffice PDF). 0.46 is the highest value at which the reference stock
-// templates (jto-ops STOCK_REFERENCE_TEMPLATES; management-plan binds) stay
+// soffice PDF). 0.46 is the highest value at which the gallery templates
+// (jto-ops gallery-quality.test.ts; management-plan binds) stay
 // warning-clean — the binding constraint, since a rule that flags known-good
 // templates trains every consumer to ignore it. At that operating point the
 // rendered sample catches 52% of >1-line-height spills as OVERFLOW, 91% when

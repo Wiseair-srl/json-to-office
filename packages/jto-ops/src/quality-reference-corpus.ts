@@ -10,25 +10,6 @@ import type { FormatName } from './format-adapter';
 
 export type QualityReferenceTier = 'poor' | 'professional' | 'excellent';
 
-/**
- * Stock templates that count as reference-quality documents — the calibration
- * bar for the quality rules. Since the four legacy playground decks were
- * dropped from the repo this list is every shipped template, but the two are
- * not the same thing: a template earns a place here by being accepted as
- * reference quality, not by being present in `public/templates`. A new
- * starting-point template ships without being added here.
- */
-export const STOCK_REFERENCE_TEMPLATES: readonly string[] = [
-  'modern-annual-report-1.docx.json',
-  'modern-annual-report-2.docx.json',
-  'modern-annual-report-3.docx.json',
-  'standard-annual-report.docx.json',
-  'tech-report.docx.json',
-  'data-report-presentation.pptx.json',
-  'management-plan.pptx.json',
-  'minimalist-pitch-deck.pptx.json',
-];
-
 export interface ExpectedQualityDiagnostic {
   code: string;
   category: QualityCategory;

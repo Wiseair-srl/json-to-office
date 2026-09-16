@@ -304,10 +304,22 @@ jobs:
       - name: Run the converter-dependent suites
         env:
           JTO_REQUIRE_LIBREOFFICE: '1'
+          # The rendered block matrix (#343) writes what it rendered with —
+          # converter versions, and per case every family it asked for and
+          # whether the PDF embeds it — so a verdict here can be reproduced.
+          JTO_MATRIX_MANIFEST: ${{ runner.temp }}/block-matrix-manifest.json
         run: >-
           pnpm --filter @json-to-office/mcp-server
           --filter @json-to-office/core-docx
           --filter @json-to-office/core-pptx test
+
+      - name: Keep the block matrix manifest
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: block-matrix-manifest
+          path: ${{ runner.temp }}/block-matrix-manifest.json
+          if-no-files-found: warn
 
   conformance:
     if: github.event_name != 'pull_request' || github.head_ref != 'changeset-release/main'

@@ -615,3 +615,50 @@ describe('wrong-typed sibling keys are rejected (#292 parity)', () => {
     expect(result.valid).toBe(true);
   });
 });
+
+describe('syntax the block engine replaced fails with what replaced it (#343)', () => {
+  it('names JSON blocks where a deck still carries slide templates', () => {
+    const result = validatePresentationDocument(
+      deck(
+        [
+          slide([], {
+            template: 'chrome',
+            placeholders: { title: { text: 'Q3' } },
+            layout: 'Title Slide',
+          }),
+        ],
+        { templates: [{ name: 'chrome', objects: [] }] }
+      )
+    );
+    expect(result.valid).toBe(false);
+    const suggestions = Object.fromEntries(
+      result.errors.map((e) => [e.path, e.suggestion])
+    );
+    expect(suggestions['/props/templates']).toMatch(/replaced by JSON blocks/);
+    expect(suggestions['/children/0/props/template']).toMatch(
+      /"name": "block", "props": \{ "ref"/
+    );
+    expect(suggestions['/children/0/props/placeholders']).toMatch(/slots/);
+    expect(suggestions['/children/0/props/layout']).toMatch(/lays it out/);
+  });
+
+  it('says to invoke a definition the deck invokes by its own name', () => {
+    const result = validatePresentationDocument(
+      deck([slide([{ name: 'statement', props: {} }])], {
+        blocks: {
+          statement: {
+            slots: {},
+            body: [
+              { name: 'text', props: { text: 'Now', x: 1, y: 1, w: 4, h: 1 } },
+            ],
+          },
+        },
+      })
+    );
+    const unknown = result.errors.find((e) => e.code === 'unknown_component');
+    expect(unknown?.path).toBe('/children/0/children/0/name');
+    expect(unknown?.suggestion).toMatch(
+      /JSON block this document defines.*"ref": "statement"/
+    );
+  });
+});

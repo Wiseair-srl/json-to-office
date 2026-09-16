@@ -188,11 +188,16 @@ the package-part goldens.
 False positives are regressions. A suppression can document a deliberate exception,
 but stock examples may not become clean merely by globally disabling a rule.
 
-The same false-positive bar applies to real documents through the calibration
-suite (`packages/jto-ops/src/quality-calibration.test.ts`), which holds the
-reference stock templates (`STOCK_REFERENCE_TEMPLATES`) warning-clean under the
-default profile. Only that curated set is reference quality; the remaining
-playground templates are starting points and must not constrain thresholds.
+The same false-positive bar applies to real documents through the block matrix
+(#343): every supported boundary case of every JSON block definition the
+playground templates embed — each theme, canvas, font and slot edge the inventory
+supports — must come back warning-clean, statically
+(`packages/jto-ops/src/block-matrix.test.ts`) and rendered
+(`packages/mcp-server/src/__tests__/preview-block-matrix.test.ts`). The stock
+templates no longer set that bar on their own: the gallery coverage suite
+(`packages/jto-ops/src/gallery-quality.test.ts`) holds every template the gallery
+ships to the true findings and illustrative placeholders recorded for it, under
+the default profile.
 
 ## Rendered ground truth
 
