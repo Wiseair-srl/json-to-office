@@ -22,19 +22,29 @@
 
 import {
   blockDependencies,
+  blockReferencesFromDocument,
   readBlockDefinitions,
   type BlockSlot,
   type JsonBlockDefinition,
 } from '@json-to-office/shared';
+import {
+  authoredDeckCanvas,
+  templateFormat,
+  type MatrixFormat,
+  type MatrixInventory,
+  type MatrixTemplateSource,
+} from './matrix-inventory';
 
 type Rec = Record<string, unknown>;
 
 export type MatrixEdge = 'min' | 'max';
 export type MatrixFont = 'design' | 'fallback';
-export type MatrixCanvas = 'A4' | 'LETTER';
+/** Page sizes for reports; the two slide shapes theme scales key for decks. */
+export type MatrixCanvas = 'A4' | 'LETTER' | 'wide169' | 'standard43';
 
 export interface BlockMatrixDefinition {
   name: string;
+  format: MatrixFormat;
   /** The template the definition is embedded in, as the catalog names it. */
   template: string;
   /** Where inside that template: `/props/blocks/<name>`. */
@@ -76,6 +86,22 @@ export interface CaseConditions {
   canvas?: MatrixCanvas;
   requiredRoles?: readonly string[];
 }
+
+/**
+ * The same faces for a deck. PPTX themes take family names and a deck has
+ * no theme overrides, so the fallback case carries an inline copy of the
+ * bundled theme with these two roles replaced.
+ */
+export const PPTX_FALLBACK_FONTS = {
+  heading: 'DejaVu Sans',
+  body: 'DejaVu Sans',
+} as const;
+
+/** 16:9 and 4:3 at the sizes the house deck and PowerPoint use. */
+export const PPTX_CANVAS_SIZE = {
+  wide169: { slideWidth: 13.333, slideHeight: 7.5 },
+  standard43: { slideWidth: 10, slideHeight: 7.5 },
+} as const;
 
 /**
  * The face every LibreOffice ships with, bundled inside the application on
@@ -211,14 +237,24 @@ function stringValue(
   return words(count, seed, sentence);
 }
 
-function componentValue(name: string, edge: MatrixEdge, seed: number): Rec {
-  if (name === 'chart') {
+function componentValue(
+  name: string,
+  edge: MatrixEdge,
+  seed: number,
+  format: MatrixFormat = 'docx'
+): Rec {
+  // A deck's content column takes a chart at its widest and a picture at its
+  // narrowest: the two ends of what the slot accepts.
+  const chart = name === 'chart' || (format === 'pptx' && name === 'content');
+  if (chart && (name === 'chart' || edge === 'max')) {
     const categories = edge === 'max' ? 8 : 2;
     const series = edge === 'max' ? 3 : 1;
     return {
       name: 'chart',
       props: {
-        type: 'column',
+        // The native column chart: `column` in a report, `bar` standing
+        // upright in a deck.
+        type: format === 'pptx' ? 'bar' : 'column',
         valAxisTitle:
           edge === 'max' ? `${words(3, seed, false)} (€m)` : 'Revenue (€m)',
         ...(edge === 'max' && { catAxisTitle: words(3, seed + 3, false) }),
@@ -239,6 +275,13 @@ function componentValue(name: string, edge: MatrixEdge, seed: number): Rec {
       },
     };
   }
+  if (format === 'pptx') {
+    // The definition owns a deck image's frame; the picture only has to be one.
+    return {
+      name: 'image',
+      props: { path: MATRIX_IMAGE, alt: words(6, seed, false) },
+    };
+  }
   return {
     name: 'image',
     props: {
@@ -254,7 +297,8 @@ export function boundarySlotValue(
   slot: BlockSlot,
   name: string,
   edge: MatrixEdge,
-  seed = 0
+  seed = 0,
+  format: MatrixFormat = 'docx'
 ): unknown {
   switch (slot.type) {
     case 'string':
@@ -265,12 +309,18 @@ export function boundarySlotValue(
     case 'boolean':
       return edge === 'max' ? true : slot.default ?? true;
     case 'component':
-      return componentValue(name, edge, seed);
+      return componentValue(name, edge, seed, format);
     case 'object': {
       const out: Rec = {};
       for (const [key, property] of Object.entries(slot.properties ?? {})) {
         if (edge === 'min' && !property.required) continue;
-        const value = boundarySlotValue(property, key, edge, seed + key.length);
+        const value = boundarySlotValue(
+          property,
+          key,
+          edge,
+          seed + key.length,
+          format
+        );
         if (value !== undefined) out[key] = value;
       }
       return out;
@@ -282,7 +332,7 @@ export function boundarySlotValue(
           : slot.minItems ?? (slot.required ? 1 : 0);
       const item = slot.items ?? { type: 'string' };
       return Array.from({ length: count }, (_, i) =>
-        boundarySlotValue(item, name, edge, seed + i)
+        boundarySlotValue(item, name, edge, seed + i, format)
       );
     }
     default:
@@ -302,7 +352,8 @@ export function boundaryInvocation(
   definition: JsonBlockDefinition,
   edge: MatrixEdge,
   seed = 0,
-  requiredRoles: readonly string[] = []
+  requiredRoles: readonly string[] = [],
+  format: MatrixFormat = 'docx'
 ): Rec {
   const slots: Rec = {};
   let offset = seed;
@@ -312,7 +363,7 @@ export function boundaryInvocation(
       slot.required === true ||
       (slot.role !== undefined && requiredRoles.includes(slot.role));
     if (edge === 'min' && !required) continue;
-    const value = boundarySlotValue(slot, slotName, edge, offset);
+    const value = boundarySlotValue(slot, slotName, edge, offset, format);
     if (value !== undefined) slots[slotName] = value;
   }
   const labels = slots.labels;
@@ -322,7 +373,13 @@ export function boundaryInvocation(
     for (const column of columns) {
       if (isRecord(column) && Array.isArray(column.cells) && cells?.items) {
         column.cells = labels.map((_, i) =>
-          boundarySlotValue(cells.items as BlockSlot, 'cells', edge, offset + i)
+          boundarySlotValue(
+            cells.items as BlockSlot,
+            'cells',
+            edge,
+            offset + i,
+            format
+          )
         );
       }
     }
@@ -338,9 +395,17 @@ export function boundaryInvocation(
 export function overBudgetInvocation(
   name: string,
   definition: JsonBlockDefinition,
-  seed = 0
+  seed = 0,
+  format: MatrixFormat = 'docx'
 ): { invocation: Rec; slot: string; kind: 'words' | 'items' } | undefined {
-  const invocation = boundaryInvocation(name, definition, 'max', seed);
+  const invocation = boundaryInvocation(
+    name,
+    definition,
+    'max',
+    seed,
+    [],
+    format
+  );
   const slots = (invocation.props as Rec).slots as Rec;
   for (const [slotName, slot] of Object.entries(definition.slots)) {
     if (slot.type === 'string' && slot.maxWords !== undefined) {
@@ -362,12 +427,28 @@ export function overBudgetInvocation(
   return undefined;
 }
 
-/** Every definition a template embeds, with the template's own example of it. */
+/**
+ * Every definition a template embeds, with the template's own example of it.
+ * The definitions come from the extraction MCP discovery publishes, so the
+ * matrix covers exactly what an agent can copy; a template whose definitions
+ * do not validate is an error here, not a template with fewer blocks.
+ */
 export function enumerateBlockDefinitions(
   template: unknown,
   templateName: string
 ): BlockMatrixDefinition[] {
-  const definitions = readBlockDefinitions(template);
+  const format = templateFormat(templateName, template);
+  if (!format)
+    throw new Error(`${templateName} is neither a report nor a deck.`);
+  const references = blockReferencesFromDocument(template, {
+    template: templateName,
+    format,
+  });
+  const declared = Object.keys(readBlockDefinitions(template));
+  if (references.length !== declared.length)
+    throw new Error(
+      `${templateName}: discovery publishes ${references.length} of ${declared.length} definitions; the rest do not validate.`
+    );
   const examples = new Map<string, Rec>();
   const walk = (node: unknown): void => {
     if (Array.isArray(node)) {
@@ -387,12 +468,15 @@ export function enumerateBlockDefinitions(
     walk(node.children);
   };
   walk(isRecord(template) ? template.children : undefined);
-  return Object.entries(definitions).map(([name, definition]) => ({
-    name,
+  return references.map((reference) => ({
+    name: reference.name,
+    format,
     template: templateName,
-    pointer: `/props/blocks/${name.replace(/~/g, '~0').replace(/\//g, '~1')}`,
-    definition,
-    ...(examples.has(name) && { example: examples.get(name) }),
+    pointer: reference.definitionPointer,
+    definition: reference.definition,
+    ...(examples.has(reference.name) && {
+      example: examples.get(reference.name),
+    }),
   }));
 }
 
@@ -411,25 +495,37 @@ function nominal(
       props: { ref: name, slots: structuredClone(entry.example) },
     };
   }
-  return boundaryInvocation(name, definitions[name], 'min');
+  return boundaryInvocation(
+    name,
+    definitions[name],
+    'min',
+    0,
+    [],
+    entry.format
+  );
 }
 
 /** The template's own image slot values point at files; the matrix inlines. */
-function inlineImages(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(inlineImages);
+function inlineImages(value: unknown, format: MatrixFormat = 'docx'): unknown {
+  if (Array.isArray(value)) return value.map((v) => inlineImages(v, format));
   if (!isRecord(value)) return value;
   if (
     value.name === 'image' &&
     isRecord(value.props) &&
-    typeof value.props.path === 'string'
+    typeof value.props.path === 'string' &&
+    !value.props.path.startsWith('data:')
   ) {
-    const props: Rec = { ...value.props, base64: MATRIX_IMAGE };
-    delete props.path;
+    const props: Rec =
+      format === 'pptx'
+        ? { ...value.props, path: MATRIX_IMAGE }
+        : { ...value.props, base64: MATRIX_IMAGE };
+    if (format === 'docx') delete props.path;
     return { ...value, props };
   }
-  if (value.name === 'highcharts') return componentValue('chart', 'min', 0);
+  if (value.name === 'highcharts')
+    return componentValue('chart', 'min', 0, format);
   return Object.fromEntries(
-    Object.entries(value).map(([k, v]) => [k, inlineImages(v)])
+    Object.entries(value).map(([k, v]) => [k, inlineImages(v, format)])
   );
 }
 
@@ -649,5 +745,297 @@ export function generateBlockMatrix(
               }),
             });
         }
+  return cases;
+}
+
+export interface DeckCaseConditions extends CaseConditions {
+  /**
+   * A bundled theme's object, for the fallback-font case: a deck has no
+   * theme overrides, so the faces go into an inline copy of the theme.
+   */
+  themeObject?: (name: string) => Rec | undefined;
+}
+
+/**
+ * A deck under the case's conditions. The theme is the one named, or the
+ * template's own object when the template carries one; the fallback faces
+ * replace heading and body in an inline copy of the bundled theme; a canvas
+ * other than the deck's own sets the slide size, and a deck already on it
+ * keeps its authored size.
+ */
+function deckConditions(
+  props: Rec,
+  children: unknown[],
+  theme: string,
+  font: MatrixFont,
+  canvas: MatrixCanvas,
+  themeObject?: (name: string) => Rec | undefined
+): Rec {
+  const out: Rec = structuredClone(props);
+  // The suite names the profile under test; a declared one would compete.
+  delete out.qualityProfile;
+  const inline = typeof props.theme !== 'string';
+  if (!inline || theme !== 'inline') {
+    if (font === 'fallback') {
+      const base = themeObject?.(theme);
+      if (!base)
+        throw new Error(
+          `The fallback case on "${theme}" needs the theme's object.`
+        );
+      const fonts = isRecord(base.fonts) ? base.fonts : {};
+      out.theme = {
+        ...structuredClone(base),
+        fonts: { ...fonts, ...PPTX_FALLBACK_FONTS },
+      };
+    } else {
+      out.theme = theme;
+    }
+  }
+  if (
+    (canvas === 'wide169' || canvas === 'standard43') &&
+    authoredDeckCanvas(props) !== canvas
+  )
+    Object.assign(out, PPTX_CANVAS_SIZE[canvas]);
+  return { name: 'pptx', props: out, children };
+}
+
+function templateProps(template: unknown): Rec {
+  if (!isRecord(template) || !isRecord(template.props))
+    throw new Error('A template is a document with props.');
+  return template.props;
+}
+
+/**
+ * A deck with one block at its edge: the template's cover at its nominal
+ * values first, when the template has one and it is not the block under
+ * test, so the slide under test is where footer rules start counting.
+ */
+export function deckBlockCaseDocument(
+  template: unknown,
+  entries: readonly BlockMatrixDefinition[],
+  name: string,
+  edge: MatrixEdge,
+  theme: string,
+  {
+    font = 'design',
+    canvas = 'wide169',
+    requiredRoles = [],
+    themeObject,
+  }: DeckCaseConditions = {}
+): Rec {
+  const props = templateProps(template);
+  const definitions = Object.fromEntries(
+    entries.map((e) => [e.name, e.definition])
+  );
+  const byName = new Map(entries.map((e) => [e.name, e]));
+  const used = new Set<string>([name]);
+  const slides: unknown[] = [];
+  if (name !== 'cover' && byName.has('cover')) {
+    used.add('cover');
+    slides.push({
+      name: 'slide',
+      children: [
+        inlineImages(
+          nominal(byName.get('cover'), 'cover', definitions),
+          'pptx'
+        ),
+      ],
+    });
+  }
+  slides.push({
+    name: 'slide',
+    children: [
+      boundaryInvocation(
+        name,
+        definitions[name],
+        edge,
+        0,
+        requiredRoles,
+        'pptx'
+      ),
+    ],
+  });
+  return deckConditions(
+    { ...props, blocks: withDefinitions(definitions, used) },
+    slides,
+    theme,
+    font,
+    canvas,
+    themeObject
+  );
+}
+
+/** The whole deck with every invocation at the edge. */
+export function deckReportCaseDocument(
+  template: unknown,
+  edge: MatrixEdge,
+  theme: string,
+  {
+    font = 'design',
+    canvas = 'wide169',
+    requiredRoles = [],
+    themeObject,
+  }: DeckCaseConditions = {}
+): Rec {
+  const props = templateProps(template);
+  const definitions = readBlockDefinitions(template);
+  let seed = 0;
+  const rewrite = (node: unknown): unknown => {
+    if (Array.isArray(node)) return node.map(rewrite);
+    if (!isRecord(node)) return node;
+    const nodeProps = node.props;
+    if (
+      node.name === 'block' &&
+      isRecord(nodeProps) &&
+      typeof nodeProps.ref === 'string' &&
+      definitions[nodeProps.ref]
+    ) {
+      seed += 7;
+      return boundaryInvocation(
+        nodeProps.ref,
+        definitions[nodeProps.ref],
+        edge,
+        seed,
+        requiredRoles,
+        'pptx'
+      );
+    }
+    return Array.isArray(node.children)
+      ? { ...node, children: rewrite(node.children) }
+      : node;
+  };
+  return deckConditions(
+    props,
+    rewrite((template as Rec).children) as unknown[],
+    theme,
+    font,
+    canvas,
+    themeObject
+  );
+}
+
+export interface MatrixCase extends BlockMatrixCase {
+  format: MatrixFormat;
+  template: string;
+  /** The profile the template's blueprint judges it under, when one does. */
+  profile?: string;
+}
+
+/** Which of the inventory's supported conditions a run takes. */
+export interface MatrixSelection {
+  templates?: readonly string[];
+  themes?: readonly string[];
+  fonts?: readonly MatrixFont[];
+  edges?: readonly MatrixEdge[];
+  canvases?: readonly MatrixCanvas[];
+  /** Whether the per-definition cases are generated. Default true. */
+  blocks?: boolean;
+  /** Whether the whole-template cases are generated. Default true. */
+  report?: boolean;
+}
+
+const stem = (template: string) => template.replace(/\.(docx|pptx)\.json$/, '');
+
+/**
+ * Every case the inventory supports under a selection, in a stable order:
+ * template, theme, font, canvas, edge, then each definition before the
+ * whole template. A template whose definitions all lack slots has no
+ * whole-template case: at either edge it is the template itself, which is
+ * gallery coverage.
+ */
+export function generateMatrixCases(
+  inventory: MatrixInventory,
+  templates: readonly MatrixTemplateSource[],
+  selection: MatrixSelection = {},
+  { themeObject }: { themeObject?: (name: string) => Rec | undefined } = {}
+): MatrixCase[] {
+  const pick = <T extends string>(
+    supported: readonly T[],
+    wanted: readonly T[] | undefined
+  ): T[] => supported.filter((value) => !wanted || wanted.includes(value));
+  const cases: MatrixCase[] = [];
+  for (const summary of inventory.templates) {
+    if (selection.templates && !selection.templates.includes(summary.template))
+      continue;
+    const source = templates.find((t) => t.name === summary.template);
+    const entries = inventory.entries.filter(
+      (e) => e.template === summary.template
+    );
+    if (!source || entries.length === 0) continue;
+    const definitions = enumerateBlockDefinitions(
+      source.document,
+      summary.template
+    );
+    const withSlots = entries.some((e) => e.edges.includes('min'));
+    for (const theme of pick(summary.conditions.themes, selection.themes))
+      for (const font of pick(summary.conditions.fonts, selection.fonts))
+        for (const canvas of pick(
+          summary.conditions.canvases,
+          selection.canvases
+        ))
+          for (const edge of pick(summary.conditions.edges, selection.edges)) {
+            const shared = {
+              format: summary.format,
+              template: summary.template,
+              ...(summary.profile && { profile: summary.profile }),
+              edge,
+              theme,
+              font,
+              canvas,
+            };
+            const conditions = {
+              font,
+              canvas,
+              requiredRoles: summary.requiredRoles,
+              themeObject,
+            };
+            if (selection.blocks !== false)
+              for (const entry of entries) {
+                if (!entry.edges.includes(edge)) continue;
+                cases.push({
+                  ...shared,
+                  id: `${stem(summary.template)}/${entry.name}@${edge}/${theme}/${font}/${canvas}`,
+                  block: entry.name,
+                  document:
+                    summary.format === 'docx'
+                      ? blockCaseDocument(
+                          definitions,
+                          entry.name,
+                          edge,
+                          theme,
+                          conditions
+                        )
+                      : deckBlockCaseDocument(
+                          source.document,
+                          definitions,
+                          entry.name,
+                          edge,
+                          theme,
+                          conditions
+                        ),
+                });
+              }
+            if (selection.report !== false && withSlots)
+              cases.push({
+                ...shared,
+                id: `${stem(summary.template)}/report@${edge}/${theme}/${font}/${canvas}`,
+                block: 'report',
+                document:
+                  summary.format === 'docx'
+                    ? reportCaseDocument(
+                        source.document,
+                        edge,
+                        theme,
+                        conditions
+                      )
+                    : deckReportCaseDocument(
+                        source.document,
+                        edge,
+                        theme,
+                        conditions
+                      ),
+              });
+          }
+  }
   return cases;
 }

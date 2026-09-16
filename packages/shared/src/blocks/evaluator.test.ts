@@ -131,7 +131,7 @@ describe('document-local JSON block evaluation', () => {
       '/props/blocks/summary/body/1',
     ]);
   });
-  it('bounds recursive block expansion', () => {
+  it('refuses a definition that invokes itself on every expansion, at the definition', () => {
     const defs = {
       loop: {
         slots: {},
@@ -143,7 +143,68 @@ describe('document-local JSON block evaluation', () => {
         name: 'block',
         props: { ref: 'loop' },
       })
-    ).toThrow('limit');
+    ).toThrow(/\/props\/blocks\/loop\/body\/0\/props\/ref: .*limit/);
+    expect(validateBlockDefinitions(defs, 'docx')).toEqual([
+      expect.objectContaining({
+        code: 'block_expansion_limit',
+        path: '/props/blocks/loop/body/0/props/ref',
+      }),
+    ]);
+  });
+  it('names a cycle through another definition once, where it closes', () => {
+    const defs = {
+      a: { slots: {}, body: [{ name: 'block', props: { ref: 'b' } }] },
+      b: { slots: {}, body: [{ name: 'block', props: { ref: 'a' } }] },
+    };
+    const issues = validateBlockDefinitions(defs, 'pptx');
+    expect(issues).toHaveLength(1);
+    expect(issues[0]).toMatchObject({
+      code: 'block_expansion_limit',
+      path: '/props/blocks/b/body/0/props/ref',
+    });
+    expect(issues[0].message).toContain('a → b → a');
+  });
+  it('leaves recursion under a directive to the runtime limits', () => {
+    // Data may end it: the nested invocation runs only while there is an
+    // item to render.
+    const defs = {
+      node: {
+        slots: {
+          children: {
+            type: 'array' as const,
+            items: { type: 'object' as const },
+          },
+        },
+        body: [
+          {
+            $each: '/children',
+            template: { name: 'block', props: { ref: 'node' } },
+          },
+        ],
+      },
+    };
+    expect(
+      validateBlockDefinitions(defs, 'docx').filter(
+        (issue) => issue.code === 'block_expansion_limit'
+      )
+    ).toEqual([]);
+  });
+  it('reports a body that names a block the document lacks, in the definition', () => {
+    const defs = {
+      outer: {
+        slots: { show: { type: 'boolean' as const } },
+        body: [
+          { name: 'block', props: { ref: 'ghost' } },
+          { $if: '/show', then: { name: 'block', props: { ref: 'phantom' } } },
+        ],
+      },
+    };
+    expect(
+      validateBlockDefinitions(defs, 'docx').map((i) => `${i.code} ${i.path}`)
+    ).toEqual([
+      'block_unknown_reference /props/blocks/outer/body/0/props/ref',
+      'block_unknown_reference /props/blocks/outer/body/1/then/props/ref',
+    ]);
   });
   it('maps renamed slots through nested block invocations', () => {
     const defs = {
