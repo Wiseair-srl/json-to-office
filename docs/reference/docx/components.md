@@ -237,6 +237,8 @@ The `floating` object (shared with [`text-box`](#text-box)):
 
 A KPI card: a large number with unit, description, and an optional trend indicator. Put several in a [`columns`](#columns) block for a KPI row.
 
+The theme sets its look. On a theme with type roles the figure takes the `stat` role — its size, face, weight and colour, with `small` and `large` a step of the theme's type scale either side — and the unit, trend and description take the `label` role's size: on `consulting`, a 22pt regular figure in the accent over 9pt text. A theme without roles keeps the built-in sizes (28pt bold figure, 20pt `small`, 40pt `large`, unit and trend at half the figure, 10pt description), and a theme that defines the `StatisticNumber` or `StatisticDescription` style decides those outright.
+
 | Prop          | Type                                 | Required | Default | Description                             |
 | ------------- | ------------------------------------ | -------- | ------- | --------------------------------------- |
 | `number`      | `string`                             | **yes**  | —       | The headline figure                     |
@@ -247,7 +249,7 @@ A KPI card: a large number with unit, description, and an optional trend indicat
 | `trendValue`  | `string` \| `number`                 | no       | —       | Trend delta shown next to the indicator |
 | `alignment`   | `'left'` \| `'center'` \| `'right'`  | no       | theme   |                                         |
 | `spacing`     | `{ before?, after? }` (points)       | no       | —       |                                         |
-| `size`        | `'small'` \| `'medium'` \| `'large'` | no       | —       | Card scale                              |
+| `size`        | `'small'` \| `'medium'` \| `'large'` | no       | —       | Card scale: a step of the theme's scale |
 
 ```json
 {
