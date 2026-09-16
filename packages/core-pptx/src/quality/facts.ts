@@ -78,6 +78,11 @@ export interface PptxTextFact extends QualityFact {
   nodePath: string;
   text: string;
   fontSizePt: number;
+  /**
+   * The size the text was set at when a bounded `fit` stepped it down to
+   * `fontSizePt`; absent when the fit pass left the size alone.
+   */
+  fitFromPt?: number;
   lineSpacingPt: number;
   paraSpaceBeforePt: number;
   paraSpaceAfterPt: number;
@@ -86,6 +91,8 @@ export interface PptxTextFact extends QualityFact {
   boxYPt?: number;
   boxWidthPt?: number;
   boxHeightPt?: number;
+  /** The inset the text is laid out in, `[top, right, bottom, left]` points. */
+  insetsPt: readonly [number, number, number, number];
   verticalAlign: 'top' | 'middle' | 'bottom';
   /** Horizontal alignment: the prop, else the named style's, else left. */
   align: 'left' | 'center' | 'right' | 'justify';
@@ -169,6 +176,8 @@ export interface PptxImageFact extends QualityFact {
   bleed: boolean;
   drawnRatio?: number;
   naturalRatio?: number;
+  /** `w` and `h` as the author wrote them, in inches, when both are numbers. */
+  authoredSizeIn?: { w: number; h: number };
 }
 
 /** A box drawn on a slide, in draw order — the input to the overlap rule. */
@@ -186,6 +195,12 @@ export interface PptxBoxFact extends QualityFact {
   yPt: number;
   widthPt: number;
   heightPt: number;
+  /**
+   * The box's own `x` and `y` in inches, where the author placed it directly
+   * on the slide with plain numbers: what a repair can move. A box inside a
+   * group sits in the group's frame, and a block's box in its definition's.
+   */
+  authoredPositionIn?: { x: number; y: number };
 }
 
 /** The resolved theme, as the brand rules see it. */
@@ -288,10 +303,30 @@ export interface PptxChromeSlotFact extends QualityFact {
   fontSizePt?: number;
 }
 
+/**
+ * The running chrome one slide carries: whether a block builds it, and
+ * whether it shows a page number or a footer line. A profile reads it to
+ * require a page number on every slide after the cover.
+ */
+export interface PptxSlideChromeFact extends QualityFact {
+  kind: 'pptx/slide-chrome';
+  /** The slide's place in the deck, 0-based, disabled slides left out. */
+  index: number;
+  /** A hidden slide is never shown, so nothing is asked of it. */
+  hidden?: boolean;
+  /** Block invocations placed directly on the slide or in its groups. */
+  blocks: number;
+  /** A text on the slide carries the `{PAGE_NUMBER}` field. */
+  pageNumber: boolean;
+  /** A text in the theme's footer type, or a filled `footer` slot. */
+  footer: boolean;
+}
+
 export type PptxQualityFact =
   | PptxCanvasFact
   | PptxBlockSlotFact
   | PptxChromeSlotFact
+  | PptxSlideChromeFact
   | PptxTextFact
   | PptxRichTextFact
   | PptxSlideFact
@@ -348,9 +383,33 @@ interface Typography {
 interface TextNode {
   props: Rec;
   path: string;
+  /** `text` or `shape`: the two differ in the inset they default to. */
+  componentName: string;
   text: string;
   /** Draw order on the slide, shared with `Surface`. */
   order: number;
+}
+
+/**
+ * The inset a text body is laid out in, `[top, right, bottom, left]` points.
+ * `margin` states it; a text box otherwise takes none (the compiler writes
+ * zero so text lines up with its position) and a shape keeps the format's own
+ * padding, 0.05in above and below and 0.1in at the sides.
+ */
+function textInsetsPt(
+  props: Rec,
+  componentName: string
+): readonly [number, number, number, number] {
+  const margin = props.margin;
+  if (typeof margin === 'number' && Number.isFinite(margin))
+    return [margin, margin, margin, margin];
+  if (
+    Array.isArray(margin) &&
+    margin.length === 4 &&
+    margin.every((side) => typeof side === 'number' && Number.isFinite(side))
+  )
+    return margin as unknown as [number, number, number, number];
+  return componentName === 'shape' ? [3.6, 7.2, 3.6, 7.2] : [0, 0, 0, 0];
 }
 
 interface ComponentAtPath {
@@ -871,7 +930,13 @@ function collectSlideNodes(
     props.runs === undefined
   ) {
     if (rec.name === 'text' || rec.name === 'shape') {
-      text.push({ props, path, text: content, order });
+      text.push({
+        props,
+        path,
+        componentName: rec.name,
+        text: content,
+        order,
+      });
     }
   }
   if (
@@ -887,7 +952,13 @@ function collectSlideNodes(
       )
       .join('');
     if (joined.trim() !== '')
-      richText.push({ props, path, text: joined, order });
+      richText.push({
+        props,
+        path,
+        componentName: String(rec.name),
+        text: joined,
+        order,
+      });
   }
 
   const componentName = typeof rec.name === 'string' ? rec.name : '';
@@ -1225,6 +1296,10 @@ function addSlideFacts(
       statedPropsAt
     );
     if (!isCompleteBox(box)) return;
+    const onSlide =
+      /^\/children\/\d+\/children\/\d+$/.test(node.path) &&
+      authoredPath(node.path) === node.path;
+    const authored = onSlide ? authoredPropsAt(node.path) : undefined;
     addFact({
       id: `pptx:box:${renderedIndex}:${boxIndex}:${node.path}`,
       kind: 'pptx/box',
@@ -1238,6 +1313,11 @@ function addSlideFacts(
       yPt: box.yPt,
       widthPt: box.widthPt,
       heightPt: box.heightPt,
+      ...(typeof authored?.x === 'number' &&
+        typeof authored?.y === 'number' &&
+        authored.grid === undefined && {
+          authoredPositionIn: { x: authored.x, y: authored.y },
+        }),
     });
   });
   const surfaceBoxes = surfaces.flatMap((surface) => {
@@ -1377,6 +1457,13 @@ function addSlideFacts(
       typeof node.props.color === 'string'
         ? resolveColor(node.props.color, theme)?.toUpperCase()
         : undefined;
+    // The size the text was set at before a bounded fit stepped it down: the
+    // node as the document (or the block that compiled it) states it.
+    const stated = statedPropsAt(node.path);
+    const setSize =
+      stated && node.props.fit !== undefined
+        ? resolveTypography(stated, ctx).fontSize
+        : undefined;
 
     addFact({
       id: `pptx:text:${renderedIndex}:${nodeIndex}:${node.path}`,
@@ -1387,6 +1474,8 @@ function addSlideFacts(
       nodePath: node.path,
       text: node.text,
       fontSizePt: typography.fontSize,
+      ...(setSize !== undefined &&
+        setSize !== typography.fontSize && { fitFromPt: setSize }),
       lineSpacingPt: typography.lineSpacing,
       paraSpaceBeforePt: typography.paraSpaceBefore,
       paraSpaceAfterPt: typography.paraSpaceAfter,
@@ -1395,6 +1484,7 @@ function addSlideFacts(
       ...(boxYPt !== undefined && { boxYPt }),
       ...(boxWidthPt !== undefined && boxWidthPt > 0 && { boxWidthPt }),
       ...(boxHeightPt !== undefined && boxHeightPt > 0 && { boxHeightPt }),
+      insetsPt: textInsetsPt(node.props, node.componentName),
       verticalAlign:
         node.props.valign === 'middle' || node.props.valign === 'bottom'
           ? node.props.valign
@@ -1526,6 +1616,11 @@ function addSlideFacts(
             drawnRatio: resolved.widthPt / resolved.heightPt,
           }),
         ...(natural !== undefined && { naturalRatio: natural }),
+        ...(stretched &&
+          typeof authored.w === 'number' &&
+          typeof authored.h === 'number' && {
+            authoredSizeIn: { w: authored.w, h: authored.h },
+          }),
       });
     }
     const bullets = bulletItems(box.props);
@@ -1792,7 +1887,7 @@ export function preparePptxQualityDocument(
       ...budget,
     });
   }
-  const slotTextNodes = textNodesBySlot(processed, slideIndexes, sourceMap);
+  const slotNodes = nodesBySlot(processed, slideIndexes, sourceMap);
   for (const role of blockSlotRoles(context.document, expanded.blocks)) {
     // A slot of nothing but whitespace draws nothing, however it was filled.
     const present =
@@ -1801,7 +1896,7 @@ export function preparePptxQualityDocument(
       role.value !== false &&
       (typeof role.value !== 'string' || role.value.trim() !== '') &&
       (!Array.isArray(role.value) || role.value.length > 0);
-    const bound = slotTextNodes.get(role.path);
+    const bound = slotNodes.get(role.path);
     let measured: { estimatedLines: number; fontSizePt: number } | undefined;
     if (bound && typeof bound.props.text === 'string') {
       const typography = resolveTypography(bound.props, ctx);
@@ -1840,6 +1935,45 @@ export function preparePptxQualityDocument(
     });
   }
 
+  // What each slide carries of the deck's running chrome. A page number is
+  // the field itself, before the compiler writes the slide's number into it.
+  const footerType =
+    typeof processed.theme.chrome?.confidentialFooter?.type === 'string'
+      ? processed.theme.chrome.confidentialFooter.type
+      : 'footer';
+  processed.slides.forEach((slide, renderedIndex) => {
+    const authoredIndex = slideIndexes[renderedIndex];
+    if (authoredIndex === undefined) return;
+    const slidePath = `/children/${authoredIndex}`;
+    const onSlide = (fact: PptxQualityFact): boolean =>
+      'slidePath' in fact && fact.slidePath === slidePath;
+    const texts = facts.filter(
+      (fact): fact is PptxTextFact | PptxRichTextFact =>
+        (fact.kind === 'pptx/text' || fact.kind === 'pptx/rich-text') &&
+        onSlide(fact)
+    );
+    addFact({
+      id: `pptx:slide-chrome:${slidePath}`,
+      kind: 'pptx/slide-chrome',
+      path: slidePath,
+      index: renderedIndex,
+      ...(slide.hidden === true && { hidden: true }),
+      blocks: expanded.blocks.filter((pointer) =>
+        pointer.startsWith(`${slidePath}/children/`)
+      ).length,
+      pageNumber: texts.some((fact) => fact.text.includes('{PAGE_NUMBER}')),
+      footer:
+        texts.some((fact) => fact.styleName === footerType) ||
+        facts.some(
+          (fact) =>
+            fact.kind === 'pptx/chrome-slot' &&
+            fact.role === 'footer' &&
+            fact.present &&
+            onSlide(fact)
+        ),
+    });
+  });
+
   return {
     format: 'pptx',
     model: {
@@ -1864,11 +1998,12 @@ export function preparePptxQualityDocument(
 }
 
 /**
- * The processed text node each authored slot became, keyed by slot pointer.
+ * The processed node each authored slot became, keyed by slot pointer: the
+ * text node a string slot fills, the component a component slot places.
  * Layout has already given every node its absolute box, so a slot's text can
  * be measured in the frame the definition drew for it.
  */
-function textNodesBySlot(
+function nodesBySlot(
   processed: ProcessedPresentation,
   slideIndexes: readonly number[],
   sourceMap: BlockSourceMap
@@ -1879,6 +2014,14 @@ function textNodesBySlot(
     if (component.name === 'text') {
       const origin = toAuthoredPointer(sourceMap, `${path}/props/text`);
       if (origin !== `${path}/props/text` && !found.has(origin))
+        found.set(origin, { props: asRecord(component.props) ?? {}, path });
+    } else {
+      const origin = toAuthoredPointer(sourceMap, path);
+      if (
+        origin !== path &&
+        origin.includes('/props/slots/') &&
+        !found.has(origin)
+      )
         found.set(origin, { props: asRecord(component.props) ?? {}, path });
     }
     (component.children ?? []).forEach((child, index) =>

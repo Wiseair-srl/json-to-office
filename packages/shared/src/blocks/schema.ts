@@ -12,6 +12,7 @@ export const BLOCK_SLOT_ROLES = [
   'source',
   'tracker',
   'footer',
+  'logo',
 ] as const;
 export type BlockSlotRole = (typeof BLOCK_SLOT_ROLES)[number];
 
@@ -165,7 +166,7 @@ export const BlockSlotSchema: TSchema = Type.Recursive(
             BLOCK_SLOT_ROLES.map((role) => Type.Literal(role)),
             {
               description:
-                'Content role for quality profiles: actionTitle, takeaway, source, tracker or footer. A profile may require or measure it; the theme only styles it.',
+                'Content role for quality profiles: actionTitle, takeaway, source, tracker, footer or logo. A profile may require or measure it; the theme only styles it. Tracker, footer, source and logo are chrome, which a deck may draw in the margin band.',
             }
           )
         ),
