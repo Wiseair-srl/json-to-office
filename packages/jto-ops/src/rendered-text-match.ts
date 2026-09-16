@@ -123,7 +123,11 @@ export interface StreamIndex {
  */
 export function indexDocument(
   pages: readonly PdfTextPage[],
-  exclude: ReadonlySet<string> = new Set()
+  exclude: ReadonlySet<string> = new Set(),
+  order: (
+    words: readonly PdfTextWord[],
+    lines: readonly PdfTextLine[]
+  ) => { upright: number[]; rotated: number[] } = pageOrder
 ): StreamIndex {
   const refs: WordRef[] = [];
   const fragments: string[] = [];
@@ -138,7 +142,7 @@ export function indexDocument(
     positions.push(cursor);
     cursor += fragment.length;
   };
-  const orders = pages.map((page) => pageOrder(page.words, page.lines));
+  const orders = pages.map((page) => order(page.words, page.lines));
   orders.forEach((order, pageIndex) => {
     for (const index of order.upright) push(pageIndex, index);
   });
@@ -203,6 +207,24 @@ function pageOrder(
     upright: uprightOrder(
       words,
       words.map((_, i) => i).filter((i) => !rotated.has(i))
+    ),
+    rotated: [...rotated].sort((a, b) => a - b),
+  };
+}
+
+/**
+ * A page's upright words row by row, each row left to right — the page as it
+ * lies, with no columns — and its rotated ones apart.
+ */
+function linedOrder(
+  words: readonly PdfTextWord[],
+  lines: readonly PdfTextLine[] = []
+): { upright: number[]; rotated: number[] } {
+  const rotated = rotatedWords(words, lines);
+  const upright = words.map((_, i) => i).filter((i) => !rotated.has(i));
+  return {
+    upright: groupRows(words, upright).flatMap((row) =>
+      [...row.words].sort((a, b) => words[a].xMin - words[b].xMin)
     ),
     rotated: [...rotated].sort((a, b) => a - b),
   };
@@ -951,6 +973,47 @@ function overprintedOccurrence(
   };
 }
 
+/**
+ * Report text the reading order took for a table. Label and value set on one
+ * line by a tab, line under line — a memo's To, From, Date — part into two
+ * columns exactly as two cells do, and a table reads column by column, so
+ * every label comes out before any value, while the author wrote each line
+ * as one string. A string the column reading never spells is looked for once
+ * more in the rows as they lie (`lined`). Its words are claimed one by one in
+ * the column reading, and only where no other entry holds any of them.
+ */
+function linedOccurrence(
+  lined: StreamIndex,
+  body: StreamIndex,
+  segments: readonly string[],
+  claimed: (offset: number) => boolean
+):
+  | { occurrence: TextOccurrence; claims: { at: number; end: number }[] }
+  | undefined {
+  const bodyFragment = new Map<string, number>();
+  body.refs.forEach((ref, i) => {
+    if (body.fragments[i] !== '')
+      bodyFragment.set(`${ref.pageIndex}:${ref.word}`, i);
+  });
+  for (const hit of findOccurrences(lined, segments)) {
+    const claims: { at: number; end: number }[] = [];
+    for (const part of hit.parts)
+      for (const word of part.words) {
+        const i = bodyFragment.get(`${part.pageIndex}:${word}`);
+        if (i === undefined) continue;
+        claims.push({
+          at: body.positions[i],
+          end: body.positions[i] + body.fragments[i].length,
+        });
+      }
+    if (claims.length === 0 || claims.some((claim) => claimed(claim.at)))
+      continue;
+    const at = Math.min(...claims.map((claim) => claim.at));
+    return { occurrence: { ...hit, at, end: at }, claims };
+  }
+  return undefined;
+}
+
 export interface InventoryAssignment<T extends InventoryEntry> {
   matches: InventoryMatch<T>[];
   /** `pageIndex:word` keys of every word chrome claimed — whole rows. */
@@ -1025,6 +1088,8 @@ export function assignInventory<T extends InventoryEntry>(
     claimRow(row.pageIndex, row.box);
 
   const body = indexDocument(pages, chromeWords);
+  /** The page as it lies, row by row: built only when a string needs it. */
+  let lined: StreamIndex | undefined;
   /** Every stream range an entry has claimed, and the entry holding it. */
   const claims: { at: number; end: number; entry: T }[] = [];
   const claimsOver = (o: TextOccurrence) =>
@@ -1064,6 +1129,16 @@ export function assignInventory<T extends InventoryEntry>(
       if (overprinted) {
         all = [overprinted.occurrence];
         sparse = overprinted.claims;
+      }
+    }
+    if (all.length === 0 && entry.page === undefined && !entry.optional) {
+      lined ??= indexDocument(pages, chromeWords, linedOrder);
+      const found = linedOccurrence(lined, body, segments, (offset) =>
+        claims.some((claim) => claim.at <= offset && offset < claim.end)
+      );
+      if (found) {
+        all = [found.occurrence];
+        sparse = found.claims;
       }
     }
     // An optional entry is skipped when absent, so its prefix — the costliest

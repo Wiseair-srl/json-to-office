@@ -4,3 +4,4 @@ export * from './metadata';
 export * from './authoring-schema';
 export * from './compose';
 export * from './editor';
+export * from './removed-syntax';
