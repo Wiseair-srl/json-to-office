@@ -361,7 +361,7 @@ await generator.generateFile(deckJson, './deck.pptx'); // → { warnings }
 
 **Options** (`PresentationGeneratorOptions`): `theme?` (`PptxThemeConfig | string`), `customThemes?`, `debug?`, `services?`, `fonts?`.
 
-**Builder methods:** `addComponent(component)`, `generate(document)` → `Promise<{ buffer, warnings }>`, `generateFile(document, outputPath)` → `Promise<{ warnings }>`, `prepareQuality(document)` → `Promise<{ prepared, warnings }>` (plugins expanded for `analyzePptxQuality`, nothing rendered), `getComponentNames()`, `validate(document)` → `{ valid, errors? }`, `generateSchema()` → `TSchema`, `exportSchema(outputPath, { prettyPrint? })`.
+**Builder methods:** `addComponent(component)`, `generate(document)` → `Promise<{ buffer, warnings }>`, `generateFile(document, outputPath)` → `Promise<{ warnings }>`, `prepareQuality(document, options?)` → `Promise<{ prepared, warnings }>` (plugins expanded for `analyzePptxQuality`, nothing rendered), `getComponentNames()`, `validate(document)` → `{ valid, errors? }`, `generateSchema()` → `TSchema`, `exportSchema(outputPath, { prettyPrint? })`.
 
 ## Shared option shapes
 
