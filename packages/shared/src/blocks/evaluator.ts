@@ -596,6 +596,9 @@ function definitionReferences(
     return;
   }
   if (!isBlockRecord(value)) return;
+  // Expansion returns a disabled node untouched, so a reference under one is
+  // never invoked: reporting it undefined or recursive is a false error.
+  if (value.enabled === false) return;
   if (
     value.name === 'block' &&
     isBlockRecord(value.props) &&

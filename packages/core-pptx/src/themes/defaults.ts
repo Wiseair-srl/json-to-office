@@ -42,7 +42,9 @@ const DEFAULT_STYLES: Partial<Record<StyleName, TextStyle>> = {
 /**
  * The theme a deck gets when it names none: the house style (#331). The
  * stock Office look that used to answer to `default` is gone — it is the look
- * the design program replaces — so the name no longer resolves to a theme.
+ * the design program replaces — so the name no longer resolves to a theme: a deck that
+ * names it, like one that names anything unregistered, renders on
+ * `consulting`.
  */
 export const DEFAULT_PPTX_THEME: PptxThemeConfig = CONSULTING_PPTX_THEME;
 

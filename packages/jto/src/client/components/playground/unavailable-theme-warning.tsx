@@ -59,7 +59,7 @@ export function UnavailableThemeWarning({ className }: { className?: string }) {
         <span className="text-warning/80">
           Add it as a custom theme or use a built-in theme (
           {BUILTIN_THEMES[FORMAT]?.join(', ')}). The renderer will fall back to
-          a default.
+          consulting.
         </span>
       </div>
     </div>
