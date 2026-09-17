@@ -398,6 +398,44 @@ function createBuilderImpl<
   }
 
   /**
+   * Render the deck a `prepareQuality` call already expanded and processed:
+   * the prologue, the plugins and the layout pass all ran there, so only the
+   * fonts a chart's browser needs are resolved again before the bytes.
+   */
+  async function generateFromPrepared(
+    options: GenerateOptions & {
+      prepared: NonNullable<GenerateOptions['prepared']>;
+    }
+  ): Promise<BufferGenerationResult> {
+    const { prepared } = options;
+    const { document: processedDocument, theme, processed } = prepared.model;
+    const warnings: PipelineWarning[] = [];
+    const renderer =
+      options.renderer ??
+      state.renderer ??
+      (prepared.renderer as PptxRendererId | undefined);
+    const hasHighcharts = containsHighcharts(processed);
+    const resolvedFonts = await resolveDocumentFonts(
+      processedDocument,
+      theme,
+      warnings,
+      state.fonts,
+      hasHighcharts
+    );
+    const chartFonts = hasHighcharts ? toChartFontFaces(resolvedFonts) : [];
+    const buffer = await runWithBaseDir(options.baseDir ?? state.baseDir, () =>
+      renderProcessedViaIr(processed, warnings, {
+        renderer,
+        services: state.services,
+        deterministic: options.deterministic ?? state.packaging.deterministic,
+        generatedAt: options.generatedAt ?? state.packaging.generatedAt,
+        ...(chartFonts.length > 0 ? { chartFonts } : {}),
+      })
+    );
+    return { buffer, warnings };
+  }
+
+  /**
    * Generate a presentation buffer
    */
   async function generate(
@@ -405,6 +443,15 @@ function createBuilderImpl<
     options?: GenerateOptions
   ): Promise<BufferGenerationResult> {
     try {
+      // The model `prepareQuality` built from this presentation already
+      // carries the expansion the quality gate inspected, plugin output
+      // included: rendering reads it rather than running the plugins again.
+      if (options?.prepared)
+        return await generateFromPrepared(
+          options as GenerateOptions & {
+            prepared: NonNullable<GenerateOptions['prepared']>;
+          }
+        );
       const { context, expanded, warnings, renderer } =
         await expandPresentation(document, options);
       const resolvedTheme = context.theme;

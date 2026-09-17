@@ -605,9 +605,48 @@ function definitionReferences(
     typeof value.props.ref === 'string'
   )
     found.push({ ref: value.props.ref, path: `${path}/props/ref`, guarded });
-  // A directive can choose not to expand its operand, which is what makes a
-  // reference under it guarded — but `$join` evaluates every entry, so a
-  // reference inside one is as unconditional as a bare body node.
+  // `$if` chooses one of its branches, so a reference in one of them runs
+  // only when the data picks it — unless both branches reach the same
+  // definition, in which case every expansion reaches it and the cycle check
+  // below must see it. A `$if` with one branch always has an alternative that
+  // expands to nothing, so everything under it stays guarded.
+  if ('$if' in value && ('then' in value || 'else' in value)) {
+    definitionReferences(value.$if, `${path}/$if`, found, guarded);
+    const branch = (key: 'then' | 'else'): DefinitionReference[] => {
+      const out: DefinitionReference[] = [];
+      if (key in value)
+        definitionReferences(
+          value[key],
+          `${path}/${blockPointerKey(key)}`,
+          out,
+          guarded
+        );
+      return out;
+    };
+    const taken = branch('then');
+    const otherwise = branch('else');
+    const inEvery = new Set(
+      'then' in value && 'else' in value
+        ? taken
+            .filter((reference) => !reference.guarded)
+            .map((reference) => reference.ref)
+            .filter((ref) =>
+              otherwise.some(
+                (reference) => !reference.guarded && reference.ref === ref
+              )
+            )
+        : []
+    );
+    for (const reference of [...taken, ...otherwise])
+      found.push({
+        ...reference,
+        guarded: reference.guarded || !inEvery.has(reference.ref),
+      });
+    return;
+  }
+  // Any other directive can choose not to expand its operand, which is what
+  // makes a reference under it guarded — but `$join` evaluates every entry,
+  // so a reference inside one is as unconditional as a bare body node.
   const directive = Object.keys(value).some(
     (key) => key.startsWith('$') && key !== '$join'
   );
@@ -651,6 +690,9 @@ function checkDefinitionReferences(
   }
   const done = new Set<string>();
   const trail: string[] = [];
+  // One cycle, one finding: a `$if` that recurses in both branches reaches
+  // the same definition from two places, and the second says nothing new.
+  const reported = new Set<string>();
   const visit = (name: string): void => {
     if (done.has(name)) return;
     trail.push(name);
@@ -658,6 +700,8 @@ function checkDefinitionReferences(
       if (reference.guarded || !own(definitions, reference.ref)) continue;
       const start = trail.indexOf(reference.ref);
       if (start !== -1) {
+        if (reported.has(`${name}\u0000${reference.ref}`)) continue;
+        reported.add(`${name}\u0000${reference.ref}`);
         issues.push({
           path: reference.path,
           code: 'block_expansion_limit',

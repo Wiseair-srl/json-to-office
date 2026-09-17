@@ -277,10 +277,16 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
                 },
               },
             };
-            if (!pluginInfo.hasPlugins && adapter.prepareDocument) {
+            if (adapter.prepareDocument) {
+              // One expansion for the whole command: the quality gate reads
+              // it, and the generator below renders it. With plugins that is
+              // what keeps a component reading the clock, a random source or
+              // a service from writing bytes the gate never inspected.
               generatorOptions.prepared = await adapter.prepareDocument(
                 documentDefinition,
-                generatorOptions
+                pluginInfo.hasPlugins
+                  ? { ...generatorOptions, plugins: factory.getPlugins() }
+                  : generatorOptions
               );
             }
             if (adapter.analyzeQuality) {

@@ -157,6 +157,16 @@ export interface GenerateOptions {
    * Overrides the constructor `renderer`; defaults to `docxjs`.
    */
   renderer?: DocxRendererId;
+  /**
+   * The model `prepareQuality` built from *this* document. Rendering then
+   * reuses that one expansion instead of expanding the registered plugins a
+   * second time, so what the quality gate inspected is what reaches the
+   * bytes — a plugin whose output depends on the clock, on randomness or on
+   * a service cannot render something the analysis never saw. Ignored when
+   * the call also asks for preserved components, which the prepared model
+   * does not carry.
+   */
+  prepared?: PreparedDocument<DocxQualityModel, DocxQualityFact>;
 }
 
 /**

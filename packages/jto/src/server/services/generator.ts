@@ -540,7 +540,9 @@ export class GeneratorService {
       ?.quality;
     // Registered plugins are expanded for quality the way generation expands
     // them, so what a plugin emits is analysed and reported at its
-    // invocation (#453). The plugins then render a second time for the bytes.
+    // invocation (#453). That one expansion is handed to the render below, so
+    // a plugin reading the clock, a random source or a service cannot put
+    // content in the file that the gate never saw.
     const plugins = registry.hasPlugins() ? registry.getPlugins() : [];
     const validForPreparation =
       plugins.length > 0 && this.adapter.validateDocumentWithPlugins
@@ -650,6 +652,9 @@ export class GeneratorService {
         ...(svgRasterFallback !== undefined && { svgRasterFallback }),
         warnings: coreWarnings,
         quality,
+        // The expansion the quality gate inspected renders the bytes too:
+        // the adapter uses it only for the document it was prepared from.
+        prepared,
       });
       buffer = await generator.generateBuffer(config);
     } else {

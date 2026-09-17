@@ -725,6 +725,44 @@ function createBuilderImpl<
   }
 
   /**
+   * Render the tree a `prepareQuality` call already expanded. The prologue
+   * and the plugins ran there: the prepared model carries the theme context
+   * over the expanded document, so the IR pipeline skips both and the bytes
+   * come from the tree the analysis judged.
+   */
+  async function generateBufferFromPrepared(
+    prepared: NonNullable<GenerateOptions['prepared']>,
+    options?: GenerateOptions
+  ): Promise<BufferGenerationResult<TComponents>> {
+    const { context } = prepared.model;
+    const warnings: GenerationWarning[] = [];
+    const baseDir = options?.baseDir ?? state.baseDir;
+    const deterministic = options?.deterministic ?? state.deterministic;
+    const generatedAt = options?.generatedAt ?? state.generatedAt;
+    const renderer =
+      options?.renderer ??
+      state.renderer ??
+      (prepared.renderer as DocxRendererId | undefined);
+    const { buffer } = await generateBufferViaIr(context.document, {
+      context,
+      prepared,
+      ...(state.services ? { services: state.services } : {}),
+      ...(state.fonts ? { fonts: state.fonts } : {}),
+      ...(baseDir !== undefined ? { baseDir } : {}),
+      ...(deterministic !== undefined ? { deterministic } : {}),
+      ...(generatedAt !== undefined ? { generatedAt } : {}),
+      ...(renderer !== undefined ? { renderer } : {}),
+      warnings,
+    });
+    return {
+      buffer,
+      warnings: warnings.length > 0 ? warnings : null,
+      standardDefinition: context.document,
+      preservedDefinition: undefined,
+    };
+  }
+
+  /**
    * Generate a document as a `.docx` buffer.
    *
    * The custom components are expanded first, then the standard tree it
@@ -737,6 +775,16 @@ function createBuilderImpl<
     options?: GenerateOptions
   ): Promise<BufferGenerationResult<TComponents>> {
     try {
+      // A model prepared from this same document already carries the one
+      // expansion the quality gate inspected — plugin output included — so
+      // rendering reads it instead of running the plugins again. Preserved
+      // components are the exception: they are the partially expanded tree,
+      // which the prepared model does not keep.
+      const reused =
+        options?.prepared && resolvePreserveSet(options) === undefined
+          ? options.prepared
+          : undefined;
+      if (reused) return await generateBufferFromPrepared(reused, options);
       const {
         modedRoot,
         modedTheme,
