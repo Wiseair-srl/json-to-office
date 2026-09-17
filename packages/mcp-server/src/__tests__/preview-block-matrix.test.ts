@@ -539,7 +539,7 @@ describe.skipIf(!RUN_CONVERTERS || !docxCore || !pptxCore)(
               .map(
                 (f) =>
                   `${f.family}${f.declared ? ' (declared)' : ''}${
-                    f.embedded === false ? ' substituted' : ''
+                    f.substituted ? ' substituted' : ''
                   }`
               )
               .join(

@@ -1089,7 +1089,11 @@ export function createStatisticStyles(
   const stat = (
     theme.styles as Record<string, Record<string, unknown>> | undefined
   )?.stat;
-  const face = stat?.font === 'body' ? ('body' as const) : ('heading' as const);
+  // Every face role the style schema allows, not just `body`: a theme that
+  // sets the stat in the mono or light family means it.
+  const faces = ['heading', 'body', 'mono', 'light'] as const;
+  const face =
+    faces.find((candidate) => candidate === stat?.font) ?? ('heading' as const);
   const weight =
     typeof stat?.fontWeight === 'number' ? stat.fontWeight : undefined;
   const definitions = [

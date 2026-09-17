@@ -133,4 +133,38 @@ describe('quality analysis of registered components', () => {
     );
     expect(codes).toContain(`${QUALITY_CODES.TABLE_NUMERIC_ALIGN} /children/1`);
   });
+  it('validates a top-level plugin section at the document root', async () => {
+    // The combined expansion path supplies a source path for every plugin,
+    // and wrapping a document child's output in a synthetic section would
+    // make a valid `section` a section inside a section.
+    const sectionPlugin = createComponent({
+      name: 'appendix-section',
+      versions: {
+        '1.0.0': {
+          propsSchema: Type.Object({ heading: Type.String() }),
+          render: async ({ props }) => [
+            {
+              name: 'section',
+              props: {},
+              children: [
+                { name: 'heading', props: { text: props.heading, level: 1 } },
+              ],
+            },
+          ],
+        },
+      },
+    });
+    const document = {
+      name: 'docx',
+      props: {},
+      children: [{ name: 'appendix-section', props: { heading: 'Appendix' } }],
+    };
+    const generated = createDocumentGenerator({}).addComponent(sectionPlugin);
+    await expect(
+      generated.prepareQuality(document as never)
+    ).resolves.toBeDefined();
+    await expect(
+      generated.generateBuffer(document as never)
+    ).resolves.toBeDefined();
+  });
 });

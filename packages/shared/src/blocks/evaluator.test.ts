@@ -131,6 +131,18 @@ describe('document-local JSON block evaluation', () => {
       '/props/blocks/summary/body/1',
     ]);
   });
+  it('ignores a reference inside a disabled node, as expansion does', () => {
+    const defs = {
+      summary: {
+        ...definition,
+        body: [
+          { name: 'block', enabled: false, props: { ref: 'nowhere' } },
+          { name: 'block', enabled: false, props: { ref: 'summary' } },
+        ],
+      },
+    };
+    expect(validateBlockDefinitions(defs, 'docx')).toEqual([]);
+  });
   it('refuses a definition that invokes itself on every expansion, at the definition', () => {
     const defs = {
       loop: {

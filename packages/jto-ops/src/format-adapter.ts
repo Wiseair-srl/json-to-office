@@ -806,7 +806,10 @@ export class DocxFormatAdapter implements FormatAdapter {
       options.plugins && options.plugins.length > 0
         ? await (async () => {
             // The generator `createGenerator` builds for these plugins, so
-            // the tree analysed is the tree that renders.
+            // the tree analysed is the tree that renders — services and
+            // `baseDir` included: a plugin that calls a service or resolves
+            // an asset beside the document would otherwise emit one tree here
+            // and another at render.
             let generator: any = core.createDocumentGenerator({
               theme: resolved.requested,
               customThemes: resolved.requested
@@ -815,6 +818,11 @@ export class DocxFormatAdapter implements FormatAdapter {
                     [CLI_THEME_KEY]: resolved.requested,
                   }
                 : resolved.customThemes,
+              services: withRequestedServices(
+                buildDocxServices(),
+                options.services
+              ),
+              baseDir: options.baseDir,
               fonts: options.fonts,
               validation: {
                 allowUnknownFields: options.validation?.allowUnknownFields,
@@ -1294,6 +1302,7 @@ export class PptxFormatAdapter implements FormatAdapter {
                   }
                 : resolved.customThemes,
               services,
+              baseDir: options.baseDir,
               fonts: options.fonts,
               validation: {
                 allowUnknownFields: options.validation?.allowUnknownFields,
