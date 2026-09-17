@@ -1024,7 +1024,9 @@ export const docxRunningHeadRule: QualityRule<
             message:
               `Section ${fact.index + 1} carries no ${parts}; ` +
               `${configurationLabel(source, profile)} expects a running head ` +
-              `on every section after the cover.`,
+              (from === 0
+                ? 'on every section.'
+                : `on every section from section ${from + 1} on.`),
             suggestion:
               'Invoke a running-head block at the top of the first body section: its section effect fills every later section with the title and n / N.',
             context: { section: fact.index, missing },

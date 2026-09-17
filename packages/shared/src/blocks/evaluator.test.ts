@@ -131,6 +131,24 @@ describe('document-local JSON block evaluation', () => {
       '/props/blocks/summary/body/1',
     ]);
   });
+  it('refuses a cycle inside a $join, which evaluates every entry', () => {
+    const defs = {
+      loop: {
+        slots: {},
+        body: [
+          {
+            name: 'paragraph',
+            props: {
+              text: { $join: [{ name: 'block', props: { ref: 'loop' } }, ' '] },
+            },
+          },
+        ],
+      },
+    };
+    expect(validateBlockDefinitions(defs, 'docx')).toEqual([
+      expect.objectContaining({ code: 'block_expansion_limit' }),
+    ]);
+  });
   it('ignores a reference inside a disabled node, as expansion does', () => {
     const defs = {
       summary: {

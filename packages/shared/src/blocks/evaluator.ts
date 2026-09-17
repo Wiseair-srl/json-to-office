@@ -605,7 +605,12 @@ function definitionReferences(
     typeof value.props.ref === 'string'
   )
     found.push({ ref: value.props.ref, path: `${path}/props/ref`, guarded });
-  const directive = Object.keys(value).some((key) => key.startsWith('$'));
+  // A directive can choose not to expand its operand, which is what makes a
+  // reference under it guarded — but `$join` evaluates every entry, so a
+  // reference inside one is as unconditional as a bare body node.
+  const directive = Object.keys(value).some(
+    (key) => key.startsWith('$') && key !== '$join'
+  );
   for (const [key, child] of Object.entries(value))
     definitionReferences(
       child,
