@@ -1,5 +1,31 @@
 # @json-to-office/json-to-docx
 
+## 7.0.0
+
+### Major Changes
+
+- 105b936: `consulting` is the default theme in both formats (#331).
+
+  Breaking changes:
+
+  - A DOCX document that names no theme, or a theme that does not exist, renders on `consulting` instead of `minimal`. Name `"theme": "minimal"` to keep the old look.
+  - A PPTX deck that names no theme, or a theme that does not exist, renders on `consulting` instead of the Office-style `default` theme.
+  - The PPTX `default` theme is removed. `"theme": "default"` is now an unknown name: validation reports `W_UNKNOWN_THEME` and generation falls back to `consulting`. `dark` and `minimal` remain as explicit alternates; a deck that needs the old blue, orange and green look supplies it as a custom or inline theme.
+  - `DEFAULT_PPTX_THEME` is the consulting theme, and `getPptxTheme` falls back to it. Both schemas default `theme` to `"consulting"`, and `BUILT_IN_PPTX_THEME_NAMES` no longer lists `default`.
+  - A rasterized DOCX `visual` whose canvas names no theme renders on the consulting PPTX theme, so canvas text without a `fontFace` sets in Calibri rather than Arial. Name `canvas.theme` to choose. Native visuals resolve against the document's DOCX theme and do not change.
+  - The playground, `jto init`, the CLI plugin config and the dry-run `Theme:` line use `consulting` where they used `minimal` or `default`; the MCP server's catalog no longer lists `default`, and its instructions say what a theme-less document gets.
+
+### Patch Changes
+
+- Updated dependencies [a599c3f]
+- Updated dependencies [105b936]
+- Updated dependencies [6425617]
+- Updated dependencies [f0cd057]
+- Updated dependencies [b822c89]
+  - @json-to-office/shared@7.0.0
+  - @json-to-office/shared-docx@7.0.0
+  - @json-to-office/core-docx@7.0.0
+
 ## 6.8.0
 
 ### Minor Changes
