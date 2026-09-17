@@ -1,5 +1,36 @@
 # @json-to-office/core-docx
 
+## 7.0.0
+
+### Major Changes
+
+- 105b936: `consulting` is the default theme in both formats (#331).
+
+  Breaking changes:
+
+  - A DOCX document that names no theme, or a theme that does not exist, renders on `consulting` instead of `minimal`. Name `"theme": "minimal"` to keep the old look.
+  - A PPTX deck that names no theme, or a theme that does not exist, renders on `consulting` instead of the Office-style `default` theme.
+  - The PPTX `default` theme is removed. `"theme": "default"` is now an unknown name: validation reports `W_UNKNOWN_THEME` and generation falls back to `consulting`. `dark` and `minimal` remain as explicit alternates; a deck that needs the old blue, orange and green look supplies it as a custom or inline theme.
+  - `DEFAULT_PPTX_THEME` is the consulting theme, and `getPptxTheme` falls back to it. Both schemas default `theme` to `"consulting"`, and `BUILT_IN_PPTX_THEME_NAMES` no longer lists `default`.
+  - A rasterized DOCX `visual` whose canvas names no theme renders on the consulting PPTX theme, so canvas text without a `fontFace` sets in Calibri rather than Arial. Name `canvas.theme` to choose. Native visuals resolve against the document's DOCX theme and do not change.
+  - The playground, `jto init`, the CLI plugin config and the dry-run `Theme:` line use `consulting` where they used `minimal` or `default`; the MCP server's catalog no longer lists `default`, and its instructions say what a theme-less document gets.
+
+### Minor Changes
+
+- 6425617: Deck layout checks judge what the slide shows (#451, #452). `pptx/title-drift` compares each title's estimated first baseline and aligned edge (vertical anchor, fit size, insets, alignment) across blocks and hand-placed titles, keeps far placements apart, and names the titles that agree; certainty is now `estimated`. New `pptx/slide-footer` lets a profile require a page number or footer on block-built slides; `consulting-deck` requires the page number after the cover. Slots gain the `logo` role, chrome the safe area exempts; the consulting cover's logo takes it. Rule evidence names the layer that set what a finding measures (`profile`, `policy` or `rule`): `ResolvedQualityRuleConfiguration` carries `enabledSource` and `parameterSources`, `configurationSource`/`configurationLabel` are exported, and `sizeCountFinding` takes who set the ceiling instead of a profile id. Image-aspect findings in both formats and `pptx/safe-area` findings carry fixes where the repair is mechanical. Unstyled deck text in role drift and inline SVG aspect in decks are recorded as out of scope, with measurements.
+- f0cd057: A DOCX `statistic` paints in the theme's type roles (#454): on a theme with roles the figure takes the `stat` role's size, face, weight and colour (`small`/`large` a step of the theme scale either side) and the unit, trend and caption the `label` size; themes without roles keep the built-in sizes. The consulting `stat` role is now 22pt regular in the accent, so the house kpi-row reads lighter, and the `client-report` size ceiling comes down from 11 to 9, measured on 155 client reports.
+- b822c89: Quality analysis sees what registered code components emit (#453). Both generators gain `prepareQuality`, which expands blocks and plugins the way generation does and returns the prepared quality model; the format adapters take `plugins` in their options, and the CLI and playground pass their loaded plugins. A finding inside plugin output reports at the invocation (the block evaluator records `pluginOutputs`, and `toAuthoredBlockPointer` collapses pointers under them). `pptx/minimum-font-size` no longer offers a fontSize patch on text a block or plugin generated.
+
+### Patch Changes
+
+- Updated dependencies [a599c3f]
+- Updated dependencies [105b936]
+- Updated dependencies [6425617]
+- Updated dependencies [b822c89]
+  - @json-to-office/shared@7.0.0
+  - @json-to-office/shared-docx@7.0.0
+  - @json-to-office/quality@7.0.0
+
 ## 6.8.1
 
 ### Patch Changes

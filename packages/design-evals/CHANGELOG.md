@@ -1,5 +1,20 @@
 # @json-to-office/design-evals
 
+## 7.0.0
+
+### Patch Changes
+
+- Updated dependencies [a599c3f]
+- Updated dependencies [105b936]
+- Updated dependencies [6425617]
+- Updated dependencies [f0cd057]
+- Updated dependencies [b822c89]
+- Updated dependencies [bcc66d6]
+  - @json-to-office/shared@7.0.0
+  - @json-to-office/jto-ops@7.0.0
+  - @json-to-office/mcp-server@7.0.0
+  - @json-to-office/quality@7.0.0
+
 ## 6.0.0
 
 ### Patch Changes

@@ -1,5 +1,45 @@
 # @json-to-office/shared-docx
 
+## 7.0.0
+
+### Major Changes
+
+- 105b936: `consulting` is the default theme in both formats (#331).
+
+  Breaking changes:
+
+  - A DOCX document that names no theme, or a theme that does not exist, renders on `consulting` instead of `minimal`. Name `"theme": "minimal"` to keep the old look.
+  - A PPTX deck that names no theme, or a theme that does not exist, renders on `consulting` instead of the Office-style `default` theme.
+  - The PPTX `default` theme is removed. `"theme": "default"` is now an unknown name: validation reports `W_UNKNOWN_THEME` and generation falls back to `consulting`. `dark` and `minimal` remain as explicit alternates; a deck that needs the old blue, orange and green look supplies it as a custom or inline theme.
+  - `DEFAULT_PPTX_THEME` is the consulting theme, and `getPptxTheme` falls back to it. Both schemas default `theme` to `"consulting"`, and `BUILT_IN_PPTX_THEME_NAMES` no longer lists `default`.
+  - A rasterized DOCX `visual` whose canvas names no theme renders on the consulting PPTX theme, so canvas text without a `fontFace` sets in Calibri rather than Arial. Name `canvas.theme` to choose. Native visuals resolve against the document's DOCX theme and do not change.
+  - The playground, `jto init`, the CLI plugin config and the dry-run `Theme:` line use `consulting` where they used `minimal` or `default`; the MCP server's catalog no longer lists `default`, and its instructions say what a theme-less document gets.
+
+### Minor Changes
+
+- a599c3f: The block coverage matrix spans both formats and every template (#343).
+
+  - `jto-ops`:
+    - `buildMatrixInventory` lists every JSON block definition the playground templates embed, using the extraction `jto://blocks` publishes. For each definition it gives the themes, canvases, fonts and slot edges it is supported on, and a reason for each one it is not. `generateMatrixCases` builds boundary reports and decks from it.
+    - The rendered text matcher finds a report line the reading order took for a table, such as a memo header's tab-aligned "Date — value", by reading the rows as they lie.
+  - Validation reports two defects in a definition at the `ref` that causes them, instead of only at expansion and only at a pointer into the expanded tree:
+
+    - a body that names a block the document does not define (`block_unknown_reference`);
+    - a definition that invokes itself on every expansion (`block_expansion_limit`).
+
+    Validation also names what replaced removed syntax: a deck's slide `templates`, `template`, `placeholders` and `layout` point to JSON blocks, and a component named like a block, or a block invocation that uses `name` instead of `ref`, is told how to invoke the block.
+
+  - The consulting deck blocks now span the theme's safe area horizontally, so they stay inside it on 4:3 as well. Their budgets now match what the house sizes hold:
+    - action titles: 17 words, down from 24;
+    - the statement assertion: 11 words, down from 14.
+
+### Patch Changes
+
+- Updated dependencies [a599c3f]
+- Updated dependencies [6425617]
+- Updated dependencies [b822c89]
+  - @json-to-office/shared@7.0.0
+
 ## 6.8.0
 
 ### Minor Changes
