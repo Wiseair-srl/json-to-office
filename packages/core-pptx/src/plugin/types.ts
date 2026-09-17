@@ -162,6 +162,14 @@ export interface GenerateOptions extends PresentationPackagingOptions {
    * constructor `renderer`; defaults to `pptxgenjs`.
    */
   renderer?: PptxRendererId;
+  /**
+   * The model `prepareQuality` built from *this* presentation. Rendering
+   * then reuses that one expansion instead of running the registered
+   * plugins a second time, so a plugin whose output depends on the clock,
+   * on randomness or on a service cannot draw a slide the quality gate
+   * never inspected.
+   */
+  prepared?: PreparedDocument<PptxQualityModel, PptxQualityFact>;
 }
 
 export type GenerateFileOptions = GenerateOptions;

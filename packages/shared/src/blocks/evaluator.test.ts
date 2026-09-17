@@ -149,6 +149,38 @@ describe('document-local JSON block evaluation', () => {
       expect.objectContaining({ code: 'block_expansion_limit' }),
     ]);
   });
+  it('refuses a $if whose every branch invokes the same definition', () => {
+    const defs = {
+      loop: {
+        slots: { flag: { type: 'boolean' } },
+        body: [
+          {
+            $if: '/flag',
+            then: { name: 'block', props: { ref: 'loop' } },
+            else: { name: 'block', props: { ref: 'loop' } },
+          },
+        ],
+      },
+    };
+    expect(validateBlockDefinitions(defs, 'docx')).toEqual([
+      expect.objectContaining({ code: 'block_expansion_limit' }),
+    ]);
+  });
+  it('allows a $if that recurses in one branch only', () => {
+    const defs = {
+      loop: {
+        slots: { flag: { type: 'boolean' } },
+        body: [
+          {
+            $if: '/flag',
+            then: { name: 'block', props: { ref: 'loop' } },
+            else: { name: 'paragraph', props: { text: 'Done.' } },
+          },
+        ],
+      },
+    };
+    expect(validateBlockDefinitions(defs, 'docx')).toEqual([]);
+  });
   it('ignores a reference inside a disabled node, as expansion does', () => {
     const defs = {
       summary: {

@@ -108,4 +108,39 @@ describe('quality analysis of registered components', () => {
       expect.objectContaining({ path: '/children/0/children/1' }),
     ]);
   });
+  it('renders the expansion the quality gate inspected, not a second one', async () => {
+    let call = 0;
+    const counter = createComponent({
+      name: 'call-counter' as const,
+      versions: {
+        '1.0.0': createVersion({
+          propsSchema: Type.Object({}, { additionalProperties: false }),
+          render: async () => [
+            {
+              name: 'text',
+              props: { text: `Call ${++call}.`, x: 1, y: 1, w: 6, h: 1 },
+            },
+          ],
+        }),
+      },
+    });
+    const document = {
+      name: 'pptx',
+      props: CANVAS,
+      children: [
+        {
+          name: 'slide',
+          props: {},
+          children: [{ name: 'call-counter', props: {} }],
+        },
+      ],
+    };
+    const deck = createPresentationGenerator({}).addComponent(counter);
+    const { prepared } = await deck.prepareQuality(document as never);
+    expect(call).toBe(1);
+    await deck.generateBuffer(document as never, { prepared });
+    expect(call, 'the plugin drew once for both').toBe(1);
+    await deck.generateBuffer(document as never);
+    expect(call).toBe(2);
+  });
 });

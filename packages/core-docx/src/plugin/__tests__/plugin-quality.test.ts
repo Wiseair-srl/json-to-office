@@ -167,4 +167,37 @@ describe('quality analysis of registered components', () => {
       generated.generateBuffer(document as never)
     ).resolves.toBeDefined();
   });
+  it('renders the expansion the quality gate inspected, not a second one', async () => {
+    // A plugin whose output changes on every call: if the render expanded it
+    // again, the bytes would carry a paragraph the analysis never judged.
+    let call = 0;
+    const counter = createComponent({
+      name: 'call-counter',
+      versions: {
+        '1.0.0': {
+          propsSchema: Type.Object({}),
+          render: async () => [
+            { name: 'paragraph', props: { text: `Call ${++call}.` } },
+          ],
+        },
+      },
+    });
+    const document = {
+      name: 'docx',
+      props: {},
+      children: [{ name: 'call-counter', props: {} }],
+    };
+    const generated = createDocumentGenerator({}).addComponent(counter);
+    const { prepared } = await generated.prepareQuality(document as never);
+    expect(call).toBe(1);
+    const { standardDefinition } = await generated.generateBuffer(
+      document as never,
+      { prepared }
+    );
+    expect(call, 'the plugin rendered once for both').toBe(1);
+    expect(JSON.stringify(standardDefinition)).toContain('Call 1.');
+    // Without the prepared model the plugin runs again, as it always has.
+    await generated.generateBuffer(document as never);
+    expect(call).toBe(2);
+  });
 });

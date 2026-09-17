@@ -582,6 +582,16 @@ export class DocxFormatAdapter implements FormatAdapter {
             typeof core.prepareDocxQualityDocument
           >)
         : undefined;
+    // With plugins the model cannot stand in for theme resolution — the
+    // generator is built for the components — but rendering still reuses the
+    // expansion it recorded, so the plugins run once for both the quality
+    // gate and the bytes.
+    const pluginPrepared =
+      hasPlugins && options.prepared?.format === 'docx'
+        ? (options.prepared as ReturnType<
+            typeof core.prepareDocxQualityDocument
+          >)
+        : undefined;
     const resolved = prepared ? undefined : await this.resolveThemes(options);
     const requestedTheme = resolved?.requested;
     const customThemes = resolved?.customThemes;
@@ -675,6 +685,7 @@ export class DocxFormatAdapter implements FormatAdapter {
           requestedTheme,
           customThemes
         );
+        const usable = preparedFor(pluginPrepared, parsed);
         const result = await generator.generateBuffer(docDefinition, {
           validation: {
             allowUnknownFields: options.validation?.allowUnknownFields,
@@ -684,9 +695,11 @@ export class DocxFormatAdapter implements FormatAdapter {
           baseDir: options.baseDir,
           renderer: options.renderer as DocxRendererId | undefined,
           svgRasterFallback: options.svgRasterFallback,
+          ...(usable && { prepared: usable }),
         });
-        emitGenerationWarnings(result.warnings ?? []);
-        options.warnings?.push(...toGenerationWarnings(result.warnings));
+        const emitted = withoutPreparedWarnings(result.warnings ?? [], usable);
+        emitGenerationWarnings(emitted);
+        options.warnings?.push(...toGenerationWarnings(emitted));
         return result.buffer;
       },
       getStandardDefinition: generator.expandStandardDefinition
@@ -1086,6 +1099,15 @@ export class PptxFormatAdapter implements FormatAdapter {
             typeof core.preparePptxQualityDocument
           >)
         : undefined;
+    // As in the docx adapter: with plugins the generator is built for the
+    // components, but the render still reuses the expansion the prepared
+    // model recorded, so the plugins draw once for analysis and bytes both.
+    const pluginPrepared =
+      hasPlugins && options.prepared?.format === 'pptx'
+        ? (options.prepared as ReturnType<
+            typeof core.preparePptxQualityDocument
+          >)
+        : undefined;
     const resolved = prepared ? undefined : await this.resolveThemes(options);
     const requestedTheme = resolved?.requested;
     const customThemes = resolved?.customThemes;
@@ -1178,6 +1200,7 @@ export class PptxFormatAdapter implements FormatAdapter {
           requestedTheme,
           customThemes
         );
+        const usable = preparedFor(pluginPrepared, parsed);
         const result = await generator.generateBuffer(docDefinition, {
           validation: {
             allowUnknownFields: options.validation?.allowUnknownFields,
@@ -1186,8 +1209,12 @@ export class PptxFormatAdapter implements FormatAdapter {
           generatedAt: options.generatedAt,
           baseDir: options.baseDir,
           renderer: options.renderer as PptxRendererId | undefined,
+          ...(usable && { prepared: usable }),
         });
-        const normalized = toGenerationWarnings(result.warnings);
+        const normalized = withoutPreparedWarnings(
+          toGenerationWarnings(result.warnings),
+          usable
+        );
         emitGenerationWarnings(normalized);
         options.warnings?.push(...normalized);
         return result.buffer;
