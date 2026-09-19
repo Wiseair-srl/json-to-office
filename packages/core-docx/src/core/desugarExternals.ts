@@ -29,6 +29,10 @@ import {
 } from '@json-to-office/shared-docx';
 import type { ThemeConfig } from '../styles';
 import {
+  themeForSectionPage,
+  type SectionPageOverride,
+} from '../styles/utils/layoutUtils';
+import {
   buildVisualPresentation,
   effectiveVisualServerUrl,
   rasterizeVisualSlide,
@@ -40,7 +44,11 @@ import {
   type ChartCache,
 } from '../components/highcharts';
 import { prerasterizeVisuals } from './prerasterizeVisuals';
-import { transformComponents, withNodeIdentity } from './componentTransform';
+import {
+  transformComponents,
+  withNodeIdentity,
+  type ComponentReplacer,
+} from './componentTransform';
 
 export interface DesugarExternalsOptions {
   theme: ThemeConfig;
@@ -86,11 +94,31 @@ export async function desugarExternals<T>(
   // and again in its own section is one render, not two.
   const chartCache: ChartCache = new Map();
 
-  return transformComponents(document, async (node) => {
-    // A disabled component is filtered out before it renders, so paying a
-    // service call for it would be wasted work.
-    if (node.enabled === false) return undefined;
+  const replace = (theme: ThemeConfig, inSection: boolean): ComponentReplacer =>
+    async function replaceNode(node) {
+      // A disabled component is filtered out before it renders, so paying a
+      // service call for it would be wasted work.
+      if (node.enabled === false) return undefined;
 
+      // A chart's type is scaled to the width it is placed at, and a
+      // percentage width is of the text measure, which a top-level section
+      // with its own page sets for everything inside it. Only the outermost
+      // section counts: a nested one is flattened into it, page and all.
+      if (node.name === 'section' && !inSection) {
+        const page = (node.props as { page?: SectionPageOverride }).page;
+        return transformComponents(
+          node,
+          replace(themeForSectionPage(theme, page), true)
+        );
+      }
+
+      return replaceExternal(node, theme);
+    };
+
+  const replaceExternal = async (
+    node: Record<string, unknown>,
+    theme: ThemeConfig
+  ): Promise<Record<string, unknown> | undefined> => {
     if (node.name === 'visual') {
       // A native visual has no external form to desugar into: the compiler
       // lowers it to a drawing group and the backend draws it. Leaving the
@@ -117,7 +145,7 @@ export async function desugarExternals<T>(
         name: 'image',
         props: await renderChartToImageProps(
           node.props as HighchartsProps,
-          options.theme,
+          theme,
           options.services?.highcharts,
           options.chartFonts,
           options.warnings,
@@ -127,7 +155,9 @@ export async function desugarExternals<T>(
     }
 
     return undefined;
-  });
+  };
+
+  return transformComponents(document, replace(options.theme, false));
 }
 
 async function visualImageProps(

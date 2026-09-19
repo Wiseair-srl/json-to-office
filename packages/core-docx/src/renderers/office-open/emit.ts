@@ -987,7 +987,15 @@ export function table(value: DocxIrTable, ctx: EmitContext): Opts {
   return {
     rows: value.rows.map((row) => tableRow(row, ctx)),
     width: {
-      size: value.width.kind === 'auto' ? 0 : value.width.value,
+      // `w:w` is an integer in OOXML. A grid that splits a remainder between
+      // unstated columns comes out fractional, and the XML would carry it
+      // verbatim; floored here, as the docxjs backend floors it.
+      size:
+        value.width.kind === 'auto'
+          ? 0
+          : value.width.kind === 'twips'
+            ? Math.floor(value.width.value)
+            : value.width.value,
       type:
         value.width.kind === 'twips'
           ? 'dxa'
@@ -999,7 +1007,12 @@ export function table(value: DocxIrTable, ctx: EmitContext): Opts {
     // An empty grid is a table with nothing to say about its columns, which is
     // not the same as one whose columns are all zero wide.
     ...(value.columnGrid.values.length > 0
-      ? { columnWidths: value.columnGrid.values }
+      ? {
+          columnWidths:
+            value.columnGrid.unit === 'twips'
+              ? value.columnGrid.values.map(Math.floor)
+              : value.columnGrid.values,
+        }
       : {}),
     ...(value.alignment ? { alignment: alignment(value.alignment) } : {}),
     ...(value.borders ? { borders: borders(value.borders) } : {}),

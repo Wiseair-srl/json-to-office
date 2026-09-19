@@ -128,7 +128,12 @@ describe('JSON report blocks from playground templates', () => {
     ).toEqual(['', 'Only the title']);
   });
   it('inherits chrome and each section’s page width; only the declaring section breaks the page', () => {
-    const expanded = expandBlocks(example(), consultingTheme);
+    const input = example();
+    // The example's Letter section breaks the page itself, because a paper
+    // size cannot change mid-page; without that it would inherit no break.
+    expect(input.children[2].props.pageBreak).toBe(true);
+    delete input.children[2].props.pageBreak;
+    const expanded = expandBlocks(input, consultingTheme);
     expect(expanded.document.children[0].props.header).toBeUndefined();
     const report = expanded.document.children[1];
     const letter = expanded.document.children[2];

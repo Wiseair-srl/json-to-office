@@ -875,6 +875,19 @@ fixture now includes a footnote inside a text box. That combination was omitted
 while the old component render cache could replay the reference without its
 document-scoped note body; stateless compilation makes it stable and testable.
 
+Five goldens moved when a section's own page setup started to count (#423).
+A continuous section break cannot change the paper size or orientation — Word
+starts a new page regardless, LibreOffice keeps the old size — so a section
+that would continue on the page but changes either now writes
+`w:type="nextPage"` and warns `W_SECTION_PAGE_BREAK_FORCED`; margins-only
+changes stay continuous. That moves `structure/page-size-named`,
+`structure/page-size-custom` and `structure/page-override-per-section`, whose
+sections continue by the theme's `componentDefaults.section.pageBreak: false`.
+Content inside such a section is now measured against its own text width
+rather than the theme's, so explicit columns fill the section's measure:
+`structure/columns-between-body` (900-twip side margins, columns 4373 → 4913
+twips) and `theme/example-field-review` (4663 → 4723 twips) moved for that.
+
 ## Post-emit rewrite inventory
 
 These are the production sites that edit an emitted OOXML package. Backend

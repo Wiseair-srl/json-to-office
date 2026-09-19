@@ -1681,6 +1681,7 @@
     {
       "name": "section",
       "props": {
+        "pageBreak": true,
         "page": {
           "size": "LETTER",
           "margins": {
@@ -1735,7 +1736,7 @@
         {
           "name": "paragraph",
           "props": {
-            "text": "The inherited running header carries the document title and this section’s page width; the section continues on the page. Page numbers are native Word fields."
+            "text": "The inherited running header carries the document title and this section’s page width; the section starts a new page because it changes the paper size. Page numbers are native Word fields."
           }
         },
         {
