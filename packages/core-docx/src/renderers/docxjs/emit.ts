@@ -711,13 +711,32 @@ export function emitBlock(
  * ------------------------------------------------------------------ */
 
 /**
+ * docx.js's TOC, minus the tab stops it pins on every cached entry.
+ *
+ * docx.js gives each cached entry paragraph its own `w:tabs` — a `clear` at
+ * 9026 and a dot-leader right tab at 9025 — whatever the page or the theme.
+ * Paragraph tabs beat style tabs, so a reader that shows the cached entries
+ * without refreshing the field (LibreOffice, our PDF path) draws dot leaders
+ * the theme's `TOC1`..`TOC6` styles never asked for. With no paragraph tabs the
+ * entry takes the TOCn style's tab stop, as Word's own refresh does.
+ *
+ * `getTabStopsForLevel` is private in docx.js's typings but a plain prototype
+ * method at runtime, called from the base constructor, so it is replaced on
+ * the subclass prototype rather than overridden in the class body.
+ */
+class ThemedTableOfContents extends TableOfContents {}
+Object.defineProperty(ThemedTableOfContents.prototype, 'getTabStopsForLevel', {
+  value: (): [] => [],
+});
+
+/**
  * The TOC field.
  *
  * A top-level block, not a paragraph child: wrapping it in a paragraph makes
  * Word draw an empty structured-document-tag above the entries.
  */
 function emitToc(block: DocxIrTableOfContents): TableOfContents {
-  return new TableOfContents(block.alias ?? 'Table of Contents', {
+  return new ThemedTableOfContents(block.alias ?? 'Table of Contents', {
     ...(block.hyperlink !== undefined ? { hyperlink: block.hyperlink } : {}),
     ...(block.headingRange
       ? {

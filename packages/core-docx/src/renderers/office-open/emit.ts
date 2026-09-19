@@ -914,20 +914,14 @@ export function block(
  * ------------------------------------------------------------------ */
 
 /**
- * Where a cached TOC entry's page number sits.
- *
- * One twip inside `TabStopPosition.MAX`, which is the constant docx.js uses for
- * the same job — a fixed measure edge rather than one derived from the page, so
- * an entry looks the same wherever the field appears.
- */
-const TOC_PAGE_TAB_TWIPS = 9025;
-
-/**
  * A cached TOC entry.
  *
- * Text, then a tab to the page-number stop. The number itself is left empty:
- * the IR carries no page for an entry, because nothing before a layout pass
- * knows one. Word fills both in the moment it refreshes the field; a reader
+ * Text, then a tab to the page-number stop. The stop and its leader belong to
+ * the theme's `TOCn` style, so the paragraph carries no tabs of its own: a
+ * paragraph-level stop would override the style for every reader that shows
+ * the cached entries without refreshing the field. The number itself is left
+ * empty: the IR carries no page for an entry, because nothing before a layout
+ * pass knows one. Word fills it in the moment it refreshes the field; a reader
  * that never refreshes still shows the entries, which is the whole point of
  * caching them.
  */
@@ -935,9 +929,6 @@ function tocEntry(entry: { text: string; level: number }): Opts {
   return {
     paragraph: {
       style: `TOC${entry.level}`,
-      tabStops: [
-        { type: 'right', position: TOC_PAGE_TAB_TWIPS, leader: 'dot' },
-      ],
       children: [{ text: entry.text }, { children: [{ tab: true }] }],
     },
   };
