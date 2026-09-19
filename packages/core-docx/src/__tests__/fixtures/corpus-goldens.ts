@@ -19,9 +19,9 @@
 
 export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'blocks/figures-consulting':
-    '1546afc9340cf9aa8646d90ce39d524f61cde64f3f581bd5a2cc6e858608ad3f',
+    '4895b5a4dbcca06982cef657bd31f229c1a02e1025edd301db7adabe8dce3e5d',
   'blocks/figures-fallback':
-    'b9bf8afbe07a269bf749185cb8b08093b43feddb098fa5e44dfcf5653647d0cf',
+    'e7cb3e7a93d40b06b45a06a1d0d01beb2b8bf6366cd702fec85f57e20337ad72',
   'blocks/report-data-consulting':
     '3bca02124e6c22476cc3255a6239a8ef7afc594c1847652ec1ba3be1ee545534',
   'blocks/report-data-fallback':
@@ -29,7 +29,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'blocks/report-chrome-fallback':
     '19275b66c2126d5c82f2b6872fa4a4b9192e9bb838022b1c8cdf40fcb1a6137c',
   'blocks/report-chrome-consulting':
-    'cba0c3be100743efab4ab3cf87a4a5ed1caa86e91d9af89ee73f58648def4dd6',
+    'e20413d53c57c055cbfcf4afcee40014477e005033b80ef4413dd6f1815d8bb1',
   'blocks/key-takeaways-fallback':
     '115089a644b634aa0f606742d49f585ddbd1e70daf8f6abc4e5db9e1ff632be7',
   'blocks/key-takeaways-consulting':
@@ -147,7 +147,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'structure/header-footer-date-placeholders':
     'f36a995ec155dd6330140416c521810c707b1a7d243964d77b003fef91d40564',
   'structure/header-image':
-    'ac85655fe7a2384cf24a333b0c61895c74bc712a7dd3d1ebc67bb04c892a7645',
+    '3f680901607b826cdf0c7bec2ac3ef2060e43985fcc1194412b0bd14ce4355d5',
   'structure/footer-table':
     '4ed89e9773610c4c4a6520aa9a76673623827623a1177dd71ab4ed579fad6ef4',
   'structure/columns-count':
@@ -379,7 +379,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'tables/nested-paragraphs':
     'f8b73ce8d2b2afe57d958b9da42a78b9574180127a2cfb5830a8441af094df09',
   'tables/nested-image':
-    '3488e8414cfbb13356ccd61208580e9890dc6191ab903e328c301385e21ca6a3',
+    'd00d47bccf73a53aa6b0ce933b4d92d567d6d5f22a1e1cf600fcb7999df6b370',
   'tables/cell-text-decorators':
     '221cc506db43f7e999681b0d233e9e3c9edbc7ad1c794058bdea9aa950d88258',
   'tables/unsupported-nested-component':
@@ -395,35 +395,35 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'tables/adjacent-tables':
     '619d8099efea3d2a8cb65a22a0a9f010e8a4f393c89e3f0a0e3028e5a625ebc5',
   'blocks/image-inline-default':
-    '70882f45004f9ca3dfc5fc0df7c47f9673628c96e27039371c39ff5ccc0affd5',
+    '04d894e81ce9df467eb2b2f57816b4b80215c36d54b05c54e7a414865e41e1ce',
   'blocks/image-sizing-pixels':
-    'f2ed69e574b574b77fe3a58561c606d0500a5da911442dc409e34f67082440aa',
+    '8c49bebe59ab04dbe801270698f2a5e811ea346a2a71a653a2bcd4a30d432829',
   'blocks/image-sizing-percent':
-    '58c71651be415fe68ba60cb44d517e761a3d14f0c860f86031610f84cc5aef8e',
+    '80f8bf0570dba17d1ec8d79621672fa63c35467e17936afa1c62e3ecdfd7b329',
   'blocks/image-alignments':
-    'e78367b9ff573de0413875e41e4ed4f1e39bb498831a787a77469cd714d8c923',
+    '19d60b3722a488ae8b9a4f10d92bfc722449b65bf7bc4c3fa089036fc5a684bb',
   'blocks/image-spacing-and-keeps':
-    '3b8bf3f469205e41791b9abb41d4c6ac11508f23194edddfe77b366f6d11fc69',
+    '8e1022a6389b3f2a3e6ee72accefd6bceda473cc017f9b54d3facb46014bd38b',
   'blocks/image-caption-plain':
-    'f6e4ff168b911129c853a85bdb9edde54b2961a150b4b5f652b4683264c7b85d',
+    '53edf0d560b6eca493d5fb35d02bd05898f4b47897e028efe39dc11f72301110',
   'blocks/image-caption-rich':
-    'cde5b86c6ab70d70a75e3acf058ad63a23f8af13773a7ac67b9269be91fba210',
+    '8a6c33dc3bc1e335f4754c802dd67a456075bcb72d51dad57330e79def91a262',
   'blocks/image-alt-and-empty-caption':
-    'd2181e028aac3a6fe372dfd8642e52829c86ad1adbac9bcf7aba5e7c70dce3dd',
+    '42da768e06d15dbc91f239f127da8d94a3b514eeb7ce5f5180bf23d0f80d83cf',
   'blocks/image-formats':
-    'a4f826d2677448e8a50783067f3cb97571bc9a7603c6f6182aecab497bf5d9b8',
+    'e1ddc1349b7d54fa13b0f003d913ce67a037094a62f78f764f8da82f5c7c3001',
   'blocks/image-floating-align-and-wrap':
-    'a2b34ea068e129f210c065b6500af02da9c6663ba5b77d271dad41b9741e1937',
+    'ea56c3bb9df64a307e11f644b9fc4f9e38e5778fd3af5db44539bcebbc3fd39f',
   'blocks/image-floating-offsets-and-flags':
-    'c83c08973df79c3eb0cef9ff00cf4cdcdabfc0a080cff1a4ee40dba15707402e',
+    'ad613b59fdc62080f04760584be390146af84e58055330de8df2b64e2ddc7777',
   'blocks/image-floating-percent-metrics':
-    '8ffd5ca34e90ca5dcc4fe72e2185d8e77678ff1b58f8429b42dd501f5282485c',
+    '913127b16b197a48d079c6da74762cc66526978e27bad740ccfb3fc47504cd33',
   'blocks/image-floating-wrap-variants':
-    'b72d4ea6ef441cf958842ed7069820b19ed63cd5d30386487c7141172e2545fe',
+    '1e416ccd31ee3555b5a83526e8aef56c4cf909e7eeb5a757824e2f211c57e797',
   'blocks/image-floating-rotation-and-visibility':
-    'aca6d081ade7cf2ea761e0aec747cf490b9a6ad35754e47e72ace9fe7e49445d',
+    '493fb143c4bfd28ca8d911eb17846a59693705bd7e29a1c894273996de0cedfd',
   'blocks/image-floating-with-caption':
-    '7184e957d6d0d985d85fe244b16d0b3b63aabb2cb93309ae62d3d0f4237453e7',
+    '75a76afb34a03c585883886c1620d473877beb2b640d7074ad2ce03cf340adc4',
   'blocks/statistic-minimal':
     '5a5de7368e1ee1bbaf8a952a764396c0f71d225153bdbb4ad03ad3a9614217ab',
   'blocks/statistic-alignments':
@@ -441,7 +441,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'blocks/text-box-floating-table':
     'da168b2a667bf323011b2a239b94db79a0a69ce2ef5a16025df3c97f5ff4c426',
   'blocks/text-box-mixed-children':
-    'a63e5435983b2c7e898e1a6d2809f31e2e4dc0baf67c771cbd955d84ae0b716b',
+    '0f26e2c22fc5ed415a8abedbff4fa30d119c8c4fe8c2d483d4318dfae5e25dc5',
   'blocks/text-box-empty-children':
     '592e1dd1da16125c67f5560e11fdbdf63727a0e72f43b88a80afc7e3a59704a7',
   'blocks/text-box-shape':
@@ -531,31 +531,31 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'annotations/track-revisions-redline':
     'a6f68fc35a06fa3554bba1283325a3792d3cec05536fef93b293426c555341c4',
   'theme/builtin-minimal':
-    'cefb0c9d628e9ac68d9db4e932f6f47ce9c88bc593b77c2c776f99d54b6e48ef',
+    '0b5a3f840d60423370d829c0e6f2bff0853ad169000ed5205f2fedf6abc17137',
   'theme/builtin-devportal':
-    '9ccc78711637ec37486c6dee16cecd029228cc8a873e4bb17a4d84de109abe9c',
+    '17613c691ac16aa61876ab518eb00da71272604a18a87ef7a90e6c4f4b9528ae',
   'theme/builtin-vermilion':
-    'c917edceff70f877d2d6291d6c1aa8d3ba2ca4b05aa0bd149a4ab30dd8375ba4',
+    'e2b209fbb66ce6b3f1776077b7dd0800a671b6383fc525320b9ad02b7a9910e6',
   'theme/builtin-consulting':
-    '5e09680b2d8be2051f7d502eccbc9f8f80217ce6ab4616a96f4cd92d94a33785',
+    '84ac4c4928165b62d65c35638d0e4bb6765c7da000e92c50d2920f2240991a83',
   'theme/name-omitted':
-    '5e09680b2d8be2051f7d502eccbc9f8f80217ce6ab4616a96f4cd92d94a33785',
+    '84ac4c4928165b62d65c35638d0e4bb6765c7da000e92c50d2920f2240991a83',
   'theme/name-unknown-falls-back':
-    '5e09680b2d8be2051f7d502eccbc9f8f80217ce6ab4616a96f4cd92d94a33785',
+    '84ac4c4928165b62d65c35638d0e4bb6765c7da000e92c50d2920f2240991a83',
   'theme/inline-theme-object':
-    'a454081dc92cb973f989c586d7ab065b5377bad50fd1f8a96d231224b1b2d741',
+    'b5179e30ce4c24f7deba4e342565df463ae3a811f76ec31493bc064cc6cdcc48',
   'theme/overrides-colors-only':
     '3d2830ca2baa69ffdc2cc5d2eb0f10e52fc8fcdfe63348e2207ef0c4146abbb8',
   'theme/overrides-fonts-partial':
-    'c0de7d80ab180c9b553d3a98ba1e8a6eb400c35e44823094540caac12b58072b',
+    'dffb666bf1377119c3543a052b8854a48025f364026ad51b6d2a8ff94c418c5e',
   'theme/overrides-styles-metrics':
     '937f68c1ffc808774dc47deef63796cb3677bfcc86b47a83a0d8871ae36f65f8',
   'theme/overrides-styles-base-chain':
     '1f0a81c8cd04efb22dc5d2b15733b62d7764ef0f655caca8ea6dff08be01c7bf',
   'theme/overrides-empty':
-    'cefb0c9d628e9ac68d9db4e932f6f47ce9c88bc593b77c2c776f99d54b6e48ef',
+    '0b5a3f840d60423370d829c0e6f2bff0853ad169000ed5205f2fedf6abc17137',
   'theme/overrides-over-named-theme':
-    '996f1035ae152ae7a64297cc5a38790aebb57dd7b0ceb824eaa701e2eb057f37',
+    '70078f0c21ad93e7b684db686a3e5e67a5a8bcdc4cc894feb7a4108f01aef7ff',
   'theme/color-tokens-in-components':
     'e2bff6016c48e8abe26887ee1a5befe92b52b19656b582fff8c83041eefd60e5',
   'theme/color-hex-literals':
@@ -569,9 +569,9 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'theme/toc-entry-styles':
     '78888f7982949bbc539850bc63daa7d92007870c071f035b2440c8880fe4fde9',
   'theme/component-defaults-document':
-    '188deb0eb50f096ae3524ff2b05b72ce6d99c45a7d408e0b99a6b706c48ec75b',
+    '3a1624d889bc28321c38ff3f551f1ac6f554e141300f7b4a065c9492031b7502',
   'theme/component-defaults-instance-wins':
-    'a818ee4ce977b6f79649fc0da785cb2194a3c611da177480047fb0bb6fdcd53c',
+    'b44c77f66d45f2179c68a85ee22c9a4311886d74b6cbadf18c2d5242ea3ba794',
   'theme/component-defaults-heading-numbering':
     '669fc56508eb65570832d464e663593c78839889943d318414f3582eae4ab274',
   'theme/language-document-default':

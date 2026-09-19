@@ -39,7 +39,7 @@ export const PNG_1PX =
 
 /** A 4x2 PNG, so aspect-ratio maths has something to work with. */
 export const PNG_4X2 =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAABytg0kAAAAFElEQVR42mNk+M9QzwAFjDAGACPuA/8fMSCgAAAAAElFTkSuQmCC';
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAAEklEQVR42mOIrt34HxkzoAsAAE/xFEFoJgXRAAAAAElFTkSuQmCC';
 
 /** An 8x4 greyscale JPEG — a second content type through the same code path. */
 export const JPEG_8X4 =

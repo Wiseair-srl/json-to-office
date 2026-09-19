@@ -6,6 +6,9 @@
  * `ProcessedPresentation`, no theme lookups.
  */
 
+import { readFile } from 'node:fs/promises';
+import { imageIntegrityDefect } from '@json-to-office/shared/images/node';
+import { assetUnreadableError } from '@json-to-office/shared/rendering';
 import PptxGenJS from 'pptxgenjs';
 import type { PptxFeature } from '../../ir/features';
 import type {
@@ -99,6 +102,7 @@ export function createPptxGenJsRenderer(): PptxRenderer {
     format: 'pptx',
     capabilities: PPTXGENJS_CAPABILITIES,
     async render(ir: PptxIR, options?: PptxRenderOptions): Promise<Uint8Array> {
+      await assertFileImagesDecode(ir.resources);
       const pendingFills: PendingFillSink = [];
       const pptx = buildPresentation(ir, pendingFills, options?.warnings);
       const raw = (await pptx.write({
@@ -113,6 +117,33 @@ export function createPptxGenJsRenderer(): PptxRenderer {
       return new Uint8Array(packaged);
     },
   };
+}
+
+/**
+ * Check every file image decodes before PptxGenJS embeds it.
+ *
+ * PptxGenJS reads a file itself and embeds whatever bytes it finds, so a
+ * damaged picture shipped as PowerPoint's broken-picture box, and a missing
+ * one failed with its own unnamed message. Both leave as `ASSET_UNREADABLE`
+ * naming the path, as they do from the office-open backend. Inline bytes were
+ * checked by the compiler; a remote image is left to PptxGenJS, because
+ * checking it here would fetch it twice.
+ */
+async function assertFileImagesDecode(
+  resources: readonly PptxIrResource[]
+): Promise<void> {
+  await Promise.all(
+    resources.map(async ({ origin }) => {
+      if (origin.kind !== 'file') return;
+      let defect: string | undefined;
+      try {
+        defect = imageIntegrityDefect(await readFile(origin.path));
+      } catch (error) {
+        throw assetUnreadableError(origin.path, error);
+      }
+      if (defect) throw assetUnreadableError(origin.path, new Error(defect));
+    })
+  );
 }
 
 /**

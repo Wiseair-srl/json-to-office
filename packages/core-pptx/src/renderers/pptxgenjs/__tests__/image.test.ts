@@ -16,7 +16,7 @@ const SVG_DATA_URI = `data:image/svg+xml;base64,${Buffer.from(SVG).toString(
   'base64'
 )}`;
 const PNG_4X2 =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAACddGYaAAAAFElEQVR42mNk+M+ACzDiVjBSFQAAxRABAAiEqFQAAAAASUVORK5CYII=';
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAAHElEQVR42mOQ96v8L+/X+1/eb+F/eb+t/xnQBQADBRAZRAi9/AAAAABJRU5ErkJggg==';
 
 const image = (props: Record<string, unknown>) => ({ name: 'image', props });
 const deck = (

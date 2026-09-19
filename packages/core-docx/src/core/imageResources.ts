@@ -15,6 +15,7 @@ import {
   isNativeVisualProps,
   type VisualProps,
 } from '@json-to-office/shared-docx';
+import { imageIntegrityDefect } from '@json-to-office/shared/images/node';
 import type { ComponentDefinition } from '../types';
 import {
   getImageBuffer,
@@ -57,6 +58,11 @@ export async function loadImageResources(
     [...sources].map(async (source) => {
       try {
         const result = await getImageBuffer(source);
+        // The header alone sizes a damaged image fine, and Word then shows
+        // "The picture can't be displayed". A source whose bytes would not
+        // decode fails here, like one that could not be read at all.
+        const defect = imageIntegrityDefect(result.buffer);
+        if (defect) throw new Error(defect);
         // Probed from the bytes just loaded, never by loading the source a
         // second time: a URL fetched twice is twice the traffic, and a URL
         // whose response changes would embed one image and size it from

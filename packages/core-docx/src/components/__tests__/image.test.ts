@@ -7,6 +7,9 @@
  * no width at all fills the measure.
  */
 
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { ASSET_UNREADABLE } from '@json-to-office/shared/rendering';
 import { compileDocumentToIr } from '../../core/generateFromIr';
@@ -17,7 +20,7 @@ import type { ReportComponentDefinition } from '../../types';
 
 /** A real 4×2 PNG: wide enough that a derived height is unambiguous. */
 const PNG_4X2 =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAABp32QpAAAAFElEQVR4nGP8z8DwnwEJMKEL0F4AAJ8fAwGZ6HXBAAAAAElFTkSuQmCC';
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAAFUlEQVR42mM4YKn9HxkzHEjU/o+MASWtEblL97tgAAAAAElFTkSuQmCC';
 
 /** 1px at 96 DPI in EMU, so pixel expectations read as pixels. */
 const EMU_PER_PIXEL = 9525;
@@ -215,6 +218,48 @@ describe('components/image', () => {
     await expect(compiled).rejects.toMatchObject({
       name: ASSET_UNREADABLE,
       source: '/no/such/logo.png',
+    });
+  });
+
+  // The header sizes a damaged PNG fine, and Word then shows "The picture
+  // can't be displayed": the bytes have to be checked, not just the header.
+  describe('an image whose bytes would not decode', () => {
+    /** A 4x2 PNG, corrupt on purpose: CRCs wrong, data not deflate, IEND cut. */
+    const CORRUPT =
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAABytg0kAAAAFElEQVR42mNk+M9QzwAFjDAGACPuA/8fMSCgAAAAAElFTkSuQmCC';
+
+    it('is refused as ASSET_UNREADABLE naming the source', async () => {
+      await expect(imageBlocks({ base64: CORRUPT })).rejects.toMatchObject({
+        name: ASSET_UNREADABLE,
+        source: CORRUPT,
+        message: expect.stringMatching(/CRC/),
+      });
+    });
+
+    it('is refused when the file on disk is damaged', async () => {
+      const dir = mkdtempSync(join(tmpdir(), 'jto-corrupt-'));
+      const file = join(dir, 'logo.png');
+      const whole = Buffer.from(PNG_4X2.split(',')[1], 'base64');
+      // A download cut short: everything but the IEND chunk.
+      writeFileSync(file, whole.subarray(0, whole.length - 12));
+      try {
+        await expect(imageBlocks({ path: file })).rejects.toMatchObject({
+          name: ASSET_UNREADABLE,
+          source: file,
+          message: expect.stringMatching(/no IEND/),
+        });
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
+
+    it('is refused when a JPEG is cut short', async () => {
+      const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a]);
+      const source = `data:image/jpeg;base64,${jpeg.toString('base64')}`;
+      await expect(imageBlocks({ base64: source })).rejects.toMatchObject({
+        name: ASSET_UNREADABLE,
+        message: expect.stringMatching(/end-of-image/),
+      });
     });
   });
 

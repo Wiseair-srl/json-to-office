@@ -27,7 +27,7 @@ const findings = (doc: unknown, code: string, options = {}) =>
 const onDeck = (doc: unknown, code: string) =>
   findings(doc, code, { profile: profile('consulting-deck') });
 const PNG_4X2 =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAABytg0kAAAAFElEQVR42mNk+M9QzwAFjDAGACPuA/8fMSCgAAAAAElFTkSuQmCC';
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAAEklEQVR42mOIrt34HxkzoAsAAE/xFEFoJgXRAAAAAElFTkSuQmCC';
 const bullets = (items: string[]) => ({
   name: 'text',
   props: {

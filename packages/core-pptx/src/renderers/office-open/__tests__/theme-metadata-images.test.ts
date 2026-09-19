@@ -10,14 +10,16 @@
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { resolve } from 'node:path';
+import { mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import JSZip from 'jszip';
 import { ASSET_UNREADABLE } from '@json-to-office/shared/rendering';
 import { generateBufferViaIr } from '../../../core/generateFromIr';
 import type { PresentationComponentDefinition } from '../../../types';
 
 const PNG_4X2 =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAABytg0kAAAAFElEQVR42mNk+M9QzwAFjDAGACPuA/8fMSCgAAAAAElFTkSuQmCC';
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAAEklEQVR42mOIrt34HxkzoAsAAE/xFEFoJgXRAAAAAElFTkSuQmCC';
 
 const RENDERERS = ['pptxgenjs', 'office-open'] as const;
 
@@ -258,4 +260,75 @@ describe('office-open images that cannot be read', () => {
       message: expect.stringContaining('HTTP 404 Not Found'),
     });
   });
+});
+
+/**
+ * Sizing reads only a picture's header, so a PNG with damaged chunks or pixel
+ * data that will not inflate sized fine, embedded fine, and opened in
+ * PowerPoint as its broken-picture box. The bytes are checked where the
+ * pipeline first holds them, on both backends, and refused by name.
+ */
+describe('images whose bytes would not decode', () => {
+  /** A 4x2 PNG, corrupt on purpose: CRCs wrong, data not deflate, IEND cut. */
+  const CORRUPT_BASE64 =
+    'iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAABytg0kAAAAFElEQVR42mNk+M9QzwAFjDAGACPuA/8fMSCgAAAAAElFTkSuQmCC';
+  const CORRUPT = `data:image/png;base64,${CORRUPT_BASE64}`;
+  const picture = (path: string) =>
+    deck({}, {}, [{ name: 'image', props: { path, x: 1, y: 1, w: 2, h: 2 } }]);
+
+  let dir: string | undefined;
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    if (dir) rmSync(dir, { recursive: true, force: true });
+    dir = undefined;
+  });
+
+  it.each(RENDERERS)('names an inline picture on %s', async (renderer) => {
+    await expect(
+      generateBufferViaIr(picture(CORRUPT) as never, { renderer })
+    ).rejects.toMatchObject({
+      name: ASSET_UNREADABLE,
+      source: CORRUPT,
+      message: expect.stringMatching(/CRC/),
+    });
+  });
+
+  it.each(RENDERERS)('names a damaged file on %s', async (renderer) => {
+    dir = realpathSync(mkdtempSync(join(tmpdir(), 'jto-corrupt-')));
+    const file = join(dir, 'logo.png');
+    writeFileSync(file, Buffer.from(CORRUPT_BASE64, 'base64'));
+
+    await expect(
+      generateBufferViaIr(picture('logo.png') as never, {
+        renderer,
+        baseDir: dir,
+      })
+    ).rejects.toMatchObject({ name: ASSET_UNREADABLE, source: file });
+  });
+
+  it('names a damaged download on office-open', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(Buffer.from(CORRUPT_BASE64, 'base64'), { status: 200 })
+      )
+    );
+    // A loopback host, which layout never probes.
+    const url = 'http://127.0.0.1:9/logo.png';
+
+    await expect(
+      generateBufferViaIr(picture(url) as never, { renderer: 'office-open' })
+    ).rejects.toMatchObject({ name: ASSET_UNREADABLE, source: url });
+  });
+
+  it.each(RENDERERS)(
+    'still renders a picture that decodes on %s',
+    async (renderer) => {
+      const { buffer } = await generateBufferViaIr(picture(PNG_4X2) as never, {
+        renderer,
+      });
+      expect(buffer.length).toBeGreaterThan(0);
+    }
+  );
 });
