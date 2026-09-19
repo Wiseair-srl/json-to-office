@@ -13,7 +13,12 @@ import {
   isTocComponent,
 } from '../types';
 import { ThemeConfig } from '../styles';
-import { getPageSetup, getPageDimensions } from '../styles';
+import {
+  getPageSetup,
+  getPageDimensions,
+  pageSizeDiffers,
+  themeForSectionPage,
+} from '../styles';
 // import { pointsToTwips } from '../styles/utils/styleHelpers';
 import { ProcessedSection } from './structure';
 import {
@@ -85,6 +90,13 @@ export interface SectionLayout {
       gutter?: number;
     };
   };
+  /**
+   * Set when the section asked to continue on the page but its paper size or
+   * orientation differs from the section before it. A continuous break cannot
+   * change either, so the layout started it on a new page instead; the
+   * compiler reports that the author's request was overridden.
+   */
+  forcedPageBreak?: boolean;
 }
 
 export interface LayoutGroup {
@@ -103,6 +115,27 @@ export function applyLayout(
 ): LayoutPlan {
   const layoutSections: SectionLayout[] = [];
 
+  // A continuous break cannot change the paper: Word starts a new page anyway
+  // and LibreOffice keeps the old size. So a section that asked to continue
+  // but lands on a different size or orientation is told to start a new page,
+  // which is what every reader will then agree on. Margins may change mid-page.
+  const push = (layoutSection: SectionLayout): void => {
+    const previous = layoutSections[layoutSections.length - 1];
+    if (
+      previous &&
+      layoutSection.properties.type === 'continuous' &&
+      pageSizeDiffers(
+        previous.properties.page.size,
+        layoutSection.properties.page.size
+      )
+    ) {
+      layoutSection.properties.type = 'nextPage';
+      layoutSection.breakBefore = true;
+      layoutSection.forcedPageBreak = true;
+    }
+    layoutSections.push(layoutSection);
+  };
+
   for (let i = 0; i < sections.length; i++) {
     const section = sections[i];
     const layoutGroups = analyzeLayoutGroups(section.components);
@@ -117,7 +150,7 @@ export function applyLayout(
       const breakBefore = isFirstSection || Boolean(section.pageBreak);
       const sectionType = breakBefore ? 'nextPage' : 'continuous';
 
-      layoutSections.push({
+      push({
         properties: createSectionProperties(
           getColumnSettings('single'),
           theme,
@@ -146,7 +179,12 @@ export function applyLayout(
         isColumnsComponent(group.components[0]);
 
       const columnSettings = isSingleColumnsGroup
-        ? createColumnSettingsFromConfig(group.components[0], theme, themeName)
+        ? createColumnSettingsFromConfig(
+            group.components[0],
+            // Percentages are of this section's text measure, not the theme's.
+            theme ? themeForSectionPage(theme, section.page) : theme,
+            themeName
+          )
         : getColumnSettings(group.layout);
 
       // Only break page if explicitly requested or this is the first section
@@ -168,7 +206,7 @@ export function applyLayout(
           )
         : processLayoutComponents(group.components);
 
-      layoutSections.push({
+      push({
         properties: createSectionProperties(
           columnSettings,
           theme,

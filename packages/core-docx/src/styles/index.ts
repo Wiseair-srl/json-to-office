@@ -42,7 +42,10 @@ export {
   getPageSetup,
   getPageDimensions,
   PAGE_SIZES,
+  themeForSectionPage,
+  pageSizeDiffers,
 } from './utils/layoutUtils';
+export type { SectionPageOverride } from './utils/layoutUtils';
 
 // Theme configurations
 export {

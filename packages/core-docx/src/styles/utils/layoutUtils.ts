@@ -266,3 +266,57 @@ export const getPageSetup = (theme?: ThemeConfig, themeName?: string) => {
     },
   };
 };
+
+/** A section's `page` prop: a size and/or margins that replace the theme's. */
+export interface SectionPageOverride {
+  size?: 'A4' | 'A3' | 'LETTER' | 'LEGAL' | { width: number; height: number };
+  margins?: {
+    top?: number;
+    bottom?: number;
+    left?: number;
+    right?: number;
+    header?: number;
+    footer?: number;
+    gutter?: number;
+  };
+}
+
+/**
+ * The theme as seen from inside a section that overrides the page.
+ *
+ * Everything that sizes content against the page — a table's grid, an image or
+ * chart at a percentage width, explicit columns, a shape — reads the page off
+ * the theme through {@link getPageSetup}. A section that sets its own size or
+ * margins has a different text measure, so its content is measured against
+ * this theme rather than the document's. Without an override the theme comes
+ * back unchanged, identity included.
+ */
+export function themeForSectionPage(
+  theme: ThemeConfig,
+  page: SectionPageOverride | undefined
+): ThemeConfig {
+  if (!page || (!page.size && !page.margins)) return theme;
+  const base = getPageSetup(theme);
+  return {
+    ...theme,
+    page: {
+      ...theme.page,
+      size: page.size ?? theme.page?.size ?? 'A4',
+      margins: { ...theme.page?.margins, ...base.margin, ...page.margins },
+    },
+  } as ThemeConfig;
+}
+
+/**
+ * Whether two resolved page sizes differ in paper or orientation.
+ *
+ * A continuous section break cannot change either: Word starts a new page
+ * anyway and LibreOffice keeps the old size. So a section whose size differs
+ * from the one before it has to say it starts on a new page.
+ */
+export function pageSizeDiffers(
+  a: { width: number; height: number },
+  b: { width: number; height: number }
+): boolean {
+  return a.width !== b.width || a.height !== b.height;
+}

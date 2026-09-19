@@ -70,7 +70,11 @@ import {
   type ResolvedTable,
   type TableSource,
 } from '../core/tableModel';
-import { getPageSetup, getTableStyle } from '../styles/utils/layoutUtils';
+import {
+  getPageSetup,
+  getTableStyle,
+  themeForSectionPage,
+} from '../styles/utils/layoutUtils';
 import {
   DEFAULT_REVISION_AUTHOR,
   DEFAULT_REVISION_DATE,
@@ -634,8 +638,41 @@ function compileSection(
   chrome: SectionChrome,
   ctx: CompileContext
 ): DocxIrSection {
+  // A section that sets its own page has its own text measure: everything
+  // sized against the page inside it — tables, images, charts, shapes, its
+  // header and footer — reads the page off the theme, so it compiles against
+  // a theme carrying this section's page. The document's theme comes back
+  // afterwards; nothing else on the theme differs.
+  const documentTheme = ctx.theme;
+  ctx.theme = themeForSectionPage(documentTheme, section.pageOverride);
+  try {
+    return compileSectionBody(section, index, ordinal, chrome, ctx);
+  } finally {
+    ctx.theme = documentTheme;
+  }
+}
+
+function compileSectionBody(
+  section: SectionLayout,
+  index: number,
+  ordinal: { ordinal?: number; closeBookmark: boolean },
+  chrome: SectionChrome,
+  ctx: CompileContext
+): DocxIrSection {
   const path = `sections[${index}]`;
   const { page, column } = section.properties;
+
+  if (section.forcedPageBreak) {
+    warnOnce(
+      ctx,
+      'section',
+      `${path} is set to continue on the page but changes the paper size or ` +
+        'orientation, which a continuous section break cannot do, so it ' +
+        'starts on a new page instead. Set pageBreak: true on the section to ' +
+        'say so, or keep the page size of the section before it.',
+      'W_SECTION_PAGE_BREAK_FORCED'
+    );
+  }
 
   if (column && column.count > 1) {
     ctx.features.require('columns', `${path}.properties.columns`);
