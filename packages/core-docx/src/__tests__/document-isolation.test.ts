@@ -150,7 +150,7 @@ describe('documents built in one process', () => {
 
 /** A 4x2 PNG, small enough to inline and real enough to measure. */
 const PNG_4X2 =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAABytg0kAAAAFElEQVR42mNk+M9QzwAFjDAGACPuA/8fMSCgAAAAAElFTkSuQmCC';
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAAEklEQVR42mOIrt34HxkzoAsAAE/xFEFoJgXRAAAAAElFTkSuQmCC';
 
 /** Drawings in the body, in a shape, and in a header — three different parts. */
 const drawings = {

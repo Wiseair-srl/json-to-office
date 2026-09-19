@@ -37,7 +37,9 @@ import {
   validateBlockInvocations,
   type BlockSlot,
 } from '@json-to-office/shared';
+import { imageIntegrityDefect } from '@json-to-office/shared/images/node';
 import {
+  MATRIX_IMAGE,
   blockCaseDocument,
   boundaryInvocation,
   boundarySlotValue,
@@ -323,6 +325,17 @@ describe('the generator', () => {
     // compose from; those still get a case, from their schema alone.
     const withoutExample = entries.filter((e) => !e.example).map((e) => e.name);
     expect(withoutExample.sort()).toEqual(['figure-caption', 'source-line']);
+  });
+
+  // The image every matrix case draws. It shipped corrupt once — wrong CRCs,
+  // pixel data that would not inflate — so Word and PowerPoint showed their
+  // broken-picture box, LibreOffice drew nothing, and the matrix never tested
+  // an image at all.
+  it('draws an image that decodes, 4x2 as documented', () => {
+    const [, base64] = MATRIX_IMAGE.split(',');
+    const bytes = Buffer.from(base64, 'base64');
+    expect(imageIntegrityDefect(bytes)).toBeUndefined();
+    expect([bytes.readUInt32BE(16), bytes.readUInt32BE(20)]).toEqual([4, 2]);
   });
 
   it('refuses a template whose definitions discovery would not publish', () => {

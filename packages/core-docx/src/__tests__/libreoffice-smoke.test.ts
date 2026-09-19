@@ -29,7 +29,7 @@ requireIfInsisted(Boolean(soffice), 'a LibreOffice binary on PATH');
 
 /** A 4x2 PNG, so image measurement has real pixels to read. */
 const PNG_4X2 =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAABytg0kAAAAFElEQVR42mNk+M9QzwAFjDAGACPuA/8fMSCgAAAAAElFTkSuQmCC';
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAAEklEQVR42mOIrt34HxkzoAsAAE/xFEFoJgXRAAAAAElFTkSuQmCC';
 
 const document = {
   name: 'docx',

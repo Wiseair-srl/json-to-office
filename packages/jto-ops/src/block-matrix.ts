@@ -118,7 +118,7 @@ export const FALLBACK_FONTS = {
 
 /** A 4x2 PNG: an image with an aspect ratio, and no bytes outside the process. */
 export const MATRIX_IMAGE =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAABytg0kAAAAFElEQVR42mNk+M9QzwAFjDAGACPuA/8fMSCgAAAAAElFTkSuQmCC';
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAAEklEQVR42mOIrt34HxkzoAsAAE/xFEFoJgXRAAAAAElFTkSuQmCC';
 
 /**
  * Words of the length a report actually uses, so a budget of N words costs

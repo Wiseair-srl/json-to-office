@@ -49,7 +49,7 @@ describe('parsePngSize', () => {
   it('reads the dimensions of a real PNG', () => {
     // 4x2 PNG, the same fixture the docx smoke test uses.
     const png = Buffer.from(
-      'iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAABytg0kAAAAFElEQVR42mNk+M9QzwAFjDAGACPuA/8fMSCgAAAAAElFTkSuQmCC',
+      'iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAAEklEQVR42mOIrt34HxkzoAsAAE/xFEFoJgXRAAAAAElFTkSuQmCC',
       'base64'
     );
     expect(parsePngSize(png)).toEqual({ width: 4, height: 2 });

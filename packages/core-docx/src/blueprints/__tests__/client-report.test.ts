@@ -29,7 +29,7 @@ vi.mock('../../utils/environment', () => ({
   isBrowserEnvironment: vi.fn().mockReturnValue(false),
 }));
 const PNG_B64 =
-  'iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAABytg0kAAAAFElEQVR42mNk+M9QzwAFjDAGACPuA/8fMSCgAAAAAElFTkSuQmCC';
+  'iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAAEklEQVR42mOIrt34HxkzoAsAAE/xFEFoJgXRAAAAAElFTkSuQmCC';
 const mockFetch = vi.fn();
 vi.stubGlobal('fetch', mockFetch);
 beforeEach(() => {

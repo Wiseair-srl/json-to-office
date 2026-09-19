@@ -18,7 +18,9 @@
  * nothing".
  */
 
+import { imageIntegrityDefect } from '@json-to-office/shared/images/node';
 import {
+  assetUnreadableError,
   FeatureRequirementCollector,
   type FeatureRequirement,
 } from '@json-to-office/shared/rendering';
@@ -1246,7 +1248,7 @@ function compileImage(
  * Turn a resolved image source string into a resource id.
  *
  * Data URIs are decoded to bytes here so identical inline images collapse to a
- * single resource. File paths keep the same allowed-root policy the pre-IR
+ * single resource, and are checked to decode (`ASSET_UNREADABLE` when not). File paths keep the same allowed-root policy the pre-IR
  * pipeline enforced, and are rejected — with a warning, not silently — when
  * they escape it.
  */
@@ -1257,6 +1259,11 @@ function internImageSource(
 ): string | undefined {
   const inline = parseDataUri(source);
   if (inline) {
+    // The header alone sizes a damaged image fine, and PowerPoint then draws
+    // its broken-picture box. Bytes that would not decode are the document's
+    // defect, named like a file that is not there.
+    const defect = imageIntegrityDefect(inline.bytes);
+    if (defect) throw assetUnreadableError(source, new Error(defect));
     return ctx.resources.intern({
       kind: 'inline',
       bytes: inline.bytes,

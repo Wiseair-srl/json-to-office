@@ -13,7 +13,7 @@ import { generateBufferViaIr } from '../../../core/generateFromIr';
 import type { PresentationComponentDefinition } from '../../../types';
 
 const PNG_4X2 =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAABytg0kAAAAFElEQVR42mNk+M9QzwAFjDAGACPuA/8fMSCgAAAAAElFTkSuQmCC';
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAAEklEQVR42mOIrt34HxkzoAsAAE/xFEFoJgXRAAAAAElFTkSuQmCC';
 
 const deck = (
   children: unknown[],

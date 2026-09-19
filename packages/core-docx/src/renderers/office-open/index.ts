@@ -421,7 +421,13 @@ function addPngTextChunk(data: Buffer, marker: Buffer): Buffer {
     offset = chunkEnd;
   }
 
-  return Buffer.concat([data, marker]);
+  // Bytes appended after a PNG that never reached IEND are one more defect
+  // in a file Word already cannot draw. Images are checked to decode when
+  // they are loaded, so arriving here is a pipeline bug, not a document one.
+  throw new Error(
+    'Cannot mark a PNG that has no intact IEND chunk; its bytes were not ' +
+      'checked to decode before rendering'
+  );
 }
 
 /** Insert a legal JPEG COM segment after the start-of-image marker. */

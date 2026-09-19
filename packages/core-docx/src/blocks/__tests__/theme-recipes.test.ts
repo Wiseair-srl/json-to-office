@@ -217,7 +217,9 @@ const HEAD_ROWS: Record<string, Row> = {
 
 const LOGO = {
   name: 'image',
-  props: { path: 'data:image/png;base64,iVBORw0KGgo=' },
+  props: {
+    path: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNoaGj4DwAFhAKAU5N0NgAAAABJRU5ErkJggg==',
+  },
 };
 
 describe('theme chrome recipes reach the page', () => {

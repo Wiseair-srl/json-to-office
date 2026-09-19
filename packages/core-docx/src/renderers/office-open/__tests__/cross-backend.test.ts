@@ -17,6 +17,7 @@
 
 import { describe, expect, it } from 'vitest';
 import JSZip from 'jszip';
+import { imageIntegrityDefect } from '@json-to-office/shared/images/node';
 import {
   compileDocumentToIr,
   generateBufferViaIr,
@@ -217,7 +218,33 @@ describe('both DOCX backends over the corpus', () => {
       if (entry.dir || !path.startsWith('word/media/')) continue;
       const bytes = await entry.async('nodebuffer');
       expect(readImageDimensions(bytes, path).width).toBeGreaterThan(0);
+      // The marker keeps the picture decodable, not just its header readable.
+      expect(imageIntegrityDefect(bytes), path).toBeUndefined();
     }
+  }, 60_000);
+
+  // Marking a second placement used to append the marker after a PNG with no
+  // intact IEND: one more defect in a file Word already cannot draw. Loading
+  // refuses such bytes, so reaching the marker with them is a pipeline bug.
+  it('refuses to mark a PNG that has no IEND', async () => {
+    const compiled = await compileDocumentToIr({
+      name: 'docx',
+      props: { theme: 'minimal' },
+      children: [
+        { name: 'image', props: { base64: PNG_4X2, width: 80 } },
+        { name: 'image', props: { base64: PNG_4X2, width: 120 } },
+      ],
+    } as never);
+    const [resource] = compiled.ir.resources;
+    const truncated = resource.bytes.subarray(0, resource.bytes.length - 12);
+    const ir = {
+      ...compiled.ir,
+      resources: [
+        { ...resource, bytes: truncated, byteLength: truncated.length },
+      ],
+    };
+
+    await expect(officeOpen.render(ir)).rejects.toThrow(/no intact IEND/);
   }, 60_000);
 });
 

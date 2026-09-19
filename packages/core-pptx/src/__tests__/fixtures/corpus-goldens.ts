@@ -73,15 +73,15 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'image/deduplicated':
     '4876bffeadceb1f7791ae6eae9d630d5cbebfa612cb12452f2e57796c57fd6dd',
   'image/aspect-from-width':
-    '07ff68b758549e9fc4dd6796505978ac1e0ec49b7c529b8ddcaa530634da7b92',
+    'a02eda3c4eda0128f043ae9b25fe1d6456bed6dcd87bd995a5864ccd9e6dd713',
   'image/aspect-from-height':
-    '07ff68b758549e9fc4dd6796505978ac1e0ec49b7c529b8ddcaa530634da7b92',
+    'a02eda3c4eda0128f043ae9b25fe1d6456bed6dcd87bd995a5864ccd9e6dd713',
   'image/contain':
-    '5cd7d3658049cd706a0b9eef1a86a26d3250dcf660f9d4068320dc26c8506411',
+    'de760cf9a31a0276bbed620c6e600b838a796c2d86af4015590c554d64d5affc',
   'image/cover':
-    '44c6c66cb83e77b18c0a447e850d2b404b20cf66b3b5230c69b2f1b3f6786554',
+    '7817e688144364a7f1423ec863fb886b1a637434c0f2499a92e061d3228be9d5',
   'image/rounding-rotate':
-    '8490f5b4784dc614f07e7eab1433888534c5df7f389d43c667979b62ee690ff2',
+    '4096568fb20c87a379cb14b9a6376b1904bbb25b4541903a365d615d5f4e833c',
   'link/external-and-slide':
     'b78e92af4dc5f023c08f43370d9331729923a8a887abdc1d1d1fff873410d420',
   'layout/grid':
@@ -117,7 +117,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'chart/doughnut':
     '6dd1e1214544acd4a956ebe6268d0172c03a8327afa4be3e4b5f1395f270a7bf',
   'image/url-free-aspect':
-    'fa6932206bf6715f13bd30aabafa3df4d3d5e9d4ce140cacd19fa7ae88b8a230',
+    '2e3a04458dd2f9852d4a3530e36cafd8eac915461b5f2bb632c1e8eb7571f473',
   'slide/disabled-content':
     'e3822575b88bf39b668d87177001f0a45120e519f852c719d0f4e2a16b3706a9',
   'text/runs-inherit-underline':
@@ -135,15 +135,15 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'shape/empty-line-object':
     '1b0ab5534451c85fcbae56e95d107890b0916b532192c288e42ed35bc5145ed2',
   'image/contain-without-box':
-    '543637992d04ea16f28c538103a0376c322859b512110ceeadc697bc76ac3c00',
+    'dd4c56230472e8c989bd906837c2d8c4f70f4a8db64d5e2a051bc70d960b0e96',
   'table/rounded-single-column-width':
     '2c7f34eb5d7418575ac2fb6b6aac557f32a9eda329796a4b5bba1e84f7734eea',
   'table/rounded-percent-position':
     '1b6f03fa3fc361ebdee2df5b790ae02b2033a42ace8aba78bbec4b534973226e',
   'link/on-image':
-    'a849407d19e410f7fd68ed40d0aec43800024e6608c5da913554a27fc6878503',
+    'e502ddc08065adbeed21128e3bf3b556d459ca143542bc6eaf2e2f83f0993569',
   'image/rotated':
-    'dd8f00d3ae741c13b1563a7c8cc58772e69dba6541647a96b1c073fdbb70b2e9',
+    '5d61f45ac545b24d9664d8d440afbddd728ea36de63f640f7f6edf325a04d10b',
   'shape/arc-family':
     '7ecbe2ca380f01b3da931288bb50f5e9ad0dfebec267392ccf3a6d3fefb8323e',
   'shape/geometry-aliases':

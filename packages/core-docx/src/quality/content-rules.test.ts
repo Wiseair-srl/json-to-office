@@ -30,7 +30,7 @@ const heading = (text: string, extra: Record<string, unknown> = {}) => ({
   props: { text, level: 1, ...extra },
 });
 const PNG_4X2 =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAABytg0kAAAAFElEQVR42mNk+M9QzwAFjDAGACPuA/8fMSCgAAAAAElFTkSuQmCC';
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAAEklEQVR42mOIrt34HxkzoAsAAE/xFEFoJgXRAAAAAElFTkSuQmCC';
 
 describe('a section with nothing in it', () => {
   it('is reported once a profile asks, and never on a section that draws something', () => {

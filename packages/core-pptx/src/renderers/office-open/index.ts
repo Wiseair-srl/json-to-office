@@ -13,6 +13,7 @@
  */
 
 import { readFile } from 'node:fs/promises';
+import { imageIntegrityDefect } from '@json-to-office/shared/images/node';
 import { assetUnreadableError } from '@json-to-office/shared/rendering';
 import {
   finalizePackage,
@@ -339,9 +340,10 @@ async function loadResourceBytes(
 /**
  * One resource's bytes.
  *
- * A file that is not there, or a URL that does not answer with the picture, is
- * the document's defect. It leaves as `ASSET_UNREADABLE` carrying the location,
- * because the raw `fs` error or status line says nothing a caller can classify.
+ * A file that is not there, a URL that does not answer with the picture, or
+ * bytes that would not decode, is the document's defect. It leaves as
+ * `ASSET_UNREADABLE` carrying the location, because the raw `fs` error or
+ * status line says nothing a caller can classify.
  */
 async function resourceBytes(
   origin: PptxIrResourceOrigin
@@ -349,14 +351,21 @@ async function resourceBytes(
   if (origin.kind === 'inline') return origin.bytes;
   const location = origin.kind === 'file' ? origin.path : origin.url;
   try {
+    let bytes: Uint8Array;
     if (origin.kind === 'file') {
-      return new Uint8Array(await readFile(origin.path));
+      bytes = new Uint8Array(await readFile(origin.path));
+    } else {
+      const response = await fetch(origin.url);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status} ${response.statusText}`);
+      }
+      bytes = new Uint8Array(await response.arrayBuffer());
     }
-    const response = await fetch(origin.url);
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status} ${response.statusText}`);
-    }
-    return new Uint8Array(await response.arrayBuffer());
+    // Bytes that would not decode are PowerPoint's broken-picture box; inline
+    // bytes were checked when the compiler decoded them.
+    const defect = imageIntegrityDefect(bytes);
+    if (defect) throw new Error(defect);
+    return bytes;
   } catch (error) {
     throw assetUnreadableError(location, error);
   }

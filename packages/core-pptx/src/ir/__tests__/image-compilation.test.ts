@@ -30,7 +30,7 @@ const SVG =
 
 /** A 4x2 px PNG — an aspect ratio of 2, so fitted sizes are exact. */
 const PNG_4X2 =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAACddGYaAAAAFElEQVR42mNk+M+ACzDiVjBSFQAAxRABAAiEqFQAAAAASUVORK5CYII=';
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAAHElEQVR42mOQ96v8L+/X+1/eb+F/eb+t/xnQBQADBRAZRAi9/AAAAABJRU5ErkJggg==';
 
 function deck(children: unknown[]): PresentationComponentDefinition {
   return {
