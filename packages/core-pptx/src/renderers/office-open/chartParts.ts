@@ -129,6 +129,12 @@ function axisEdits(
   const value = axis as PptxIrChartValueAxis;
   return {
     ...(axis.title !== undefined ? { title: axis.title } : {}),
+    ...(axis.title !== undefined && textStyle(axis.titleFont)
+      ? { titleFont: textStyle(axis.titleFont) }
+      : {}),
+    ...(axis.title !== undefined && axis.titleRotate !== undefined
+      ? { titleRotation: axis.titleRotate }
+      : {}),
     ...(axis.hidden !== undefined ? { hidden: axis.hidden } : {}),
     ...(axis.showLine !== undefined ? { lineVisible: axis.showLine } : {}),
     ...(axis.labelRotate !== undefined

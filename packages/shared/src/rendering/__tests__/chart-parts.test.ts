@@ -13,6 +13,7 @@ import {
   chartInputSignature,
   chartPartSignature,
   matchChartParts,
+  spliceChartXml,
   type ChartPartInput,
 } from '../chart-parts';
 
@@ -91,5 +92,68 @@ describe('chart part signatures', () => {
         [series('Present', ['a'], [1]), series('Missing', ['b'], [2])]
       )
     ).toThrow(/Missing/);
+  });
+});
+
+describe('chart text defaults', () => {
+  const font = { fontFamily: 'Calibri', fontSize: 10, color: '333333' };
+  const defRPr =
+    '<a:defRPr sz="1000"><a:solidFill><a:srgbClr val="333333"/></a:solidFill>' +
+    '<a:latin typeface="Calibri"/></a:defRPr>';
+  const txPr =
+    '<c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr/></a:pPr>' +
+    '<a:endParaRPr lang="en-US"/></a:p></c:txPr>';
+  const chartSpace = (afterChart: string, axisTitle = '') =>
+    `<c:chartSpace><c:chart><c:plotArea><c:catAx><c:axId val="1"/>` +
+    `<c:axPos val="b"/>${axisTitle}<c:crossAx val="2"/></c:catAx>` +
+    `</c:plotArea><c:legend>${txPr}</c:legend></c:chart>${afterChart}` +
+    `<c:externalData r:id="rId1"><c:autoUpdate val="0"/></c:externalData>` +
+    `</c:chartSpace>`;
+  const input = (extra: Partial<ChartPartInput> = {}): ChartPartInput => ({
+    chartType: 'bar',
+    colors: [],
+    series: [],
+    ...extra,
+  });
+
+  it('fills the chart-wide default the backend left empty, and only it', () => {
+    const xml = spliceChartXml(
+      chartSpace(`<c:spPr><a:noFill/></c:spPr>${txPr}`),
+      input({ textFont: font })
+    );
+    const tail = xml.slice(xml.lastIndexOf('</c:chart>'));
+    expect(tail).toContain(defRPr);
+    expect(tail.match(/<c:txPr>/g)).toHaveLength(1);
+    // The legend's own txPr is left to inherit it.
+    const legend = xml.slice(
+      xml.indexOf('<c:legend>'),
+      xml.indexOf('</c:legend>')
+    );
+    expect(legend).toContain('<a:defRPr/>');
+  });
+
+  it('writes a missing chart-wide default between spPr and externalData', () => {
+    const xml = spliceChartXml(
+      chartSpace('<c:spPr><a:noFill/></c:spPr>'),
+      input({ textFont: font })
+    );
+    expect(xml).toContain(
+      `</c:spPr><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr>${defRPr}`
+    );
+    expect(xml.indexOf('<c:externalData')).toBeGreaterThan(
+      xml.lastIndexOf('</c:txPr>')
+    );
+  });
+
+  it('styles an axis title the backend already wrote, keeping its text', () => {
+    const existing =
+      '<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>Q</a:t>' +
+      '</a:r></a:p></c:rich></c:tx><c:overlay val="0"/></c:title>';
+    const xml = spliceChartXml(
+      chartSpace('', existing),
+      input({ categoryAxis: { title: 'Q', titleFont: font } })
+    );
+    expect(xml.match(/<c:title>/g)).toHaveLength(1);
+    expect(xml).toContain(`<a:p><a:pPr>${defRPr}</a:pPr><a:r><a:t>Q</a:t>`);
   });
 });

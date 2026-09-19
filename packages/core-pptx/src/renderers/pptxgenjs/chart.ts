@@ -101,6 +101,12 @@ function chartOpts(element: PptxIrChartElement): Opts {
     bold: 'catAxisLabelFontBold',
     size: 'catAxisLabelFontSize',
     color: 'catAxisLabelColor',
+    titleFont: {
+      face: 'catAxisTitleFontFace',
+      size: 'catAxisTitleFontSize',
+      color: 'catAxisTitleColor',
+    },
+    titleRotate: 'catAxisTitleRotate',
   });
 
   applyValueAxis(opts, o.valueAxis);
@@ -141,12 +147,22 @@ interface AxisKeys extends LabelFontKeys {
   labelRotate: string;
   gridLine: string;
   showLine: string;
+  /**
+   * The title's font. pptxgenjs writes an axis title's `sz` only when given
+   * one, and has no bold toggle for it (it writes `b="0"` itself).
+   */
+  titleFont: LabelFontKeys;
+  titleRotate: string;
 }
 
 function applyAxis(opts: Opts, axis: PptxIrChartAxis, keys: AxisKeys): void {
   if (axis.title !== undefined) {
     opts[keys.title] = axis.title;
     opts[keys.showTitle] = true;
+    applyLabelFont(opts, axis.titleFont, keys.titleFont);
+    if (axis.titleRotate !== undefined) {
+      opts[keys.titleRotate] = axis.titleRotate;
+    }
   }
   if (axis.hidden !== undefined) opts[keys.hidden] = axis.hidden;
   if (axis.labelRotate !== undefined) opts[keys.labelRotate] = axis.labelRotate;
@@ -167,6 +183,12 @@ function applyValueAxis(opts: Opts, axis: PptxIrChartValueAxis): void {
     bold: 'valAxisLabelFontBold',
     size: 'valAxisLabelFontSize',
     color: 'valAxisLabelColor',
+    titleFont: {
+      face: 'valAxisTitleFontFace',
+      size: 'valAxisTitleFontSize',
+      color: 'valAxisTitleColor',
+    },
+    titleRotate: 'valAxisTitleRotate',
   });
   assignDefined(opts, {
     valAxisMinVal: axis.minValue,

@@ -84,6 +84,14 @@ export interface ChartTextStyle {
 
 export interface ChartAxisEdits {
   title?: string;
+  /**
+   * The font of this axis' title. Without one the title carries no size, face
+   * or colour, and Word and PowerPoint fall back to their own large, bold
+   * axis-title default — far bigger than the tick labels beside it.
+   */
+  titleFont?: ChartTextStyle;
+  /** Title rotation, in degrees; absent leaves the reader's default. */
+  titleRotation?: number;
   /** The font of this axis' tick labels. */
   labelFont?: ChartTextStyle;
   /** `c:delete`: an axis hidden entirely. */
@@ -116,6 +124,13 @@ export interface ChartPartInput {
   /** `standard`, `marker` or `filled`; a backend may hardcode the first. */
   radarStyle?: string;
   titleFont?: ChartTextStyle;
+  /**
+   * The chart-wide default in `c:chartSpace/c:txPr`, which every piece of
+   * chart text that states nothing of its own (tick labels, the legend)
+   * inherits. The backend writes it with an empty `a:defRPr`, leaving the
+   * reader's built-in default in charge.
+   */
+  textFont?: ChartTextStyle;
   legendFont?: ChartTextStyle;
   dataLabelFont?: ChartTextStyle;
   legendPosition?: string;
@@ -484,12 +499,50 @@ function paintSeries(
   );
 }
 
-/** A `c:title` block holding one line of text, as an axis wants it. */
-function axisTitle(text: string): string {
+/**
+ * A `c:title` block holding one line of text, as an axis wants it.
+ *
+ * The font goes on both the paragraph default and the run, which is how
+ * PowerPoint writes an axis title itself: a reader honouring only one of the
+ * two still draws the intended size.
+ */
+function axisTitle(
+  text: string,
+  font: ChartTextStyle | undefined,
+  rotation: number | undefined
+): string {
+  const styled = hasTextStyle(font);
   return (
-    `<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r>` +
+    `<c:title><c:tx><c:rich>${titleBodyProperties(rotation)}<a:lstStyle/><a:p>` +
+    (styled ? `<a:pPr>${defaultRunProperties(font)}</a:pPr>` : '') +
+    `<a:r>${styled ? runProperties(font) : ''}` +
     `<a:t>${escapeXml(text)}</a:t>` +
     `</a:r></a:p></c:rich></c:tx><c:overlay val="0"/></c:title>`
+  );
+}
+
+/** A title's `a:bodyPr`: bare, or turned by an authored rotation. */
+function titleBodyProperties(rotation: number | undefined): string {
+  // `rot` is in 60000ths of a degree, as on a tick label.
+  return rotation !== undefined
+    ? `<a:bodyPr rot="${Math.round(rotation * 60000)}" vert="horz"/>`
+    : '<a:bodyPr/>';
+}
+
+/**
+ * Style an axis title the backend already wrote, leaving its text alone.
+ *
+ * Only a paragraph default is added, and only where the backend wrote none: a
+ * title that already states its font is the backend's answer.
+ */
+function styleExistingTitle(
+  titleXml: string,
+  font: ChartTextStyle | undefined
+): string {
+  if (!hasTextStyle(font) || titleXml.includes('<a:pPr')) return titleXml;
+  return titleXml.replace(
+    '<a:p>',
+    `<a:p><a:pPr>${defaultRunProperties(font)}</a:pPr>`
   );
 }
 
@@ -545,7 +598,19 @@ function gridLinesElement(
  * and `sz` is in hundredths of a point, not points.
  */
 function defaultRunProperties(font: ChartTextStyle | undefined): string {
-  if (!font) return '<a:defRPr/>';
+  return characterProperties('a:defRPr', font);
+}
+
+/** `a:rPr` on one run, spelled exactly like the default it matches. */
+function runProperties(font: ChartTextStyle | undefined): string {
+  return characterProperties('a:rPr', font);
+}
+
+function characterProperties(
+  tag: 'a:defRPr' | 'a:rPr',
+  font: ChartTextStyle | undefined
+): string {
+  if (!font) return `<${tag}/>`;
   const attrs =
     (font.fontSize !== undefined
       ? ` sz="${Math.round(font.fontSize * 100)}"`
@@ -558,8 +623,8 @@ function defaultRunProperties(font: ChartTextStyle | undefined): string {
       ? `<a:latin typeface="${escapeXml(font.fontFamily)}"/>`
       : '');
   return children
-    ? `<a:defRPr${attrs}>${children}</a:defRPr>`
-    : `<a:defRPr${attrs}/>`;
+    ? `<${tag}${attrs}>${children}</${tag}>`
+    : `<${tag}${attrs}/>`;
 }
 
 /** Whether a text style asks for anything at all. */
@@ -658,7 +723,11 @@ function rewriteAxis(axisXml: string, edits: ChartAxisEdits): string {
     existingMinorGrid ?? '',
     // An axis that already carries a title keeps it: writing a second one is a
     // repair prompt, not a duplicated label.
-    existingTitle ?? (edits.title ? axisTitle(edits.title) : ''),
+    existingTitle
+      ? styleExistingTitle(existingTitle, edits.titleFont)
+      : edits.title
+        ? axisTitle(edits.title, edits.titleFont, edits.titleRotation)
+        : '',
     edits.numberFormat !== undefined
       ? `<c:numFmt formatCode="${escapeXml(edits.numberFormat)}" sourceLinked="0"/>`
       : existingNumFmt ?? '',
@@ -824,6 +893,40 @@ function styleChartTitle(
 }
 
 /**
+ * Set the chart-wide text default, `c:chartSpace/c:txPr`.
+ *
+ * Scoped to what follows `</c:chart>`, since every `c:txPr` inside the chart
+ * belongs to an axis, the legend or a label. The backend's own `c:txPr` has its
+ * empty `a:defRPr` filled in; one that is missing is written after the
+ * chart-space `c:spPr`, where CT_ChartSpace puts it — before `c:externalData`.
+ */
+function styleChartSpaceText(
+  chartXml: string,
+  font: ChartTextStyle | undefined
+): string {
+  if (!hasTextStyle(font)) return chartXml;
+  const chartEnd = chartXml.lastIndexOf('</c:chart>');
+  if (chartEnd < 0) return chartXml;
+  const head = chartXml.slice(0, chartEnd);
+  let tail = chartXml.slice(chartEnd);
+
+  const existing = tail.match(/<c:txPr>[\s\S]*?<\/c:txPr>/)?.[0];
+  if (existing) {
+    if (!existing.includes('<a:defRPr/>')) return chartXml;
+    tail = tail.replace(
+      existing,
+      existing.replace('<a:defRPr/>', defaultRunProperties(font))
+    );
+    return head + tail;
+  }
+
+  const txPr = textProperties(undefined, font);
+  const spPrEnd = tail.indexOf('</c:spPr>');
+  const at = spPrEnd >= 0 ? spPrEnd + '</c:spPr>'.length : '</c:chart>'.length;
+  return head + tail.slice(0, at) + txPr + tail.slice(at);
+}
+
+/**
  * Style the legend, whose `c:txPr` the backend already writes.
  *
  * Filling in the empty `a:defRPr` it leaves rather than adding a second
@@ -928,6 +1031,7 @@ export function spliceChartXml(
   }
 
   result = styleChartTitle(result, chart.titleFont);
+  result = styleChartSpaceText(result, chart.textFont);
   result = styleLegend(result, chart.legendFont);
   result = styleDataLabels(result, chart.dataLabelFont);
 

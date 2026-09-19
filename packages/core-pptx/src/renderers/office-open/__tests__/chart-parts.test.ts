@@ -630,6 +630,48 @@ describe('native charts on office-open pptx', () => {
     expect(xml).toMatch(/<c:dLbls><c:txPr>[\s\S]*?sz="800"/);
   });
 
+  it('sizes, faces and colours every axis title', async () => {
+    // A title with no run properties took PowerPoint's large axis-title
+    // default. It now follows its tick labels unless the author overrides it.
+    const xml = await read(
+      await render(
+        deck([
+          chart({
+            catAxisLabelFontSize: 11,
+            catAxisLabelFontFace: 'Inter',
+            catAxisLabelColor: '666666',
+            valAxisTitleFontSize: 9,
+            valAxisTitleFontFace: 'Georgia',
+            valAxisTitleColor: 'FF0000',
+            valAxisTitleRotate: -90,
+          }),
+        ])
+      ),
+      'ppt/charts/chart1.xml'
+    );
+    const titleOf = (tag: string): string => {
+      const axis = xml.slice(
+        xml.indexOf(`<c:${tag}>`),
+        xml.indexOf(`</c:${tag}>`)
+      );
+      return axis.slice(axis.indexOf('<c:title>'), axis.indexOf('</c:title>'));
+    };
+    const catFont =
+      'sz="1100" b="0"><a:solidFill><a:srgbClr val="666666"/></a:solidFill>' +
+      '<a:latin typeface="Inter"/>';
+    expect(titleOf('catAx')).toContain(`<a:defRPr ${catFont}</a:defRPr>`);
+    expect(titleOf('catAx')).toContain(`<a:rPr ${catFont}</a:rPr>`);
+    expect(titleOf('catAx')).toContain('<a:bodyPr/>');
+
+    const valFont =
+      'sz="900" b="0"><a:solidFill><a:srgbClr val="FF0000"/></a:solidFill>' +
+      '<a:latin typeface="Georgia"/>';
+    expect(titleOf('valAx')).toContain(`<a:defRPr ${valFont}</a:defRPr>`);
+    expect(titleOf('valAx')).toContain(
+      '<a:bodyPr rot="-5400000" vert="horz"/>'
+    );
+  });
+
   it('merges an axis rotation and font into one c:txPr', async () => {
     // Two properties of the same text. A second `c:txPr` on one axis is a
     // repair prompt, not a differently-styled label.
