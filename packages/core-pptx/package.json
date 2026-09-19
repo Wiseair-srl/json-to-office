@@ -40,12 +40,14 @@
     "@resvg/resvg-js": "2.6.2",
     "@sinclair/typebox": "0.34.38",
     "jszip": "3.10.1",
+    "pako": "1.0.11",
     "pptxgenjs": "^3.12.0",
     "probe-image-size": "7.2.3"
   },
   "devDependencies": {
     "@office-open/core": "0.11.0",
     "@types/node": "22.20.2",
+    "@types/pako": "1.0.7",
     "@types/probe-image-size": "7.2.4",
     "tsup": "8.5.0",
     "typescript": "5.3.3"

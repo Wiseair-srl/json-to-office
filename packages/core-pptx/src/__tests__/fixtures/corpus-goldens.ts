@@ -63,7 +63,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'shape/gradient-linear':
     '6e96a09eb83694c67dec11588c6e86912a3759bfa06db62eed2b0d4afb08e01d',
   'shape/gradient-radial':
-    'fb0d37d0e9b9fb7cd54f062edb3ecf140a02b5f509572fee046d9e92485edb92',
+    '91ffbb814c47e185b40ee76646066f19c11d90233a2dc5a5d7ac3723f36b30d7',
   'shape/pattern':
     '17a5ecf68d5795875d228c8785d0eef1968e12b366b55b7f5be42fdc5dbb2bdb',
   'shape/shadow':

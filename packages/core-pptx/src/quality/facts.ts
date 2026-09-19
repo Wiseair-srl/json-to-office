@@ -686,7 +686,13 @@ function fillColorHexes(fill: unknown, theme: PptxThemeConfig): string[] {
   return [...new Set(found)];
 }
 
+/**
+ * Radial focus points as fractions of the surface. `center` is the schema's
+ * default and a circle about the middle — the renderer paints exactly this
+ * model (`renderers/pptxgenjs/radialRaster.ts`).
+ */
 const FOCUS_CORNERS: Readonly<Record<string, readonly [number, number]>> = {
+  center: [0.5, 0.5],
   topLeft: [0, 0],
   topRight: [1, 0],
   bottomLeft: [0, 1],
@@ -709,7 +715,7 @@ function lerpHex(a: string, b: string, t: number): string {
 
 /**
  * Where along a gradient the point (fx, fy) — both 0..1 across the surface —
- * falls. Radial gradients run outward from the named corner; linear ones run
+ * falls. Radial gradients run outward from the focus; linear ones run
  * along `angle`, measured clockwise from the x-axis with y pointing down.
  *
  * The radial radius is half the surface's diagonal in real units, which is not
@@ -730,8 +736,8 @@ function gradientPosition(
   if (gradient.type === 'radial') {
     const focus =
       FOCUS_CORNERS[
-        typeof gradient.focus === 'string' ? gradient.focus : 'topLeft'
-      ] ?? FOCUS_CORNERS.topLeft;
+        typeof gradient.focus === 'string' ? gradient.focus : 'center'
+      ] ?? FOCUS_CORNERS.center;
     const radius = Math.hypot(widthUnits, heightUnits) / 2;
     if (radius === 0) return 0;
     const distance = Math.hypot(

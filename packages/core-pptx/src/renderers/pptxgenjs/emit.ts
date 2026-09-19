@@ -34,6 +34,7 @@ import type { PipelineWarning } from '../../types';
 import { W, warn } from '../../utils/warn';
 import type { PendingFillSink } from './fills';
 import { registerAdvancedFill } from './fills';
+import type { RadialRasterizer } from './radialRaster';
 import { emitChart } from './chart';
 import { emitTable } from './table';
 
@@ -49,6 +50,11 @@ export interface EmitContext {
   pendingFills?: PendingFillSink;
   /** Sink for a shape this backend has no preset for. */
   warnings?: PipelineWarning[];
+  /**
+   * Turns radial gradients into pictures (see `radialRaster.ts`). Absent, they
+   * stay DrawingML path gradients, which PowerPoint draws differently.
+   */
+  rasterizeRadial?: RadialRasterizer;
 }
 
 /* ------------------------------------------------------------------ *
@@ -112,7 +118,8 @@ export function applyFill(
   opts: Opts,
   fill: PptxIrFill,
   elementPath: string,
-  ctx: EmitContext
+  ctx: EmitContext,
+  transform?: PptxIrTransform
 ): void {
   switch (fill.kind) {
     case 'none':
@@ -128,7 +135,19 @@ export function applyFill(
     }
     case 'gradient':
     case 'pattern':
-      registerAdvancedFill(opts, fill, elementPath, ctx.pendingFills);
+      registerAdvancedFill(
+        opts,
+        fill,
+        elementPath,
+        ctx.pendingFills,
+        ctx.rasterizeRadial && transform
+          ? {
+              rasterize: ctx.rasterizeRadial,
+              widthEmu: transform.widthEmu,
+              heightEmu: transform.heightEmu,
+            }
+          : undefined
+      );
       return;
     case 'image':
       // Modelled in the IR; PptxGenJS has no shape image fill. Capability
@@ -296,7 +315,9 @@ export function emitTextBox(
     ...bodyDefaultOpts(element.style),
     ...textBodyOpts(element.style),
   };
-  if (element.fill) applyFill(opts, element.fill, element.path, ctx);
+  if (element.fill) {
+    applyFill(opts, element.fill, element.path, ctx, element.transform);
+  }
   if (element.shadow) opts.shadow = shadowOpts(element.shadow);
   if (element.hyperlink) opts.hyperlink = hyperlinkOpts(element.hyperlink);
   if (element.altText) opts.altText = element.altText;
@@ -357,7 +378,9 @@ export function emitShape(
   }
 
   const opts: Opts = { ...transformOpts(element.transform) };
-  if (element.fill) applyFill(opts, element.fill, element.path, ctx);
+  if (element.fill) {
+    applyFill(opts, element.fill, element.path, ctx, element.transform);
+  }
   if (element.line) opts.line = lineOpts(element.line);
   if (element.shadow) opts.shadow = shadowOpts(element.shadow);
   if (element.cornerRadius !== undefined)

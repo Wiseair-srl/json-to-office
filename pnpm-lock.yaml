@@ -159,6 +159,9 @@ importers:
       jszip:
         specifier: 3.10.1
         version: 3.10.1
+      pako:
+        specifier: 1.0.11
+        version: 1.0.11
       pptxgenjs:
         specifier: ^3.12.0
         version: 3.12.0
@@ -172,6 +175,9 @@ importers:
       '@types/node':
         specifier: 22.20.2
         version: 22.20.2
+      '@types/pako':
+        specifier: 1.0.7
+        version: 1.0.7
       '@types/probe-image-size':
         specifier: 7.2.4
         version: 7.2.4
@@ -3038,6 +3044,9 @@ packages:
 
   '@types/node@25.9.5':
     resolution: {integrity: sha512-OScDchr2fwuUmWdf4kZ9h7PcJiYDVInhJizG/biAq3cAvqwYktuy/TYGGdZNMtNTFUP7rnb0NU4TUdm82kt4Rg==}
+
+  '@types/pako@1.0.7':
+    resolution: {integrity: sha512-YBtzT2ztNF6R/9+UXj2wTGFnC9NklAnASt3sC0h2m1bbH7G6FyBIkt4AN8ThZpNfxUo1b2iMVO0UawiJymEt8A==}
 
   '@types/probe-image-size@7.2.4':
     resolution: {integrity: sha512-HVqYj3L+D+S/6qpQRv5qMxrD/5pglzZuhP7ZIqgVSZ+Ck4z1TCFkNIRG8WesFueQTqWFTSgkkAl6f8lwxFPQSw==}
@@ -8434,6 +8443,8 @@ snapshots:
   '@types/node@25.9.5':
     dependencies:
       undici-types: 7.24.6
+
+  '@types/pako@1.0.7': {}
 
   '@types/probe-image-size@7.2.4':
     dependencies:

@@ -11,6 +11,9 @@
  *   every table, which paints banding and accent borders the author never
  *   asked for. Swapping it for No Style No Grid leaves the explicit borders
  *   the emitter already wrote.
+ * - **Picture fills.** A radial gradient ships as a PNG (`radialRaster.ts`);
+ *   its `<a:blipFill>` needs a media part and a slide relationship, which
+ *   PptxGenJS never created, so the splice adds both.
  * - **SVG previews.** The library builds them with a browser canvas, so under
  *   Node it writes a broken-image placeholder — see `svgRasterFallback.ts`.
  *
@@ -27,7 +30,9 @@ import {
   resolveGeneratedAt,
   writePackage,
 } from '../../core/finalizePackage';
+import type JSZip from 'jszip';
 import { repairSvgRasterFallbacks } from './svgRasterFallback';
+import { IMAGE_FILL_RID } from './fills';
 import type { PendingXmlFill, PipelineWarning } from '../../types';
 
 /** PptxGenJS hard-codes this on every table it writes. */
@@ -35,6 +40,8 @@ const MEDIUM_STYLE_2_ACCENT_1 = '{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}';
 const NO_STYLE_NO_GRID = '{2D5ABB26-0587-4C30-8999-92F81FD0307C}';
 
 const SLIDE_PART = /^ppt\/slides\/slide\d+\.xml$/;
+const IMAGE_REL_TYPE =
+  'http://schemas.openxmlformats.org/officeDocument/2006/relationships/image';
 
 export interface PptxGenJsPackagingOptions {
   /**
@@ -63,7 +70,8 @@ export interface PptxGenJsPackagingOptions {
  */
 function applyPendingFills(
   xml: string,
-  pendingFills: readonly PendingXmlFill[]
+  pendingFills: readonly PendingXmlFill[],
+  spliced: SplicedImageFill[] = []
 ): string {
   let out = xml;
   for (const [index, fill] of pendingFills.entries()) {
@@ -81,9 +89,17 @@ function applyPendingFills(
       spEnd !== -1 &&
       solidStart < spEnd
     ) {
+      // A picture fill gets an embed token unique to this fill, resolved to
+      // a relationship id once the slide's relationships are known.
+      let fillXml = fill.xml;
+      if (fill.image) {
+        const token = `${IMAGE_FILL_RID}${index}`;
+        fillXml = fillXml.replace(IMAGE_FILL_RID, token);
+        spliced.push({ token, image: fill.image });
+      }
       out =
         out.slice(0, solidStart) +
-        fill.xml +
+        fillXml +
         out.slice(solidEnd + solidEndTag.length);
     }
 
@@ -93,6 +109,61 @@ function applyPendingFills(
       `name="Fill ${index + 1}"` +
       out.slice(markerIdx + marker.length);
   }
+  return out;
+}
+
+/** A picture fill spliced into a slide, awaiting its relationship. */
+interface SplicedImageFill {
+  token: string;
+  image: Uint8Array;
+}
+
+/**
+ * Give each spliced picture fill on one slide a media part and a relationship,
+ * and point its placeholder embed at it. Identical bytes share one part — the
+ * rasterizer returns one array per distinct gradient — so a gradient repeated
+ * across slides ships once.
+ */
+async function linkImageFills(
+  zip: JSZip,
+  slidePath: string,
+  xml: string,
+  images: readonly SplicedImageFill[],
+  media: Map<Uint8Array, string>
+): Promise<string> {
+  if (images.length === 0) return xml;
+
+  const relsPath = slidePath.replace(
+    /^ppt\/slides\/(slide\d+\.xml)$/,
+    'ppt/slides/_rels/$1.rels'
+  );
+  let rels =
+    (await zip.file(relsPath)?.async('string')) ??
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>';
+  let nextId =
+    Math.max(
+      0,
+      ...[...rels.matchAll(/\bId="rId(\d+)"/g)].map((match) => Number(match[1]))
+    ) + 1;
+
+  let out = xml;
+  for (const { token, image } of images) {
+    let part = media.get(image);
+    if (!part) {
+      part = `ppt/media/jto-gradient-${media.size + 1}.png`;
+      media.set(image, part);
+      zip.file(part, image);
+    }
+    const rId = `rId${nextId}`;
+    nextId += 1;
+    rels = rels.replace(
+      '</Relationships>',
+      `<Relationship Id="${rId}" Type="${IMAGE_REL_TYPE}" Target="../media/${part.slice('ppt/media/'.length)}"/></Relationships>`
+    );
+    out = out.replace(`r:embed="${token}"`, `r:embed="${rId}"`);
+  }
+  zip.file(relsPath, rels);
   return out;
 }
 
@@ -110,6 +181,7 @@ export async function packagePptxGenJsBuffer(
 ): Promise<Buffer> {
   const zip = await readPackage(buffer);
   let changed = false;
+  const media = new Map<Uint8Array, string>();
 
   for (const [path, entry] of Object.entries(zip.files)) {
     if (!SLIDE_PART.test(path)) continue;
@@ -120,7 +192,9 @@ export async function packagePptxGenJsBuffer(
       fileChanged = true;
     }
     if (options.pendingFills?.length) {
-      const withFills = applyPendingFills(xml, options.pendingFills);
+      const spliced: SplicedImageFill[] = [];
+      let withFills = applyPendingFills(xml, options.pendingFills, spliced);
+      withFills = await linkImageFills(zip, path, withFills, spliced, media);
       if (withFills !== xml) {
         xml = withFills;
         fileChanged = true;
