@@ -17,6 +17,7 @@ import type {
   PptxIrGradient,
   PptxIrRadialFocus,
 } from '../../ir/types';
+import type { RadialRasterizer } from './radialRaster';
 
 /** OOXML angle unit: 60000ths of a degree. */
 const ANGLE_UNIT = 60000;
@@ -44,6 +45,22 @@ export interface PendingXmlFill {
   objectName: string;
   /** Complete replacement element, e.g. `<a:gradFill>…</a:gradFill>`. */
   xml: string;
+  /**
+   * PNG bytes the fill draws. Its `xml` is a `<a:blipFill>` whose embed is
+   * {@link IMAGE_FILL_RID}; packaging adds the media part and relationship.
+   */
+  image?: Uint8Array;
+}
+
+/** Placeholder relationship id in an image fill, resolved per slide. */
+export const IMAGE_FILL_RID = '__jto_fill_rid__';
+
+/** A stretched picture fill for a shape, pointing at the placeholder id. */
+export function buildImageFillXml(): string {
+  return (
+    `<a:blipFill rotWithShape="1"><a:blip r:embed="${IMAGE_FILL_RID}"/>` +
+    `<a:stretch><a:fillRect/></a:stretch></a:blipFill>`
+  );
 }
 
 /** Collects pending fills for one render. Never module-global. */
@@ -107,8 +124,19 @@ export function buildPatternFillXml(
   );
 }
 
+/** What a radial gradient needs to become a picture: the box it fills. */
+export interface RadialRasterTarget {
+  rasterize: RadialRasterizer;
+  widthEmu: number;
+  heightEmu: number;
+}
+
 /**
  * Write a sentinel solid fill and register the real fill for splicing.
+ *
+ * A radial gradient with a rasterizer becomes a picture fill (see
+ * `radialRaster.ts`); without one it falls back to the DrawingML path
+ * gradient, which PowerPoint and LibreOffice draw differently.
  *
  * Without a sink — a caller rendering outside the buffer pipeline — the shape
  * keeps the sentinel colour, so the deck still reads as authored instead of
@@ -118,18 +146,28 @@ export function registerAdvancedFill(
   opts: Record<string, unknown>,
   fill: Extract<PptxIrFill, { kind: 'gradient' | 'pattern' }>,
   elementPath: string,
-  sink: PendingFillSink | undefined
+  sink: PendingFillSink | undefined,
+  raster?: RadialRasterTarget
 ): void {
   const sentinel =
     fill.kind === 'gradient' ? fill.gradient.stops[0].color : fill.foreground;
 
   if (sink) {
-    const xml =
-      fill.kind === 'gradient'
-        ? buildGradientFillXml(fill.gradient)
-        : buildPatternFillXml(fill.preset, fill.foreground, fill.background);
     const objectName = `__jto_fill_${sink.length}__`;
-    sink.push({ objectName, xml });
+    if (fill.kind === 'gradient' && fill.gradient.type === 'radial' && raster) {
+      const image = raster.rasterize(
+        fill.gradient,
+        raster.widthEmu,
+        raster.heightEmu
+      );
+      sink.push({ objectName, xml: buildImageFillXml(), image });
+    } else {
+      const xml =
+        fill.kind === 'gradient'
+          ? buildGradientFillXml(fill.gradient)
+          : buildPatternFillXml(fill.preset, fill.foreground, fill.background);
+      sink.push({ objectName, xml });
+    }
     opts.objectName = objectName;
   }
 

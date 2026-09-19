@@ -11,8 +11,11 @@ import type { PptxFeature } from '../../ir/features';
 import type {
   PptxIR,
   PptxIrBackground,
+  PptxIrElement,
+  PptxIrRadialGradient,
   PptxIrResource,
   PptxIrSlide,
+  PptxIrSlideSize,
 } from '../../ir/types';
 import { emuToInches } from '../../ir/units';
 import type { PipelineWarning } from '../../types';
@@ -20,6 +23,11 @@ import type { PptxRenderOptions, PptxRenderer, PptxRendererId } from '../types';
 import { emitElement, imageSourceOpts, type EmitContext } from './emit';
 import type { PendingFillSink } from './fills';
 import { packagePptxGenJsBuffer } from './packaging';
+import {
+  pngDataUri,
+  rasterizeRadialGradient,
+  type RadialRasterizer,
+} from './radialRaster';
 
 export const PPTXGENJS_RENDERER_ID: PptxRendererId = 'pptxgenjs';
 
@@ -116,7 +124,8 @@ export function createPptxGenJsRenderer(): PptxRenderer {
 export function buildPresentation(
   ir: PptxIR,
   pendingFills?: PendingFillSink,
-  warnings?: PipelineWarning[]
+  warnings?: PipelineWarning[],
+  rasterizeRadial: RadialRasterizer | undefined = rasterizeRadialGradient
 ): PptxGenJS {
   const pptx = new PptxGenJS();
 
@@ -142,10 +151,16 @@ export function buildPresentation(
   const resources = new Map<string, PptxIrResource>(
     ir.resources.map((resource) => [resource.id, resource])
   );
-  const ctx: EmitContext = { pptx, resources, pendingFills, warnings };
+  const ctx: EmitContext = {
+    pptx,
+    resources,
+    pendingFills,
+    warnings,
+    rasterizeRadial,
+  };
 
   for (const slide of ir.slides) {
-    emitSlide(pptx, slide, ctx);
+    emitSlide(pptx, slide, ir.size, ctx);
   }
 
   return pptx;
@@ -163,19 +178,69 @@ function backgroundProps(
   return imageSourceOpts(resource);
 }
 
+/**
+ * The radial gradient of a slide's gradient backdrop, if `element` is one.
+ *
+ * The compiler turns a gradient background into a bare full-bleed rectangle at
+ * the back of the slide. A radial one becomes the slide background picture
+ * instead: it draws the same pixels and cannot be selected or moved. Anything
+ * with more to it than a fill stays a shape.
+ */
+function radialBackdrop(
+  element: PptxIrElement | undefined,
+  size: PptxIrSlideSize
+): PptxIrRadialGradient | undefined {
+  if (element?.kind !== 'shape') return undefined;
+  const { transform, fill } = element;
+  if (fill?.kind !== 'gradient' || fill.gradient.type !== 'radial') {
+    return undefined;
+  }
+  const bare =
+    element.geometry === 'rect' &&
+    !element.line &&
+    !element.shadow &&
+    !element.hyperlink &&
+    !element.altText &&
+    !(element.runs && element.runs.length > 0) &&
+    !transform.rotationDegrees &&
+    !transform.flipHorizontal &&
+    !transform.flipVertical;
+  const fullBleed =
+    transform.xEmu === 0 &&
+    transform.yEmu === 0 &&
+    transform.widthEmu === size.widthEmu &&
+    transform.heightEmu === size.heightEmu;
+  return bare && fullBleed ? fill.gradient : undefined;
+}
+
 function emitSlide(
   pptx: PptxGenJS,
   slideIr: PptxIrSlide,
+  size: PptxIrSlideSize,
   ctx: EmitContext
 ): void {
   const slide = pptx.addSlide();
 
+  let elements = slideIr.elements;
   const background = backgroundProps(slideIr.background, ctx.resources);
-  if (background) slide.background = background as never;
+  if (background) {
+    slide.background = background as never;
+  } else if (ctx.rasterizeRadial) {
+    const gradient = radialBackdrop(elements[0], size);
+    if (gradient) {
+      const png = ctx.rasterizeRadial(
+        gradient,
+        elements[0].transform.widthEmu,
+        elements[0].transform.heightEmu
+      );
+      slide.background = { data: pngDataUri(png) } as never;
+      elements = elements.slice(1);
+    }
+  }
 
   if (slideIr.hidden) slide.hidden = true;
 
-  for (const element of slideIr.elements) {
+  for (const element of elements) {
     emitElement(slide, element, ctx);
   }
 

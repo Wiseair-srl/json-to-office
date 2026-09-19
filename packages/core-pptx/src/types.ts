@@ -167,6 +167,8 @@ export interface PendingXmlFill {
   objectName: string;
   /** Complete replacement fill element (e.g. `<a:gradFill>…</a:gradFill>`). */
   xml: string;
+  /** PNG bytes for a picture fill; packaging adds the media part. */
+  image?: Uint8Array;
 }
 
 export interface PipelineWarning {

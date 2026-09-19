@@ -1024,6 +1024,50 @@ describe('text contrast', () => {
     expect(contrastFindings(gradientSlide(11, 6.5))).toEqual([]);
   });
 
+  it('samples a center-focus radial gradient about the middle', () => {
+    // `center` is also the default focus: dark in the middle, light at the
+    // corners half a diagonal out — what the renderer paints.
+    const centerSlide = (x: number, y: number, focus?: 'center') =>
+      deck({ ...CANVAS, theme: 'consulting' }, [
+        {
+          name: 'slide',
+          props: {
+            background: {
+              gradient: {
+                type: 'radial',
+                ...(focus ? { focus } : {}),
+                stops: [
+                  { color: '#101820', pos: 0 },
+                  { color: '#101820', pos: 40 },
+                  { color: light, pos: 100 },
+                ],
+              },
+            },
+          },
+          children: [
+            {
+              name: 'text',
+              props: {
+                text: 'Sample',
+                color: '#FFFFFF',
+                fontSize: 12,
+                x,
+                y,
+                w: 2,
+                h: 0.5,
+              },
+            },
+          ],
+        },
+      ]);
+
+    for (const focus of ['center', undefined] as const) {
+      expect(contrastFindings(centerSlide(5.67, 3.5, focus))).toEqual([]);
+      const corner = contrastFindings(centerSlide(0.1, 0.1, focus));
+      expect(corner).toHaveLength(1);
+    }
+  });
+
   it('says nothing when an image hides the background', () => {
     expect(
       contrastFindings(
