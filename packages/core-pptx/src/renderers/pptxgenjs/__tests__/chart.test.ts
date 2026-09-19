@@ -1,6 +1,10 @@
+import JSZip from 'jszip';
 import type PptxGenJS from 'pptxgenjs';
 import { describe, expect, it } from 'vitest';
-import { compileDocumentToIr } from '../../../core/generateFromIr';
+import {
+  compileDocumentToIr,
+  generateBufferViaIr,
+} from '../../../core/generateFromIr';
 import type {
   PptxThemeConfig,
   PresentationComponentDefinition,
@@ -117,6 +121,93 @@ describe('PptxGenJS chart adapter', () => {
       expect(result.data).toEqual([
         { name: 'S', labels: ['a', 'b'], values: [1, 2] },
       ]);
+    }
+  });
+
+  it('sizes, faces and colours the axis titles from their tick labels', async () => {
+    // pptxgenjs writes an axis title's `sz` only when handed one, so a title
+    // left to it drew at PowerPoint's own large default.
+    const { options } = await emitted({
+      catAxisTitle: 'Quarter',
+      valAxisTitle: 'Revenue',
+      catAxisLabelFontSize: 11,
+      valAxisLabelColor: 'accent',
+    });
+    expect(options).toMatchObject({
+      catAxisTitleFontSize: 11,
+      catAxisTitleFontFace: 'Inter',
+      catAxisTitleColor: '000000',
+      // No label size anywhere: the size pptxgenjs gives an unsized label.
+      valAxisTitleFontSize: 12,
+      valAxisTitleFontFace: 'Inter',
+      valAxisTitleColor: '17A2B8',
+    });
+    expect(options).not.toHaveProperty('catAxisTitleRotate');
+    expect(options).not.toHaveProperty('valAxisTitleRotate');
+  });
+
+  it('lets the author override an axis title font by its native name', async () => {
+    const { options } = await emitted({
+      catAxisTitle: 'Quarter',
+      catAxisTitleFontSize: 9,
+      catAxisTitleFontFace: 'Georgia',
+      catAxisTitleColor: 'primary',
+      valAxisTitle: 'Revenue',
+      valAxisTitleRotate: -90,
+    });
+    expect(options).toMatchObject({
+      catAxisTitleFontSize: 9,
+      catAxisTitleFontFace: 'Georgia',
+      catAxisTitleColor: '0066CC',
+      valAxisTitleRotate: -90,
+    });
+  });
+
+  it('passes no axis title font when there is no title', async () => {
+    const { options } = await emitted({});
+    expect(options).not.toHaveProperty('catAxisTitleFontSize');
+    expect(options).not.toHaveProperty('valAxisTitleFontSize');
+  });
+
+  it('writes a sized, faced, coloured axis title into the chart part', async () => {
+    const { buffer } = await generateBufferViaIr({
+      name: 'pptx',
+      props: { theme },
+      children: [
+        {
+          name: 'slide',
+          children: [
+            {
+              name: 'chart',
+              props: {
+                type: 'bar',
+                data: [{ name: 'S', labels: ['a', 'b'], values: [1, 2] }],
+                catAxisTitle: 'Quarter',
+                valAxisTitle: 'Revenue',
+                x: 1,
+                y: 1,
+                w: 6,
+                h: 3,
+              },
+            },
+          ],
+        },
+      ],
+    } as PresentationComponentDefinition);
+    const zip = await JSZip.loadAsync(buffer);
+    const xml = await zip.file('ppt/charts/chart1.xml')!.async('string');
+    for (const tag of ['catAx', 'valAx']) {
+      const axis = xml.slice(
+        xml.indexOf(`<c:${tag}>`),
+        xml.indexOf(`</c:${tag}>`)
+      );
+      const title = axis.slice(
+        axis.indexOf('<c:title>'),
+        axis.indexOf('</c:title>')
+      );
+      expect(title, tag).toMatch(/<a:defRPr sz="1200" b="0"/);
+      expect(title, tag).toContain('<a:srgbClr val="000000"/>');
+      expect(title, tag).toContain('<a:latin typeface="Inter"/>');
     }
   });
 });

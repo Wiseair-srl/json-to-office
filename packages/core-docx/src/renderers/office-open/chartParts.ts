@@ -20,28 +20,59 @@ import {
   matchChartParts,
   spliceChartXml,
 } from '@json-to-office/shared/rendering';
-import type { ChartPartInput } from '@json-to-office/shared/rendering';
+import type {
+  ChartPartInput,
+  ChartTextStyle,
+} from '@json-to-office/shared/rendering';
 import type { DocxIrChartRun } from '../../ir/types';
 import { buildChartWorkbook } from '../../utils/chartWorkbook';
+
+/** Word's chart title size over its chart text size: 14pt over 10pt. */
+const CHART_TITLE_SCALE = 1.4;
 
 /**
  * One chart run, in the shared splice's vocabulary.
  *
  * The docx component exposes a smaller styling surface than the pptx one, so
  * only the axis titles have anywhere to go — the rest of `ChartAxisEdits` has
- * no authored prop behind it in this format yet.
+ * no authored prop behind it in this format yet. The theme's chart text style
+ * goes on both: as the chart-wide default the tick labels and legend inherit,
+ * and on each axis title, which would otherwise take Word's large bold default.
  */
 function spliceInput(chart: DocxIrChartRun): ChartPartInput {
+  const { bold, ...rest } = chart.textFont;
+  // The chart-wide default carries no weight: a `b` there would also unbold
+  // the chart title.
+  const textFont: ChartTextStyle = rest;
+  const axisTitleFont: ChartTextStyle = { ...rest, bold };
+  // Once the chart-wide default states a size, the chart title has to state
+  // its own: Word scales an unsized title up from that default, LibreOffice
+  // draws it at the default itself — a title no bigger than a tick label. So
+  // it is written at Word's own ratio, bold as Word draws it.
+  const chartTitleFont: ChartTextStyle = {
+    ...rest,
+    fontSize: Math.round(rest.fontSize * CHART_TITLE_SCALE),
+    bold: true,
+  };
   return {
     chartType: chart.chartType,
     series: chart.series,
     colors: chart.colors,
+    textFont,
+    titleFont: chartTitleFont,
     ...(chart.legendPosition ? { legendPosition: chart.legendPosition } : {}),
     ...(chart.categoryAxisTitle
-      ? { categoryAxis: { title: chart.categoryAxisTitle } }
+      ? {
+          categoryAxis: {
+            title: chart.categoryAxisTitle,
+            titleFont: axisTitleFont,
+          },
+        }
       : {}),
     ...(chart.valueAxisTitle
-      ? { valueAxis: { title: chart.valueAxisTitle } }
+      ? {
+          valueAxis: { title: chart.valueAxisTitle, titleFont: axisTitleFont },
+        }
       : {}),
   };
 }

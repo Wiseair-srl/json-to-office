@@ -121,6 +121,23 @@ describe('native chart end to end', () => {
     expect(chart).toContain('<a:t>EUR (thousands)</a:t>');
   });
 
+  it('gives the axis titles and chart text an explicit theme font', async () => {
+    // An axis title with no size, face or colour took Word's built-in default,
+    // far too large beside the tick labels; so did the empty chart-wide
+    // `a:defRPr` everything else inherits.
+    const chart = read(
+      await render(document('office-open')),
+      'word/charts/chart1.xml'
+    );
+    const titled =
+      /<a:rPr sz="1000" b="0"><a:solidFill><a:srgbClr val="[0-9A-F]{6}"\/><\/a:solidFill><a:latin typeface="[^"]+"\/><\/a:rPr><a:t>(Quarter|EUR \(thousands\))<\/a:t>/g;
+    expect(chart.match(titled)).toHaveLength(2);
+    const chartSpace = chart.slice(chart.lastIndexOf('</c:chart>'));
+    expect(chartSpace).toMatch(
+      /<c:txPr>[\s\S]*<a:defRPr sz="1000"><a:solidFill><a:srgbClr val="[0-9A-F]{6}"\/><\/a:solidFill><a:latin typeface="[^"]+"\/><\/a:defRPr>/
+    );
+  });
+
   it('keeps the caption as an ordinary paragraph outside the chart', async () => {
     const body = read(
       await render(document('office-open')),

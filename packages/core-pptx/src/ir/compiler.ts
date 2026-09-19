@@ -1882,6 +1882,42 @@ function compileChartLabelFont(
   return font;
 }
 
+/**
+ * An axis title's point size when neither the title nor its tick labels name
+ * one: the size pptxgenjs gives an unsized tick label, so the title matches
+ * the labels it sits beside.
+ */
+const DEFAULT_AXIS_TITLE_POINTS = 12;
+
+/**
+ * Resolve an axis title's font, always to a size, face and colour.
+ *
+ * An axis title that states no size is drawn at PowerPoint's own axis-title
+ * default, which is far larger than the tick labels beside it and pushes the
+ * plot around. So the title follows its axis' labels — size, face, colour —
+ * unless the author overrides it, with the theme body font and a 12pt size as
+ * the last resort. Never bold: neither backend has an axis-title bold toggle
+ * to override it with.
+ */
+function axisTitleFont(
+  ctx: CompileContext,
+  labelFont: PptxIrChartLabelFont,
+  resolved: (value: string | undefined) => PptxIrColor,
+  authored: { face?: string; size?: number; color?: string }
+): PptxIrChartLabelFont {
+  const fontFamily =
+    authored.face ?? labelFont.fontFamily ?? ctx.theme.fonts?.body;
+  return {
+    ...(fontFamily !== undefined ? { fontFamily } : {}),
+    fontSize: authored.size ?? labelFont.fontSize ?? DEFAULT_AXIS_TITLE_POINTS,
+    bold: false,
+    color:
+      authored.color !== undefined
+        ? resolved(authored.color)
+        : labelFont.color ?? resolved(undefined),
+  };
+}
+
 function compileChartOptions(
   props: Record<string, any>,
   ctx: CompileContext
@@ -1901,6 +1937,33 @@ function compileChartOptions(
     value
       ? irColor(resolveColor(value, ctx.theme, ctx.warnings))
       : themeTextColor;
+
+  const catLabelFont = compileChartLabelFont(
+    ctx,
+    'catAxisLabelFontFace',
+    props.catAxisLabelFontFace,
+    props.catAxisLabelFontWeight,
+    true,
+    {
+      ...(props.catAxisLabelFontSize !== undefined
+        ? { fontSize: props.catAxisLabelFontSize as number }
+        : {}),
+      color: resolved(props.catAxisLabelColor),
+    }
+  );
+  const valLabelFont = compileChartLabelFont(
+    ctx,
+    'valAxisLabelFontFace',
+    props.valAxisLabelFontFace,
+    props.valAxisLabelFontWeight,
+    true,
+    {
+      ...(props.valAxisLabelFontSize !== undefined
+        ? { fontSize: props.valAxisLabelFontSize as number }
+        : {}),
+      color: resolved(props.valAxisLabelColor),
+    }
+  );
 
   return {
     colors,
@@ -1950,6 +2013,14 @@ function compileChartOptions(
       ...(props.catAxisTitle !== undefined
         ? { title: props.catAxisTitle as string }
         : {}),
+      titleFont: axisTitleFont(ctx, catLabelFont, resolved, {
+        face: props.catAxisTitleFontFace,
+        size: props.catAxisTitleFontSize,
+        color: props.catAxisTitleColor,
+      }),
+      ...(props.catAxisTitleRotate !== undefined
+        ? { titleRotate: props.catAxisTitleRotate as number }
+        : {}),
       ...(props.catAxisHidden !== undefined
         ? { hidden: props.catAxisHidden as boolean }
         : {}),
@@ -1962,24 +2033,20 @@ function compileChartOptions(
       ...(props.catGridLine !== undefined
         ? { gridLine: compileGridLine(props.catGridLine, ctx) }
         : {}),
-      labelFont: compileChartLabelFont(
-        ctx,
-        'catAxisLabelFontFace',
-        props.catAxisLabelFontFace,
-        props.catAxisLabelFontWeight,
-        true,
-        {
-          ...(props.catAxisLabelFontSize !== undefined
-            ? { fontSize: props.catAxisLabelFontSize as number }
-            : {}),
-          color: resolved(props.catAxisLabelColor),
-        }
-      ),
+      labelFont: catLabelFont,
     },
 
     valueAxis: {
       ...(props.valAxisTitle !== undefined
         ? { title: props.valAxisTitle as string }
+        : {}),
+      titleFont: axisTitleFont(ctx, valLabelFont, resolved, {
+        face: props.valAxisTitleFontFace,
+        size: props.valAxisTitleFontSize,
+        color: props.valAxisTitleColor,
+      }),
+      ...(props.valAxisTitleRotate !== undefined
+        ? { titleRotate: props.valAxisTitleRotate as number }
         : {}),
       ...(props.valAxisHidden !== undefined
         ? { hidden: props.valAxisHidden as boolean }
@@ -2002,19 +2069,7 @@ function compileChartOptions(
       ...(props.valGridLine !== undefined
         ? { gridLine: compileGridLine(props.valGridLine, ctx) }
         : {}),
-      labelFont: compileChartLabelFont(
-        ctx,
-        'valAxisLabelFontFace',
-        props.valAxisLabelFontFace,
-        props.valAxisLabelFontWeight,
-        true,
-        {
-          ...(props.valAxisLabelFontSize !== undefined
-            ? { fontSize: props.valAxisLabelFontSize as number }
-            : {}),
-          color: resolved(props.valAxisLabelColor),
-        }
-      ),
+      labelFont: valLabelFont,
     },
 
     ...(props.dataBorder !== undefined

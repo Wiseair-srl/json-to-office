@@ -77,6 +77,15 @@ describe('chart lowering', () => {
     }
   });
 
+  it('resolves the chart text font from the theme, capped at 10pt', async () => {
+    const { chart } = await chartFrom({ type: 'bar', data: series });
+    expect(chart!.textFont.fontFamily).toMatch(/\S/);
+    expect(chart!.textFont.fontSize).toBeGreaterThan(0);
+    expect(chart!.textFont.fontSize).toBeLessThanOrEqual(10);
+    expect(chart!.textFont.bold).toBe(false);
+    expect(chart!.textFont.color).toMatch(/^[0-9A-F]{6}$/);
+  });
+
   it('lets an explicit palette win, resolving semantic names', async () => {
     const { chart } = await chartFrom({
       type: 'bar',

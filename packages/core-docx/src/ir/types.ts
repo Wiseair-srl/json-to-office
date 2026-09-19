@@ -581,6 +581,13 @@ export interface DocxIrChartRun {
   legendPosition?: DocxIrChartLegendPosition;
   categoryAxisTitle?: string;
   valueAxisTitle?: string;
+  /**
+   * The chart's text style, resolved from the theme: the chart-wide default
+   * every tick label and the legend inherit, and the axis titles' font.
+   * Without it the chart part states no size at all and Word draws its axis
+   * titles at its own large, bold default.
+   */
+  textFont: DocxIrChartTextFont;
   altText?: string;
   /** Absent makes it an inline drawing rather than an anchored one. */
   floating?: DocxIrFloating;
@@ -606,6 +613,14 @@ export type DocxIrChartLegendPosition = 'b' | 'l' | 'r' | 't' | 'tr';
  * the compiler refuses a ragged or incomplete one by name, so no backend has to
  * decide what a value without a label means.
  */
+/** A resolved chart font: family, size in points, bold, 6-digit hex. */
+export interface DocxIrChartTextFont {
+  fontFamily: string;
+  fontSize: number;
+  bold: boolean;
+  color: string;
+}
+
 export interface DocxIrChartSeries {
   name?: string;
   labels: string[];

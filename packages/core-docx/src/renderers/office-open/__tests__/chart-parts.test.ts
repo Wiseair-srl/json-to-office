@@ -37,6 +37,12 @@ const chart: DocxIrChartRun = {
   title: 'Quarterly revenue',
   categoryAxisTitle: 'Quarter',
   valueAxisTitle: 'EUR',
+  textFont: {
+    fontFamily: 'Calibri',
+    fontSize: 10,
+    bold: false,
+    color: '3B3C38',
+  },
 };
 
 /** A package shaped exactly as the backend emits one, for one bar chart. */
@@ -175,7 +181,47 @@ describe('chart part splicing', () => {
     spliceChartParts(zip, [{ ...chart, colors: [] }]);
     const xml = read(new AdmZip(zip.toBuffer()), 'word/charts/chart1.xml');
     expect(xml).toContain('<c:spPr/>');
-    expect(xml).not.toContain('srgbClr');
+    // The only colour left is the theme text colour on the chart's text.
+    const series = xml.match(/<c:ser>[\s\S]*?<\/c:ser>/g) ?? [];
+    expect(series.length).toBeGreaterThan(0);
+    for (const entry of series) expect(entry).not.toContain('srgbClr');
+  });
+
+  it('sizes, faces and colours both axis titles from the theme', async () => {
+    // With no run properties an axis title took Word's own default — large and
+    // bold, far bigger than the tick labels beside it.
+    const xml = read(await spliced(), 'word/charts/chart1.xml');
+    const font =
+      'sz="1000" b="0"><a:solidFill><a:srgbClr val="3B3C38"/></a:solidFill>' +
+      '<a:latin typeface="Calibri"/>';
+    for (const tag of ['catAx', 'valAx']) {
+      const axis = xml.slice(
+        xml.indexOf(`<c:${tag}>`),
+        xml.indexOf(`</c:${tag}>`)
+      );
+      const title = axis.slice(
+        axis.indexOf('<c:title>'),
+        axis.indexOf('</c:title>')
+      );
+      expect(title, tag).toContain(
+        `<a:pPr><a:defRPr ${font}</a:defRPr></a:pPr>`
+      );
+      expect(title, tag).toContain(`<a:rPr ${font}</a:rPr>`);
+    }
+  });
+
+  it('states the chart-wide text default rather than leaving it empty', async () => {
+    const xml = read(await spliced(), 'word/charts/chart1.xml');
+    const chartSpaceTail = xml.slice(xml.lastIndexOf('</c:chart>'));
+    expect(chartSpaceTail.match(/<c:txPr>/g)).toHaveLength(1);
+    expect(chartSpaceTail).toContain(
+      '<a:defRPr sz="1000"><a:solidFill><a:srgbClr val="3B3C38"/></a:solidFill>' +
+        '<a:latin typeface="Calibri"/></a:defRPr>'
+    );
+    expect(chartSpaceTail).not.toContain('<a:defRPr/>');
+    // Written at Word's title ratio, since the default now has a size.
+    const head = xml.slice(0, xml.indexOf('<c:plotArea>'));
+    expect(head).toContain('<a:defRPr sz="1400" b="1">');
   });
 
   it('titles both axes, in the position the schema demands', async () => {

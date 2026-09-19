@@ -198,6 +198,33 @@ export const PptxChartPropsSchema = Type.Object(
     catAxisTitle: Type.Optional(
       Type.String({ description: 'Category axis title' })
     ),
+    catAxisTitleFontSize: Type.Optional(
+      Type.Number({
+        minimum: 1,
+        description:
+          'Category axis title font size (points). Defaults to the axis label size.',
+      })
+    ),
+    catAxisTitleFontFace: Type.Optional(
+      Type.String({
+        description:
+          'Category axis title font face. Defaults to the axis label face, else the theme body font.',
+      })
+    ),
+    catAxisTitleColor: Type.Optional(
+      Type.String({
+        description:
+          'Category axis title color (hex or semantic). Defaults to the axis label color.',
+      })
+    ),
+    catAxisTitleRotate: Type.Optional(
+      Type.Number({
+        minimum: -360,
+        maximum: 360,
+        description:
+          'Category axis title rotation (degrees). Omit for the PowerPoint default.',
+      })
+    ),
     catAxisHidden: Type.Optional(
       Type.Boolean({ description: 'Hide category axis' })
     ),
@@ -228,6 +255,33 @@ export const PptxChartPropsSchema = Type.Object(
     // Value axis
     valAxisTitle: Type.Optional(
       Type.String({ description: 'Value axis title' })
+    ),
+    valAxisTitleFontSize: Type.Optional(
+      Type.Number({
+        minimum: 1,
+        description:
+          'Value axis title font size (points). Defaults to the axis label size.',
+      })
+    ),
+    valAxisTitleFontFace: Type.Optional(
+      Type.String({
+        description:
+          'Value axis title font face. Defaults to the axis label face, else the theme body font.',
+      })
+    ),
+    valAxisTitleColor: Type.Optional(
+      Type.String({
+        description:
+          'Value axis title color (hex or semantic). Defaults to the axis label color.',
+      })
+    ),
+    valAxisTitleRotate: Type.Optional(
+      Type.Number({
+        minimum: -360,
+        maximum: 360,
+        description:
+          'Value axis title rotation (degrees), e.g. -90 to read bottom to top. Omit for the PowerPoint default.',
+      })
     ),
     valAxisHidden: Type.Optional(
       Type.Boolean({ description: 'Hide value axis' })

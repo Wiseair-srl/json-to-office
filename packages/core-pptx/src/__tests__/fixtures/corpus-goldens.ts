@@ -99,7 +99,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'chart/bar':
     'dc53f5d1b5e2821ef6782ae9ab35fc31f159d09e3a8c23574e180775e626e224',
   'chart/configured':
-    '7a943ce407d1d8628dd6ca75c28a4760694251ba7c986df8f861bd48c91a06c3',
+    '0618eacb01547f973766367029788edb6d4cc5ad7ddc6a19164a4f5c4cc02a11',
   'chart/two-on-one-slide':
     '961f179d146aaaff63f27629bce466c1a0f426eac071dbee311fe8a885ab7980',
   'text/single-run':

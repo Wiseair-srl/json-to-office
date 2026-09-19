@@ -677,6 +677,13 @@ export interface PptxIrChartOptions {
 
 export interface PptxIrChartAxis {
   title?: string;
+  /**
+   * The title's font, always resolved: without an explicit size PowerPoint
+   * draws an axis title at its own large default, far above the tick labels.
+   */
+  titleFont: PptxIrChartLabelFont;
+  /** Title rotation in degrees; absent keeps PowerPoint's default. */
+  titleRotate?: number;
   hidden?: boolean;
   labelRotate?: number;
   labelFont: PptxIrChartLabelFont;

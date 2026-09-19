@@ -141,6 +141,7 @@ import {
   type DocxIrHeaderFooter,
   type DocxIrImageRun,
   type DocxIrChartRun,
+  type DocxIrChartTextFont,
   type DocxIrChartSeries,
   type DocxIrChartType,
   type DocxIrChartLegendPosition,
@@ -3874,6 +3875,38 @@ function compileImage(
 /** A chart with no explicit height is this tall, in inches. */
 const DEFAULT_CHART_HEIGHT_INCHES = 3;
 
+/** The largest chart text size, in points: Word's own chart text default. */
+const MAX_CHART_TEXT_POINTS = 10;
+
+/**
+ * The chart's text style, from the theme: the body face in the primary text
+ * colour, at the body size capped to 10pt, never bold.
+ *
+ * Stated rather than inherited because a chart part that states nothing is
+ * drawn at the reader's defaults, and Word's axis-title default is large and
+ * bold — nothing like the body text around the chart. Capped because chart
+ * labels sit in a small frame beside a lot of other text, where body size
+ * crowds the plot; a theme with a smaller body keeps its own.
+ */
+function chartTextFont(theme: ThemeConfig): DocxIrChartTextFont {
+  const bodySize = getThemeFonts(theme).body?.size;
+  let color = '000000';
+  try {
+    color = resolveColor('textPrimary', theme);
+  } catch {
+    // A theme with no resolvable text colour keeps black, as Word would.
+  }
+  return {
+    fontFamily: resolveFontFamily(theme, 'body'),
+    fontSize: Math.min(
+      typeof bodySize === 'number' && bodySize > 0 ? bodySize : 11,
+      MAX_CHART_TEXT_POINTS
+    ),
+    bold: false,
+    color,
+  };
+}
+
 /**
  * Lower a `chart` component to a chart run.
  *
@@ -4001,6 +4034,7 @@ function compileChart(
     ...(typeof props.valAxisTitle === 'string'
       ? { valueAxisTitle: props.valAxisTitle }
       : {}),
+    textFont: chartTextFont(ctx.theme),
     ...(typeof props.alt === 'string' && props.alt
       ? { altText: props.alt }
       : {}),
