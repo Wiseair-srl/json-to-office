@@ -488,13 +488,16 @@ describe.skipIf(!soffice || !pdftotext)('rendered through LibreOffice', () => {
         expect(pages[1].indexOf('Contents')).toBeLessThan(
           pages[1].indexOf(opener)
         );
-        // Every numbered opener is listed on the contents page, with its dot
-        // leader, before it is painted in the body: the TOC is document-scoped,
-        // not scoped to the section it sits in.
-        const listed = pages[1]
-          .split('\n')
-          .filter((line) => /\.{4,}/.test(line))
-          .join('\n');
+        // Every numbered opener is listed on the contents page, before it is
+        // painted in the body: the TOC is document-scoped, not scoped to the
+        // section it sits in. The cached entries are the lines between the
+        // title and the first blank line — they carry no dot leader, because
+        // the theme's TOC styles ask for none.
+        const lines = pages[1].split('\n');
+        const title = lines.findIndex((line) => line.trim() === 'Contents');
+        const gap = lines.findIndex((line, i) => i > title && !line.trim());
+        const listed = lines.slice(title + 1, gap).join('\n');
+        expect(listed).not.toMatch(/\.{4,}/);
         expect(listed.split('\n')).toHaveLength(
           variant === 'data-heavy' ? 7 : 5
         );
