@@ -129,21 +129,18 @@ describe('JSON report blocks from playground templates', () => {
   });
   it('inherits chrome and each section’s page width; only the declaring section breaks the page', () => {
     const input = example();
-    // The example's Letter section breaks the page itself, because a paper
-    // size cannot change mid-page; without that it would inherit no break.
-    expect(input.children[2].props.pageBreak).toBe(true);
-    delete input.children[2].props.pageBreak;
     const expanded = expandBlocks(input, consultingTheme);
     expect(expanded.document.children[0].props.header).toBeUndefined();
     const report = expanded.document.children[1];
-    const letter = expanded.document.children[2];
+    const second = expanded.document.children[2];
     expect(report.props.header[0].props.text).toBe('Client performance report');
-    expect(letter.props.header[0].props.text).toBe('Client performance report');
-    expect(letter.props.footer[1].props.tabStops[0].position).toBe(5040);
+    expect(second.props.header[0].props.text).toBe('Client performance report');
+    // The footer's right tab sits at half the section's text measure.
+    expect(second.props.footer[1].props.tabStops[0].position).toBe(4513);
     // The running head starts its own section on a new page (after the
     // cover); a section that merely inherits it continues on the page.
     expect(report.props.pageBreak).toBe(true);
-    expect(letter.props.pageBreak).toBeUndefined();
+    expect(second.props.pageBreak).toBeUndefined();
   });
   it('honors authored section parts and page breaks', () => {
     const input = example();
