@@ -1,5 +1,16 @@
 # @json-to-office/core-pptx
 
+## 7.0.1
+
+### Patch Changes
+
+- fa854ef: Native chart axis titles now state a size, face and colour instead of falling back to Word's and PowerPoint's large built-in defaults. DOCX charts take the theme body font and text colour at up to 10pt, also as the chart-wide text default; PPTX axis titles follow their tick labels and can be overridden with `catAxisTitleFontSize`, `catAxisTitleFontFace`, `catAxisTitleColor`, `catAxisTitleRotate` and the `valAxisTitle*` equivalents.
+- eec8b55: A PNG or JPEG whose bytes would not decode (bad chunk CRCs, pixel data that does not inflate, a missing end marker) now fails generation as `ASSET_UNREADABLE` naming the image, instead of shipping a document that Word and PowerPoint open with "The picture can't be displayed". The block matrix's own test image, which was one such file, is now a valid PNG.
+- fc0b9a0: Radial gradient fills and slide backgrounds now look the same in PowerPoint as in LibreOffice and the preview: they ship as a picture of the gradient instead of a DrawingML path gradient, which PowerPoint stretched into a slide-wide ellipse. A center-focus radial gradient (the default) is now also sampled about the middle by the text-contrast check.
+- Updated dependencies [fa854ef]
+- Updated dependencies [eec8b55]
+  - @json-to-office/shared@7.0.1
+
 ## 7.0.0
 
 ### Major Changes
