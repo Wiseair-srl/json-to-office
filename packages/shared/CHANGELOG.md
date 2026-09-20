@@ -1,5 +1,12 @@
 # @json-to-office/shared
 
+## 7.0.1
+
+### Patch Changes
+
+- fa854ef: Native chart axis titles now state a size, face and colour instead of falling back to Word's and PowerPoint's large built-in defaults. DOCX charts take the theme body font and text colour at up to 10pt, also as the chart-wide text default; PPTX axis titles follow their tick labels and can be overridden with `catAxisTitleFontSize`, `catAxisTitleFontFace`, `catAxisTitleColor`, `catAxisTitleRotate` and the `valAxisTitle*` equivalents.
+- eec8b55: A PNG or JPEG whose bytes would not decode (bad chunk CRCs, pixel data that does not inflate, a missing end marker) now fails generation as `ASSET_UNREADABLE` naming the image, instead of shipping a document that Word and PowerPoint open with "The picture can't be displayed". The block matrix's own test image, which was one such file, is now a valid PNG.
+
 ## 7.0.0
 
 ### Minor Changes

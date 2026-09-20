@@ -1,5 +1,19 @@
 # @json-to-office/jto-ops
 
+## 7.0.1
+
+### Patch Changes
+
+- eec8b55: A PNG or JPEG whose bytes would not decode (bad chunk CRCs, pixel data that does not inflate, a missing end marker) now fails generation as `ASSET_UNREADABLE` naming the image, instead of shipping a document that Word and PowerPoint open with "The picture can't be displayed". The block matrix's own test image, which was one such file, is now a valid PNG.
+- Updated dependencies [fa854ef]
+- Updated dependencies [eec8b55]
+- Updated dependencies [fc0b9a0]
+- Updated dependencies [830da13]
+- Updated dependencies [57ecc76]
+  - @json-to-office/shared@7.0.1
+  - @json-to-office/core-docx@7.0.1
+  - @json-to-office/core-pptx@7.0.1
+
 ## 7.0.0
 
 ### Major Changes

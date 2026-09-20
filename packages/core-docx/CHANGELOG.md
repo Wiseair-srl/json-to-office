@@ -1,5 +1,20 @@
 # @json-to-office/core-docx
 
+## 7.0.1
+
+### Patch Changes
+
+- fa854ef: Native chart axis titles now state a size, face and colour instead of falling back to Word's and PowerPoint's large built-in defaults. DOCX charts take the theme body font and text colour at up to 10pt, also as the chart-wide text default; PPTX axis titles follow their tick labels and can be overridden with `catAxisTitleFontSize`, `catAxisTitleFontFace`, `catAxisTitleColor`, `catAxisTitleRotate` and the `valAxisTitle*` equivalents.
+- eec8b55: A PNG or JPEG whose bytes would not decode (bad chunk CRCs, pixel data that does not inflate, a missing end marker) now fails generation as `ASSET_UNREADABLE` naming the image, instead of shipping a document that Word and PowerPoint open with "The picture can't be displayed". The block matrix's own test image, which was one such file, is now a valid PNG.
+- 830da13: A DOCX section that changes the paper size or orientation now starts on a new page, as Word already did and LibreOffice did not, and warns `W_SECTION_PAGE_BREAK_FORCED` when it was set to continue. Tables, images, charts, columns and shapes inside a section with its own page are sized to that section's text width instead of the theme's, and the office-open backend writes table widths as whole twips.
+
+  The shipped `client-report-blocks` example no longer switches its third section to Letter paper mid-document — a house client report stays on one paper size — so the report is three A4 pages again. Per-section page overrides keep working; they are covered by tests rather than by the example.
+
+- 57ecc76: The table of contents' cached entries now follow the theme's TOC styles in every reader: they no longer carry their own dot-leader tab stop, which LibreOffice and other readers that do not refresh fields showed instead of the theme's styling.
+- Updated dependencies [fa854ef]
+- Updated dependencies [eec8b55]
+  - @json-to-office/shared@7.0.1
+
 ## 7.0.0
 
 ### Major Changes
