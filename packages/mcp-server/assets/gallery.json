@@ -28,9 +28,7 @@
         "text": 4,
         "title": 6
       },
-      "externalAssets": [
-        "media/client-report-blocks/delivery-model.png"
-      ],
+      "externalAssets": ["media/client-report-blocks/delivery-model.png"],
       "externalFonts": [],
       "hash": "508eb1b6f9a6c0bad1390608a2cce20a56c5e7c6429f60c3e7601e7f5351097b",
       "bytes": {
