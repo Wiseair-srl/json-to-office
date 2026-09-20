@@ -394,12 +394,27 @@ describe('the generator', () => {
       props?: { page?: { size?: string } };
     }[])
       expect(section.props?.page?.size).toBe('LETTER');
-    // A section's own page override survives the canvas: the template's
-    // third section states its margins, and the A4 case is A4 there too.
     const a4 = cases.find((c) => c.canvas === 'A4' && c.block === 'report')!;
-    const third = (a4.document.children as { props?: { page?: unknown } }[])[2];
+    for (const section of a4.document.children as {
+      props?: { page?: { size?: string } };
+    }[])
+      expect(section.props?.page?.size).toBe('A4');
+    // A section's own page override survives the canvas: only the size is
+    // rewritten, so margins a template states stay as authored.
+    const authored = structuredClone(TEMPLATE) as unknown as {
+      children: { name: string; props: Record<string, unknown> }[];
+    };
+    authored.children[2].props.page = { margins: { left: 1080, right: 1080 } };
+    const withMargins = generateBlockMatrix(authored as never, TEMPLATE_NAME, {
+      themes: ['consulting'],
+      canvases: ['LETTER'],
+      edges: ['max'],
+    }).find((c) => c.block === 'report')!;
+    const third = (
+      withMargins.document.children as { props?: { page?: unknown } }[]
+    )[2];
     expect(third.props?.page).toMatchObject({
-      size: 'A4',
+      size: 'LETTER',
       margins: { left: 1080, right: 1080 },
     });
     const fallback = cases.find((c) => c.font === 'fallback')!;
