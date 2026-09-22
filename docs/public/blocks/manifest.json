@@ -82,35 +82,35 @@
       "block": "cover",
       "template": "consulting-deck-blocks.pptx.json",
       "composition": "slide",
-      "hash": "5a8bd583811a287a0a5f04b44f8f546faad906376418d536ac9aff48a82bf864"
+      "hash": "03c589c34ff34f196be2f6e573ef95a3389512e8420309941981b9d0246df4d5"
     },
     {
       "file": "kpi-row-deck-consulting.png",
       "block": "kpi-row",
       "template": "consulting-deck-blocks.pptx.json",
       "composition": "slide",
-      "hash": "1e9af8728dca7881bda898fafe0c144efc61a8a3a9e13cac0e297f91106969fb"
+      "hash": "7145766d04b0b1f4fec052b223427a4a2510e54df8cce0667b1efb64dd0fec41"
     },
     {
       "file": "action-chart-deck-consulting.png",
       "block": "action-chart",
       "template": "consulting-deck-blocks.pptx.json",
       "composition": "slide",
-      "hash": "a34cc5791082af7c0a87d278070b797574c28340d1ba91aa2e66f0a0078b412c"
+      "hash": "3863a5e0cbbcde6b8219b4198b05813c50b55af29c77fbe4768a74268a4df925"
     },
     {
       "file": "two-column-deck-consulting.png",
       "block": "two-column",
       "template": "consulting-deck-blocks.pptx.json",
       "composition": "slide",
-      "hash": "ecd67a4f1135e5a0d0d21d7819ff187842cf5fc4858eccf000b7033e38a4c313"
+      "hash": "b0b75801484c52bd856249426e3d21e8242cf223388b91edda5f886b8edfbfc7"
     },
     {
       "file": "statement-deck-consulting.png",
       "block": "statement",
       "template": "consulting-deck-blocks.pptx.json",
       "composition": "slide",
-      "hash": "5f637e6c38a22d87eae13ba831cc7109f59d273cbbe326846e1a616e08ef4b9d"
+      "hash": "ded5b541d1e289ea0a2aac8d1ba3d43a38d6868d68f49aee9c7630d0c4bc8616"
     }
   ]
 }
