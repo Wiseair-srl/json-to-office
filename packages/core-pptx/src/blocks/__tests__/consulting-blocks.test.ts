@@ -81,7 +81,9 @@ const WIDEST: Record<(typeof BLOCKS)[number], Record<string, unknown>> = {
     },
     source: words(24),
   },
-  statement: { tracker: words(4), assertion: words(11), support: words(30) },
+  // 22 synthetic words, not the 24 the slot allows: the slot's other budget
+  // is 150 characters, which `word10`-style words reach sooner than prose.
+  statement: { tracker: words(4), assertion: words(11), support: words(22) },
 };
 
 function deck(

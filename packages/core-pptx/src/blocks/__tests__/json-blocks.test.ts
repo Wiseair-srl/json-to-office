@@ -277,6 +277,8 @@ describe('the action-chart playground template', () => {
       chart,
     });
     doc.props.blocks['action-chart'].slots.title.maxWords = 200;
+    // The slot also bounds characters (#343): lift both to reach the fit pass.
+    doc.props.blocks['action-chart'].slots.title.maxLength = 400;
     expect(validatePresentationDocument(doc).valid).toBe(true);
     let error: unknown;
     try {
@@ -303,6 +305,8 @@ describe('the action-chart playground template', () => {
       chart,
     });
     doc.props.blocks['action-chart'].slots.title.maxWords = 200;
+    // The slot also bounds characters (#343): lift both to reach the fit pass.
+    doc.props.blocks['action-chart'].slots.title.maxLength = 400;
     const prepared = preparePptxQualityDocument(doc);
     const title = prepared.facts.find(
       (fact) =>
@@ -311,7 +315,11 @@ describe('the action-chart playground template', () => {
     ) as any;
     const declared = pptxThemes.consulting.typography!.roles!.display!.size!;
     expect(title.fontSizePt).toBeLessThan(declared);
-    expect(title.fontSizePt).toBe(24);
+    // 22, not the first step down: LibreOffice sets this title on three
+    // lines at both 28 and 24pt and on two at 22 (#343 calibration probe),
+    // which the word-wrapping model now agrees with. The older model called
+    // 24pt two lines and let it spill.
+    expect(title.fontSizePt).toBe(22);
   });
 });
 
@@ -328,6 +336,8 @@ describe('the consulting profile against the theme', () => {
       chart,
     });
     doc.props.blocks['action-chart'].slots.title.maxWords = 200;
+    // The slot also bounds characters (#343): lift both to reach the fit pass.
+    doc.props.blocks['action-chart'].slots.title.maxLength = 400;
     // The title is the second child of the definition's frame; allow it three
     // lines so the fit pass keeps the size and the profile can judge it.
     doc.props.blocks['action-chart'].body[0].children[1].props.fit = {

@@ -175,7 +175,7 @@ describe('document-local block invocations through the language service', () => 
     const slots = definitions()['action-chart'].slots;
     expect(descriptions.title).toContain(slots.title.description);
     expect(descriptions.title).toContain('Required');
-    expect(descriptions.title).toContain('at most 17 words');
+    expect(descriptions.title).toContain('at most 16 words');
     expect(descriptions.title).toContain('one line');
     expect(descriptions.title).toContain('Role: actionTitle');
     expect(descriptions.chart).toContain('placement stays in the definition');
@@ -210,7 +210,9 @@ describe('document-local block invocations through the language service', () => 
     expect(hover).toContain(
       definitions()['action-chart'].slots.title.description
     );
-    expect(hover).toContain('Required · at most 17 words · one line');
+    expect(hover).toContain(
+      'Required · at most 110 characters · at most 16 words · one line'
+    );
     expect(hover).toContain('Role: actionTitle');
   });
   it('completes a block placed inside a component slot', async () => {

@@ -63,7 +63,12 @@ const RENDERER_DEFAULT_HEIGHT_IN = 7.5;
 // alarms. Remaining misses require rendered evidence (`rendered` certainty),
 // not a character-count model — see the harness header for the full method.
 // The estimator itself lives in `utils/textMetrics.ts`, shared with the
-// engine's bounded `fit` so both size a title the same way.
+// engine's bounded `fit` so both size a title the same way. Its shape was
+// recalibrated for #343 — wrapping at word boundaries, a flat 1.2 line pitch
+// and every line's leading counted — which the gallery templates absorb at
+// this same 0.46. The engine's `fit` goes further and measures each face by
+// its own advance; the rules keep one factor, so a deck set in a wide face
+// is judged optimistically here and exactly there.
 import {
   DEFAULT_CHAR_WIDTH_FACTOR,
   estimateTextHeightPt as estimateHeight,

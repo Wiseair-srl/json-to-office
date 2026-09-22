@@ -19,6 +19,7 @@ import type { PptxComponentInput, PptxThemeConfig, StyleName } from '../types';
 import {
   defaultLineHeightPt,
   estimateTextHeightPt,
+  fitCharWidthFactor,
 } from '../utils/textMetrics';
 import { dimensionInches } from './dimensions';
 
@@ -88,6 +89,20 @@ function fitOne(
     typeof props.fontSize === 'number'
       ? props.fontSize
       : style?.fontSize ?? options.theme.defaults.fontSize;
+  // The face the compiler will set, resolved the same way it resolves it, so
+  // the fit measures the glyphs the renderer draws (#343).
+  const isHeading =
+    typeof props.style === 'string' && /^(title|heading)/.test(props.style);
+  const fontFace =
+    (typeof props.fontFace === 'string' ? props.fontFace : undefined) ??
+    style?.fontFace ??
+    (isHeading ? options.theme.fonts?.heading : options.theme.fonts?.body);
+  const bold =
+    typeof props.bold === 'boolean'
+      ? props.bold
+      : typeof props.fontWeight === 'number'
+        ? props.fontWeight >= 600
+        : style?.bold === true;
   const x = dimensionInches(props.x, options.slideWidth) ?? 0;
   const widthIn =
     dimensionInches(props.w, options.slideWidth) ??
@@ -117,7 +132,10 @@ function fitOne(
         ? size * multiple
         : explicitSpacing ?? defaultLineHeightPt(size),
       before,
-      after
+      after,
+      // A size the engine picks has nothing downstream to catch it, so it is
+      // measured at the pessimistic end of the face's calibrated advance.
+      fitCharWidthFactor(fontFace, bold)
     );
   const fits = (size: number): boolean => {
     const estimate = measure(size);

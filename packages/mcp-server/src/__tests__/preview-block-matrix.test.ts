@@ -237,31 +237,6 @@ function collapsedStatement(statement: MatrixCase): MatrixCase {
 }
 
 /**
- * Where the consulting deck's widest budgets overflow once LibreOffice sets
- * them (measured 2026-09-16): the cover title wraps a line more than its fit
- * estimate allows and prints over the subtitle, which a theme without type
- * roles then cuts off; the statement's support and the action chart's
- * takeaway run past their boxes. Worse on the themes without roles and in
- * the fallback faces, and not monotonic in the word count — the fit steps
- * down a size only when its estimate overflows, so a few words fewer can keep
- * the larger size and spill — so no budget holds it alone: the deck fit
- * estimate needs calibrating against rendered ground truth, as the pptx text
- * estimator was. Until then each is tolerated at its block and slot on the
- * deck's widest cases, never elsewhere, and logged in the manifest.
- */
-const DECK_FIT_DEFECTS: readonly {
-  code: string;
-  ref: string;
-  slot?: string;
-}[] = [
-  { code: 'W_QUALITY_RENDERED_OVERLAP', ref: 'cover' },
-  { code: 'W_QUALITY_RENDERED_CLIP', ref: 'cover', slot: 'subtitle' },
-  { code: 'W_QUALITY_RENDERED_SPILL', ref: 'statement', slot: 'support' },
-  { code: 'W_QUALITY_RENDERED_SPILL', ref: 'action-chart' },
-  { code: 'W_QUALITY_RENDERED_CLIP', ref: 'action-chart' },
-];
-
-/**
  * A matcher false positive, not a render defect (measured 2026-09-17 on the
  * CI converters, LibreOffice 24.2 and poppler 24.02): devportal centres the
  * four kpi-row labels, each wraps to two or three lines, and the generated
@@ -283,34 +258,17 @@ function toleratedKpiLabel(
   );
 }
 
+/**
+ * The deck's widest cases used to be tolerated here: the cover title wrapped
+ * over the subtitle, the statement's support and the action chart's takeaway
+ * ran past their boxes. The fit estimator was calibrated against rendered
+ * ground truth (#343) — word wrapping, a flat 1.2 line pitch, a per-face
+ * advance and a bold allowance — and the deck's slot budgets were bounded in
+ * characters as well as words, which is what the renderer wraps by. The list
+ * is empty because the renders are clean; a defect here is a defect now.
+ */
 function tolerated(c: MatrixCase, d: { code: string; path?: string }): boolean {
-  if (toleratedKpiLabel(c, d)) return true;
-  if (c.template !== 'consulting-deck-blocks.pptx.json' || c.edge !== 'max')
-    return false;
-  const at =
-    /^\/children\/(\d+)\/children\/(\d+)(?:\/props\/slots\/([^/]+))?$/.exec(
-      d.path ?? ''
-    );
-  if (!at)
-    // An overlap the pass could not attribute: the cover's own words, drawn
-    // over each other.
-    return (
-      d.path === undefined &&
-      d.code === 'W_QUALITY_RENDERED_OVERLAP' &&
-      (c.block === 'cover' || c.block === 'report')
-    );
-  const slides = (c.document as { children: { children?: unknown[] }[] })
-    .children;
-  const node = slides[Number(at[1])]?.children?.[Number(at[2])] as
-    | { name?: string; props?: { ref?: string } }
-    | undefined;
-  const ref = node?.name === 'block' ? node.props?.ref : undefined;
-  return DECK_FIT_DEFECTS.some(
-    (defect) =>
-      defect.code === d.code &&
-      defect.ref === ref &&
-      (defect.slot === undefined || defect.slot === at[3])
-  );
+  return toleratedKpiLabel(c, d);
 }
 
 interface ManifestCase {
@@ -325,7 +283,7 @@ interface ManifestCase {
   /** The faces the PDF embeds, by base name. */
   embedded: string[];
   warnings: string[];
-  /** Warnings on the deck's known fit defects (`DECK_FIT_DEFECTS`). */
+  /** Warnings on findings tolerated as matcher error, not render defects. */
   tolerated: string[];
   infos: string[];
 }

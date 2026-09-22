@@ -15,13 +15,15 @@
             "type": "string",
             "required": true,
             "maxWords": 16,
-            "description": "The deck's conclusion in one sentence; three lines at most, stepping down to 28 then 24pt."
+            "description": "The deck's conclusion in one sentence; three lines at most, stepping down through 28, 24, 22 to 20pt, and at most 110 characters.",
+            "maxLength": 110
           },
           "subtitle": {
             "type": "string",
             "oneLine": true,
             "maxWords": 20,
-            "description": "What the deck answers, for whom."
+            "description": "What the deck answers, for whom. At most 150 characters: two lines on the widest faces.",
+            "maxLength": 150
           },
           "client": {
             "type": "string",
@@ -131,7 +133,7 @@
                           "default": ""
                         }
                       ],
-                      "separator": " · "
+                      "separator": " \u00b7 "
                     },
                     "style": "eyebrow",
                     "fontSize": {
@@ -162,11 +164,11 @@
                   "x": "0%",
                   "y": "39%",
                   "w": "90%",
-                  "h": "30%",
+                  "h": "21%",
                   "valign": "top",
                   "fit": {
                     "maxLines": 3,
-                    "shrink": [28, 24]
+                    "shrink": [28, 24, 22, 20]
                   },
                   "color": {
                     "$theme": [
@@ -243,9 +245,10 @@
             "type": "string",
             "required": true,
             "oneLine": true,
-            "maxWords": 17,
+            "maxWords": 16,
+            "maxLength": 110,
             "role": "actionTitle",
-            "description": "The claim the chart proves: a sentence with a number or a verb, two lines at most. Longer titles step down to 24 then 22pt, then fail."
+            "description": "The claim the chart proves: a sentence with a number or a verb, two lines at most, and at most 110 characters \u2014 two lines on the widest faces. Longer titles step down to 24 then 22pt, then fail."
           },
           "tracker": {
             "type": "string",
@@ -261,9 +264,10 @@
           },
           "takeaway": {
             "type": "string",
-            "maxWords": 40,
+            "maxWords": 28,
             "role": "takeaway",
-            "description": "What the reader should conclude, set beside the chart under an accent rule."
+            "description": "What the reader should conclude, set beside the chart under an accent rule. At most 28 words and 240 characters: the column is narrow, and its line spacing does not shrink with the size.",
+            "maxLength": 240
           },
           "source": {
             "type": "string",
@@ -545,9 +549,10 @@
             "type": "string",
             "required": true,
             "oneLine": true,
-            "maxWords": 17,
+            "maxWords": 16,
+            "maxLength": 110,
             "role": "actionTitle",
-            "description": "The claim the slide proves: a sentence with a number or a verb, two lines at most. Longer titles step down to 24 then 22pt, then fail."
+            "description": "The claim the slide proves: a sentence with a number or a verb, two lines at most, and at most 110 characters \u2014 two lines on the widest faces. Longer titles step down to 24 then 22pt, then fail."
           },
           "tracker": {
             "type": "string",
@@ -573,19 +578,20 @@
                 "unit": {
                   "type": "string",
                   "maxLength": 5,
-                  "description": "Suffix drawn after the figure in the muted colour: %, €m, pts."
+                  "description": "Suffix drawn after the figure in the muted colour: %, \u20acm, pts."
                 },
                 "label": {
                   "type": "string",
                   "required": true,
                   "oneLine": true,
                   "maxWords": 6,
-                  "description": "What the figure measures."
+                  "description": "What the figure measures; at most 48 characters, which is two lines in the narrowest cell on the widest faces.",
+                  "maxLength": 48
                 },
                 "delta": {
                   "type": "string",
                   "maxLength": 12,
-                  "description": "Signed change shown under the figure: +3.2 pts, −0.4."
+                  "description": "Signed change shown under the figure: +3.2 pts, \u22120.4."
                 }
               }
             }
@@ -895,9 +901,10 @@
             "type": "string",
             "required": true,
             "oneLine": true,
-            "maxWords": 17,
+            "maxWords": 16,
+            "maxLength": 110,
             "role": "actionTitle",
-            "description": "The claim the slide proves: a sentence with a number or a verb, two lines at most. Longer titles step down to 24 then 22pt, then fail."
+            "description": "The claim the slide proves: a sentence with a number or a verb, two lines at most, and at most 110 characters \u2014 two lines on the widest faces. Longer titles step down to 24 then 22pt, then fail."
           },
           "tracker": {
             "type": "string",
@@ -1222,8 +1229,9 @@
           },
           "support": {
             "type": "string",
-            "maxWords": 30,
-            "description": "What backs the assertion, at most thirty words."
+            "maxWords": 24,
+            "maxLength": 150,
+            "description": "What backs the assertion, at most twenty-four words and 150 characters \u2014 what the box holds on the smallest canvas, stepping down to 16 then 14pt."
           }
         },
         "body": [
@@ -1342,7 +1350,7 @@
                     "x": "0%",
                     "y": "66%",
                     "w": "75%",
-                    "h": "18%",
+                    "h": "24%",
                     "valign": "top",
                     "fit": {
                       "shrink": [16, 14]
@@ -1426,7 +1434,7 @@
               "items": [
                 {
                   "value": "8.8",
-                  "unit": "€m",
+                  "unit": "\u20acm",
                   "label": "Revenue year to date",
                   "delta": "+16.9%"
                 },
@@ -1440,7 +1448,7 @@
                   "value": "11",
                   "unit": "days",
                   "label": "Median time to deliver",
-                  "delta": "−3 days"
+                  "delta": "\u22123 days"
                 }
               ],
               "source": "Source: quarterly operating review, 2026."
@@ -1469,7 +1477,7 @@
                 "name": "chart",
                 "props": {
                   "type": "bar",
-                  "valAxisTitle": "Revenue (€m)",
+                  "valAxisTitle": "Revenue (\u20acm)",
                   "data": [
                     {
                       "name": "Revenue",
