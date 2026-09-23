@@ -241,31 +241,47 @@ function rotatedWords(
   words: readonly PdfTextWord[],
   lines: readonly PdfTextLine[]
 ): Set<number> {
-  // Upright text stands one line tall whatever it says, so a word taller
-  // than the page's own lines is set on its side. The ratio alone cannot
-  // say: a three-character word with a comma ("it,", 8.5 by 12.8) is half
-  // again as tall as it is wide while standing in a paragraph, and taken
-  // for rotated text it leaves the page's stream for the run after it and
-  // cuts the paragraph it sits in (#471).
-  // Measured on the words that are plainly upright — wider than they are
-  // tall — so a page whose chart carries a long rotated title still says
-  // what one of its lines measures.
-  const heights = words
-    .filter((w) => w.text.trim() !== '' && w.xMax - w.xMin >= w.yMax - w.yMin)
-    .map((w) => w.yMax - w.yMin);
-  const line = heights.length > 0 ? median(heights) : 0;
+  /** Plainly upright: no word set on its side is wider than it is tall. */
+  const upright = words.filter(
+    (w) => w.text.trim() !== '' && w.xMax - w.xMin >= w.yMax - w.yMin
+  );
+  /**
+   * Whether the word stands on a line of upright text of its own size.
+   *
+   * The ratio alone cannot tell a rotated word from a short upright one: a
+   * three-character word with a comma ("it,", 8.5 by 12.8 points) is half
+   * again as tall as it is wide while standing in a paragraph, and taken
+   * for rotated text it leaves the page's stream for the run after it and
+   * cuts the paragraph it sits in (#471). What tells them apart is the
+   * company each keeps. A word in a line of prose shares its baseline with
+   * upright words as tall as itself; a rotated axis title crosses the lines
+   * of the chart's labels, which are set at another size entirely.
+   *
+   * The company has to be local. A page-wide measure reads the size the
+   * page mostly sets — a dense table of eight-point labels — which a line
+   * of ordinary prose then towers over.
+   */
+  const standsInALine = (w: PdfTextWord): boolean => {
+    const height = w.yMax - w.yMin;
+    return upright.some((other) => {
+      if (other === w) return false;
+      const overlap =
+        Math.min(w.yMax, other.yMax) - Math.max(w.yMin, other.yMin);
+      const shorter = Math.min(height, other.yMax - other.yMin);
+      if (shorter <= 0 || overlap <= shorter / 2) return false;
+      const ratio = height / (other.yMax - other.yMin);
+      return ratio > 0.8 && ratio < 1.25;
+    });
+  };
   const rotated = new Set(
     words
       .map((_, i) => i)
       .filter((i) => {
         const w = words[i];
-        const height = w.yMax - w.yMin;
         // Three glyphs or more: a "1:" or an "I" is narrow, not rotated.
-        return (
-          w.text.length > 2 &&
-          height > 1.5 * (w.xMax - w.xMin) &&
-          (line === 0 || height > 1.5 * line)
-        );
+        if (w.text.length <= 2) return false;
+        if (w.yMax - w.yMin <= 1.5 * (w.xMax - w.xMin)) return false;
+        return !standsInALine(w);
       })
   );
   for (const line of lines) {

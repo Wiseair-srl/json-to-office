@@ -1038,6 +1038,25 @@ describe('readingOrder', () => {
     ]);
   });
 
+  it('keeps that word upright on a page the smaller text of a table fills', () => {
+    // The page-wide size is the table's eight-point labels, which a line of
+    // twelve-point prose towers over; what says the word is upright is the
+    // line it stands in, not the page (#471).
+    const labels = Array.from({ length: 24 }, (_, i) =>
+      word(`label${i}`, 72 + (i % 4) * 90, 200 + Math.floor(i / 4) * 10, 40, 8)
+    );
+    const prose = [
+      word('stopped', 237, 723, 35, 12.8),
+      word('with', 274, 723, 19, 12.8),
+      word('it,', 295.8, 723, 8.5, 12.8),
+      word('regardless', 306.7, 723, 44, 12.8),
+    ];
+    const order = readingOrder([...labels, ...prose]).map(
+      (i) => [...labels, ...prose][i].text
+    );
+    expect(order.slice(-4)).toEqual(['stopped', 'with', 'it,', 'regardless']);
+  });
+
   it('keeps a rotated axis title in the order poppler gave it', () => {
     const axis = [
       word('Item68', 88, 534, 11, 38),
