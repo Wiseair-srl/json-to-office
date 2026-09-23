@@ -127,9 +127,13 @@ function wrappedLines(paragraph: string, charsPerLine: number): number {
       used = needed;
       continue;
     }
-    // A word wider than the box breaks across lines wherever it must; what
-    // is left of it on the last line is what the next word measures against.
-    lines += Math.max(1, Math.ceil(word.length / charsPerLine));
+    // The word takes a line of its own, and one wider than the box then
+    // breaks across as many as it needs. A word that starts an empty line is
+    // already standing on the line this paragraph counted, so only the lines
+    // it breaks onto are new. What is left of it on its last line is what the
+    // next word measures against.
+    const linesForWord = Math.ceil(word.length / charsPerLine);
+    lines += used === 0 ? linesForWord - 1 : linesForWord;
     used = word.length % charsPerLine || charsPerLine;
   }
   return lines;
