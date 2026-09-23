@@ -27,7 +27,7 @@ describe('block reference catalog', () => {
     );
     expect(text).toContain('### `action-chart` (from consulting-deck-blocks)');
     expect(text).toContain(
-      '- `title` — string, Required, at most 17 words, one line, Role: actionTitle'
+      '- `title` — string, Required, at most 110 characters, at most 16 words, one line, Role: actionTitle'
     );
     expect(text).toContain(
       '- `chart` — component, Required, A component; placement stays in the definition'
