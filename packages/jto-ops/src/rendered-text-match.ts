@@ -241,13 +241,31 @@ function rotatedWords(
   words: readonly PdfTextWord[],
   lines: readonly PdfTextLine[]
 ): Set<number> {
+  // Upright text stands one line tall whatever it says, so a word taller
+  // than the page's own lines is set on its side. The ratio alone cannot
+  // say: a three-character word with a comma ("it,", 8.5 by 12.8) is half
+  // again as tall as it is wide while standing in a paragraph, and taken
+  // for rotated text it leaves the page's stream for the run after it and
+  // cuts the paragraph it sits in (#471).
+  // Measured on the words that are plainly upright — wider than they are
+  // tall — so a page whose chart carries a long rotated title still says
+  // what one of its lines measures.
+  const heights = words
+    .filter((w) => w.text.trim() !== '' && w.xMax - w.xMin >= w.yMax - w.yMin)
+    .map((w) => w.yMax - w.yMin);
+  const line = heights.length > 0 ? median(heights) : 0;
   const rotated = new Set(
     words
       .map((_, i) => i)
       .filter((i) => {
         const w = words[i];
+        const height = w.yMax - w.yMin;
         // Three glyphs or more: a "1:" or an "I" is narrow, not rotated.
-        return w.text.length > 2 && w.yMax - w.yMin > 1.5 * (w.xMax - w.xMin);
+        return (
+          w.text.length > 2 &&
+          height > 1.5 * (w.xMax - w.xMin) &&
+          (line === 0 || height > 1.5 * line)
+        );
       })
   );
   for (const line of lines) {

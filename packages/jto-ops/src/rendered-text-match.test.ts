@@ -1018,6 +1018,26 @@ describe('readingOrder', () => {
     ).toHaveLength(1);
   });
 
+  it('keeps a short upright word that is taller than it is wide in its place', () => {
+    // "it," in a report's body: three characters, 8.5pt wide and 12.8 tall,
+    // so a ratio of 1.51. Taken for rotated text it left the page's stream
+    // for the run after it and cut the paragraph it sat in (#471).
+    const prose = [
+      word('connector', 171, 707, 60, 12.8),
+      word('stopped', 237, 723, 35, 12.8),
+      word('with', 274, 723, 19, 12.8),
+      word('it,', 295.8, 723, 8.5, 12.8),
+      word('regardless', 306.7, 723, 44, 12.8),
+    ];
+    expect(readingOrder(prose).map((i) => prose[i].text)).toEqual([
+      'connector',
+      'stopped',
+      'with',
+      'it,',
+      'regardless',
+    ]);
+  });
+
   it('keeps a rotated axis title in the order poppler gave it', () => {
     const axis = [
       word('Item68', 88, 534, 11, 38),
