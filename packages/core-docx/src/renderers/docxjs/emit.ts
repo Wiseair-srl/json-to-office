@@ -16,7 +16,6 @@ import {
   AlignmentType,
   BookmarkEnd,
   BookmarkStart,
-  BorderStyle,
   ColumnBreak,
   CommentRangeEnd,
   CommentRangeStart,
@@ -970,20 +969,13 @@ function emitTableCell(
   return new TableCell(options as unknown as ITableCellOptions);
 }
 
-const BORDER_STYLE: Readonly<
-  Record<string, (typeof BorderStyle)[keyof typeof BorderStyle]>
-> = {
-  none: BorderStyle.NONE,
-  single: BorderStyle.SINGLE,
-  double: BorderStyle.DOUBLE,
-  dashed: BorderStyle.DASHED,
-  dotted: BorderStyle.DOTTED,
-};
-
 function emitBorder(border: DocxIrBorder | undefined) {
   if (!border) return undefined;
   return {
-    style: BORDER_STYLE[border.style] ?? BorderStyle.SINGLE,
+    // Already OOXML's word, and docx.js's `BorderStyle` values are exactly
+    // those words. Mapping unknown ones to `single` here is what once hid an
+    // authoring word the IR should never have carried.
+    style: border.style,
     size: border.sizeEighthPoints ?? 0,
     color: border.color?.hex ?? '000000',
     // Stated only when the IR states it, so every border that predates the

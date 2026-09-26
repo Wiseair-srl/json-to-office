@@ -8,7 +8,6 @@
 
 import {
   AlignmentType,
-  BorderStyle,
   LineRuleType,
   UnderlineType,
   type IBaseParagraphStyleOptions,
@@ -25,19 +24,6 @@ import type {
   DocxIrStyles,
 } from '../../ir/types';
 import { ALIGNMENT } from './emit';
-
-/** Border style names, as docx.js spells them. */
-const BORDER_STYLE: Record<
-  string,
-  (typeof BorderStyle)[keyof typeof BorderStyle]
-> = {
-  none: BorderStyle.NONE,
-  single: BorderStyle.SINGLE,
-  double: BorderStyle.DOUBLE,
-  dashed: BorderStyle.DASHED,
-  dotted: BorderStyle.DOTTED,
-  thick: BorderStyle.THICK,
-};
 
 function runProperties(
   formatting: DocxIrRunFormatting
@@ -79,7 +65,10 @@ function runProperties(
 
 function border(value: DocxIrBorder) {
   return {
-    style: BORDER_STYLE[value.style] ?? BorderStyle.SINGLE,
+    // OOXML's word, which is what docx.js's `BorderStyle` values are. A theme
+    // may state any of them; mapping the unlisted ones to `single` drew a
+    // `wave` or `triple` rule as a plain line here and as asked on office-open.
+    style: value.style,
     ...(value.sizeEighthPoints !== undefined
       ? { size: value.sizeEighthPoints }
       : {}),

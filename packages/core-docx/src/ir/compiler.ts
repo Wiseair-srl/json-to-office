@@ -129,6 +129,7 @@ import {
   type DocxIrAlignment,
   type DocxIrBlock,
   type DocxIrBorder,
+  type DocxIrBorderStyle,
   type DocxIrBorders,
   type DocxIrIndent,
   type DocxIrColor,
@@ -1894,16 +1895,37 @@ function textBoxWidth(props: Record<string, any>): DocxIrTableWidth {
   };
 }
 
-/** Per-side borders as the authoring surface states them. */
+/**
+ * An authored line style, as `w:val` spells it.
+ *
+ * The authoring vocabulary is CSS-shaped and ST_Border is not: it has no
+ * `solid`, and a word passed through reaches the file as it stands —
+ * `w:val="solid"` is a border LibreOffice does not draw at all. A style the
+ * schema does not admit draws the plain line.
+ */
+function borderLineStyle(authored: unknown): DocxIrBorderStyle {
+  switch (authored) {
+    case 'dashed':
+    case 'dotted':
+    case 'double':
+      return authored;
+    default:
+      return 'single';
+  }
+}
+
+/** Per-side borders as the authoring surface states them, in OOXML's words. */
 function compileBorders(
   border: Record<string, any> | undefined,
   ctx: CompileContext
 ): DocxIrBorders | undefined {
   if (!border) return undefined;
-  const side = (value: Record<string, any> | undefined) =>
+  const side = (
+    value: Record<string, any> | undefined
+  ): DocxIrBorder | undefined =>
     value
       ? {
-          style: String(value.style ?? 'single'),
+          style: value.style === 'none' ? 'none' : borderLineStyle(value.style),
           // Points to eighths of a point, never thinner than the hairline a
           // reader can actually see.
           sizeEighthPoints:
@@ -2098,14 +2120,6 @@ const DEFAULT_DIVIDER_THICKNESS_PT = 1;
  */
 const DIVIDER_LINE_TWIPS = 20;
 
-/** The authoring vocabulary is CSS-shaped; `w:val` is not. */
-const DIVIDER_BORDER_STYLE: Readonly<Record<string, string>> = {
-  solid: 'single',
-  dashed: 'dashed',
-  dotted: 'dotted',
-  double: 'double',
-};
-
 /**
  * A horizontal divider: an empty paragraph wearing a bottom border.
  *
@@ -2166,7 +2180,7 @@ function compileDivider(
         ...dividerIndent(props, scope),
         borders: {
           bottom: {
-            style: DIVIDER_BORDER_STYLE[String(props.style)] ?? 'single',
+            style: borderLineStyle(props.style),
             sizeEighthPoints: pointsToEighthPoints(thicknessPt),
             color: irColor(
               resolveColor(String(props.color ?? 'border'), ctx.theme)
