@@ -794,7 +794,8 @@ export function emitTable(
         ? TableLayoutType.FIXED
         : TableLayoutType.AUTOFIT,
     // An empty grid is a table with nothing to say about its columns, which is
-    // not the same as one whose columns are all zero wide.
+    // not the same as one whose columns are all zero wide. The compiler hands
+    // over every grid in twips, the unit `columnWidths` takes.
     ...(block.columnGrid.values.length > 0
       ? { columnWidths: block.columnGrid.values }
       : {}),

@@ -236,6 +236,9 @@ export const getPageSetup = (theme?: ThemeConfig, themeName?: string) => {
   if (themeConfig?.page) {
     const margins = themeConfig.page.margins || {};
     const dimensions = getPageDimensions(themeConfig.page.size);
+    // The gutter is part of the page a theme states. Left out here, the page
+    // is written without one and text is measured against the margins alone.
+    const gutter = margins.gutter;
     return {
       size: {
         width: dimensions.width,
@@ -247,6 +250,7 @@ export const getPageSetup = (theme?: ThemeConfig, themeName?: string) => {
         right: margins.right ?? defaultMargins.right ?? 1440,
         bottom: margins.bottom ?? defaultMargins.bottom ?? 1440,
         left: margins.left ?? defaultMargins.left ?? 1440,
+        ...(gutter !== undefined && { gutter }),
       },
     };
   }

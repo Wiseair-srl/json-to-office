@@ -899,6 +899,67 @@ rather than the theme's, so explicit columns fill the section's measure:
 `structure/columns-between-body` (900-twip side margins, columns 4373 → 4913
 twips) and `theme/example-field-review` (4663 → 4723 twips) moved for that.
 
+Sixty-six goldens moved when every table grid started to say twips. A table
+whose columns name no width was compiled with a grid of percentages, and both
+backends wrote each share as a width: `w:gridCol w:w="25"` for a quarter of
+the table. Word and LibreOffice lay such a table out from its `pct` width and
+scale the grid, so no render showed it; Google Docs, Apple Pages and QuickLook
+take the grid as the physical column widths and ignore a percentage, which
+collapses every column to about a character (dolanmiu/docx#3476; not yet
+checked in those readers here). The compiler now sizes the grid in whole twips
+against the measure the table stands in (`ir/measure.ts`, handed down on each
+component's scope): the section's text column — the page less its side
+margins and gutter, one column of a multi-column section, the narrowest when
+the columns differ — the whole text width in a header or footer, and for a
+table in a cell the cell's width less its side margins, which is the width
+LibreOffice draws a nested percentage table at. A text box's one-cell table
+stated no grid at all and got each backend's 100-twip placeholder column; it
+is sized to the box the same way. `w:tblW` stays `pct`. Only `w:gridCol`
+values changed, checked part by part against the previous output of every
+moved case: 50 grids went from percentages to twips, 31 text-box placeholders
+to the box's width, and no grid already in twips moved. The cases are the 28
+`tables/*` whose columns state no width, the nine table-rendered
+`blocks/text-box-*` and the four `blocks/report-chrome-*` and
+`blocks/report-data-*`, the 17 `theme/*` whose sampler draws a table, the six
+`annotations/*`, `headings/toc-in-nested-container` and `links/in-table-cell`
+that hold a table or a text box.
+
+Two more moved when everything else sized as a share of the text area took the
+same measure (`blocks/text-box-nested-columns`,
+`blocks/text-box-nested-columns-floating`). A table's stated percentages and a
+nested `columns`' cells and gaps were resolved against the page's text width
+wherever they stood, so a table with two `50%` columns in a text box padded
+72pt a side came out as wide as the page's measure and ran two inches past the
+box — a `dxa` width is drawn as stated, in Word and LibreOffice alike — and
+the table overflow warning measured the page rather than the box. Both now
+take the box's content width, and a divider's percentage width takes its
+column's, where half the page's measure indented it past the edge of a column.
+In the two cases only the nested columns' `w:gridCol`, `w:tcW` and gap
+`w:tcMar` changed (the floating box's columns from 4253 to 2250 twips each, a
+5% gap from 212 to 112 twips a side), and LibreOffice sets the columns inside
+the box. The gutter is part of the measure wherever the page is measured now:
+`getPageSetup` dropped a theme's gutter, so it never reached the page, and every
+text-width computation left a gutter in. No other golden moved: the one corpus
+case with a gutter (`structure/page-margins-full`, set on its section) holds
+nothing that is sized against the measure.
+
+Nothing moved when images, native visuals, native charts and text-box shapes
+took the same measure. A width they state as a percentage, an image's default
+of the whole measure and a chart's default width are now of the box or column
+they stand in rather than the page: an image with no width in a text box padded
+72pt a side came out two inches wider than the box in every reader, since a
+drawing's extent is absolute. The corpus's one image in a text box
+(`blocks/text-box-mixed-children`) states its width in pixels, and the default
+backend draws neither charts nor drawing groups, so no golden covers it;
+`__tests__/media-measure.test.ts` pins the extents on both backends for images
+and shapes and on `office-open` for visuals and charts, and LibreOffice sets
+all four inside the box. Heights stay page-relative, anchored positions stay
+relative to the page or its margins as OOXML defines them, `widthRelativeTo:
+'page'` stays page-wide, and an image in a table cell keeps its nominal
+300 × 200 px box. A `highcharts` chart keeps a page-relative type scale: it is
+rendered while externals are desugared, before layout knows what holds it, so
+in a narrower box it is placed to fit with proportionally smaller type.
+
 ## Post-emit rewrite inventory
 
 These are the production sites that edit an emitted OOXML package. Backend

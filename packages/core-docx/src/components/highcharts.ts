@@ -9,7 +9,7 @@
 
 import { ThemeConfig } from '../styles';
 import { chartPaletteValues, resolveColor } from '../styles/utils/colorUtils';
-import { getPageSetup } from '../styles/utils/layoutUtils';
+import { getAvailableWidthTwips } from '../utils/widthUtils';
 import { isNodeEnvironment } from '../utils/environment';
 
 // Import only the types we actually use from shared package
@@ -225,6 +225,14 @@ const POINTS_PER_PIXEL = POINTS_PER_PIXEL_96DPI;
  * the `image` it desugars to applies: a number is pixels at 96 dpi, a
  * percentage is of the content width, and a height alone scales the width
  * with it. Undefined when nothing places it, which the caller reads as 96 dpi.
+ *
+ * A percentage is of the page's text width even when the chart stands in a
+ * narrower text box or column, where its image is then placed. Charts render
+ * while externals are desugared, before layout and before the compiler knows
+ * what holds each component — the export call is asynchronous and compilation
+ * is not — so the box is not known here without a second copy of the
+ * compiler's container rules. The image is still set to fit the box, and its
+ * type comes out proportionally smaller there.
  */
 function placedWidthPt(
   config: HighchartsProps,
@@ -234,10 +242,7 @@ function placedWidthPt(
   const chart = config.options.chart;
   if (typeof width === 'number') return width * POINTS_PER_PIXEL;
   if (typeof width === 'string') {
-    const page = getPageSetup(theme);
-    const contentWidthPt =
-      (page.size.width - page.margin.left - page.margin.right) *
-      POINTS_PER_TWIP;
+    const contentWidthPt = getAvailableWidthTwips(theme) * POINTS_PER_TWIP;
     return (parseFloat(width) / 100) * contentWidthPt;
   }
   if (typeof height === 'number' && chart.height > 0) {

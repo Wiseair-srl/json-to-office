@@ -461,7 +461,10 @@ function pageBox(
   return {
     availableWidthTwips: Math.max(
       0,
-      page.size.width - page.margin.left - page.margin.right
+      page.size.width -
+        page.margin.left -
+        page.margin.right -
+        (page.margin.gutter ?? 0)
     ),
     pageBottomTwips: page.size.height,
   };

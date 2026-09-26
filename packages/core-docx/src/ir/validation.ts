@@ -192,20 +192,9 @@ function checkBlock(block: DocxIrBlock, path: string, scope: Scope): void {
       return;
 
     case 'table':
-      // A percentage grid is a share of the table, so it may be fractional; a
-      // twips grid is a real measurement and must be whole.
-      if (
-        block.columnGrid.values.some(
-          (w) =>
-            w < 0 || (block.columnGrid.unit === 'twips' && !Number.isInteger(w))
-        )
-      ) {
-        scope.add(
-          `${path}.columnGrid`,
-          block.columnGrid.unit === 'twips'
-            ? 'expected non-negative integer twips'
-            : 'expected non-negative percentages'
-        );
+      // A grid is a measurement, so it must be whole.
+      if (block.columnGrid.values.some((w) => w < 0 || !Number.isInteger(w))) {
+        scope.add(`${path}.columnGrid`, 'expected non-negative integer twips');
       }
       block.rows.forEach((row, r) => {
         row.cells.forEach((cell, c) => {

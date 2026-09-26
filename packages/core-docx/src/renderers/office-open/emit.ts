@@ -996,14 +996,10 @@ export function table(value: DocxIrTable, ctx: EmitContext): Opts {
     },
     layout: value.layout,
     // An empty grid is a table with nothing to say about its columns, which is
-    // not the same as one whose columns are all zero wide.
+    // not the same as one whose columns are all zero wide. The compiler hands
+    // over every grid in twips; floored for the same reason as the width.
     ...(value.columnGrid.values.length > 0
-      ? {
-          columnWidths:
-            value.columnGrid.unit === 'twips'
-              ? value.columnGrid.values.map(Math.floor)
-              : value.columnGrid.values,
-        }
+      ? { columnWidths: value.columnGrid.values.map(Math.floor) }
       : {}),
     ...(value.alignment ? { alignment: alignment(value.alignment) } : {}),
     ...(value.borders ? { borders: borders(value.borders) } : {}),

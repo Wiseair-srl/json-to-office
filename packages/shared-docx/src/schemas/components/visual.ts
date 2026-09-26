@@ -105,7 +105,8 @@ const PlacementProps = {
         Type.Number({ minimum: 1, description: 'Rendered width in pixels' }),
         Type.String({
           pattern: '^\\d+(\\.\\d+)?%$',
-          description: 'Rendered width as percentage (e.g. "90%")',
+          description:
+            'Rendered width as percentage (e.g. "90%") of the width it stands in',
         }),
       ],
       {

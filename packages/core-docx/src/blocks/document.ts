@@ -93,12 +93,14 @@ export function docxBlockContext(
     (page.size ?? theme.page.size) as Parameters<typeof getPageDimensions>[0]
   );
   const overrides = isBlockRecord(page.margins) ? page.margins : {};
+  const gutter = 'gutter' in margins ? margins.gutter : 0;
   const width = Object.keys(page).length
     ? Math.max(
         0,
         dimensions.width -
           Number(overrides.left ?? margins.left ?? 1440) -
-          Number(overrides.right ?? margins.right ?? 1440)
+          Number(overrides.right ?? margins.right ?? 1440) -
+          Number(overrides.gutter ?? gutter ?? 0)
       )
     : getAvailableWidthTwips(theme);
   const height = Object.keys(page).length

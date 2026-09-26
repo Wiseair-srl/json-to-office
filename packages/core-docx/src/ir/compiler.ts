@@ -165,6 +165,12 @@ import {
   type DocxIrVerticalAlign,
 } from './types';
 import {
+  cellMeasureTwips,
+  sectionMeasureTwips,
+  tableWidthTwips,
+  textWidthTwips,
+} from './measure';
+import {
   blockId,
   emuToPixels,
   headerFooterBlockId,
@@ -679,6 +685,60 @@ function compileSectionBody(
     ctx.features.require('columns', `${path}.properties.columns`);
   }
 
+  const properties: DocxIrSectionProperties = {
+    page: {
+      widthTwips: page.size.width,
+      heightTwips: page.size.height,
+      orientation:
+        page.size.width > page.size.height ? 'landscape' : 'portrait',
+      ...(page.size.code !== undefined ? { code: page.size.code } : {}),
+      margins: {
+        topTwips: page.margin.top,
+        bottomTwips: page.margin.bottom,
+        leftTwips: page.margin.left,
+        rightTwips: page.margin.right,
+        ...(page.margin.header !== undefined
+          ? { headerTwips: page.margin.header }
+          : {}),
+        ...(page.margin.footer !== undefined
+          ? { footerTwips: page.margin.footer }
+          : {}),
+        ...(page.margin.gutter !== undefined
+          ? { gutterTwips: page.margin.gutter }
+          : {}),
+      },
+    },
+    // A chunk that starts on a new page says so; the rest continue the flow.
+    // The layout stage already decided which, so it is carried rather than
+    // re-derived from `breakBefore`: a section can be continuous without the
+    // two agreeing.
+    ...(section.properties.type
+      ? { type: sectionType(section.properties.type) }
+      : {}),
+    ...(column
+      ? {
+          columns: {
+            count: column.count,
+            ...(column.space !== undefined ? { spaceTwips: column.space } : {}),
+            ...(column.equalWidth !== undefined
+              ? { equalWidth: column.equalWidth }
+              : {}),
+            ...(column.widths
+              ? {
+                  widths: column.widths.map((c) => ({
+                    widthTwips: c.width,
+                    ...(c.space !== undefined ? { spaceTwips: c.space } : {}),
+                  })),
+                }
+              : {}),
+          },
+        }
+      : {}),
+  };
+  // Body content is set against one column of the section; its header and
+  // footer, compiled further down, against the whole text width.
+  const measureTwips = sectionMeasureTwips(properties);
+
   const children: DocxIrBlock[] = [];
   // Every layout chunk of one user-defined section resolves to the same
   // bookmark, which is what a section-scoped table of contents restricts to.
@@ -694,6 +754,7 @@ function compileSectionBody(
         ctx,
         path: `${path}.children[${i}]`,
         id: blockId(index, [i]),
+        measureTwips,
         ...(sectionBookmarkName ? { sectionBookmarkName } : {}),
       })
     );
@@ -708,58 +769,7 @@ function compileSectionBody(
     id: `s${index}`,
     path,
     children,
-    properties: {
-      page: {
-        widthTwips: page.size.width,
-        heightTwips: page.size.height,
-        orientation:
-          page.size.width > page.size.height ? 'landscape' : 'portrait',
-        ...(page.size.code !== undefined ? { code: page.size.code } : {}),
-        margins: {
-          topTwips: page.margin.top,
-          bottomTwips: page.margin.bottom,
-          leftTwips: page.margin.left,
-          rightTwips: page.margin.right,
-          ...(page.margin.header !== undefined
-            ? { headerTwips: page.margin.header }
-            : {}),
-          ...(page.margin.footer !== undefined
-            ? { footerTwips: page.margin.footer }
-            : {}),
-          ...(page.margin.gutter !== undefined
-            ? { gutterTwips: page.margin.gutter }
-            : {}),
-        },
-      },
-      // A chunk that starts on a new page says so; the rest continue the flow.
-      // The layout stage already decided which, so it is carried rather than
-      // re-derived from `breakBefore`: a section can be continuous without the
-      // two agreeing.
-      ...(section.properties.type
-        ? { type: sectionType(section.properties.type) }
-        : {}),
-      ...(column
-        ? {
-            columns: {
-              count: column.count,
-              ...(column.space !== undefined
-                ? { spaceTwips: column.space }
-                : {}),
-              ...(column.equalWidth !== undefined
-                ? { equalWidth: column.equalWidth }
-                : {}),
-              ...(column.widths
-                ? {
-                    widths: column.widths.map((c) => ({
-                      widthTwips: c.width,
-                      ...(c.space !== undefined ? { spaceTwips: c.space } : {}),
-                    })),
-                  }
-                : {}),
-            },
-          }
-        : {}),
-    },
+    properties,
   };
 
   if (ordinal.ordinal !== undefined) {
@@ -772,9 +782,22 @@ function compileSectionBody(
     ctx.features.require('bookmarks', `${path}.bookmark`);
   }
 
-  const headers = compilePart(chrome.header, 'header', index, ctx);
+  const chromeMeasureTwips = textWidthTwips(properties.page);
+  const headers = compilePart(
+    chrome.header,
+    'header',
+    index,
+    chromeMeasureTwips,
+    ctx
+  );
   if (headers) compiled.headers = { default: headers };
-  const footers = compilePart(chrome.footer, 'footer', index, ctx);
+  const footers = compilePart(
+    chrome.footer,
+    'footer',
+    index,
+    chromeMeasureTwips,
+    ctx
+  );
   if (footers) compiled.footers = { default: footers };
 
   if (headers || footers) {
@@ -809,6 +832,7 @@ function compilePart(
   part: ComponentDefinition[] | undefined,
   kind: 'header' | 'footer',
   sectionIndex: number,
+  measureTwips: number,
   ctx: CompileContext
 ): DocxIrHeaderFooter | undefined {
   if (!part) return undefined;
@@ -826,6 +850,7 @@ function compilePart(
       ctx,
       path: `sections[${sectionIndex}].${kind}s.default.children[${i}]`,
       id: headerFooterBlockId(id, [i]),
+      measureTwips,
     };
     children.push(
       ...(component.name === 'paragraph'
@@ -980,9 +1005,7 @@ function compileChromeImage(
 
   const page = getPageSetup(ctx.theme);
   const pageWidthPx = Math.round(twipsToPixels(page.size.width));
-  const contentWidthPx = Math.round(
-    twipsToPixels(page.size.width - page.margin.left - page.margin.right)
-  );
+  const contentWidthPx = Math.round(twipsToPixels(scope.measureTwips));
   const pageHeightPx = Math.round(twipsToPixels(page.size.height));
   const contentHeightPx = Math.round(
     twipsToPixels(page.size.height - page.margin.top - page.margin.bottom)
@@ -1050,6 +1073,13 @@ interface ComponentScope {
   ctx: CompileContext;
   path: string;
   id: string;
+  /**
+   * The width, in twips, of the text area this component stands in (see
+   * `ir/measure.ts`). Every width stated as a share of the text — a table's
+   * columns, a drawing's percentage, a divider's — is a share of this, and a
+   * text box and a nested `columns` hand their children their own.
+   */
+  measureTwips: number;
   /**
    * The bookmark covering the section this component sits in, if any.
    *
@@ -1332,7 +1362,9 @@ function compileColumns(
   const configs = columnConfigs(props.columns);
   if (configs.length === 0) return [];
 
-  const available = getAvailableWidthTwips(ctx.theme, ctx.themeName);
+  // Set against what holds it — the text column, or a text box's content —
+  // rather than the page, or a box narrower than the page overflows.
+  const available = scope.measureTwips;
   const { widths, gaps } = columnMetrics(configs, props.gap, available);
   // A cell is its column plus half of each gap beside it, so the cells sum
   // to the measure and the grid says so. Without a grid, docx.js writes a
@@ -1380,11 +1412,18 @@ function compileColumns(
       rows: [
         {
           cells: configs.map((_, index) => {
+            const margins = {
+              topTwips: 0,
+              rightTwips: gaps[index] / 2,
+              bottomTwips: 0,
+              leftTwips: index > 0 ? gaps[index - 1] / 2 : 0,
+            };
             const blocks = contents[index].flatMap((child, childIndex) =>
               compileComponent(child, {
                 ...scope,
                 path: `${path}.children[${index}][${childIndex}]`,
                 id: `${scope.id}:c${index}:${childIndex}`,
+                measureTwips: cellMeasureTwips(cells[index], margins),
               })
             );
             return {
@@ -1401,12 +1440,7 @@ function compileColumns(
                     },
                   ],
               widthTwips: cells[index],
-              margins: {
-                topTwips: 0,
-                rightTwips: gaps[index] / 2,
-                bottomTwips: 0,
-                leftTwips: index > 0 ? gaps[index - 1] / 2 : 0,
-              },
+              margins,
               verticalAlign: 'top' as const,
               borders: {
                 top: NO_BORDERS.top,
@@ -1503,6 +1537,17 @@ function compileTextBox(
 ): DocxIrBlock[] {
   const { ctx, path } = scope;
   const props = (component.props ?? {}) as Record<string, any>;
+  const style = props.style as Record<string, any> | undefined;
+  const padding = style?.padding as Record<string, number> | undefined;
+
+  const width = textBoxWidth(props);
+  const widthTwips = Math.round(tableWidthTwips(width, scope.measureTwips));
+  const margins = {
+    topTwips: padding?.top ? pointsToTwips(padding.top) : 0,
+    rightTwips: padding?.right ? pointsToTwips(padding.right) : 0,
+    bottomTwips: padding?.bottom ? pointsToTwips(padding.bottom) : 0,
+    leftTwips: padding?.left ? pointsToTwips(padding.left) : 0,
+  };
 
   const children: DocxIrBlock[] = [];
   const contents =
@@ -1513,12 +1558,11 @@ function compileTextBox(
         ...scope,
         path: `${path}.children[${index}]`,
         id: `${scope.id}:c${index}`,
+        // What the box holds is set against the box less its padding.
+        measureTwips: cellMeasureTwips(widthTwips, margins),
       })
     );
   });
-
-  const style = props.style as Record<string, any> | undefined;
-  const padding = style?.padding as Record<string, number> | undefined;
 
   if (props.renderAs === 'shape') {
     const shape = compileShape(props, children, scope);
@@ -1535,9 +1579,11 @@ function compileTextBox(
       kind: 'table',
       id: scope.id,
       path,
-      // No grid: one cell, whose width the table itself decides.
-      columnGrid: { unit: 'twips', values: [] },
-      width: textBoxWidth(props),
+      // One cell, as wide as the box. Left out, the grid would be each
+      // backend's 100-twip placeholder, which a reader that takes the grid as
+      // the column widths draws.
+      columnGrid: { unit: 'twips', values: [widthTwips] },
+      width,
       layout: 'fixed',
       // The container is invisible; whatever border the author asked for is
       // drawn by the cell inside it.
@@ -1561,14 +1607,7 @@ function compileTextBox(
                       children: [],
                     },
                   ],
-              margins: {
-                topTwips: padding?.top ? pointsToTwips(padding.top) : 0,
-                rightTwips: padding?.right ? pointsToTwips(padding.right) : 0,
-                bottomTwips: padding?.bottom
-                  ? pointsToTwips(padding.bottom)
-                  : 0,
-                leftTwips: padding?.left ? pointsToTwips(padding.left) : 0,
-              },
+              margins,
               ...(style?.shading?.fill
                 ? {
                     shading: {
@@ -1606,8 +1645,11 @@ function compileShape(
   scope: ComponentScope
 ): DocxIrBlock[] | undefined {
   const { ctx, path } = scope;
-  const width = shapeSize(props.width, 'width', ctx);
-  const height = shapeSize(props.height, 'height', ctx);
+  const width = shapeSize(props.width, scope.measureTwips);
+  const height = shapeSize(
+    props.height,
+    getAvailableHeightTwips(ctx.theme, ctx.themeName)
+  );
 
   if (width.pixels === undefined || height.pixels === undefined) {
     warnOnce(
@@ -1644,7 +1686,7 @@ function compileShape(
     warnOnce(
       ctx,
       'text-box',
-      '[core-docx] text-box renderAs "shape" resolves percentage sizes at generation time, against the current page content box; the shape will not reflow if the page size changes.'
+      '[core-docx] text-box renderAs "shape" resolves percentage sizes at generation time — a width against what holds it, a height against the page — so the shape will not reflow if either changes.'
     );
   }
   if (outline.ignoredSides.length > 0) {
@@ -1704,13 +1746,13 @@ function compileShape(
  * A shape's `width`/`height`, in whole pixels.
  *
  * A shape carries an absolute size in the file, so a percentage cannot stay
- * lazy the way a table's `w:tblW` can: it is resolved against the page's
- * content box and frozen here.
+ * lazy the way a table's `w:tblW` can: it is resolved here and frozen —
+ * against `referenceTwips`, the width the shape stands in or the page's text
+ * height.
  */
 function shapeSize(
   value: unknown,
-  axis: 'width' | 'height',
-  ctx: CompileContext
+  referenceTwips: number
 ): { pixels?: number; resolvedPercentage: boolean } {
   if (typeof value === 'number') {
     return { pixels: Math.round(value), resolvedPercentage: false };
@@ -1721,12 +1763,8 @@ function shapeSize(
   if (!Number.isFinite(fraction) || fraction <= 0) {
     return { resolvedPercentage: false };
   }
-  const availableTwips =
-    axis === 'width'
-      ? getAvailableWidthTwips(ctx.theme, ctx.themeName)
-      : getAvailableHeightTwips(ctx.theme, ctx.themeName);
   return {
-    pixels: Math.round((availableTwips * fraction) / TWIPS_PER_PIXEL),
+    pixels: Math.round((referenceTwips * fraction) / TWIPS_PER_PIXEL),
     resolvedPercentage: true,
   };
 }
@@ -2125,7 +2163,7 @@ function compileDivider(
           lineTwips: DIVIDER_LINE_TWIPS,
           lineRule: 'exact',
         },
-        ...dividerIndent(props, ctx, path),
+        ...dividerIndent(props, scope),
         borders: {
           bottom: {
             style: DIVIDER_BORDER_STYLE[String(props.style)] ?? 'single',
@@ -2143,20 +2181,20 @@ function compileDivider(
   ];
 }
 
-/** The indents that shorten a divider to `width`, or nothing at full width. */
+/**
+ * The indents that shorten a divider to `width`, or nothing at full width.
+ *
+ * Indents are taken from the width the paragraph stands in, so a divider in a
+ * column of a two-column section, or in a text box, is measured there rather
+ * than against the page it would otherwise indent past.
+ */
 function dividerIndent(
   props: Record<string, any>,
-  ctx: CompileContext,
-  path: string
+  scope: ComponentScope
 ): { indent?: DocxIrIndent } {
+  const { ctx, path, measureTwips } = scope;
   const width = props.width;
   if (width === undefined) return {};
-
-  const page = getPageSetup(ctx.theme);
-  const measureTwips = Math.max(
-    0,
-    page.size.width - page.margin.left - page.margin.right
-  );
 
   let usedTwips: number | undefined;
   if (typeof width === 'number' && Number.isFinite(width)) {
@@ -2429,7 +2467,7 @@ function compileList(
 
     blocks.push(
       paragraphNode(
-        { ctx, path: itemPath, id: `${scope.id}:i${index}` },
+        { ...scope, path: itemPath, id: `${scope.id}:i${index}` },
         revision === undefined
           ? parseInline(text, {
               base,
@@ -3615,7 +3653,7 @@ function compileVisual(
   if (!group) return [];
 
   const size = visualPlacementPixels(props, group.canvas, {
-    widthPx: Math.round(twipsToPixels(getAvailableWidthTwips(ctx.theme))),
+    widthPx: Math.round(twipsToPixels(scope.measureTwips)),
     heightPx: Math.round(twipsToPixels(getAvailableHeightTwips(ctx.theme))),
   });
 
@@ -3715,9 +3753,8 @@ function nativeVisualDeps(ctx: CompileContext, path: string): NativeVisualDeps {
  * one axis scales the other with it; stating both allows a deliberate
  * distortion, exactly as an image does.
  *
- * `reference` is what a percentage resolves against: the page's content box in
- * the body, and a nominal box inside a table cell, whose real width is not
- * known until Word lays the table out.
+ * `reference` is what a percentage resolves against: the width the visual
+ * stands in by the page's text height, and a nominal box inside a table cell.
  */
 function visualPlacementPixels(
   props: Record<string, any>,
@@ -3817,7 +3854,7 @@ function compileImage(
     );
   }
 
-  const size = imagePixelSize(props, loaded, ctx);
+  const size = imagePixelSize(props, loaded, scope);
   const resourceId = declareResource(loaded, mediaType, ctx);
 
   const image: DocxIrImageRun = {
@@ -4005,9 +4042,8 @@ function compileChart(
         }
       });
 
-  const page = getPageSetup(ctx.theme);
-  const contentWidthInches =
-    (page.size.width - page.margin.left - page.margin.right) / 1440;
+  // With no width a chart takes the width it stands in, not the page's.
+  const contentWidthInches = scope.measureTwips / 1440;
   const widthInches =
     typeof props.width === 'number' ? props.width : contentWidthInches;
   const heightInches =
@@ -4184,23 +4220,24 @@ function wrapType(value: string): DocxIrTextWrap['type'] {
 /**
  * The size the image is drawn at, in pixels.
  *
- * A width defaults to the full measure. Percentages resolve against the text
- * column, or the page when the author said so. Whichever dimension is left
- * unstated comes from the image's own proportions; when those cannot be read,
- * the pre-IR fallbacks stand in — 16:9, or a 7.36cm column.
+ * A width defaults to the full measure: the width the image stands in, be it
+ * the text column or the text box or column that holds it, so an image in a
+ * box fits the box. Percentages resolve against the same width, or the page
+ * when the author said so. Whichever dimension is left unstated comes from the
+ * image's own proportions; when those cannot be read, the pre-IR fallbacks
+ * stand in — 16:9, or a 7.36cm column.
  */
 function imagePixelSize(
   props: Record<string, any>,
   loaded: LoadedImage,
-  ctx: CompileContext
+  scope: ComponentScope
 ): { width: number; height: number } {
+  const { ctx } = scope;
   const widthRef = props.widthRelativeTo === 'page' ? 'page' : 'content';
   const heightRef = props.heightRelativeTo === 'page' ? 'page' : 'content';
   const availableWidthPx = Math.round(
     twipsToPixels(
-      widthRef === 'page'
-        ? getPageWidthTwips(ctx.theme)
-        : getAvailableWidthTwips(ctx.theme)
+      widthRef === 'page' ? getPageWidthTwips(ctx.theme) : scope.measureTwips
     )
   );
   const availableHeightPx = Math.round(
@@ -4521,7 +4558,10 @@ function compileTable(
     source,
     ctx.theme,
     ctx.themeName,
-    { onWarning: (code, message) => warnOnce(ctx, 'table', message, code) }
+    {
+      onWarning: (code, message) => warnOnce(ctx, 'table', message, code),
+      measureTwips: scope.measureTwips,
+    }
   );
 
   if (model.overflow) {
@@ -4545,6 +4585,7 @@ function compileTable(
       ? [
           compileTableRow(
             model.header,
+            model.columnGrid.values,
             style.headerParagraph,
             style.tableHeader,
             {
@@ -4558,13 +4599,21 @@ function compileTable(
         ]
       : []),
     ...model.rows.map((row, index) =>
-      compileTableRow(row, style.cellParagraph, style.tableCell, {
-        ctx,
-        path: `${path}.rows[${index}]`,
-        id: `${scope.id}:r${index}`,
-        ...(row.tableHeader !== undefined ? { isHeader: row.tableHeader } : {}),
-        ...(row.cantSplit !== undefined ? { cantSplit: row.cantSplit } : {}),
-      })
+      compileTableRow(
+        row,
+        model.columnGrid.values,
+        style.cellParagraph,
+        style.tableCell,
+        {
+          ctx,
+          path: `${path}.rows[${index}]`,
+          id: `${scope.id}:r${index}`,
+          ...(row.tableHeader !== undefined
+            ? { isHeader: row.tableHeader }
+            : {}),
+          ...(row.cantSplit !== undefined ? { cantSplit: row.cantSplit } : {}),
+        }
+      )
     ),
   ];
 
@@ -4679,11 +4728,18 @@ type TableBaseStyle = ReturnType<typeof getTableStyle>['tableCell'] & {
   bold?: boolean;
 };
 
+/**
+ * Where a row or cell sits. It has no measure until its column gives it one,
+ * which is what sets a cell's content apart from the table's.
+ */
+type TablePartScope = Omit<ComponentScope, 'measureTwips'>;
+
 function compileTableRow(
   row: ResolvedRow<unknown, unknown, unknown>,
+  columnTwips: readonly number[],
   spacing: ReturnType<typeof getTableStyle>['cellParagraph'],
   baseStyle: TableBaseStyle,
-  scope: ComponentScope & { isHeader?: boolean; cantSplit?: boolean }
+  scope: TablePartScope & { isHeader?: boolean; cantSplit?: boolean }
 ): DocxIrTableRow {
   const { ctx } = scope;
   const rowRevision = row.revision as RowRevision | undefined;
@@ -4713,6 +4769,7 @@ function compileTableRow(
     cells: row.cells.map((cell, colIndex) =>
       compileTableCell(
         cell,
+        columnTwips[colIndex] ?? 0,
         spacing,
         baseStyle,
         row.keepNext,
@@ -4746,13 +4803,29 @@ interface RowRevision {
 
 function compileTableCell(
   cell: ResolvedCell<unknown, unknown>,
+  columnTwips: number,
   spacing: ReturnType<typeof getTableStyle>['cellParagraph'],
   baseStyle: TableBaseStyle,
   keepNext: boolean,
-  scope: ComponentScope,
+  partScope: TablePartScope,
   rowRevision?: RowRevision,
   markRevision?: DocxIrParagraphMarkRevision
 ): DocxIrTableCell {
+  const margins =
+    !cell.missing && cell.padding
+      ? {
+          topTwips: pointsToTwips(cell.padding.top),
+          bottomTwips: pointsToTwips(cell.padding.bottom),
+          leftTwips: pointsToTwips(cell.padding.left),
+          rightTwips: pointsToTwips(cell.padding.right),
+        }
+      : undefined;
+  // What the cell holds is set against its column less its padding.
+  const scope: ComponentScope = {
+    ...partScope,
+    measureTwips: cellMeasureTwips(columnTwips, margins),
+  };
+
   // The cell's own `font.lineSpacing` wins over the theme's tableCell style,
   // the same precedence its sibling font fields get in cellRunFormatting.
   const cellLine = compileLineSpacing(cell.font?.lineSpacing);
@@ -4797,16 +4870,7 @@ function compileTableCell(
           cell.backgroundColor !== 'transparent'
             ? { shading: { fill: { hex: cell.backgroundColor } } }
             : {}),
-          ...(cell.padding
-            ? {
-                margins: {
-                  topTwips: pointsToTwips(cell.padding.top),
-                  bottomTwips: pointsToTwips(cell.padding.bottom),
-                  leftTwips: pointsToTwips(cell.padding.left),
-                  rightTwips: pointsToTwips(cell.padding.right),
-                },
-              }
-            : {}),
+          ...(margins ? { margins } : {}),
         }),
     borders: {
       top: compileTableBorder(cell.borders.top),
