@@ -8,6 +8,7 @@
 
 import {
   AlignmentType,
+  HighlightColor,
   LineRuleType,
   UnderlineType,
   type IBaseParagraphStyleOptions,
@@ -25,17 +26,22 @@ import type {
 } from '../../ir/types';
 import { ALIGNMENT } from './emit';
 
+type Writable<T> = { -readonly [K in keyof T]: T[K] };
+
 function runProperties(
   formatting: DocxIrRunFormatting
 ): IRunStylePropertiesOptions {
-  const out: Record<string, unknown> = {};
+  // Typed, not a loose record: docx.js ignores a key it does not know, so a
+  // misspelling here is silent everywhere but the compiler. `italic` was one,
+  // and every style's italic went missing from `styles.xml`.
+  const out: Writable<IRunStylePropertiesOptions> = {};
   if (formatting.fontFamily !== undefined) out.font = formatting.fontFamily;
   if (formatting.sizeHalfPoints !== undefined) {
     out.size = formatting.sizeHalfPoints;
   }
   if (formatting.color) out.color = formatting.color.hex;
   if (formatting.bold !== undefined) out.bold = formatting.bold;
-  if (formatting.italic !== undefined) out.italic = formatting.italic;
+  if (formatting.italic !== undefined) out.italics = formatting.italic;
   if (formatting.underline) {
     out.underline = {
       type: formatting.underline
@@ -50,7 +56,10 @@ function runProperties(
   if (formatting.subScript) out.subScript = true;
   if (formatting.smallCaps !== undefined) out.smallCaps = formatting.smallCaps;
   if (formatting.allCaps !== undefined) out.allCaps = formatting.allCaps;
-  if (formatting.highlight !== undefined) out.highlight = formatting.highlight;
+  if (formatting.highlight !== undefined) {
+    out.highlight =
+      formatting.highlight as (typeof HighlightColor)[keyof typeof HighlightColor];
+  }
   if (formatting.characterSpacingTwentieths !== undefined) {
     out.characterSpacing = formatting.characterSpacingTwentieths;
   }
@@ -60,7 +69,7 @@ function runProperties(
   if (formatting.language !== undefined) {
     out.language = { value: formatting.language };
   }
-  return out as IRunStylePropertiesOptions;
+  return out;
 }
 
 function border(value: DocxIrBorder) {

@@ -6,7 +6,8 @@
  * asserted is that the IR *means* the same thing to both: the same text in the
  * same order, the same number of tables, rows, cells, drawings, links, note and
  * comment references, drawing extents, the same paper and margins section by
- * section, and the same note and comment parts.
+ * section, the same note and comment parts, and the same bold, italic and size
+ * on every style the IR declares.
  * The second backend may need extra equivalent media parts when the same image
  * is drawn at different sizes because it stores extents on deduplicated media.
  * Every run and paragraph starts from the same document defaults on both, and
@@ -190,6 +191,7 @@ interface Shape {
    * against 851 and 992).
    */
   pages: Array<Record<string, string>>;
+  styles: Record<string, StyleRun>;
   media: number;
   footnotes: number;
   endnotes: number;
@@ -225,7 +227,44 @@ function documentDefaults(styles: string): Shape['docDefaults'] {
   return { run: properties('rPr'), paragraph: properties('pPr') };
 }
 
-async function shapeOf(buffer: Buffer): Promise<Shape> {
+/** What a style's own `w:rPr` states about weight, slant and size. */
+type StyleRun = Record<'bold' | 'italic' | 'size', string | undefined>;
+
+/**
+ * Each declared style's weight, slant and size, from its last definition.
+ *
+ * The last, because docx.js writes its own `Heading1`-`Heading6` and `Title`
+ * before the ones it was given, under the same ids, and LibreOffice applies
+ * the later one.
+ */
+function styleRuns(
+  stylesXml: string,
+  ids: readonly string[]
+): Record<string, StyleRun> {
+  const definitions = new Map<string, string>();
+  for (const [, id, body] of stylesXml.matchAll(STYLE)) {
+    definitions.set(id, body);
+  }
+  return Object.fromEntries(
+    ids.map((id) => {
+      const rPr =
+        /<w:rPr>([\s\S]*?)<\/w:rPr>/.exec(definitions.get(id) ?? '')?.[1] ?? '';
+      return [
+        id,
+        {
+          bold: statedValue(rPr, 'w:b'),
+          italic: statedValue(rPr, 'w:i'),
+          size: statedValue(rPr, 'w:sz'),
+        },
+      ];
+    })
+  );
+}
+
+async function shapeOf(
+  buffer: Buffer,
+  styleIds: readonly string[] = []
+): Promise<Shape> {
   const zip = await JSZip.loadAsync(buffer);
   const read = async (name: string): Promise<string> =>
     (await zip.file(name)?.async('string')) ?? '';
@@ -257,6 +296,7 @@ async function shapeOf(buffer: Buffer): Promise<Shape> {
     counts: Object.fromEntries(STRUCTURE.map((tag) => [tag, count(tag)])),
     drawingExtents,
     pages,
+    styles: styleRuns(await read('word/styles.xml'), styleIds),
     media: Object.values(zip.files).filter(
       (file) => !file.dir && file.name.startsWith('word/media/')
     ).length,
@@ -291,15 +331,15 @@ describe('both DOCX backends over the corpus', () => {
         }),
       ]);
 
-      const officeShape = await shapeOf(officeOpen.buffer);
-      const docxShape = await shapeOf(docxjs.buffer);
+      const styleIds = await declaredStyleIds(testCase.document);
+      const officeShape = await shapeOf(officeOpen.buffer, styleIds);
+      const docxShape = await shapeOf(docxjs.buffer, styleIds);
       const { media: officeMedia, ...officeSemantics } = officeShape;
       const { media: docxMedia, ...docxSemantics } = docxShape;
 
       expect(officeSemantics).toEqual(docxSemantics);
       expect(officeMedia).toBeGreaterThanOrEqual(docxMedia);
 
-      const styleIds = await declaredStyleIds(testCase.document);
       expect(await complexScriptGaps(officeOpen.buffer, styleIds)).toEqual(
         await complexScriptGaps(docxjs.buffer, styleIds)
       );
@@ -342,6 +382,34 @@ describe('both DOCX backends over the corpus', () => {
     ]);
 
     expect(officeOpen.buffer.equals(docxjs.buffer)).toBe(false);
+  }, 60_000);
+
+  it('reads the style properties it compares', async () => {
+    // Guards the style comparison above from passing because neither side's
+    // `styles.xml` was read. `minimal`'s Heading 5 is the case docx.js used to
+    // lose: an italic the style states, which it never wrote.
+    const document = {
+      name: 'docx',
+      props: { theme: 'minimal' },
+      children: [{ name: 'heading', props: { level: 5, text: 'Five' } }],
+    };
+    const { ir } = await compileDocumentToIr(
+      structuredClone(document) as never,
+      { warnings: [] }
+    );
+    const heading = ir.styles.paragraph.find(
+      (style) => style.id === 'Heading5'
+    );
+    expect(heading?.run?.italic).toBe(true);
+
+    for (const renderer of ['docxjs', 'office-open'] as const) {
+      const { buffer } = await generateBufferViaIr(
+        structuredClone(document) as never,
+        { renderer }
+      );
+      const { styles } = await shapeOf(buffer, ['Heading5']);
+      expect(styles.Heading5.italic, renderer).toBe('on');
+    }
   }, 60_000);
 
   it('keeps per-placement extents for every image type', async () => {
