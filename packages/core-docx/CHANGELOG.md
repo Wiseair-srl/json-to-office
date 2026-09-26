@@ -1,5 +1,25 @@
 # @json-to-office/core-docx
 
+## 7.1.2
+
+### Patch Changes
+
+- e9abb3b: A `text-box` border authored `solid` now draws on the `office-open` backend.
+
+  A component authors its border the CSS way — `solid`, `dashed`, `dotted`, `double`, `none` — and a border's `w:val` does not: OOXML spells a plain line `single`. The compiler passed the authored word into the IR; docx.js drew the word it did not know as `single`, and `office-open` wrote `w:val="solid"`, which LibreOffice draws as no border at all. The compiler now translates the word, every border reaches the IR in OOXML's vocabulary, and IR validation rejects any other.
+
+  docx.js no longer draws a theme border style outside the six it mapped as `single`: a theme's `wave`, `triple` or `thickThinSmallGap` rule now renders as stated, as it already did on `office-open`. A theme handed over as an object (`customThemes`) whose border style is outside that vocabulary draws `single` on both backends.
+
+- 777fa17: Inside a DOCX text box, a table's percentage column widths, a nested `columns` component's widths and gaps, and a divider's percentage width are now measured against the box's content width instead of the page, so they no longer run past a padded or narrow box, and the table overflow warning measures the box too; in a multi-column section they measure one column. A gutter set on the theme now reaches the page, and every width measured against the page leaves the gutter out.
+- ac55246: A DOCX page now takes its header and footer distances from the theme's `page.margins.header` and `footer`. They were dropped, so each renderer wrote its own default in their place — 708 twips on the default renderer, 851 and 992 on `office-open` — and the running head and foot of every document sat somewhere other than where the theme put them, and somewhere different on each renderer. A section's own `page.margins.header` / `footer` still takes precedence. A running head taller than the space its distance leaves under the top margin pushes the body down, so on such a document the body can move too.
+- 777fa17: An image, native visual, native chart or text-box shape inside a DOCX text box, or in a column of a multi-column section, is now sized against that box or column instead of the page: an image with no width fills the box instead of running past it, a percentage width is a share of the box, and a chart with no width takes the box's width. `widthRelativeTo: 'page'` still measures the page. A Highcharts chart is placed the same way but keeps a page-relative type scale, so in a narrow box its text comes out smaller.
+- b2e2e30: The `office-open` DOCX renderer now writes the complex-script twin of every run size, bold and italic it states — `w:szCs`, `w:bCs` and `w:iCs` beside `w:sz`, `w:b` and `w:i` — in runs, numbering levels, styles and document defaults, as the default renderer does. Arabic, Hebrew and other complex-script text took the document default's size, weight and slant on `office-open` alone (in LibreOffice, 12pt regular under a 21pt bold heading); it now matches the default renderer.
+- e959575: The `office-open` DOCX renderer no longer writes Word's own defaults where the document states none. Every section carried the 15.6pt line grid of Word's Chinese template, so body text was laid out on it and came out spaced differently from the default renderer, and `styles.xml` carried Word 365's document defaults (theme fonts, kerning, ligatures, en-US/zh-CN/ar-SA, 8pt after and 1.16 lines). Both are now stated as the default renderer writes them: no document grid and empty document defaults, so body text no longer drifts line by line between the two renderers.
+- 43293c5: A style's italic now reaches the document on the default DOCX renderer. The docx.js adapter passed it under a key docx.js does not read, so every style's `italic`, `true` or `false`, was dropped from `styles.xml` while the `office-open` renderer wrote it: a Heading 5 on the `minimal`, `consulting` and `vermilion` themes drew upright on one renderer and italic on the other. The style now states `w:i` with its complex-script twin `w:iCs`, as a run already did.
+- 777fa17: A DOCX table whose columns state no width now writes its column grid in twips, sized to the width the table stands in (the section's text column less any gutter, or for a table in a text box the box less its padding), instead of writing each column's percentage as a width. Google Docs, Apple Pages and QuickLook lay a table out from its grid and drew such a table a character per column; Word and LibreOffice render it as before. A text box drawn as a table gets the same grid in place of a 100-twip placeholder column.
+- Updated dependencies [777fa17]
+  - @json-to-office/shared-docx@7.1.2
+
 ## 7.0.1
 
 ### Patch Changes
