@@ -138,6 +138,20 @@ function simpleField(instruction: string, cachedText?: string): Opts {
  * Runs
  * ------------------------------------------------------------------ */
 
+/**
+ * A run's formatting — for a run, a numbering level, a style or the document
+ * defaults — as the backend's run options.
+ *
+ * Size, bold and italic each go out twice: `w:sz`, `w:b` and `w:i` for Latin
+ * and East Asian text, and the twins `w:szCs`, `w:bCs` and `w:iCs`, which are
+ * what a reader applies to complex-script text — Arabic, Hebrew, Thai —
+ * instead. docx.js adds the twins on its own; this backend writes only what it
+ * is given, so without them such text kept the document's default size,
+ * weight and slant on this renderer alone. The rules are docx.js's: a twin
+ * for every stated bold or italic, true or false, and for every non-zero size.
+ * Its fourth, `w:highlightCs`, is not left out by oversight: OOXML defines no
+ * such element, and the compiler never sets a highlight.
+ */
 export function runProperties(
   formatting: DocxIrRunFormatting | undefined
 ): Opts {
@@ -148,12 +162,19 @@ export function runProperties(
     // The backend states run size in points and doubles it on the way out,
     // where docx.js takes half-points and writes them straight through.
     out.size = formatting.sizeHalfPoints / 2;
+    if (formatting.sizeHalfPoints) out.sizeComplexScript = out.size;
   }
   if (formatting.color) out.color = formatting.color.hex;
-  if (formatting.bold !== undefined) out.bold = formatting.bold;
+  if (formatting.bold !== undefined) {
+    out.bold = formatting.bold;
+    out.boldComplexScript = formatting.bold;
+  }
   // `italic` here, `italics` in docx.js — the one run property the two spell
-  // differently.
-  if (formatting.italic !== undefined) out.italic = formatting.italic;
+  // differently, and its twin follows suit.
+  if (formatting.italic !== undefined) {
+    out.italic = formatting.italic;
+    out.italicComplexScript = formatting.italic;
+  }
   if (formatting.underline) {
     out.underline = {
       type: formatting.underline.type,
