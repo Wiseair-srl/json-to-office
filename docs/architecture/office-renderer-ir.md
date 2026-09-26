@@ -756,6 +756,31 @@ Two constraints matter:
   directly would not compile; the DOCX adapter does not, because it builds plain
   option bags.
 
+`@office-open/docx` fills whatever it is not given with Word's own defaults,
+where docx.js writes the neutral value, so the DOCX adapter states the neutral
+value itself. Two of those defaults moved text. `w:docDefaults` gets Word 365's
+— theme fonts at 11pt, kerning, ligatures, en-US/zh-CN/ar-SA, 8pt after and
+1.16 lines — for each half not passed as `null`
+(`renderers/office-open/styles.ts`), and every section's `w:docGrid` gets the
+15.6pt line grid of Word's Chinese template (`w:type="lines"`, pitch 312)
+field by field, so the adapter states all three
+(`renderers/office-open/emit.ts`). Through LibreOffice 26.2 the grid
+set `examples/invoice.docx.json`'s body 4.65pt lower at its first line and
+45.7pt lower by its table, and the kerning moved words sideways; the spacing
+default reached nothing there, since the invoice's `Normal` states its own.
+With both stated, and the running head at the same distance, all 318 words of
+the invoice land where docx.js puts them.
+`office-open/__tests__/cross-backend.test.ts` holds the document defaults and
+every section's grid equal across the backends, which every corpus case the
+second backend draws failed before.
+Word's built-in styles in `styles.xml`, its 2013 compatibility settings and a
+theme part are written on this backend only and are left alone. jto refers to
+none of them; the one that applies unasked, the default table style's 108-twip
+cell margins, reaches only a cell that states no margins of its own, which in
+the corpus is eight cells of `tables/ragged-and-empty-cells`. The
+complex-script twins of a size or bold (`w:szCs`, `w:bCs`), which docx.js adds
+to every run and style and this backend does not, are not stated yet.
+
 ## Recorded output differences
 
 Everything else is identical part for part, checked case by case against the pre-IR
