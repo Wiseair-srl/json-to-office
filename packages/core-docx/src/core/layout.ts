@@ -46,8 +46,9 @@ export interface WordSectionProperties {
       right: number;
       bottom: number;
       left: number;
-      // Present only when a section overrides them; the theme's page setup
-      // states the four edges and leaves these to Word's own defaults.
+      // The theme's page setup states the header and footer distances; a
+      // section's own margins replace them. The gutter is present only when
+      // the theme or the section states one.
       header?: number;
       footer?: number;
       gutter?: number;

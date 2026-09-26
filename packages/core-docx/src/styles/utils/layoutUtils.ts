@@ -250,6 +250,11 @@ export const getPageSetup = (theme?: ThemeConfig, themeName?: string) => {
         right: margins.right ?? defaultMargins.right ?? 1440,
         bottom: margins.bottom ?? defaultMargins.bottom ?? 1440,
         left: margins.left ?? defaultMargins.left ?? 1440,
+        // How far the running head and foot sit from the page edge. Left out,
+        // each renderer writes its own default — docx.js 708, office-open 851
+        // and 992 — in place of the distance the theme states.
+        header: margins.header ?? defaultMargins.header ?? 720,
+        footer: margins.footer ?? defaultMargins.footer ?? 720,
         ...(gutter !== undefined && { gutter }),
       },
     };
@@ -267,6 +272,8 @@ export const getPageSetup = (theme?: ThemeConfig, themeName?: string) => {
       right: defaultMargins.right ?? 1440,
       bottom: defaultMargins.bottom ?? 1440,
       left: defaultMargins.left ?? 1440,
+      header: defaultMargins.header ?? 720,
+      footer: defaultMargins.footer ?? 720,
     },
   };
 };

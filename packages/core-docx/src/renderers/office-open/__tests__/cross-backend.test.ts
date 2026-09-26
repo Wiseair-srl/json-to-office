@@ -5,7 +5,8 @@
  * asserted — the two disagree about plenty that a reader cannot see. What is
  * asserted is that the IR *means* the same thing to both: the same text in the
  * same order, the same number of tables, rows, cells, drawings, links, note and
- * comment references, drawing extents, and the same note and comment parts.
+ * comment references, drawing extents, the same paper and margins section by
+ * section, and the same note and comment parts.
  * The second backend may need extra equivalent media parts when the same image
  * is drawn at different sizes because it stores extents on deduplicated media.
  *
@@ -90,6 +91,14 @@ interface Shape {
   text: string[];
   counts: Record<string, number>;
   drawingExtents: Array<{ widthEmu: number; heightEmu: number }>;
+  /**
+   * Each section's `w:pgSz` and `w:pgMar`, attribute by attribute. `w:pgMar`
+   * requires all seven of its own, so a margin the IR leaves out is not
+   * missing from the page: each backend writes its own default in its place,
+   * and the two defaults differ (the header and footer distances did, 708
+   * against 851 and 992).
+   */
+  pages: Array<Record<string, string>>;
   media: number;
   footnotes: number;
   endnotes: number;
@@ -111,6 +120,14 @@ async function shapeOf(buffer: Buffer): Promise<Shape> {
       heightEmu: Number(/\bcy="(\d+)"/.exec(attributes)?.[1]),
     })
   );
+  const pages = [...body.matchAll(/<w:(?:pgSz|pgMar)\b([^>]*)\/?>/g)].map(
+    ([, attributes]) =>
+      Object.fromEntries(
+        [...attributes.matchAll(/\b(w:\w+)="([^"]*)"/g)].map(
+          ([, name, value]) => [name, value]
+        )
+      )
+  );
 
   return {
     // Empty text nodes are dropped: docx.js writes one per cached TOC entry as
@@ -119,6 +136,7 @@ async function shapeOf(buffer: Buffer): Promise<Shape> {
     text: [...body.matchAll(TEXT)].map((m) => m[1]).filter((t) => t.length > 0),
     counts: Object.fromEntries(STRUCTURE.map((tag) => [tag, count(tag)])),
     drawingExtents,
+    pages,
     media: Object.values(zip.files).filter(
       (file) => !file.dir && file.name.startsWith('word/media/')
     ).length,
