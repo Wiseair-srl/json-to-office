@@ -20,6 +20,7 @@ import {
   runProperties,
   type EmitContext,
 } from '../emit';
+import { emitStyles } from '../styles';
 import type { DocxIrShapeRun, DocxIrTable } from '../../../ir/types';
 
 const PNG_BYTES = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
@@ -59,6 +60,31 @@ describe('run properties', () => {
   it('spells the italic flag without the docx.js plural', () => {
     expect(runProperties({ italic: true })).toMatchObject({ italic: true });
     expect(runProperties({ bold: false })).toMatchObject({ bold: false });
+  });
+
+  it('gives size, bold and italic the complex-script twins docx.js adds', () => {
+    // docx.js writes `w:szCs`, `w:bCs` and `w:iCs` beside the Latin property
+    // on its own; this backend writes only what it is given, so Arabic or
+    // Hebrew kept the default size, weight and slant. An `off` is doubled too.
+    expect(
+      runProperties({ sizeHalfPoints: 21, bold: false, italic: true })
+    ).toMatchObject({
+      size: 10.5,
+      sizeComplexScript: 10.5,
+      bold: false,
+      boldComplexScript: false,
+      italic: true,
+      italicComplexScript: true,
+    });
+  });
+
+  it('adds no twin docx.js would leave out', () => {
+    // No twin for an unstated property, nor for a zero size: docx.js tests
+    // the size for truth before writing `w:szCs`.
+    const out = runProperties({ sizeHalfPoints: 0, color: { hex: '000000' } });
+    expect(out).not.toHaveProperty('sizeComplexScript');
+    expect(out).not.toHaveProperty('boldComplexScript');
+    expect(out).not.toHaveProperty('italicComplexScript');
   });
 
   it('keeps character spacing in twentieths of a point', () => {
@@ -401,5 +427,30 @@ describe('numbering', () => {
         },
       ],
     });
+  });
+});
+
+describe('styles', () => {
+  it('give their run formatting the same complex-script twins as a run', () => {
+    // A heading style set in Arabic takes its size and weight from the twins
+    // in `styles.xml`, not from the run, so every place a style states run
+    // formatting carries them: document defaults, styles, built-in overrides.
+    const run = { sizeHalfPoints: 32, bold: true, italic: false };
+    const twins = {
+      sizeComplexScript: 16,
+      boldComplexScript: true,
+      italicComplexScript: false,
+    };
+    const options = emitStyles({
+      defaults: { run, paragraph: {} },
+      paragraph: [{ id: 'Heading1', name: 'Heading 1', run }],
+      character: [{ id: 'Emphasis', name: 'Emphasis', run }],
+      builtIn: { footnoteReference: { run } },
+    }) as Record<string, any>;
+
+    expect(options.default.document.run).toMatchObject(twins);
+    expect(options.paragraphStyles[0].run).toMatchObject(twins);
+    expect(options.characterStyles[0].run).toMatchObject(twins);
+    expect(options.default.footnoteReference.run).toMatchObject(twins);
   });
 });
