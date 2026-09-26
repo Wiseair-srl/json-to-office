@@ -22,19 +22,22 @@ function builtIn(style: DocxIrBuiltInStyle): Opts {
 
 /** Turn the IR's style set into the options the backend builds `styles.xml` from. */
 export function emitStyles(styles: DocxIrStyles): Opts {
-  const documentDefaults: Opts = {
-    ...(Object.keys(styles.defaults.run).length > 0
-      ? { run: runProperties(styles.defaults.run) }
-      : {}),
-    ...(Object.keys(styles.defaults.paragraph).length > 0
-      ? { paragraph: paragraphProperties(styles.defaults.paragraph) }
-      : {}),
-  };
-
+  // `w:docDefaults` says what the IR says and nothing more. Left out, either
+  // half is filled with Word 365's own — theme fonts at 11pt, kerning,
+  // ligatures, en-US/zh-CN/ar-SA, 8pt after and 1.16 lines — where docx.js
+  // writes it empty, so a paragraph that states no spacing took 8pt after and
+  // 1.16 lines on this backend alone. `null` asks the backend for an empty one.
   const defaults: Opts = {
-    ...(Object.keys(documentDefaults).length > 0
-      ? { document: documentDefaults }
-      : {}),
+    document: {
+      run:
+        Object.keys(styles.defaults.run).length > 0
+          ? runProperties(styles.defaults.run)
+          : null,
+      paragraph:
+        Object.keys(styles.defaults.paragraph).length > 0
+          ? paragraphProperties(styles.defaults.paragraph)
+          : null,
+    },
   };
   for (const slot of [
     'footnoteText',
@@ -70,6 +73,6 @@ export function emitStyles(styles: DocxIrStyles): Opts {
           })),
         }
       : {}),
-    ...(Object.keys(defaults).length > 0 ? { default: defaults } : {}),
+    default: defaults,
   };
 }

@@ -1238,6 +1238,12 @@ export function section(
             },
           }
         : {}),
+      // No document grid, as the IR states none. Left to the backend, every
+      // section gets the one Word's Chinese template sets — a 15.6pt line grid
+      // (`w:type="lines"`, pitch 312) — and every line is laid out on it here
+      // but at its own height on docx.js, which writes no grid type. A field
+      // the backend is not given takes that default, so all three are stated.
+      grid: { type: 'default', linePitch: 360, charSpace: 0 },
     },
     children: sectionChildren(value, ctx, closesDocument),
     ...(value.headers ? { headers: headerFooterSet(value.headers, ctx) } : {}),

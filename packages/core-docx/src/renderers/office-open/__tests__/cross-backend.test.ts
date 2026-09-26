@@ -9,6 +9,9 @@
  * section, and the same note and comment parts.
  * The second backend may need extra equivalent media parts when the same image
  * is drawn at different sizes because it stores extents on deduplicated media.
+ * Every run and paragraph starts from the same document defaults on both, and
+ * every section lays its lines out on the same document grid: a default one
+ * backend supplies on its own changes everything that does not state its own.
  *
  * Running every corpus case rather than a hand-picked subset is deliberate. A
  * subset only proves what someone thought to include; the corpus is the set of
@@ -191,6 +194,35 @@ interface Shape {
   footnotes: number;
   endnotes: number;
   comments: number;
+  docDefaults: { run: string[]; paragraph: string[] };
+  /**
+   * Each section's document grid: its type, and its pitch where a grid is on.
+   * Without one (`default`, or no type at all) a pitch changes nothing.
+   */
+  grids: string[];
+}
+
+/**
+ * The properties `w:docDefaults` sets, each element with its attributes in a
+ * fixed order, so markup that says the same thing compares equal: an empty
+ * `w:pPrDefault` and one holding an empty `w:pPr` both set nothing.
+ */
+function documentDefaults(styles: string): Shape['docDefaults'] {
+  const block =
+    /<w:docDefaults>([\s\S]*?)<\/w:docDefaults>/.exec(styles)?.[1] ?? '';
+  const properties = (wrapper: 'rPr' | 'pPr'): string[] => {
+    const inner =
+      new RegExp(
+        `<w:${wrapper}Default>([\\s\\S]*?)</w:${wrapper}Default>`
+      ).exec(block)?.[1] ?? '';
+    return [...inner.matchAll(/<([\w:]+)((?:\s+[\w:]+="[^"]*")*)\s*\/?>/g)]
+      .filter(([, name]) => name !== `w:${wrapper}`)
+      .map(([, name, attributes]) =>
+        [name, ...(attributes.match(/[\w:]+="[^"]*"/g) ?? []).sort()].join(' ')
+      )
+      .sort();
+  };
+  return { run: properties('rPr'), paragraph: properties('pPr') };
 }
 
 async function shapeOf(buffer: Buffer): Promise<Shape> {
@@ -234,6 +266,15 @@ async function shapeOf(buffer: Buffer): Promise<Shape> {
       (await read('word/endnotes.xml')).match(/<w:endnote /g)?.length ?? 0,
     comments:
       (await read('word/comments.xml')).match(/<w:comment /g)?.length ?? 0,
+    docDefaults: documentDefaults(await read('word/styles.xml')),
+    grids: [...body.matchAll(/<w:docGrid\b([^>]*)>/g)].map(([, attributes]) => {
+      const attribute = (name: string): string | undefined =>
+        new RegExp(`\\bw:${name}="([^"]*)"`).exec(attributes)?.[1];
+      const type = attribute('type') ?? 'default';
+      return type === 'default'
+        ? type
+        : `${type} ${attribute('linePitch')} ${attribute('charSpace') ?? 0}`;
+    }),
   };
 }
 
