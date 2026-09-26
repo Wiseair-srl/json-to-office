@@ -960,6 +960,41 @@ relative to the page or its margins as OOXML defines them, `widthRelativeTo:
 rendered while externals are desugared, before layout knows what holds it, so
 in a narrower box it is placed to fit with proportionally smaller type.
 
+280 goldens moved when a theme's header and footer distances started to reach
+the page. The theme schema requires `page.margins.header` and `footer`, and
+every bundled theme states them — `minimal` 850 twips, `consulting` 680,
+`devportal` 720, `vermilion` 620 — but `getPageSetup` returned the four edges
+and the gutter only, so the one distance that reached `w:pgMar` was a section's
+own `page.margins.header` or `footer`. Everywhere else each backend wrote its
+own default: docx.js 708 for both, office-open 851 and 992. A document's
+running head and foot sat somewhere different on each backend and on neither
+where the theme put them, and a running head taller than the gap its distance
+left under the top margin pushed the body down by a backend-dependent amount.
+The page setup now carries both distances — 720, the default
+`getDocumentMargins` states, for a theme object that states none — and a
+section's own still replace them for that section. Only `w:pgMar`'s `w:header`
+and `w:footer` in `word/document.xml` changed, checked part by part against the
+previous output of every case on both backends: on docx.js 708/708 became
+850/850 in 227 cases, 680/680 in 47, 720/720 in three and 620/620 in three
+(office-open's 851/992 became the same values), and in
+`structure/page-override-per-section` the section that states 300/300 kept it.
+The three that did not move state both distances on every section
+(`structure/page-margins-full`, `theme/example-practice-note`,
+`theme/example-field-review`). Nothing else reads the distances: the text
+measure, the height a percentage image is sized against and a block's page
+context take the four edges and the gutter. In LibreOffice the running heads
+move by exactly the difference: on the `consulting` `client-report-blocks`
+template the head rose and the foot fell 1.4pt with the body unmoved; on
+`examples/invoice.docx.json` (`vermilion`) they moved 4.4pt on docx.js and
+11.55pt and 18.6pt on office-open, and now land at the same place on both —
+its running head had been pushing the body down, so on docx.js the body rose
+2.2pt and a table row moved up from the second page. `standard-annual-report`
+and `tech-report`, whose running heads are page-anchored artwork, render
+pixel-identical. `office-open/__tests__/cross-backend.test.ts` now holds every
+section's `w:pgSz` and `w:pgMar` equal across the backends, which 273 corpus
+cases failed before, and `__tests__/header-footer-distance.test.ts` pins the
+distances per theme and per section on both.
+
 ## Post-emit rewrite inventory
 
 These are the production sites that edit an emitted OOXML package. Backend
