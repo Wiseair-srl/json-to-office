@@ -3,7 +3,7 @@ import AdmZip from 'adm-zip';
 import { Type } from '@sinclair/typebox';
 import { validateDocument } from '@json-to-office/shared-docx';
 import { ComponentValidationError } from '../../plugin/validation';
-import { blockSlotBudgets } from '../document';
+import { blockSlotBudgets, docxBlockContext } from '../document';
 import { expandBlocks, toAuthoredPointer } from '../index';
 import {
   consultingTheme,
@@ -141,6 +141,27 @@ describe('JSON report blocks from playground templates', () => {
     // cover); a section that merely inherits it continues on the page.
     expect(report.props.pageBreak).toBe(true);
     expect(second.props.pageBreak).toBeUndefined();
+  });
+  it('gives a block its section’s text width with the gutter taken out', () => {
+    const width = (margins: Record<string, number>) =>
+      (
+        docxBlockContext(
+          {
+            name: 'docx',
+            props: {},
+            children: [
+              { name: 'section', props: { page: { margins } }, children: [] },
+            ],
+          },
+          consultingTheme,
+          '/children/0/children/0',
+          []
+        ).page as { width: number }
+      ).width;
+
+    expect(width({ left: 1440 }) - width({ left: 1440, gutter: 720 })).toBe(
+      720
+    );
   });
   it('honors authored section parts and page breaks', () => {
     const input = example();

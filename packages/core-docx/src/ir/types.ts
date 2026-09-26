@@ -856,15 +856,15 @@ export interface DocxIrTable {
 }
 
 /**
- * The table's column grid (`w:tblGrid`).
+ * The table's column grid (`w:tblGrid`): each column's width in twips.
  *
- * `twips` is the real OOXML unit. `percent` is what the pipeline writes when no
- * column states a width: the grid then carries a percentage per column rather
- * than a width, which Word tolerates because the table itself is sized in
- * percent.
+ * A measurement, never a share. Word and LibreOffice lay a percentage-width
+ * table out from its preferred width and scale the grid to fit, but Google
+ * Docs, Apple Pages and QuickLook take the grid as the physical column widths,
+ * so it is sized against the measure the table stands in (`ir/measure.ts`).
  */
 export interface DocxIrColumnGrid {
-  unit: 'twips' | 'percent';
+  unit: 'twips';
   values: number[];
 }
 

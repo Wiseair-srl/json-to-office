@@ -170,6 +170,31 @@ describe('divider width', () => {
     expect(warnings.map((w) => w.component)).toContain('divider');
     expect(warnings[0].message).toMatch(/wider than the \d+pt text measure/);
   });
+
+  it('measures a percentage against its column, not the page', async () => {
+    const compiled = await compile([
+      {
+        name: 'columns',
+        props: { columns: [{ width: '40%' }, {}] },
+        children: [
+          { name: 'divider', props: { width: '50%' } },
+          { name: 'paragraph', props: { text: 'Beside.' } },
+        ],
+      },
+    ]);
+    const section = compiled.ir.sections.find(
+      (s) => (s.properties.columns?.count ?? 1) > 1
+    )!;
+    const [rule] = section.children as DocxIrParagraph[];
+    const column = Math.min(
+      ...section.properties.columns!.widths!.map((c) => c.widthTwips)
+    );
+
+    // Half the page's measure would have indented it past the column's edge.
+    expect(rule.formatting?.indent).toEqual({
+      rightTwips: column - Math.round(column / 2),
+    });
+  });
 });
 
 describe('divider capability', () => {

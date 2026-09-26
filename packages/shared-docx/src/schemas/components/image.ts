@@ -76,7 +76,7 @@ export const ImagePropsSchema = Type.Object(
     widthRelativeTo: Type.Optional(
       Type.Union([Type.Literal('content'), Type.Literal('page')], {
         description:
-          'Reference for width percentages: content (page width minus margins) or page (full page width)',
+          'Reference for width percentages: content (the width the image stands in — the page less its margins, or the column or text box that holds it) or page (full page width)',
         default: 'content',
       })
     ),

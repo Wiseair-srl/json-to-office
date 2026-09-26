@@ -135,7 +135,8 @@ export const ChartPropsSchema = Type.Object(
       Type.Number({
         minimum: 0,
         exclusiveMinimum: 0,
-        description: 'Chart width in inches. Defaults to the content width.',
+        description:
+          'Chart width in inches. Defaults to the width it stands in: the text column, or the text box or column that holds it.',
       })
     ),
     height: Type.Optional(

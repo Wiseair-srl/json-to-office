@@ -3,7 +3,8 @@ import { getPageSetup } from '../styles';
 import { pointsToTwips } from '../styles/utils/styleHelpers';
 
 /**
- * Compute available page width in twips (page width minus left/right margins)
+ * Compute available page width in twips (page width minus left/right margins
+ * and the gutter, which Word adds to the inside margin)
  */
 export function getAvailableWidthTwips(
   theme?: ThemeConfig,
@@ -13,7 +14,8 @@ export function getAvailableWidthTwips(
   const width = page?.size?.width || 0;
   const left = page?.margin?.left || 0;
   const right = page?.margin?.right || 0;
-  return Math.max(0, width - left - right);
+  const gutter = page?.margin?.gutter || 0;
+  return Math.max(0, width - left - right - gutter);
 }
 
 /**
@@ -82,6 +84,20 @@ export function resolveOffsetTwips(
     return 0;
   }
   return Math.round((referenceTwips * parseFloat(match[1])) / 100);
+}
+
+/**
+ * `count` whole-twip widths that split `totalTwips` evenly and add up to it
+ * exactly. Rounded at the edges between them rather than one by one, so none
+ * strays a twip from its share: four across 9602 twips are 2401, 2400, 2401,
+ * 2400.
+ */
+export function splitTwips(count: number, totalTwips: number): number[] {
+  const edge = (index: number) => Math.round((totalTwips * index) / count);
+  return Array.from(
+    { length: count },
+    (_, index) => edge(index + 1) - edge(index)
+  );
 }
 
 /**

@@ -193,7 +193,7 @@ An embedded picture, with optional caption and floating (anchored) placement.
 | `alt`              | `string`                            | no        | —            | Accessibility text                                                                   |
 | `width`            | `number` (px, ≥ 1) \| `"%"` string  | no        | `'100%'`     | Percentages are relative to `widthRelativeTo`                                        |
 | `height`           | `number` (px) \| `"%"` string       | no        | aspect ratio |                                                                                      |
-| `widthRelativeTo`  | `'content'` \| `'page'`             | no        | `'content'`  | `content` = page width minus margins                                                 |
+| `widthRelativeTo`  | `'content'` \| `'page'`             | no        | `'content'`  | `content` = the width it stands in: page less margins, or its text box or column     |
 | `heightRelativeTo` | `'content'` \| `'page'`             | no        | `'content'`  |                                                                                      |
 | `alignment`        | `'left'` \| `'center'` \| `'right'` | no        | theme        | Falls back to `'center'` when the theme sets none                                    |
 | `caption`          | `string`                            | no        | —            | Supports `**bold**`, `*italic*`, `***both***`                                        |

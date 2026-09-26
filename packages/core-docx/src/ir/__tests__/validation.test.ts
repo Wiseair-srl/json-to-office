@@ -418,23 +418,6 @@ describe('validateDocxIr', () => {
     );
   });
 
-  it('accepts a fractional percentage column grid', () => {
-    const table: DocxIrTable = {
-      kind: 'table',
-      id: 's0.b0',
-      path: 'sections[0].children[0]',
-      rows: [],
-      columnGrid: { unit: 'percent' as const, values: [33.33, 33.33, 33.34] },
-      width: { kind: 'percent', value: 100 },
-      layout: 'fixed',
-    };
-    expect(validateDocxIr(withBody([table]))).not.toContainEqual(
-      expect.objectContaining({
-        path: 'sections[0].children[0].columnGrid',
-      })
-    );
-  });
-
   it('rejects an out-of-range TOC heading range', () => {
     expect(
       validateDocxIr(

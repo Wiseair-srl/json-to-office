@@ -23,13 +23,13 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'blocks/figures-fallback':
     'e7cb3e7a93d40b06b45a06a1d0d01beb2b8bf6366cd702fec85f57e20337ad72',
   'blocks/report-data-consulting':
-    '3bca02124e6c22476cc3255a6239a8ef7afc594c1847652ec1ba3be1ee545534',
+    '6ea2b403121ee3319de5c0875b8267d910910ad4a4a97d448a06f1cffc1dc326',
   'blocks/report-data-fallback':
-    '6f67732028bb3cb3ad5630c1c3b2acbecf85f88897dac88e8afc16100cedc239',
+    '2f3e64334bd15dcf9282f0de4b0c89144e763c8b8b927ae5b9c9c7842e561df8',
   'blocks/report-chrome-fallback':
-    '19275b66c2126d5c82f2b6872fa4a4b9192e9bb838022b1c8cdf40fcb1a6137c',
+    'fb7902162b96bc253ff2d0a424d30aaad597aa0f2de0d813196a95900c6bbd09',
   'blocks/report-chrome-consulting':
-    'e20413d53c57c055cbfcf4afcee40014477e005033b80ef4413dd6f1815d8bb1',
+    '678d19849bef8207593272ec4b5e4345ca2f6537602cc420d2debb2117599f5d',
   'blocks/key-takeaways-fallback':
     '115089a644b634aa0f606742d49f585ddbd1e70daf8f6abc4e5db9e1ff632be7',
   'blocks/key-takeaways-consulting':
@@ -219,7 +219,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'headings/toc-cached-numbered-entries':
     '1b7ed579b0e4d56835d73f100f84c45cb7d50596a043f98433dd8ec47c04a993',
   'headings/toc-in-nested-container':
-    '089689af0f737dd595ccb3d99148cbaca70ed86cc82c3188031d3d99f4bca369',
+    'e6172dfdee50a80234996a4ea61e4f844a45178e00354f03a57a4cdabeae6c91',
   'headings/toc-in-columns':
     '38da16b630fbbf4ec0f10b16f2a82117c81f6ebb0198f753aeb203317f588231',
   'headings/fields-page-numbers':
@@ -325,21 +325,21 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'links/in-list-item':
     'ec89127cc56e25d9585b45e4fe04b2c776f7ada295766662d4b48fd48cfcee10',
   'links/in-table-cell':
-    '377649ebc9fb6ba30c5b6085bdbae2fa819c4efd8b04f5956316d83207c794af',
+    '15c25dece4aa5496edc24444a84cf79006f0b64fdee689b99a4360211d2e27c5',
   'links/in-header-and-footer':
     '3c57b6519bdc0aa8ee818f7489b512b278c888e942423af5c59b40cd5dd0febc',
   'tables/minimal':
-    '65590ec84c4e5eed0b94dd382ab5b3732da7936143b404615dd47acf21375a73',
+    '55c480e027993e5c134a6260b7a51676fc25315387db9302d43c5bce127e473a',
   'tables/header-and-rows':
-    '67d44906f55a4b03747215d8dcc5761d3036d0e4f73a6059d0d45806e260ffd4',
+    '44179d0ce9bf6ef832e459501544ed0bcb1a6bb186788c6d62fa7a6df2166170',
   'tables/header-only-no-rows':
-    'dfba7d6e5ae13ea16cf9bd4cd15ea4a8b8f33e14b479267e9c7e5c3219d7147b',
+    'df35d1b30391152c760892fe08730f26a574d46ef86a2b9ecf687f98e3625b0e',
   'tables/cells-without-header':
-    'bb9e3d3d94b1b6fe22066a96cc27c16a70e0ec81c599759376141e1884a9d164',
+    'afd944db8024d0a722d339599ee415ab6ed970358256528bf440ec7a5a1619aa',
   'tables/ragged-and-empty-cells':
-    '7d20f0fa5c555f33a535c8b63ecb177fb3dfee0354654bbef13c99ddebe9f814',
+    '8b04ae4e0a620abf35dd535dbc3617903d77ded8618bac485633f1197371878c',
   'tables/many-columns-even-split':
-    'f52f26ccbd4b399981841d29f701ab39f63443e97bc1511e33767e9f3d525eb8',
+    '28555bd6fbf604385445a58a53410d6a1ffc930b9d2908553c8350801a36b4bc',
   'tables/column-widths-points':
     '0eb398745cc3d7a4e97e7af4a4a2e7279c47dd2042b7e2388678d36c4319a9e7',
   'tables/column-widths-percent':
@@ -347,53 +347,53 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'tables/column-widths-partial':
     'c315e7039ce93b6dda1432c6a3c772e984aa7e7a97d050a98289d767268522fb',
   'tables/table-width-percentage':
-    'bafef78a315d68206648bd31e6b91703ad9eb7cc77fe534b3392017e1f491b23',
+    '788aa7833a967d8e148960ab7bc58d266fa5fc39ae082dabfa34ee4caab12be4',
   'tables/table-width-with-explicit-columns':
     '1276bf31fc19cb5af6b3a52b153677503d3f96797f9ce55273ca70adeb752399',
   'tables/row-and-cell-heights':
-    '90cf10b28142b80155ecd48fcc529a3b1521088c478f7ea8bae30565c8871a92',
+    '97ec099a1607840b6dce974a926b73134d1ac5a5df55b118d02cbd60fe0d4b2e',
   'tables/borders-uniform':
-    '97c0083d82a2ce4e6ba4694b3748f224c9915429f77547649b262d825f74fe96',
+    '61a61b1930cd8db35171d7f13e13bf4a4f71bba92c147fd51c3d302ffac240c4',
   'tables/borders-per-side':
-    '87850083b02e2a0d973b59088e6905ba51923eb57220ea36df462a66ac77843a',
+    'd6d1a4c0db080dee04527f626e29b9509e3db1cb134751b4bd4acf5fa8e3f58c',
   'tables/borders-zero-size':
-    '5fdb725d9ff3990c514809cb29c74ca566908bef454de0850524ce2481716cca',
+    'd85cd67c4aac27215173592b4d8074c2f96073d9de9eb24f747e38cc28314170',
   'tables/hide-borders-all':
-    '2f668ed5c005099592b3b6d17202d58bf8e3a2b5cc3606570c970cab59c0d451',
+    'aa8169c95f616683bddecb5bbfe5f02ca0f4beea87a19160e33fcc7666c384ff',
   'tables/hide-borders-selective':
-    '1363672fa5df39c2f60e974f0a1e45fb6bafac80b0e6e60371f3ae0cdcdfd795',
+    'de395b12ddc64bb1748e13f775816dcf9ddc5045b4e783a906a91a866a096827',
   'tables/borders-edge-ownership':
-    'be765e630218de3c856db4a0b36ab68ac7c9acca893d1ab22e9dd75c20b42e92',
+    'f301b77cacedc4bba6107f61ca36b1391674b9877d524d5bd7e4d4a5c0c26422',
   'tables/shading-levels':
-    '717c994b3cb5d637e9cbe357dc1d5cbf7a3fbd2a13195600e0ea594ec0430025',
+    '160381674d8edcaeb4f43f396ef1facca97f95f065e8c4a0f6c793d969c9854c',
   'tables/zebra-banding':
-    '9e980c0d689e95fca3c214d74bf255df88a218aeefd6553a63a9800bad80425a',
+    '0033386e94126be00afc12a54f6ab25a9fc911287b386d2ef0f4d10b61dd68fe',
   'tables/alignment-matrix':
-    'b6d824eca2b69a60dc5981235b2e905809ee2d2b03c3ed64c275ea05b9d5ee02',
+    'b968d5193cd171deaa861117af8a26563578238a1c90424f74d35f4aae5e83fb',
   'tables/cell-padding':
-    'e7a56c7c7048d1cd6fe68ab411037c16ac68daecc67d428f1ff8adeceeba98ef',
+    '9d5b7a8815da58e914ac32a95ff5556b0a531e068fb82d88fb267f406ae4adb7',
   'tables/cell-fonts':
-    'aedbaeb711127733c6b94328325bc10194063b21f411f44f9ea20ed94c754288',
+    '5d7aab805d75b72a7854c57c958bc33b9fa25fce55387c5b418de690ce4b00bd',
   'tables/defaults-cascade':
-    '7a7ccd6e73478dd3e06c217ceb18cce8628018f0a032a9389d43830684b0e8b6',
+    '45fcd4e52b9c6307fc2d4850bf3335a1161c0b9d44004c35769a426032753c2b',
   'tables/nested-paragraphs':
-    'f8b73ce8d2b2afe57d958b9da42a78b9574180127a2cfb5830a8441af094df09',
+    '051cf01a68ff98c35072ffa7ba6dc7d93d6c88319058dd0ea172691bf2b654dc',
   'tables/nested-image':
     'd00d47bccf73a53aa6b0ce933b4d92d567d6d5f22a1e1cf600fcb7999df6b370',
   'tables/cell-text-decorators':
-    '221cc506db43f7e999681b0d233e9e3c9edbc7ad1c794058bdea9aa950d88258',
+    '6eec8f0d7634a323e9f4207cc0404dd694ddb2ef80efac00e2e29ac4a34039b8',
   'tables/unsupported-nested-component':
-    'aeb2ab3fc96cb0a9fa3fb30bad23022e3fc9f60fb0a3f1c3bc99eb951375fb9c',
+    '836cf5a42dac9f8c06eeb09cb11c07a97e4bd24bc0079ebe15d6e5d86bc24ca9',
   'tables/pagination-flags':
-    '5a7b5cb76a2f932d1b0ab8003b895f67cbd314e2f157cb43b43796aa988ffb4c',
+    '72e2b751e6c4902a6a5bdd1bc1ed9cb927b52ff80a74c229c71ca69cdacd5b97',
   'tables/row-properties':
-    '2e4b5734c34fbb406b2fc8eed1de6cfce01d412f9925b91d88fb863eb095cfe9',
+    'e6200c051fcfcfd2ba0f70d611c38990fcf48f94f75f371649b3857833fc0ab4',
   'tables/row-revisions':
-    '212936854ccadbe4ed3fc2e9a6c0a4c266fa1ae4954c5fdd6cf9edb655733f82',
+    'd6c58333e59553bde1721b3e96c6208837bb0fed14ca5f3affd3df16ad377add',
   'tables/cell-comment-and-revision':
-    '195ab1d80f26bae8d2431b3f071ac0f325dd85cca26049b54340b38b54bbc542',
+    '09b0bdc6fabe5f848152eb996d0c546d8cb675b9ff95a3d4371c08737ec4df7a',
   'tables/adjacent-tables':
-    '619d8099efea3d2a8cb65a22a0a9f010e8a4f393c89e3f0a0e3028e5a625ebc5',
+    '8eee3ca67f75bac95829a50608d347e76992211936c1c125499c0a5b3254ee0e',
   'blocks/image-inline-default':
     '04d894e81ce9df467eb2b2f57816b4b80215c36d54b05c54e7a414865e41e1ce',
   'blocks/image-sizing-pixels':
@@ -435,15 +435,15 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'blocks/statistic-empty-strings':
     '7b37e320a36b68f2e13311fe0c5a301d00548b74b61849724e5dafe47181b62d',
   'blocks/text-box-inline-default':
-    '500dc39e21a5a4d5ffcd7ec5dafa1797f847784da12c976978c0bbb2f5fb5398',
+    'b59a54c032ff2a8ec1e65d556a39424a4c8ce128759bbab9a001934ad5dbdbfb',
   'blocks/text-box-inline-styled':
-    'ceb411352cd162aa4a25e9e2195dd01523c0af9dfa6aecac731dfaecd6b511a1',
+    '86797e8a46625d76aefb1bf04a0813263afbcf2f9034b03d0d55471e20fc9095',
   'blocks/text-box-floating-table':
-    'da168b2a667bf323011b2a239b94db79a0a69ce2ef5a16025df3c97f5ff4c426',
+    '989680a1af467669140464bd23fc63c32b4a72f4756b0a11db3c9a8f582979ea',
   'blocks/text-box-mixed-children':
-    '0f26e2c22fc5ed415a8abedbff4fa30d119c8c4fe8c2d483d4318dfae5e25dc5',
+    '60d4d65b2df0922cd0e11b1225d9bb25d5bf84b8dbd214b09ba3d42be339234d',
   'blocks/text-box-empty-children':
-    '592e1dd1da16125c67f5560e11fdbdf63727a0e72f43b88a80afc7e3a59704a7',
+    'a6c24af3900d9d2b11588b13f25c77fcaf10abd5370da5560f45d32b7c0e9397',
   'blocks/text-box-shape':
     '5c33c5b9d601459605c33e5b04685ebd3429eaa3b7f6adab804738d013d5e346',
   'blocks/text-box-shape-fill-and-padding':
@@ -455,13 +455,13 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'blocks/text-box-shape-conflicting-borders':
     '2bdff71abc4bbb8ba0fef615d9c7702be4dcd06d17ee5d57c8e90a2e18d8a390',
   'blocks/text-box-nested-columns':
-    '61b63e17f83cfc399bdae39d3fc5315a97d8512d0fd50e7d1870f8cb2c920cec',
+    'a33db25c109435a9838ec2494208bd74443241323471274dfbdb9998ceed8f39',
   'blocks/text-box-nested-columns-widths':
-    '08e491309964e70d3009ad9298364130877975c2b0f74a8b02858814b845232c',
+    '2ac6a005c4ab4334749b6d664fa9d62dfadb25ed48322e8437ff3bdcc48dd15b',
   'blocks/text-box-nested-columns-sparse':
-    '7fd7cc54df4c206eba01761362b5500bb09409cb45435736aa17efa9c89a812b',
+    '848b8df5b5575ace3ca0e3570b6a395d787f522f8302632baee37f943195cea5',
   'blocks/text-box-nested-columns-floating':
-    '332f5f1e29f48f54c2d891945dc3bb1a5be0fdf8e3e00008e5e9c182dd29423f',
+    '7a6707e069f6675f8c1e1f5cbea01f9ea7de23bdf075a6965ad3f2af67e9686c',
   'blocks/divider-default':
     '9c2944322b5bebcff490bfc92a65bf6558eb636344051ff04fe6945a772ba2ea',
   'blocks/divider-styled':
@@ -477,13 +477,13 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'annotations/comment-thread-resolved-state':
     'e9e8c9c9789e0e56d25dae94c79dc95f6eb89ba892a417fa9b4d110f7efa3dc6',
   'annotations/comment-id-allocation':
-    '06a02b31f3df8c5ca2d753261ee0c48ac9da1c3a7a0eeddcf7a908c8c59a2b8f',
+    '9061e180a8038a5db33c85dc33d62e6617d9bbf57198ba250707f90a7aee92cb',
   'annotations/comment-multi-run-range':
     '36b661cad0f23f8865a4d2b3ef45a69577dba668f62a862666dbe5ca99e551dd',
   'annotations/comment-anchor-edge-cases':
-    '0d408f1dfc97e74c8b98b64fbd3b8950d16eb8745ba1e21ceb908f2d7b84a4db',
+    '907f9ac997b884e6037750ea7cf990f02acdb10cf4f73710b0f8d22304ed1dfb',
   'annotations/comment-in-nested-containers':
-    '711eea964a96858dcc1221db642d8482f9ad66fa0f3caa1ebd34db476b919ca7',
+    'a3b351c6e03d039b96a926abf5f865ca269f84502448a3c4b89d666fd49594af',
   'annotations/footnote-single':
     'f5c1fd301bbef2730c1a4c70d1ca4ee3935f7e6bae091528e5340d9618821bac',
   'annotations/footnote-numbering-order':
@@ -505,7 +505,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'annotations/endnote-with-footnote':
     'f2b98ef5a6f9c485e2bd8e51fd148f46bee3bc3dac3886b4d1dd07cbb4e7e3d4',
   'annotations/notes-in-nested-components':
-    '5c26f21cceacc39a819656d8c0251bfbfa0c4a9ce7b4a65005da088a44b69df2',
+    'b5f4e8c2a9893ab10e0c8bc6aeded65cc012e402d85a3db1888ac9b6062ac2d2',
   'annotations/revision-defaults':
     '4811444413d8bb076040657fc5252906a6d614bc7e5408855b08d7729e61d79d',
   'annotations/revision-author-and-date':
@@ -525,41 +525,41 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'annotations/revision-with-comment':
     'a85e6202becd228ed752b020cd942a94a3e139660f2df68772ee532f035bcc70',
   'annotations/revision-table-rows-and-cells':
-    '8a7deaf2445747a3762851262298ff0177c0b52dcb81f12ab19f33020574fb5c',
+    '8f6b4f7ecda6e6cfb8336796a1f9105cc047ec81b64a8e4a397c248696ae9eaa',
   'annotations/track-revisions-setting':
     '5ebf149b9986e824a3b8c4c1b2b3719e2534f77361d1f61cfe02e3c572c2852b',
   'annotations/track-revisions-redline':
-    'a6f68fc35a06fa3554bba1283325a3792d3cec05536fef93b293426c555341c4',
+    'fce52cd033bb4cbb5e7de9ffae636a3406b1a4ef1108beff05b27300633d3d85',
   'theme/builtin-minimal':
-    '0b5a3f840d60423370d829c0e6f2bff0853ad169000ed5205f2fedf6abc17137',
+    '5189ec4c27714473cb676d2faa3387194e589245c469dd78ab0ccd58a2c2e8ef',
   'theme/builtin-devportal':
-    '17613c691ac16aa61876ab518eb00da71272604a18a87ef7a90e6c4f4b9528ae',
+    'fa36c99dfea243bf926c9e0488b12f5451635f6324fd2484d8accdaa19a24dd4',
   'theme/builtin-vermilion':
-    'e2b209fbb66ce6b3f1776077b7dd0800a671b6383fc525320b9ad02b7a9910e6',
+    '9735b3825f1a5ca0e0a435fb123b2092d9eb81460cf530d6831727c76f71fd54',
   'theme/builtin-consulting':
-    '84ac4c4928165b62d65c35638d0e4bb6765c7da000e92c50d2920f2240991a83',
+    '916c33876f932eab0f28bb594087f950ca212cbed19c7cc334a91f746164419a',
   'theme/name-omitted':
-    '84ac4c4928165b62d65c35638d0e4bb6765c7da000e92c50d2920f2240991a83',
+    '916c33876f932eab0f28bb594087f950ca212cbed19c7cc334a91f746164419a',
   'theme/name-unknown-falls-back':
-    '84ac4c4928165b62d65c35638d0e4bb6765c7da000e92c50d2920f2240991a83',
+    '916c33876f932eab0f28bb594087f950ca212cbed19c7cc334a91f746164419a',
   'theme/inline-theme-object':
-    'b5179e30ce4c24f7deba4e342565df463ae3a811f76ec31493bc064cc6cdcc48',
+    '538dd249a41db190f3e992ee0d00a7403110d5ec7a01cc4d1a008d9a3548df2a',
   'theme/overrides-colors-only':
-    '3d2830ca2baa69ffdc2cc5d2eb0f10e52fc8fcdfe63348e2207ef0c4146abbb8',
+    'e25671555e2dfddd14386b3e3a13201a1903e807dde87b2f629fce0dbf206e51',
   'theme/overrides-fonts-partial':
-    'dffb666bf1377119c3543a052b8854a48025f364026ad51b6d2a8ff94c418c5e',
+    '53d9e18203397408788d7b53aa9b9e2f86720de52266f8afb76990dde3aac55c',
   'theme/overrides-styles-metrics':
     '937f68c1ffc808774dc47deef63796cb3677bfcc86b47a83a0d8871ae36f65f8',
   'theme/overrides-styles-base-chain':
     '1f0a81c8cd04efb22dc5d2b15733b62d7764ef0f655caca8ea6dff08be01c7bf',
   'theme/overrides-empty':
-    '0b5a3f840d60423370d829c0e6f2bff0853ad169000ed5205f2fedf6abc17137',
+    '5189ec4c27714473cb676d2faa3387194e589245c469dd78ab0ccd58a2c2e8ef',
   'theme/overrides-over-named-theme':
-    '70078f0c21ad93e7b684db686a3e5e67a5a8bcdc4cc894feb7a4108f01aef7ff',
+    '6124a10a7807fae90a02605eb1215b20d860ba683cf870baf597accacf388c5b',
   'theme/color-tokens-in-components':
-    'e2bff6016c48e8abe26887ee1a5befe92b52b19656b582fff8c83041eefd60e5',
+    '44cf128cab1344be78306c0fef7ef48c542ac062e91017b060e20e373cb0d0e5',
   'theme/color-hex-literals':
-    'e2bff6016c48e8abe26887ee1a5befe92b52b19656b582fff8c83041eefd60e5',
+    '44cf128cab1344be78306c0fef7ef48c542ac062e91017b060e20e373cb0d0e5',
   'theme/color-extra-accent-slots':
     '1f336c6f00864cc82ef116f02fcd15dcdb4fd0a39732164a6e8c0ada6c1354d4',
   'theme/font-registry-safe-families':
@@ -569,9 +569,9 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'theme/toc-entry-styles':
     '78888f7982949bbc539850bc63daa7d92007870c071f035b2440c8880fe4fde9',
   'theme/component-defaults-document':
-    '3a1624d889bc28321c38ff3f551f1ac6f554e141300f7b4a065c9492031b7502',
+    '31ed87be0f39f78560429081512d70713add9aa4fa0697ee38a600e8467bf584',
   'theme/component-defaults-instance-wins':
-    'b44c77f66d45f2179c68a85ee22c9a4311886d74b6cbadf18c2d5242ea3ba794',
+    '8bd70bbd721f716726876d69345099ae47aeb12a95b2033e6f7251a074e66ff1',
   'theme/component-defaults-heading-numbering':
     '669fc56508eb65570832d464e663593c78839889943d318414f3582eae4ab274',
   'theme/language-document-default':
@@ -581,7 +581,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'theme/no-proof-words':
     '6baba0cd914001b978f56de73eea81fb7403910c990095aef66d531a2a185fb5',
   'theme/example-practice-note':
-    '1e4c9b382bcf548171e917e6ec07024bd1ca9e0f22be4098e47131e62bb97815',
+    '12586dbcde55333fc8cc3c484a0b24cf79c5bf7a51499f30839109ce7aa9474c',
   'theme/example-field-review':
-    '04e669c04b1f46268e356a8e6bdf0f4a2936ad49dfd41e83a3c4643e870530c9',
+    '4c6fc80a7fcda9ab7cb2822fb627476414e8b6645821191ac553f82d14ba2ddd',
 };

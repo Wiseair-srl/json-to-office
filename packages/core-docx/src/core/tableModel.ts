@@ -37,6 +37,7 @@ import { resolveColor } from '../styles/utils/colorUtils';
 import {
   getAvailableWidthTwips,
   relativeLengthToTwips,
+  splitTwips,
 } from '../utils/widthUtils';
 import { pointsToTwips } from '../styles/utils/styleHelpers';
 
@@ -191,15 +192,11 @@ export interface ResolvedRow<TComment, TRevision, TRowRevision> {
 }
 
 /**
- * The table's column grid.
- *
- * `twips` is the real OOXML unit. `percent` is what the pipeline has always
- * written when no column states a width — the grid then carries a percentage
- * per column rather than a width, which Word tolerates because the table
- * itself is sized in percent.
+ * The table's column grid: each column's width in twips, against the measure
+ * the table stands in.
  */
 export interface ResolvedColumnGrid {
-  unit: 'twips' | 'percent';
+  unit: 'twips';
   values: number[];
 }
 
@@ -210,7 +207,7 @@ export interface ResolvedTable<TComment, TRevision, TRowRevision> {
   rows: ResolvedRow<TComment, TRevision, TRowRevision>[];
   /** Headers repeat across page breaks unless the source disabled it. */
   repeatHeader: boolean;
-  /** Emitted when the column widths cannot fit the page. */
+  /** Emitted when the column widths cannot fit the measure. */
   overflow?: { totalTwips: number; availableTwips: number };
 }
 
@@ -506,6 +503,12 @@ function normalizeHideBorders(
 export interface TableModelOptions {
   /** Reports a value that could not be used. Deduplicated by the caller. */
   onWarning?: (code: string, message: string) => void;
+  /**
+   * The width the table stands in, in twips — the text column, or a cell's
+   * content width when the table is nested. A percentage width, the table's or
+   * a column's, is a share of it. The page's text width when not given.
+   */
+  measureTwips?: number;
 }
 
 /**
@@ -977,7 +980,11 @@ export function resolveTableModel<TComment, TRevision, TRowRevision>(
   adjudicateInteriorEdges([...(hasHeader ? [header] : []), ...rows]);
 
   return {
-    ...resolveWidths(source, columns, theme, themeName),
+    ...resolveWidths(
+      source,
+      columns,
+      options.measureTwips ?? getAvailableWidthTwips(theme, themeName)
+    ),
     ...(hasHeader ? { header } : {}),
     rows,
     repeatHeader: source.repeatHeaderOnPageBreak ?? true,
@@ -1082,15 +1089,16 @@ function adjudicateInteriorEdges<TComment, TRevision, TRowRevision>(
  * Column widths and the table's own width.
  *
  * Two modes, and which one applies is decided by whether *any* column states a
- * width. With explicit widths everything is in twips and the table is as wide
- * as its columns; with none, the columns split the table evenly and the table
- * is sized as a percentage of the text column.
+ * width. With explicit widths the table is as wide as its columns; with none,
+ * the columns split the table evenly and the table is sized as a percentage of
+ * the measure. Either way the grid is twips against the measure the table
+ * stands in: a grid is a measurement, and the readers that take it as the
+ * column widths would draw a percentage share as that many twips.
  */
 function resolveWidths<TComment, TRevision, TRowRevision>(
   source: TableSource<TComment, TRevision, TRowRevision>,
   columns: TableColumnSource<TComment, TRevision>[],
-  theme: ThemeConfig,
-  themeName: string
+  measureTwips: number
 ): Pick<
   ResolvedTable<TComment, TRevision, TRowRevision>,
   'columnGrid' | 'width' | 'overflow'
@@ -1098,17 +1106,19 @@ function resolveWidths<TComment, TRevision, TRowRevision>(
   const hasExplicitWidths = columns.some((col) => col.width !== undefined);
 
   if (!hasExplicitWidths) {
-    const share = 100 / columns.length;
+    const percent = source.width ?? 100;
     return {
-      columnGrid: { unit: 'percent', values: columns.map(() => share) },
-      width: { size: source.width ?? 100, unit: 'percent' },
+      columnGrid: {
+        unit: 'twips',
+        values: splitTwips(columns.length, (measureTwips * percent) / 100),
+      },
+      width: { size: percent, unit: 'percent' },
     };
   }
 
-  const available = getAvailableWidthTwips(theme, themeName);
   const stated = columns.map((col) =>
     col.width !== undefined
-      ? relativeLengthToTwips(col.width, available)
+      ? relativeLengthToTwips(col.width, measureTwips)
       : undefined
   );
   const totalStated = stated.reduce<number>((sum, w) => sum + (w ?? 0), 0);
@@ -1117,7 +1127,7 @@ function resolveWidths<TComment, TRevision, TRowRevision>(
   // Whatever the stated columns left over, split between the rest. With every
   // column stated there is nothing to share, so an inch stands in — it is only
   // reached when the value is never used.
-  const remaining = Math.max(0, available - totalStated);
+  const remaining = Math.max(0, measureTwips - totalStated);
   const shareOfRemainder =
     unstatedCount > 0 ? remaining / unstatedCount : pointsToTwips(72);
 
@@ -1128,8 +1138,8 @@ function resolveWidths<TComment, TRevision, TRowRevision>(
       size: values.reduce((sum, w) => sum + w, 0),
       unit: 'twips',
     },
-    ...(totalStated > available
-      ? { overflow: { totalTwips: totalStated, availableTwips: available } }
+    ...(totalStated > measureTwips
+      ? { overflow: { totalTwips: totalStated, availableTwips: measureTwips } }
       : {}),
   };
 }

@@ -9,6 +9,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { compileDocumentToIr } from '../../core/generateFromIr';
+import { textWidthTwips } from '../../ir/measure';
 import type { DocxIrTable } from '../../ir/types';
 import type { ReportComponentDefinition } from '../../types';
 
@@ -81,14 +82,27 @@ describe('components/table', () => {
     expect(table.rows[0].isHeader).toBe(true);
   });
 
-  it('splits an unstated width evenly across the columns', async () => {
-    const table = await compileTable(
-      tableConfig(['A', 'B', 'C', 'D'], [['1', '2', '3', '4']])
-    );
+  it('splits an unstated width evenly across the columns, in twips', async () => {
+    const compiled = await compileDocumentToIr({
+      name: 'docx',
+      props: {},
+      children: [
+        {
+          name: 'table',
+          props: tableConfig(['A', 'B', 'C', 'D'], [['1', '2', '3', '4']]),
+        },
+      ],
+    } as unknown as ReportComponentDefinition);
+    const [section] = compiled.ir.sections;
+    const table = section.children[0] as DocxIrTable;
+    const measure = textWidthTwips(section.properties.page);
 
     expect(table.width).toEqual({ kind: 'percent', value: 100 });
-    expect(table.columnGrid.unit).toBe('percent');
-    expect(table.columnGrid.values).toEqual([25, 25, 25, 25]);
+    // A quarter of the text width each, not 25: the grid is a measurement.
+    expect(table.columnGrid.unit).toBe('twips');
+    for (const column of table.columnGrid.values) {
+      expect(Math.abs(column - measure / 4)).toBeLessThan(1);
+    }
   });
 
   it('measures the grid in twips once any column states a width', async () => {

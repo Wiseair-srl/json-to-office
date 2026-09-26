@@ -163,6 +163,33 @@ describe('table widths', () => {
     });
   });
 
+  it('counts the gutter against the room a table has', () => {
+    // 400pt fits the 451pt consulting measure, but not once a one-inch
+    // gutter comes off it, as it does on the page.
+    const table = {
+      name: 'table',
+      props: {
+        columns: [
+          { header: { content: 'A' }, cells: [], width: 200 },
+          { header: { content: 'B' }, cells: [], width: 200 },
+        ],
+      },
+    };
+    const section = (margins?: Record<string, number>) =>
+      doc([
+        {
+          name: 'section',
+          ...(margins ? { props: { page: { margins } } } : {}),
+          children: [table],
+        },
+      ]);
+
+    expect(docxDiagnostics(section())).toEqual([]);
+    expect(docxDiagnostics(section({ gutter: 1440 }))[0]).toMatchObject({
+      code: QUALITY_CODES.TABLE_WIDTH_OVERFLOW,
+    });
+  });
+
   it('accepts a 600pt table when an A3 section has room', () => {
     const findings = docxDiagnostics(
       doc([
