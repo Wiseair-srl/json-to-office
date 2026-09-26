@@ -113,16 +113,18 @@ export function statisticSizes(
   };
 }
 
-import type {
-  DocxIrAlignment,
-  DocxIrBorder,
-  DocxIrBorders,
-  DocxIrCharacterStyle,
-  DocxIrParagraphFormatting,
-  DocxIrParagraphStyle,
-  DocxIrRunFormatting,
-  DocxIrStyles,
-  DocxIrTabStop,
+import {
+  DOCX_IR_BORDER_STYLES,
+  type DocxIrAlignment,
+  type DocxIrBorder,
+  type DocxIrBorderStyle,
+  type DocxIrBorders,
+  type DocxIrCharacterStyle,
+  type DocxIrParagraphFormatting,
+  type DocxIrParagraphStyle,
+  type DocxIrRunFormatting,
+  type DocxIrStyles,
+  type DocxIrTabStop,
 } from '../ir/types';
 import type { ThemeConfig } from './index';
 import { resolveColor } from './utils/colorUtils';
@@ -405,6 +407,20 @@ function convertParagraphProperties(
 }
 
 /**
+ * A theme border's `w:val`.
+ *
+ * The theme schema admits ST_Border's line styles and nothing else, but a
+ * theme handed over as an object (`customThemes`) is not validated on the way
+ * in, and a backend writes whatever word reaches the IR. Anything else draws
+ * the plain line — what docx.js always drew for a word it did not know.
+ */
+function themeBorderStyle(style: string): DocxIrBorderStyle {
+  return (DOCX_IR_BORDER_STYLES as readonly string[]).includes(style)
+    ? (style as DocxIrBorderStyle)
+    : 'single';
+}
+
+/**
  * Convert theme border definitions to docx paragraph border options
  */
 function convertBorders(
@@ -416,7 +432,7 @@ function convertBorders(
   const mapSide = (side?: ThemeBorderDefinition): DocxIrBorder | undefined =>
     side
       ? {
-          style: side.style,
+          style: themeBorderStyle(side.style),
           sizeEighthPoints: side.size,
           color: { hex: resolveColor(side.color, theme) },
           ...(side.space !== undefined ? { spacePoints: side.space } : {}),

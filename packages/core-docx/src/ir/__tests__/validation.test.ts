@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DOCX_IR_SCHEMA_VERSION } from '../types';
+import { DOCX_IR_BORDER_STYLES, DOCX_IR_SCHEMA_VERSION } from '../types';
 import type {
   DocxIR,
   DocxIrInline,
@@ -416,6 +416,87 @@ describe('validateDocxIr', () => {
         path: 'sections[0].children[0].columnGrid',
       })
     );
+  });
+
+  it('rejects a border style outside ST_Border', () => {
+    // `solid` is the authoring word, not OOXML's. A backend writes the IR's
+    // word into `w:val` as it stands, and LibreOffice draws no border at all.
+    const solid = { style: 'solid' as never, sizeEighthPoints: 8 };
+    const table: DocxIrTable = {
+      kind: 'table',
+      id: 's0.b1',
+      path: 'sections[0].children[1]',
+      borders: { insideHorizontal: solid },
+      rows: [{ cells: [{ children: [], borders: { top: solid } }] }],
+      columnGrid: { unit: 'twips' as const, values: [2000] },
+      width: { kind: 'auto' },
+      layout: 'fixed',
+    };
+    const ir = withBody([
+      paragraph([text('x')], { formatting: { borders: { bottom: solid } } }),
+      table,
+    ]);
+
+    expect(validateDocxIr(ir)).toEqual(
+      [
+        'sections[0].children[0].formatting.borders.bottom.style',
+        'sections[0].children[1].borders.insideHorizontal.style',
+        'sections[0].children[1].rows[0].cells[0].borders.top.style',
+      ].map((path) => ({
+        path,
+        message: 'expected an ST_Border style, got "solid"',
+      }))
+    );
+  });
+
+  it('checks the borders of styles and pages too', () => {
+    const dashes = { style: 'dashes' as never };
+    const ir = withBody([]);
+    ir.styles.defaults.paragraph = { borders: { top: dashes } };
+    ir.styles.paragraph[0].paragraph = { borders: { between: dashes } };
+    ir.styles.builtIn = {
+      footnoteText: { paragraph: { borders: { left: dashes } } },
+    };
+    ir.sections[0].properties.borders = { borders: { right: dashes } };
+
+    expect(validateDocxIr(ir).map((v) => v.path)).toEqual([
+      'styles.defaults.paragraph.borders.top.style',
+      'styles.paragraph[0].paragraph.borders.between.style',
+      'styles.builtIn.footnoteText.paragraph.borders.left.style',
+      'sections[0].properties.borders.borders.right.style',
+    ]);
+  });
+
+  it('accepts every ST_Border line style', () => {
+    const ir = withBody(
+      DOCX_IR_BORDER_STYLES.map((style, i) =>
+        paragraph([text('x')], {
+          id: `s0.b${i}`,
+          path: `sections[0].children[${i}]`,
+          formatting: {
+            borders: {
+              top: { style, sizeEighthPoints: 4, color: { hex: '000000' } },
+            },
+          },
+        })
+      )
+    );
+    expect(validateDocxIr(ir)).toEqual([]);
+  });
+
+  it('rejects an unresolved border colour', () => {
+    const ir = withBody([
+      paragraph([text('x')], {
+        formatting: {
+          borders: { top: { style: 'single', color: { hex: 'accent' } } },
+        },
+      }),
+    ]);
+    expect(validateDocxIr(ir)).toEqual([
+      expect.objectContaining({
+        path: 'sections[0].children[0].formatting.borders.top.color',
+      }),
+    ]);
   });
 
   it('rejects an out-of-range TOC heading range', () => {

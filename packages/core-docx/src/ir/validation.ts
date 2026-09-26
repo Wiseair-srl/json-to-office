@@ -3,17 +3,20 @@
  *
  * Not authoring checks — the schema validators already ran. These guard the
  * contract the IR promises adapters: resolved colours, integral twip geometry,
- * resolved resource and style references, paired bookmark and comment ranges,
- * note references that point at a note that exists.
+ * border styles in OOXML's vocabulary, resolved resource and style references,
+ * paired bookmark and comment ranges, note references that point at a note
+ * that exists.
  *
  * A violation is a compiler bug, so it is an error, not a warning.
  */
 
 import { assertNever } from '@json-to-office/shared/rendering';
 import {
+  DOCX_IR_BORDER_STYLES,
   DOCX_IR_SCHEMA_VERSION,
   type DocxIR,
   type DocxIrBlock,
+  type DocxIrBorders,
   type DocxIrColor,
   type DocxIrDrawingGroupRun,
   type DocxIrChartRun,
@@ -28,6 +31,8 @@ export interface IrViolation {
 }
 
 const HEX6 = /^[0-9A-F]{6}$/;
+
+const BORDER_STYLES: ReadonlySet<string> = new Set(DOCX_IR_BORDER_STYLES);
 
 interface Scope {
   ir: DocxIR;
@@ -87,6 +92,26 @@ export function validateDocxIr(ir: DocxIR): IrViolation[] {
   ]);
   const numberingRefs = new Set(ir.numbering.map((n) => n.reference));
 
+  checkBorders(
+    ir.styles.defaults.paragraph.borders,
+    'styles.defaults.paragraph.borders',
+    add
+  );
+  ir.styles.paragraph.forEach((style, index) =>
+    checkBorders(
+      style.paragraph?.borders,
+      `styles.paragraph[${index}].paragraph.borders`,
+      add
+    )
+  );
+  for (const [slot, style] of Object.entries(ir.styles.builtIn ?? {})) {
+    checkBorders(
+      style?.paragraph?.borders,
+      `styles.builtIn.${slot}.paragraph.borders`,
+      add
+    );
+  }
+
   const scope: Scope = {
     ir,
     resourceIds,
@@ -103,6 +128,11 @@ export function validateDocxIr(ir: DocxIR): IrViolation[] {
   ir.sections.forEach((section, index) => {
     const path = `sections[${index}]`;
     checkPageSetup(section.properties.page, `${path}.properties.page`, add);
+    checkBorders(
+      section.properties.borders?.borders,
+      `${path}.properties.borders.borders`,
+      add
+    );
     section.children.forEach((block, i) =>
       checkBlock(block, `${path}.children[${i}]`, scope)
     );
@@ -186,6 +216,11 @@ function checkBlock(block: DocxIrBlock, path: string, scope: Scope): void {
         }
       }
       checkTwips(block.formatting, `${path}.formatting`, scope.add);
+      checkBorders(
+        block.formatting?.borders,
+        `${path}.formatting.borders`,
+        scope.add
+      );
       block.children.forEach((inline, i) =>
         checkInline(inline, `${path}.children[${i}]`, scope)
       );
@@ -196,12 +231,14 @@ function checkBlock(block: DocxIrBlock, path: string, scope: Scope): void {
       if (block.columnGrid.values.some((w) => w < 0 || !Number.isInteger(w))) {
         scope.add(`${path}.columnGrid`, 'expected non-negative integer twips');
       }
+      checkBorders(block.borders, `${path}.borders`, scope.add);
       block.rows.forEach((row, r) => {
         row.cells.forEach((cell, c) => {
           const cellPath = `${path}.rows[${r}].cells[${c}]`;
           if (cell.columnSpan !== undefined && cell.columnSpan < 1) {
             scope.add(`${cellPath}.columnSpan`, 'expected at least 1');
           }
+          checkBorders(cell.borders, `${cellPath}.borders`, scope.add);
           cell.children.forEach((child, i) =>
             checkBlock(child, `${cellPath}.children[${i}]`, scope)
           );
@@ -509,6 +546,31 @@ function checkTwips(
         add(`${path}.${group}.${key}`, `expected an integer, got ${value}`);
       }
     }
+  }
+}
+
+/**
+ * Every side of a border set: a `w:val` OOXML knows, and a resolved colour.
+ *
+ * A backend writes the style word into the file as it stands, so an authoring
+ * word such as `solid` reaches `w:val` — a value the schema does not define,
+ * and a border LibreOffice does not draw.
+ */
+function checkBorders(
+  borders: DocxIrBorders | undefined,
+  path: string,
+  add: Add
+): void {
+  if (!borders) return;
+  for (const [side, border] of Object.entries(borders)) {
+    if (!border) continue;
+    if (!BORDER_STYLES.has(border.style)) {
+      add(
+        `${path}.${side}.style`,
+        `expected an ST_Border style, got "${border.style}"`
+      );
+    }
+    if (border.color) checkColor(border.color, `${path}.${side}.color`, add);
   }
 }
 

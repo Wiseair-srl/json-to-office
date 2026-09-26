@@ -260,8 +260,48 @@ export interface DocxIrTabStop {
   leader?: 'none' | 'dot' | 'hyphen' | 'underscore' | 'middleDot';
 }
 
+/**
+ * `w:val` on a border: ST_Border's line styles, spelled as OOXML spells them.
+ *
+ * Never the authoring vocabulary. `solid` is not an ST_Border value, and a
+ * backend writes this word into the file as it stands. ST_Border's art borders
+ * (`apples`, `balloons3Colors`, …) are page decorations nothing here compiles,
+ * so they stay out until something does.
+ */
+export const DOCX_IR_BORDER_STYLES = [
+  'single',
+  'dashDotStroked',
+  'dashed',
+  'dashSmallGap',
+  'dotDash',
+  'dotDotDash',
+  'dotted',
+  'double',
+  'doubleWave',
+  'inset',
+  'nil',
+  'none',
+  'outset',
+  'thick',
+  'thickThinLargeGap',
+  'thickThinMediumGap',
+  'thickThinSmallGap',
+  'thinThickLargeGap',
+  'thinThickMediumGap',
+  'thinThickSmallGap',
+  'thinThickThinLargeGap',
+  'thinThickThinMediumGap',
+  'thinThickThinSmallGap',
+  'threeDEmboss',
+  'threeDEngrave',
+  'triple',
+  'wave',
+] as const;
+
+export type DocxIrBorderStyle = (typeof DOCX_IR_BORDER_STYLES)[number];
+
 export interface DocxIrBorder {
-  style: string;
+  style: DocxIrBorderStyle;
   color?: DocxIrColor;
   /** Eighths of a point, which is the OOXML unit for `w:sz` on a border. */
   sizeEighthPoints?: number;
