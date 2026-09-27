@@ -944,7 +944,7 @@ describe('renderer placeholder text', () => {
       cellPath(column),
       '[Unsupported component type: statistic]',
       'table-cell',
-      { optional: true }
+      { optional: true, unrendered: 'statistic' }
     )
   );
 
@@ -975,6 +975,37 @@ describe('renderer placeholder text', () => {
         page: 1,
       },
     });
+  });
+
+  it('reports one in a column header, whatever role the cell has', () => {
+    const result = analyzeRenderedDocument({
+      format: 'docx',
+      pages: [
+        page([
+          word('[Unsupported', 82, 160, 58),
+          word('component', 142, 160, 48),
+          word('type:', 192, 160, 24),
+          word('list]', 82, 171, 24),
+        ]),
+      ],
+      inventory: [
+        entry(
+          '/children/0/props/columns/0/header/content',
+          '[Unsupported component type: list]',
+          'table-header',
+          { optional: true, unrendered: 'list' }
+        ),
+      ],
+    });
+    expect(
+      result.findings.map((f) => [f.code, f.path, f.context?.component])
+    ).toEqual([
+      [
+        QUALITY_CODES.RENDERED_PLACEHOLDER,
+        '/children/0/props/columns/0/header/content',
+        'list',
+      ],
+    ]);
   });
 
   it('reports one nothing inventoried on its page, unmapped, with the name it reads', () => {
@@ -1019,6 +1050,33 @@ describe('renderer placeholder text', () => {
       expect(f.message).toContain('"[Unsupported component type: …]"');
       expect(f.context).not.toHaveProperty('component');
     }
+  });
+
+  it('leaves authored text that quotes the phrase alone', () => {
+    // A write-up of the defect quotes it: that is the author's text, which
+    // the authored-text rules judge, not a placeholder the renderer painted.
+    const result = analyzeRenderedDocument({
+      format: 'docx',
+      pages: [
+        page([
+          word('It', 72, 100),
+          word('showed', 90, 100),
+          word('[Unsupported', 140, 100, 58),
+          word('component', 200, 100, 48),
+          word('type:', 250, 100, 24),
+          word('statistic]', 276, 100, 44),
+        ]),
+      ],
+      inventory: [
+        entry(
+          '/children/0/props/text',
+          'It showed [Unsupported component type: statistic]'
+        ),
+      ],
+    });
+    expect(codes(result.findings)).not.toContain(
+      QUALITY_CODES.RENDERED_PLACEHOLDER
+    );
   });
 
   it('is silent when the placeholder the inventory expected never rendered', () => {

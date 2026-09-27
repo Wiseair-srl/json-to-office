@@ -94,7 +94,13 @@ describe('collectDocxTextInventory', () => {
       },
     ]);
     // The statistic's own number and description never reach the page, so
-    // they are not looked for; the placeholder is, at the cell, optional.
+    // they are not looked for; the placeholder is, at the cell, optional, and
+    // marked with what it stands in for — authored text never is.
+    expect(entries.map((e) => e.unrendered)).toEqual([
+      undefined,
+      'statistic',
+      undefined,
+    ]);
     expect(
       entries.map((e) => [e.role, e.path, e.text, e.optional ?? false])
     ).toEqual([

@@ -121,6 +121,30 @@ describe('renderedInventoryFromFacts', () => {
     ]);
   });
 
+  it('carries the component a cell placeholder stands in for', () => {
+    expect(
+      renderedInventoryFromFacts('docx', [
+        {
+          id: 'cell',
+          kind: 'docx/text',
+          path: '/children/0/props/columns/0/cells/0/content',
+          text: '[Unsupported component type: statistic]',
+          role: 'table-cell',
+          optional: true,
+          unrendered: 'statistic',
+        } as QualityFact,
+      ])
+    ).toEqual([
+      {
+        path: '/children/0/props/columns/0/cells/0/content',
+        text: '[Unsupported component type: statistic]',
+        role: 'table-cell',
+        optional: true,
+        unrendered: 'statistic',
+      },
+    ]);
+  });
+
   it('holds text set at an angle to no box, and never calls it missing', () => {
     expect(
       renderedInventoryFromFacts('pptx', [

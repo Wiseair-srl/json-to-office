@@ -32,6 +32,9 @@ export function renderedInventoryFromFacts(
         ...(typeof fact.level === 'number' && { level: fact.level }),
         ...(fact.repeats === true && { repeats: true }),
         ...(fact.optional === true && { optional: true }),
+        ...(typeof fact.unrendered === 'string' && {
+          unrendered: fact.unrendered,
+        }),
         ...(frame && {
           box: {
             ...(frame.widthPt !== undefined && { widthPt: frame.widthPt }),
