@@ -170,6 +170,18 @@ async function complexScriptGaps(
  */
 const TEXT = /<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g;
 
+/** How many content controls stand inside a table cell, however deep. */
+function contentControlsInCells(xml: string): number {
+  let depth = 0;
+  let count = 0;
+  for (const [tag] of xml.matchAll(/<\/?w:tc>|<w:sdt>/g)) {
+    if (tag === '<w:tc>') depth += 1;
+    else if (tag === '</w:tc>') depth -= 1;
+    else if (depth > 0) count += 1;
+  }
+  return count;
+}
+
 /** Elements whose count says how much of the document survived. */
 const STRUCTURE = [
   'w:tbl',
@@ -449,6 +461,86 @@ describe('both DOCX backends over the corpus', () => {
       // The marker keeps the picture decodable, not just its header readable.
       expect(imageIntegrityDefect(bytes), path).toBeUndefined();
     }
+  }, 60_000);
+
+  it('keeps a table of contents that stands in a table cell', async () => {
+    // A text box rendered as a table holds its content in the table's one
+    // cell, and `@office-open/docx` writes a cell's paragraphs and tables and
+    // nothing else: the field vanished on this backend alone, title and all
+    // but the entries. One box ends on it, one opens with it, one holds it a
+    // table deeper in `columns`, one has no entries to cache, and one stands
+    // in a header, which is a part of its own.
+    const box = (children: unknown[]) => ({
+      name: 'text-box',
+      props: {},
+      children,
+    });
+    const toc = (title: string, props: Record<string, unknown> = {}) => ({
+      name: 'toc',
+      props: { title, ...props },
+    });
+    const paragraph = (text: string) => ({
+      name: 'paragraph',
+      props: { text },
+    });
+    const document = {
+      name: 'docx',
+      props: { theme: 'minimal' },
+      children: [
+        {
+          name: 'section',
+          props: { header: [box([toc('In the header')])] },
+          children: [
+            box([paragraph('Before the contents.'), toc('Last in its box')]),
+            box([toc('First in its box'), paragraph('After the contents.')]),
+            box([
+              {
+                name: 'columns',
+                props: { columns: 2 },
+                children: [toc('A table deeper'), paragraph('Beside it.')],
+              },
+            ]),
+            box([toc('Nothing to cache', { depth: { from: 6, to: 6 } })]),
+            { name: 'heading', props: { level: 1, text: 'Alpha' } },
+            { name: 'heading', props: { level: 2, text: 'Beta' } },
+          ],
+        },
+      ],
+    };
+    const [docxjs, officeOpen] = await Promise.all([
+      generateBufferViaIr(structuredClone(document) as never, {
+        renderer: 'docxjs',
+      }),
+      generateBufferViaIr(structuredClone(document) as never, {
+        renderer: 'office-open',
+      }),
+    ]);
+
+    const officeShape = await shapeOf(officeOpen.buffer);
+    expect(officeShape).toEqual(await shapeOf(docxjs.buffer));
+    expect(officeShape.counts['w:sdt']).toBe(4);
+
+    const parts = async (buffer: Buffer) => {
+      const zip = await JSZip.loadAsync(buffer);
+      return Promise.all(
+        ['word/document.xml', 'word/header1.xml'].map(
+          async (name) => (await zip.file(name)?.async('string')) ?? ''
+        )
+      );
+    };
+    const text = (xml: string): string[] =>
+      [...xml.matchAll(TEXT)].map((m) => m[1]).filter((t) => t.length > 0);
+    const [officeBody, officeHeader] = await parts(officeOpen.buffer);
+    const [docxBody, docxHeader] = await parts(docxjs.buffer);
+
+    // In the cell, not beside the table.
+    expect(contentControlsInCells(officeBody)).toBe(4);
+    expect(contentControlsInCells(docxBody)).toBe(4);
+    expect(contentControlsInCells(officeHeader)).toBe(1);
+    expect(contentControlsInCells(docxHeader)).toBe(1);
+    expect(text(officeHeader)).toEqual(text(docxHeader));
+    // And the cell still ends on a paragraph, as docx.js ends it.
+    expect(officeBody + officeHeader).not.toMatch(/<\/w:sdt><\/w:tc>/);
   }, 60_000);
 
   // Marking a second placement used to append the marker after a PNG with no
