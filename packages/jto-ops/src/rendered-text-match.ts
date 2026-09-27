@@ -173,8 +173,11 @@ interface RowFragment {
  * row line by line across every cell, poppler 26 lists it cell by cell, and
  * an authored string in a wrapped cell only survives the second.
  *
- * Rows are grouped by vertical overlap and split into fragments at gaps
- * wider than half the line is tall. A row of two or more fragments opens a
+ * Rows are grouped by vertical overlap and split into fragments, a cell's
+ * line each: at gaps wider than half the line is tall, at gaps wider than
+ * the row's own spaces account for, and before a word that starts on the
+ * edge of a column the rows around it mark, where two cells ran together
+ * at a gap no wider than a space. A row of two or more fragments opens a
  * column block; the rows under it belong to the block while each of their
  * fragments sits inside one column (a right-aligned cell's second line
  * starts further right; a wrapped label's later lines are the only
@@ -357,22 +360,57 @@ function groupRows(
   return rows;
 }
 
+/**
+ * How near a column's edge a word must start to open a cell of it. The
+ * cells of a column all start at one x: of the 398 places in the #409
+ * verification corpus where two rows or more start a cell within half a
+ * point of each other, 394 agree to a thousandth of a point, and the other
+ * four are two edges side by side, a tenth of a point apart or more. A word
+ * of prose that came within 0.15pt of a table's edge was no cell.
+ */
+const COLUMN_EDGE_TOLERANCE_PT = 0.05;
+
+/**
+ * How far a gap may stray from the row's median space and still be a word
+ * space. Of the 21,284 spaces in the #409 verification corpus, 99% lie
+ * within 0.05pt of their row's median; two cells run together leave a gap
+ * 0.17pt off it at the least. A gap past this is a cell boundary or a
+ * quirk of setting — the space before a bold run-in head comes out 0.2pt
+ * wider, a display face kerns the space before a capital A — and only the
+ * columns of the rows around it tell the two apart.
+ */
+const WORD_SPACE_TOLERANCE_PT = 0.1;
+
 function uprightOrder(
   words: readonly PdfTextWord[],
   indices: readonly number[]
 ): number[] {
   const grouped = groupRows(words, indices);
   const rows = grouped.map((row) => row.words);
-  const fragmentsOf = (row: number[]): RowFragment[] => {
+  const fragmentsOf = (
+    row: number[],
+    onEdge?: (before: PdfTextWord, word: PdfTextWord) => boolean
+  ): RowFragment[] => {
     const sorted = [...row].sort((a, b) => words[a].xMin - words[b].xMin);
     // A space is a quarter of the size; half a line's height is two of
     // them, and a cell gap on a 23-point figure is more than that. Tight
     // cell padding puts less than that between two columns, though, and
-    // then poppler runs the two cells into one fragment and the column
-    // they belong to cannot be told. So a gap the row's own spaces cannot
-    // account for parts cells as well: within a row a word space holds to
-    // its median within a hundredth — justification stretches every space
-    // of a line alike — while a cell boundary is close to twice it.
+    // then poppler runs the two cells into one fragment. So a gap the row's
+    // own spaces cannot account for parts cells as well: within a row a
+    // word space holds to its median within a few hundredths of a point —
+    // justification stretches every space of a line alike — while a cell
+    // boundary is close to twice it.
+    //
+    // Tighter padding still leaves a boundary about as wide as a space, or
+    // narrower: 1.8pt in a row whose spaces are 2.6 (#471). The gap alone
+    // cannot tell that from a space, but the column the next cell belongs
+    // to can, once another row has parted there (`onColumnEdge`): a gap
+    // that is not the row's space, before a word that starts on the edge
+    // of a column, parts the cells too. The row must have spaces enough to
+    // know its own — three, so that they outvote a boundary among them. A
+    // row with fewer stays as its gaps part it: the page's spaces cannot
+    // stand in for its own, as a chart's legend sets its spaces half a
+    // point narrower than the slide around it.
     const gaps = sorted.slice(1).map((i, n) => {
       const height = words[i].yMax - words[i].yMin;
       const gap = words[i].xMin - words[sorted[n]].xMax;
@@ -386,7 +424,12 @@ function uprightOrder(
         g.wide ||
         (typical !== undefined &&
           g.gap > g.height / 3 &&
-          g.gap >= typical * 1.5)
+          g.gap >= typical * 1.5) ||
+        (onEdge !== undefined &&
+          typical !== undefined &&
+          spaces.length >= 3 &&
+          Math.abs(g.gap - typical) > WORD_SPACE_TOLERANCE_PT &&
+          onEdge(words[sorted[n - 1]], words[sorted[n]]))
       );
     };
     const out: RowFragment[] = [];
@@ -400,7 +443,47 @@ function uprightOrder(
     });
     return out;
   };
-  const fragments = rows.map(fragmentsOf);
+  // Where the gaps part a row, the cell they start marks the edge of its
+  // column, and every cell of that column starts on the edge. A word of
+  // another row that starts there starts a cell of the column as well,
+  // when the word before it stops short of the edge — provided the column
+  // comes down to its row. A column is a gutter no word crosses, so walking
+  // up or down from the row, a row that starts a cell on the edge must come
+  // before any row that sets a word across it. Prose that happens to start
+  // a word on a table's edge gets this far only as the first line under the
+  // table, whose even spaces keep it whole: a line of prose sets a word
+  // across almost any x, so the edge cannot come down through the lines
+  // between.
+  const byGaps = rows.map((row) => fragmentsOf(row));
+  const onColumnEdge = (
+    r: number,
+    before: PdfTextWord,
+    word: PdfTextWord
+  ): boolean => {
+    const x = word.xMin;
+    for (const step of [-1, 1]) {
+      for (let t = r + step; t >= 0 && t < rows.length; t += step) {
+        const edge = byGaps[t]
+          .slice(1)
+          .some(
+            (f) =>
+              Math.abs(f.xMin - x) <= COLUMN_EDGE_TOLERANCE_PT &&
+              before.xMax <= f.xMin
+          );
+        if (edge) return true;
+        const across = rows[t].some(
+          (i) =>
+            words[i].xMin < x - COLUMN_EDGE_TOLERANCE_PT &&
+            words[i].xMax > x + COLUMN_EDGE_TOLERANCE_PT
+        );
+        if (across) break;
+      }
+    }
+    return false;
+  };
+  const fragments = rows.map((row, r) =>
+    fragmentsOf(row, (before, word) => onColumnEdge(r, before, word))
+  );
   const boxes = grouped;
 
   // Rows less than a line apart or overlapping (a cell centred beside a

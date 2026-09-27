@@ -904,6 +904,336 @@ describe('readingOrder', () => {
     ).toHaveLength(1);
   });
 
+  // An accessibility audit's findings table, measured off a report in the
+  // #409 verification set: the ID, issue and success-criterion cells of
+  // rows S10 to S12. The journey and effort cells part from them at a wide
+  // gap and take no part here. In S11 the issue cell's first line ends 1.8pt
+  // short of the criterion cell, in a row whose spaces are 2.6, so poppler
+  // ran the two cells into one fragment.
+  const auditRows = [
+    word('S10', 72.1, 660.95, 16.87, 10.6),
+    word('Non-descriptive', 94.05, 660.95, 65.95, 10.6),
+    word('link', 162.61, 660.95, 14.24, 10.6),
+    word('text', 179.49, 660.95, 15.32, 10.6),
+    word('("click', 197.42, 660.95, 24.99, 10.6),
+    word('here")', 225.06, 660.95, 25.54, 10.6),
+    word('throughout', 253.23, 660.95, 45.39, 10.6),
+    word('2.4.4', 307.4, 660.95, 21.07, 10.6),
+    word('Link', 331.12, 660.95, 17.4, 10.6),
+    word('Purpose', 351.16, 660.95, 35.36, 10.6),
+    word('(In', 389.17, 660.95, 11.07, 10.6),
+    word('the', 94.05, 671.85, 13.18, 10.6),
+    word('help', 109.84, 671.85, 17.96, 10.6),
+    word('centre', 130.42, 671.85, 26.41, 10.6),
+    word('Context)', 307.4, 671.85, 35.84, 10.6),
+    word('S11', 72.1, 691.25, 16.87, 10.6),
+    word('Custom', 94.05, 691.25, 32.7, 10.6),
+    word('plan-selector', 129.38, 691.25, 54.33, 10.6),
+    word('dropdown', 186.34, 691.25, 41.71, 10.6),
+    word('is', 230.7, 691.25, 6.85, 10.6),
+    word('not', 240.19, 691.25, 13.18, 10.6),
+    word('operable', 256.02, 691.25, 36.91, 10.6),
+    word('by', 295.58, 691.25, 10.04, 10.6),
+    word('2.1.1', 307.4, 691.25, 21.07, 10.6),
+    word('Keyboard', 331.12, 691.25, 40.65, 10.6),
+    word('keyboard', 94.05, 702.15, 39.03, 10.6),
+    word('S12', 72.1, 721.55, 16.87, 10.6),
+    word('Pricing', 94.05, 721.55, 29.01, 10.6),
+    word('tiers', 125.68, 721.55, 17.93, 10.6),
+    word('are', 146.25, 721.55, 13.73, 10.6),
+    word('shown', 162.59, 721.55, 27.47, 10.6),
+    word('as', 192.67, 721.55, 10.04, 10.6),
+    word('images', 205.35, 721.55, 30.59, 10.6),
+    word('of', 238.58, 721.55, 7.93, 10.6),
+    word('text', 249.12, 721.55, 15.31, 10.6),
+    word('with', 267.05, 721.55, 16.87, 10.6),
+    word('no', 286.57, 721.55, 10.57, 10.6),
+    word('1.4.5', 307.4, 721.55, 21.07, 10.6),
+    word('Images', 331.12, 721.55, 31.13, 10.6),
+    word('of', 364.89, 721.55, 7.89, 10.6),
+    word('Text', 375.43, 721.55, 18.47, 10.6),
+    word('text', 94.05, 732.45, 15.28, 10.6),
+    word('alternative', 111.98, 732.45, 43.75, 10.6),
+  ];
+  it('parts two cells run together at a gap narrower than a space, where the rows around them start a column', () => {
+    // Read as one fragment, the S11 cells took "keyboard" into a column of
+    // their own, and the row under them read it out after the criterion:
+    // "operable by 2.1.1 Keyboard keyboard" (#471).
+    const order = readingOrder(auditRows).map((i) => auditRows[i].text);
+    expect(order[order.indexOf('by') + 1]).toBe('keyboard');
+    expect(
+      order.slice(order.indexOf('2.1.1'), order.indexOf('2.1.1') + 3)
+    ).toEqual(['2.1.1', 'Keyboard', '1.4.5']);
+    const { matches } = assignInventory(
+      [page(auditRows)],
+      [
+        {
+          path: '/issue',
+          text: 'Custom plan-selector dropdown is not operable by keyboard',
+        },
+        { path: '/criterion', text: '2.1.1 Keyboard' },
+      ]
+    );
+    expect(matches.map((m) => [m.status, m.partial])).toEqual([
+      ['mapped', undefined],
+      ['mapped', undefined],
+    ]);
+  });
+
+  it('parts three cells run together, the ID cell among them', () => {
+    // The next page of the same audit. M10's ID ends 3.51pt before its
+    // issue, a hair under the third of a line a gap must pass to part two
+    // cells, and the issue's first line ends 0.21pt before the criterion,
+    // so all three cells came out as one fragment and the issue matched
+    // only up to "can be" (#471).
+    const rows = [
+      word('M9', 72.1, 509.2, 13.19, 10.6),
+      word('Error-summary', 94.05, 509.2, 63.29, 10.6),
+      word('links', 159.98, 509.2, 18.99, 10.6),
+      word('do', 181.61, 509.2, 10.54, 10.6),
+      word('not', 194.8, 509.2, 13.17, 10.6),
+      word('move', 210.62, 509.2, 23.23, 10.6),
+      word('focus', 236.46, 509.2, 22.69, 10.6),
+      word('to', 261.79, 509.2, 7.92, 10.6),
+      word('the', 272.33, 509.2, 13.21, 10.6),
+      word('2.4.3', 307.4, 509.2, 21.07, 10.6),
+      word('Focus', 331.12, 509.2, 25.84, 10.6),
+      word('Order', 359.6, 509.2, 24.26, 10.6),
+      word('associated', 94.05, 520.1, 45.36, 10.6),
+      word('field', 142.06, 520.1, 17.42, 10.6),
+      word('M10', 72.1, 539.5, 18.44, 10.6),
+      word('Notification', 94.05, 539.5, 46.94, 10.6),
+      word('banner', 143.6, 539.5, 29.59, 10.6),
+      word('auto-dismisses', 175.82, 539.5, 63.31, 10.6),
+      word('before', 241.74, 539.5, 26.95, 10.6),
+      word('it', 271.3, 539.5, 4.73, 10.6),
+      word('can', 278.68, 539.5, 15.29, 10.6),
+      word('be', 296.62, 539.5, 10.57, 10.6),
+      word('2.2.1', 307.4, 539.5, 21.07, 10.6),
+      word('Timing', 331.12, 539.5, 28.47, 10.6),
+      word('Adjustable', 362.24, 539.5, 44.3, 10.6),
+      word('read', 94.05, 550.4, 18.98, 10.6),
+      word('by', 115.68, 550.4, 10.01, 10.6),
+      word('a', 128.33, 550.4, 5.28, 10.6),
+      word('screen', 136.22, 550.4, 28.52, 10.6),
+      word('reader', 167.39, 550.4, 27.41, 10.6),
+    ];
+    expect(readingOrder(rows).map((i) => rows[i].text)).toEqual([
+      'M9',
+      'M10',
+      'Error-summary',
+      'links',
+      'do',
+      'not',
+      'move',
+      'focus',
+      'to',
+      'the',
+      'associated',
+      'field',
+      'Notification',
+      'banner',
+      'auto-dismisses',
+      'before',
+      'it',
+      'can',
+      'be',
+      'read',
+      'by',
+      'a',
+      'screen',
+      'reader',
+      '2.4.3',
+      'Focus',
+      'Order',
+      '2.2.1',
+      'Timing',
+      'Adjustable',
+    ]);
+    const { matches } = assignInventory(
+      [page(rows)],
+      [
+        { path: '/id', text: 'M10' },
+        {
+          path: '/issue',
+          text: 'Notification banner auto-dismisses before it can be read by a screen reader',
+        },
+        { path: '/criterion', text: '2.2.1 Timing Adjustable' },
+      ]
+    );
+    expect(matches.map((m) => [m.status, m.partial])).toEqual([
+      ['mapped', undefined],
+      ['mapped', undefined],
+      ['mapped', undefined],
+    ]);
+  });
+
+  it('parts cells run together in the first row under a header a padding away', () => {
+    // A capacity forecast's levers table. The header sits a cell padding
+    // above the first row, too far for one block, so no column is open when
+    // that row arrives; and its label is centred on the lines below, so the
+    // row is the savings and risk cells alone, run together at a 2.19pt gap
+    // among spaces of 2.61. The header and the rows under it set the risk
+    // column's edge (#471).
+    const levers = [
+      word('Lever', 72.1, 408.51, 24, 10.04),
+      word('Savings', 162.35, 408.51, 34.48, 10.04),
+      word('/', 199.32, 408.51, 2.49, 10.04),
+      word('capacity', 204.31, 408.51, 36, 10.04),
+      word('relief', 242.8, 408.51, 21.53, 10.04),
+      word('Risk', 342.85, 408.51, 19, 10.04),
+      word('Adds', 162.35, 428.6, 21.63, 10.6),
+      word('roughly', 186.58, 428.6, 31.17, 10.6),
+      word('40%', 220.36, 428.6, 19.03, 10.6),
+      word('headroom', 241.99, 428.6, 42.78, 10.6),
+      word('immediately;', 287.4, 428.6, 53.26, 10.6),
+      word('Locks', 342.85, 428.6, 24.79, 10.6),
+      word('in', 370.29, 428.6, 7.38, 10.6),
+      word('spend', 380.28, 428.6, 25.87, 10.6),
+      word('ahead', 408.8, 428.6, 26.37, 10.6),
+      word('of', 437.82, 428.6, 7.92, 10.6),
+      word('the', 448.36, 428.6, 13.21, 10.6),
+      word('Q4', 464.18, 428.6, 12.68, 10.6),
+      word('Reserved', 72.1, 439.5, 40.62, 10.6),
+      word('capacity', 115.33, 439.5, 34.83, 10.6),
+      word('converts', 162.35, 439.5, 35.88, 10.6),
+      word('on-demand', 200.83, 439.5, 48.06, 10.6),
+      word('spend', 251.5, 439.5, 25.87, 10.6),
+      word('to', 280.02, 439.5, 7.92, 10.6),
+      word('a', 290.55, 439.5, 5.28, 10.6),
+      word('one-year', 298.49, 439.5, 37.44, 10.6),
+      word('architecture', 342.85, 439.5, 49.6, 10.6),
+      word('review;', 395.06, 439.5, 30.07, 10.6),
+      word('becomes', 427.78, 439.5, 38.53, 10.6),
+      word('over-', 468.92, 439.5, 21.65, 10.6),
+      word('purchase', 72.1, 450.4, 39.03, 10.6),
+      word('committed', 162.35, 450.4, 43.77, 10.6),
+      word('rate,', 208.77, 450.4, 18.97, 10.6),
+      word('saving', 230.39, 450.4, 27.43, 10.6),
+      word('about', 260.47, 450.4, 23.72, 10.6),
+      word('28%', 286.84, 450.4, 18.99, 10.6),
+      word('per', 308.47, 450.4, 13.71, 10.6),
+      word('provisioned', 342.85, 450.4, 48.55, 10.6),
+      word('if', 394.02, 450.4, 4.73, 10.6),
+      word('downsampling', 401.4, 450.4, 60.69, 10.6),
+      word('also', 464.71, 450.4, 17.42, 10.6),
+      word('lands', 484.78, 450.4, 22.69, 10.6),
+      word('as', 510.11, 450.4, 10, 10.6),
+      word('unit.', 162.35, 461.3, 17.92, 10.6),
+      word('planned.', 342.85, 461.3, 36.4, 10.6),
+    ];
+    const order = readingOrder(levers).map((i) => levers[i].text);
+    expect(order[order.indexOf('immediately;') + 1]).toBe('converts');
+    expect(order[order.indexOf('Q4') + 1]).toBe('architecture');
+    const { matches } = assignInventory(
+      [page(levers)],
+      [
+        { path: '/lever', text: 'Reserved capacity purchase' },
+        {
+          path: '/savings',
+          text: 'Adds roughly 40% headroom immediately; converts on-demand spend to a one-year committed rate, saving about 28% per unit.',
+        },
+        {
+          path: '/risk',
+          text: 'Locks in spend ahead of the Q4 architecture review; becomes over-provisioned if downsampling also lands as planned.',
+        },
+      ]
+    );
+    expect(matches.map((m) => [m.status, m.partial])).toEqual([
+      ['mapped', undefined],
+      ['mapped', undefined],
+      ['mapped', undefined],
+    ]);
+  });
+
+  it('leaves a line of prose under a table whole where a word of it starts on a column edge', () => {
+    // The paragraph opens right under the table, and "before" happens to
+    // start where the table's second column does. Its spaces are all alike,
+    // so no gap in it is a cell boundary; parted there, the line would be
+    // read into the table's columns and its second half after "on schedule."
+    const prose = [
+      word('Owner', 72.1, 100, 27.72, 10.6),
+      word('Platform', 153.94, 100, 36.96, 10.6),
+      word('team', 193.54, 100, 18.48, 10.6),
+      word('Due', 72.1, 110.9, 13.86, 10.6),
+      word('Q3', 153.94, 110.9, 9.24, 10.6),
+      word('The', 72.1, 121.8, 13.86, 10.6),
+      word('renewal', 88.6, 121.8, 32.34, 10.6),
+      word('closes', 123.58, 121.8, 27.72, 10.6),
+      word('before', 153.94, 121.8, 27.72, 10.6),
+      word('the', 184.3, 121.8, 13.86, 10.6),
+      word('quarter', 200.8, 121.8, 32.34, 10.6),
+      word('ends,', 235.78, 121.8, 23.1, 10.6),
+      word('once', 261.52, 121.8, 18.48, 10.6),
+      word('the', 282.64, 121.8, 13.86, 10.6),
+      word('team', 299.14, 121.8, 18.48, 10.6),
+      word('signs', 320.26, 121.8, 23.1, 10.6),
+      word('off', 346, 121.8, 13.86, 10.6),
+      word('on', 72.1, 132.7, 9.24, 10.6),
+      word('schedule.', 83.98, 132.7, 41.58, 10.6),
+    ];
+    expect(readingOrder(prose).map((i) => prose[i].text)).toEqual([
+      'Owner',
+      'Due',
+      'Platform',
+      'team',
+      'Q3',
+      'The',
+      'renewal',
+      'closes',
+      'before',
+      'the',
+      'quarter',
+      'ends,',
+      'once',
+      'the',
+      'team',
+      'signs',
+      'off',
+      'on',
+      'schedule.',
+    ]);
+  });
+
+  it('leaves prose whole where a run-in head starts on the edge of a table the paragraph does not reach', () => {
+    // A policy in the verification corpus sets its run-in heads in bold,
+    // and the space before one comes out 0.23pt wider than the paragraph's
+    // own: no word space, measured against the row. One such head started
+    // 0.15pt off the edge of the table at the top of its page; here it
+    // starts on the edge. The table's column does not come down to it,
+    // though: "deleted", a line up, lies across the edge.
+    const policy = [
+      word('Class', 72.1, 100, 23.1, 10.6),
+      word('Basis', 149.55, 100, 23.1, 10.6),
+      word('Logs', 72.1, 110.9, 18.48, 10.6),
+      word('Consent', 149.55, 110.9, 32.34, 10.6),
+      word('Records', 72.1, 300, 32.34, 10.6),
+      word('are', 107.08, 300, 13.86, 10.6),
+      word('deleted', 123.58, 300, 32.34, 10.6),
+      word('once', 158.56, 300, 18.48, 10.6),
+      word('the', 179.68, 300, 13.86, 10.6),
+      word('transaction', 196.18, 300, 50.82, 10.6),
+      word('closes,', 249.64, 300, 32.34, 10.6),
+      word('typically', 284.62, 300, 41.58, 10.6),
+      word('within', 72.1, 310.9, 27.72, 10.6),
+      word('two', 102.46, 310.9, 13.86, 10.6),
+      word('years.', 118.96, 310.9, 27.72, 10.6),
+      word('Resolution.', 149.55, 310.9, 49.39, 10.6),
+      word('The', 201.58, 310.9, 13.86, 10.6),
+      word('seven-year', 218.08, 310.9, 46.2, 10.6),
+      word('period', 266.92, 310.9, 27.72, 10.6),
+      word('governs.', 72.1, 321.8, 36.96, 10.6),
+    ];
+    expect(
+      findOccurrences(
+        indexDocument([page(policy)]),
+        needleSegments(
+          'Records are deleted once the transaction closes, typically within two years. **Resolution.** The seven-year period governs.'
+        )
+      )
+    ).toHaveLength(1);
+  });
+
   it('keeps the two lines of small print beside a display title apart', () => {
     // Measured off a stock deck: a 45pt title's word boxes span both lines
     // of the caption set beside it. Rowed with the title, the caption read a
