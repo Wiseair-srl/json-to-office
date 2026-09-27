@@ -862,6 +862,7 @@ previous implementation finds what a feature checklist does not.
 | On `office-open`, a bookmarked section that ends on a table, a contents field or nothing ends in a one-point exact paragraph before its bookmark end, as on `docxjs` (no corpus golden moved).                       | #468. Floating again, a cover band whose client name wraps reached past the bottom margin, and on `office-open` the table was followed only by the paragraph holding the section's properties, where LibreOffice anchors a floating table: the cover gained a second page with nothing on it (six report cases of the rendered block matrix). docx.js closes the section's bookmark in a one-point paragraph there, which avoids it. Checked part by part, both rows together: `docxjs` did not change; on `office-open` 17 corpus cases and both report templates changed in `word/document.xml` only, 8 cells gaining the closing `<w:p/>` and 22 sections this paragraph, and are identical without them. Pinned in `emit.test.ts` and `report-chrome.test.ts`.                                                                                   |
 | On `office-open`, a table of contents in a table cell — a table-rendered `text-box`, `columns` inside one — is written where it was dropped, as `docxjs` writes it (no corpus golden moved).                         | `@office-open/docx` writes a cell's paragraphs and tables and nothing else (`stringifyCellChild` answers any other child with an empty string), so the field vanished on this backend alone, its title left above nothing. The adapter now hands the cached entries over as paragraphs between two marker paragraphs and, once the package exists, replaces the three with the backend's own `stringifyTableOfContents` around them: the `w:sdt` it writes for the same table of contents in the body, byte for byte (`renderers/office-open/cellTocs.ts`). A cell that ends on one closes with `<w:p/>`, as on `docxjs`. Every corpus case rendered to the same digest on both backends before and after; LibreOffice draws the entries inside the box, laid out as on `docxjs`.                                                                    |
 | On `office-open`, tracking, indents, cell widths and margins, row heights, a floating table's offsets and the page's size, margins and columns are floored to whole twips, as on `docxjs` (no corpus golden moved).  | OOXML states them in whole twips (`ST_TwipsMeasure`, `ST_SignedTwipsMeasure`, a `dxa` width); the IR holds what its arithmetic gave, and a theme's tracking is a share of an em times the size: `consulting`'s 8pt eyebrow tracks 12.8 twentieths of a point, its `tracker` 9.6. docx.js floors each such attribute (`decimalNumber` is `Math.floor`: −9.456 becomes −10, and under one twentieth still writes `w:val="0"`); `@office-open/docx` wrote `<w:spacing w:val="12.8"/>`, which the schema refuses, and LibreOffice set the client report's eyebrow and running head wider — the one pixel difference between the backends on that template, now gone. Paragraph spacing, tab stops and frames stay as given, as docx.js writes them. The last paragraph of this section gives the check.                                                  |
+| A line height set as a multiple is written in whole twips on both backends, as is a tab stop, a frame or a statistic's spacing stated with a fraction (the four `devportal` cases moved, `word/styles.xml` only).    | OOXML types `w:line` as `ST_SignedTwipsMeasure` and `w:before`/`w:after` as `ST_TwipsMeasure`, integers both, and the compiler turned a multiple into 240ths unrounded: `devportal`'s 1.02-line Title wrote `w:line="244.8"`, and three annual-report templates 299 values such as 277.68 for 1.157 lines and `266.40000000000003` for 1.11. docx.js writes these as given, as it does `w:tab`'s `w:pos` and `w:framePr`, and `@office-open/docx` passes a number through, so both wrote the same invalid value. The compiler now rounds each to the nearest twip (`wholeTwips` in `ir/units.ts`). Only line heights were fractional in the corpus and the gallery, so nothing else moved, and LibreOffice draws the moved documents as before. The last paragraph of this section gives the check.                                                  |
 
 | A `statistic` renders its `unit`, `size`, `trend` and `trendValue`, under two styles the document now defines. | All four props were declared, accepted by the schema and read by nothing: `{ "number": "99", "unit": "%" }` rendered `99`, and the shipped `docx-report` starter lost its percent sign with no diagnostic anywhere in the pipeline. The two paragraphs also named `StatisticNumber` and `StatisticDescription`, which no theme and no generator ever defined — an undefined `w:pStyle` resolves to Normal in silence, so the component purpose-built for KPIs set at body size and weight. The styles are appended only to documents that contain a statistic, so nothing else moved. `format` stays unimplemented and now warns (`W_STATISTIC_FORMAT_IGNORED`) rather than vanishing. |
 | A body paragraph or list item directly under a table gets 120 twips above it. | OOXML gives a table no space-after — the property does not exist — so the block below one drew hard against its bottom rule. A heading was already spaced by its own style and is left alone; only styles that contribute nothing of their own are topped up. |
@@ -1061,12 +1062,44 @@ are the ones docx.js writes as given, so the backends agree on them whatever
 the IR holds — paragraph spacing, tab stops and text frames — and of those
 only a line height reaches a package fractional: a line-height multiple times
 240, such as 277.68 twips for 1.157 lines in the annual-report templates or
-244.8 for `devportal`'s 1.02-line title, on both backends alike. Rounding it
-is the compiler's to do, for both, and moves goldens. `office-open/__tests__/cross-backend.test.ts`
+244.8 for `devportal`'s 1.02-line title, on both backends alike. The compiler
+now rounds it, for both; the next paragraph gives that check. `office-open/__tests__/cross-backend.test.ts`
 holds every other length in twips whole on each backend over the corpus and
 both report templates, which 61 `office-open` cases failed before, and
 compares each declared style's tracking across the backends;
 `office-open/__tests__/emit.test.ts` pins the floor option by option.
+
+Four goldens moved when the compiler started to round lengths in twips —
+`structure/theme-page-source`, `theme/builtin-devportal`,
+`theme/overrides-over-named-theme` and `theme/example-field-review`, the
+corpus's four `devportal` documents — and the move was checked part by part:
+every corpus case and the eight DOCX gallery templates were generated on both
+backends by the code before and after the change, and the old code reproduced
+all 283 recorded digests first. On each backend the same seven packages
+changed, in one part each: the four cases in `word/styles.xml`, where the
+Title's `w:line="244.8"` became 245, and `modern-annual-report-2`,
+`standard-annual-report` and `vermilion-annual-report` in `word/document.xml`,
+in 104, 136 and 59 line heights — twelve values, 277.68 becoming 278, 261.12
+261, 235.2 235 and `266.40000000000003` 266 among them. Rounding those values
+in the old output to the nearest whole makes every part byte-identical, and
+no `w:spacing`, `w:tab` or `w:framePr` length in any package is fractional
+now. The multiple is rounded rather than floored: docx.js writes these
+attributes as given, so it has no floor here to match, and nearest is what
+every other conversion in `ir/units.ts` does. In LibreOffice 26.2 the three
+templates and `theme/builtin-devportal`, generated on `docxjs`, render glyph
+for glyph as before: 72,400 glyphs over 61 pages, none moved. The lengths an
+author states in twips reach the IR as given, and are
+rounded the same way now — a tab stop on a paragraph or in a theme style, a
+paragraph frame's size and numeric offsets, a statistic's spacing, the gap a
+theme sets above a TOC title — as is a theme style's exact or at-least line
+height in points, which was multiplied by 20 unrounded. None of them was
+fractional in the corpus or the gallery; a block can make one so, since a
+`$measure` of half an odd measure is a centre tab at x.5.
+`office-open/__tests__/cross-backend.test.ts` now holds paragraph spacing, tab
+stops and frames to whole twips on each backend over the corpus and both
+report templates, which the four `devportal` cases failed on both before,
+and generates one document that states each of those lengths with a fraction
+and failed at every one of them.
 
 ## Post-emit rewrite inventory
 

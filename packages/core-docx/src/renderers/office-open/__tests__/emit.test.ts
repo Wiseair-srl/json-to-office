@@ -797,7 +797,8 @@ describe('lengths in twips', () => {
   it('leaves the lengths docx.js writes as given', () => {
     // Paragraph spacing, tab stops and frames: docx.js writes these as it is
     // handed them, so the two backends agree whatever the IR holds, and
-    // flooring them here alone would part them.
+    // flooring them here alone would part them. The compiler rounds them
+    // instead, for both at once.
     expect(
       paragraphProperties({
         spacing: { beforeTwips: 0.5, afterTwips: 120.5, lineTwips: 277.68 },

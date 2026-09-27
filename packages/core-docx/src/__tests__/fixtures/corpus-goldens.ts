@@ -107,7 +107,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'structure/metadata-empty':
     '2674f3fe8ca42023067124c70fd3120dcf5801e6117f9d57918c03c8f9debf7f',
   'structure/theme-page-source':
-    'd710df14b38222bf962cdda4e1683d163cdc81d33f179723f2c0ee8b21ad59a2',
+    'a50abae9e2482597c218851c2a2e4d582c9cee3b57d78895015326183918ffa3',
   'structure/sections-multiple':
     '434bf21195f47aa1268e3f8cf5713f580ba4819200d6706fd1083341ab8d3954',
   'structure/section-page-break-off':
@@ -533,7 +533,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'theme/builtin-minimal':
     '660275945ba3b43642f363a87a4726841e63997f8428b7e27ddb68b50420fd06',
   'theme/builtin-devportal':
-    '2f0c0ffea6798d712c5d613ab741160b7921b7aeac4fe28980ecfc441614fd83',
+    'd213d7ceace0fff5a8a7c0802989984540164efbd3c7876c63b323ec06c0c86b',
   'theme/builtin-vermilion':
     '461562537a48637723fcf9cf0eb7c3de58ae4ddbe742e1fcc00457a3373892c1',
   'theme/builtin-consulting':
@@ -555,7 +555,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'theme/overrides-empty':
     '660275945ba3b43642f363a87a4726841e63997f8428b7e27ddb68b50420fd06',
   'theme/overrides-over-named-theme':
-    'c8ebd085232e6b90f8b40665ac0917bf008750ea5f8e9e757b2f314db25b0e06',
+    '23e21216f1c08a42f0e279c80065598a3267ea05acdfb174c69ac56bfe096285',
   'theme/color-tokens-in-components':
     'b4af3600c4dd57a583a2b51be7e05f8c011060a033e6a984955636885e364b9d',
   'theme/color-hex-literals':
@@ -583,5 +583,5 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'theme/example-practice-note':
     '876e9a2c549a9c85203293dd483b5b26b4217ba989a4acc162f2578ac9d7ccc7',
   'theme/example-field-review':
-    'ac48d9cebdd3d4affb93b3e9b3424ce476f1961ee55ac5ad78db930cf17f95c5',
+    '1949b90a4521482fa724cd6f0e5bd158f92edadc35e607012282a558c2bf41f9',
 };

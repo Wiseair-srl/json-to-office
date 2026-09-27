@@ -246,6 +246,12 @@ export interface DocxIrIndent {
   hangingTwips?: number;
 }
 
+/**
+ * A paragraph's spacing, in whole twips: OOXML types `w:before`/`w:after` as
+ * `ST_TwipsMeasure` and `w:line` as `ST_SignedTwipsMeasure`, integers both,
+ * and each backend writes what it is handed. The same holds for a tab stop's
+ * position and a frame's size and offsets.
+ */
 export interface DocxIrSpacing {
   beforeTwips?: number;
   afterTwips?: number;

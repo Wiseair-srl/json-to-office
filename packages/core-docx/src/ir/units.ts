@@ -20,6 +20,21 @@ export function pointsToTwips(points: number): number {
   return Math.round(points * TWIPS_PER_POINT);
 }
 
+/**
+ * A length already in twips, as the whole number OOXML states it in.
+ *
+ * `ST_TwipsMeasure` and `ST_SignedTwipsMeasure` are integers, and neither
+ * backend rounds a paragraph's spacing, a tab stop or a frame on the way out:
+ * docx.js writes them as given, `@office-open/docx` passes a number through.
+ * What arrives in twips can still carry a fraction — a line-height multiple
+ * times 240, a length an author typed, or one a block derived with `$measure`,
+ * where half an odd measure is a centre tab at x.5 — so it is rounded here,
+ * as every other conversion in this file rounds.
+ */
+export function wholeTwips(twips: number): number {
+  return Math.round(twips);
+}
+
 /** Points → half-points, the OOXML unit for a font size. */
 export function pointsToHalfPoints(points: number): number {
   return Math.round(points * 2);
