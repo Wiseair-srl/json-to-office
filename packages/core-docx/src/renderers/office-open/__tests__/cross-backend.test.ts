@@ -52,6 +52,7 @@ import {
   PNG_4X2,
 } from '../../../__tests__/fixtures/corpus-blocks';
 import { readImageDimensions } from '../../../utils/imageUtils';
+import { minimalTheme } from '../../../templates/themes';
 
 const officeOpen = await resolveDocxRenderer('office-open');
 
@@ -798,10 +799,13 @@ describe('every table cell ends on a paragraph', () => {
  * The attributes, by element, that OOXML types as a whole number of twips —
  * `ST_TwipsMeasure` or `ST_SignedTwipsMeasure` — among those written from the
  * IR. A width's `w:w` in twips, `w:type="dxa"`, is held to it wherever it
- * stands: a table's, a cell's, a cell margin's.
+ * stands: a table's, a cell's, a cell margin's. `w:spacing` names two
+ * elements, a run's tracking and a paragraph's spacing, and both are held.
  */
 const WHOLE_TWIPS: Readonly<Record<string, readonly string[]>> = {
-  'w:spacing': ['w:val'],
+  'w:spacing': ['w:val', 'w:before', 'w:after', 'w:line'],
+  'w:tab': ['w:pos'],
+  'w:framePr': ['w:w', 'w:h', 'w:x', 'w:y'],
   'w:ind': [
     'w:left',
     'w:right',
@@ -876,29 +880,158 @@ async function fractionalTwips(buffer: Buffer): Promise<string[]> {
  * LibreOffice set the client report's eyebrow and running head that much
  * wider. Each backend is held to it on its own.
  *
- * Paragraph spacing, tab stops and text frames are left out: docx.js writes
- * them as given, so the two backends agree whatever the IR holds — and a line
- * height taken from a multiple of 1.157 is 277.68 twips on both.
+ * Paragraph spacing, tab stops and text frames go out as given on both
+ * backends — docx.js floors none of them — so the compiler rounds them, for
+ * both at once: a line height taken from a multiple of 1.157 was 277.68 twips
+ * on each, `devportal`'s 1.02-line title 244.8. The corpus reaches only that
+ * title fractional, so the lengths an author can state with a fraction are
+ * held here in a document of their own.
  */
 describe('every length in twips is a whole number', () => {
   it('reads the lengths it holds to whole twips, and only those', () => {
     expect(
       fractionalTwipsIn(
         'word/document.xml',
-        '<w:pPr><w:spacing w:before="0.5" w:line="277.68"/>' +
-          '<w:ind w:left="-9.5" w:hanging="360"/></w:pPr>' +
-          '<w:rPr><w:spacing w:val="12.8"/></w:rPr><w:tcPr>' +
-          '<w:tcW w:w="206.5" w:type="dxa"/><w:tcMar>' +
+        '<w:pPr><w:tabs><w:tab w:val="center" w:pos="4513.5"/></w:tabs>' +
+          '<w:spacing w:before="0.5" w:after="120" w:line="277.68" w:lineRule="auto"/>' +
+          '<w:ind w:left="-9.5" w:hanging="360"/>' +
+          '<w:framePr w:w="2000.5" w:h="300" w:x="-100.5" w:y="200.5" w:hAnchor="page"/>' +
+          '</w:pPr><w:r><w:rPr><w:spacing w:val="12.8"/></w:rPr><w:tab/></w:r>' +
+          '<w:tcPr><w:tcW w:w="206.5" w:type="dxa"/><w:tcMar>' +
           '<w:left w:w="112.5" w:type="dxa"/></w:tcMar></w:tcPr>' +
           '<w:tblW w:w="33.5" w:type="pct"/>'
       )
     ).toEqual([
+      'word/document.xml <w:tab w:pos="4513.5">',
+      'word/document.xml <w:spacing w:before="0.5">',
+      'word/document.xml <w:spacing w:line="277.68">',
       'word/document.xml <w:ind w:left="-9.5">',
+      'word/document.xml <w:framePr w:w="2000.5">',
+      'word/document.xml <w:framePr w:x="-100.5">',
+      'word/document.xml <w:framePr w:y="200.5">',
       'word/document.xml <w:spacing w:val="12.8">',
       'word/document.xml <w:tcW w:w="206.5">',
       'word/document.xml <w:left w:w="112.5">',
     ]);
   });
+
+  /**
+   * Every way a length in twips reaches the IR with a fraction, in one
+   * document: a line-height multiple on a paragraph, in a cell and in the
+   * theme's table-header style; a theme style's exact line height in points;
+   * a tab stop on a paragraph and in the theme's TOC style; a frame's size
+   * and offsets; a statistic's spacing; the gap the theme sets above a TOC
+   * title. Each is rounded to the nearest whole twip.
+   */
+  const fractionalTheme = structuredClone(minimalTheme) as Record<string, any>;
+  fractionalTheme.styles.heading1.lineSpacing = {
+    type: 'exactly',
+    value: 28.944,
+  };
+  fractionalTheme.styles.TOC1.tabStops = [
+    { type: 'right', position: 8400.5, leader: 'none' },
+  ];
+  fractionalTheme.styles.tableHeader = {
+    lineSpacing: { type: 'multiple', value: 1.157 },
+  };
+  fractionalTheme.componentDefaults = {
+    ...fractionalTheme.componentDefaults,
+    heading: { spacing: { before: 7.5 } },
+  };
+
+  const FRACTIONAL = {
+    name: 'docx',
+    props: { theme: 'fractional' },
+    children: [
+      { name: 'toc', props: { title: 'Contents' } },
+      {
+        name: 'paragraph',
+        props: {
+          text: 'Leading\tthen a centred tab.',
+          font: { lineSpacing: { type: 'multiple', value: 1.157 } },
+          tabStops: [{ type: 'center', position: 4513.5 }],
+        },
+      },
+      {
+        name: 'paragraph',
+        props: {
+          text: 'Framed.',
+          floating: {
+            width: 2000.5,
+            height: 300.5,
+            horizontalPosition: { relative: 'page', offset: -100.5 },
+            verticalPosition: { relative: 'page', offset: '12.5%' },
+          },
+        },
+      },
+      {
+        name: 'statistic',
+        props: {
+          number: '99',
+          description: 'Uptime',
+          spacing: { before: 120.5, after: 0.5 },
+        },
+      },
+      {
+        name: 'table',
+        props: {
+          columns: [
+            {
+              header: { content: 'H' },
+              cells: [
+                {
+                  content: 'A',
+                  font: { lineSpacing: { type: 'multiple', value: 1.11 } },
+                },
+              ],
+            },
+          ],
+        },
+      },
+    ],
+  };
+
+  it.each(['docxjs', 'office-open'] as const)(
+    'rounds the lengths stated with a fraction, on %s',
+    async (renderer) => {
+      const { buffer } = await generateBufferViaIr(
+        structuredClone(FRACTIONAL) as never,
+        { renderer, customThemes: { fractional: fractionalTheme as never } }
+      );
+      expect(await fractionalTwips(buffer)).toEqual([]);
+
+      const zip = await JSZip.loadAsync(buffer);
+      const [document, styles] = await Promise.all(
+        ['word/document.xml', 'word/styles.xml'].map((path) =>
+          zip.file(path)!.async('string')
+        )
+      );
+      const lines = (xml: string) =>
+        [...xml.matchAll(/<w:spacing [^>]*w:line="(-?\d+)"/g)].map(
+          ([, line]) => line
+        );
+      // 1.157 lines are 277.68 240ths — on the paragraph and the header cell —
+      // 1.11 lines 266.4, and 28.944pt is 578.88 twips.
+      expect(lines(document).filter((line) => line === '278')).toHaveLength(2);
+      expect(lines(document)).toContain('266');
+      expect(lines(styles)).toContain('579');
+      expect(document).toMatch(/<w:tab [^>]*w:pos="4514"/);
+      expect(styles).toMatch(/<w:tab [^>]*w:pos="8401"/);
+      const frame = /<w:framePr [^>]*\/>/.exec(document)?.[0] ?? '';
+      // 12.5% of A4's 16838 twips is 2104.75.
+      for (const [attribute, value] of [
+        ['w:w', '2001'],
+        ['w:h', '301'],
+        ['w:x', '-100'],
+        ['w:y', '2105'],
+      ])
+        expect(frame).toContain(`${attribute}="${value}"`);
+      // 120.5 twips above the statistic, 7.5 above the TOC title.
+      expect(document).toMatch(/<w:spacing [^>]*w:before="121"/);
+      expect(document).toMatch(/<w:spacing [^>]*w:before="8"/);
+    },
+    60_000
+  );
 
   describe.each([
     ['docxjs', CORPUS],

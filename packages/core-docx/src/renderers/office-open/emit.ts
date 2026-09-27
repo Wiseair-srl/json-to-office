@@ -176,7 +176,9 @@ function simpleField(instruction: string, cachedText?: string): Opts {
  * client report's eyebrow and running head that much wider.
  *
  * Only where docx.js floors. Paragraph spacing, tab stops and text frames go
- * out as given on both backends, so they agree whatever the IR holds.
+ * out as given on both backends, so they agree whatever the IR holds, and the
+ * compiler hands them over whole (`wholeTwips` in `ir/units.ts`) — rounded
+ * rather than floored, since docx.js has no rule of its own there to match.
  */
 function twips(value: number): number {
   return Math.floor(value);

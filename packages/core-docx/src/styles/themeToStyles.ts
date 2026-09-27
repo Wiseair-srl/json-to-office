@@ -987,10 +987,11 @@ export function createDocumentStyles(
               tabStops: effectiveTabStops.map(
                 (ts: any): DocxIrTabStop => ({
                   type: ts.type,
+                  // Whole twips: `w:pos` is an integer no backend rounds.
                   positionTwips:
                     ts.position === 'max'
                       ? RIGHT_MARGIN_TAB_TWIPS
-                      : ts.position,
+                      : Math.round(ts.position),
                   ...(ts.leader && { leader: ts.leader }),
                 })
               ),

@@ -214,7 +214,9 @@ export const getBodyTextStyle = (theme?: ThemeConfig, themeName?: string) => {
 
 /**
  * Converts line spacing from theme definition to DOCX spacing options.
- * DOCX uses twips (1/20th of a point) for line spacing.
+ * DOCX uses twips (1/20th of a point) for line spacing, and 240ths of a line
+ * for a multiple — whole numbers either way, since `w:line` is an integer and
+ * neither backend rounds it: a 1.02-line title is 244.8 of them.
  * @param lineSpacing The line spacing object from the theme definition.
  * @returns IParagraphSpacingOptions for docx.
  */
@@ -247,16 +249,18 @@ export function convertLineSpacing(
       lineRule = 'auto';
       break;
     case 'atLeast':
-      line = value !== undefined ? value * TWIPS_PER_POINT : undefined;
+      line = value !== undefined ? pointsToTwips(value) : undefined;
       lineRule = 'atLeast';
       break;
     case 'exactly':
-      line = value !== undefined ? value * TWIPS_PER_POINT : undefined;
+      line = value !== undefined ? pointsToTwips(value) : undefined;
       lineRule = 'exact';
       break;
     case 'multiple':
       line =
-        value !== undefined ? value * SINGLE_LINE_SPACING_TWIPS : undefined;
+        value !== undefined
+          ? Math.round(value * SINGLE_LINE_SPACING_TWIPS)
+          : undefined;
       lineRule = 'auto';
       break;
     default:

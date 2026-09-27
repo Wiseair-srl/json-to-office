@@ -185,6 +185,7 @@ import {
   sha256Hex,
   twipsToEmu,
   twipsToPixels,
+  wholeTwips,
 } from './units';
 
 /** A component the compiler does not yet lower into IR. */
@@ -2066,9 +2067,10 @@ function compileToc(
       formatting: {
         alignment: 'left',
         spacing: {
-          beforeTwips:
+          beforeTwips: wholeTwips(
             (ctx.theme.componentDefaults as any)?.heading?.spacing?.before ??
-            240,
+              240
+          ),
           // ~9pt, which separates the title from the list clearly enough to
           // read as a heading rather than a first entry.
           afterTwips: 180,
@@ -2289,10 +2291,10 @@ function compileStatistic(
   const spacing: DocxIrSpacing | undefined = props.spacing
     ? {
         ...(props.spacing.before !== undefined
-          ? { beforeTwips: props.spacing.before }
+          ? { beforeTwips: wholeTwips(props.spacing.before) }
           : {}),
         ...(props.spacing.after !== undefined
-          ? { afterTwips: props.spacing.after }
+          ? { afterTwips: wholeTwips(props.spacing.after) }
           : {}),
       }
     : undefined;
@@ -3455,7 +3457,7 @@ function paragraphFormatting(
   if (Array.isArray(props.tabStops) && props.tabStops.length > 0) {
     formatting.tabStops = props.tabStops.map(
       (stop: { position: number; type?: string; leader?: string }) => ({
-        positionTwips: stop.position,
+        positionTwips: wholeTwips(stop.position),
         type: (stop.type ?? 'left') as never,
         ...(stop.leader ? { leader: stop.leader as never } : {}),
       })
@@ -3525,12 +3527,17 @@ function compileSpacing(
  *
  * A bare number is a multiple of single spacing, which OOXML expresses as
  * 240ths; the named forms map onto the same field with a different rule.
+ * A multiple lands on a whole 240th: `w:line` is an integer, and 1.157 lines
+ * are 277.68 of them, which both backends wrote as given.
  */
 function compileLineSpacing(
   value: unknown
 ): { lineTwips?: number; lineRule: DocxIrSpacing['lineRule'] } | undefined {
   if (typeof value === 'number') {
-    return { lineTwips: value * SINGLE_LINE_TWIPS, lineRule: 'auto' };
+    return {
+      lineTwips: wholeTwips(value * SINGLE_LINE_TWIPS),
+      lineRule: 'auto',
+    };
   }
   if (typeof value !== 'object' || value === null) return undefined;
 
@@ -3555,7 +3562,7 @@ function compileLineSpacing(
     case 'multiple':
       return {
         ...(amount !== undefined
-          ? { lineTwips: amount * SINGLE_LINE_TWIPS }
+          ? { lineTwips: wholeTwips(amount * SINGLE_LINE_TWIPS) }
           : {}),
         lineRule: 'auto',
       };
@@ -4367,8 +4374,8 @@ function compileFrame(
 
   const frame: DocxIrFrame = {
     // 2in by 1in when the author gave no size.
-    widthTwips: floating.width || 2880,
-    heightTwips: floating.height || 1440,
+    widthTwips: wholeTwips(floating.width || 2880),
+    heightTwips: wholeTwips(floating.height || 1440),
     anchorHorizontal: floating.horizontalPosition?.relative || 'page',
     anchorVertical: floating.verticalPosition?.relative || 'page',
     ...(floating.wrap?.type ? { wrap: floating.wrap.type } : {}),
@@ -4383,21 +4390,26 @@ function compileFrame(
     if (typeof rawX === 'string' || typeof rawY === 'string') {
       const hRelative = floating.horizontalPosition?.relative;
       const vRelative = floating.verticalPosition?.relative;
-      frame.xTwips = resolveOffsetTwips(
-        rawX,
-        hRelative && hRelative !== 'page'
-          ? getAvailableWidthTwips(ctx.theme, ctx.themeName)
-          : getPageWidthTwips(ctx.theme, ctx.themeName)
+      // A percentage resolves to whole twips; a number beside it does not.
+      frame.xTwips = wholeTwips(
+        resolveOffsetTwips(
+          rawX,
+          hRelative && hRelative !== 'page'
+            ? getAvailableWidthTwips(ctx.theme, ctx.themeName)
+            : getPageWidthTwips(ctx.theme, ctx.themeName)
+        )
       );
-      frame.yTwips = resolveOffsetTwips(
-        rawY,
-        vRelative && vRelative !== 'page'
-          ? getAvailableHeightTwips(ctx.theme, ctx.themeName)
-          : getPageHeightTwips(ctx.theme, ctx.themeName)
+      frame.yTwips = wholeTwips(
+        resolveOffsetTwips(
+          rawY,
+          vRelative && vRelative !== 'page'
+            ? getAvailableHeightTwips(ctx.theme, ctx.themeName)
+            : getPageHeightTwips(ctx.theme, ctx.themeName)
+        )
       );
     } else {
-      frame.xTwips = rawX;
-      frame.yTwips = rawY;
+      frame.xTwips = wholeTwips(rawX);
+      frame.yTwips = wholeTwips(rawY);
     }
     return frame;
   }

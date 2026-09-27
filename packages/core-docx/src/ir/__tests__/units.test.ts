@@ -13,6 +13,7 @@ import {
   sha256Hex,
   twipsToEmu,
   twipsToPixels,
+  wholeTwips,
 } from '../units';
 
 describe('unit conversions', () => {
@@ -46,6 +47,14 @@ describe('unit conversions', () => {
     expect(pixelsToEmu(96)).toBe(914400);
     expect(pixelsToTwips(96)).toBe(1440);
     expect(twipsToPixels(1440)).toBe(96);
+  });
+
+  it('rounds a length already in twips to the nearest whole one', () => {
+    expect(wholeTwips(1.157 * 240)).toBe(278);
+    expect(wholeTwips(1.11 * 240)).toBe(266);
+    expect(wholeTwips(4513.5)).toBe(4514);
+    expect(wholeTwips(-100.5)).toBe(-100);
+    expect(wholeTwips(9026)).toBe(9026);
   });
 
   it('rounds every conversion to an integer', () => {
