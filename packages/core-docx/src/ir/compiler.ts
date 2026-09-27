@@ -29,6 +29,7 @@ import type {
   TypeRole,
 } from '@json-to-office/shared';
 import { capsFormatting, synthesizeFamilyName } from '@json-to-office/shared';
+import { unrenderedComponentText } from '@json-to-office/quality';
 import type { LayoutPlan, SectionLayout } from '../core/layout';
 import type { ProcessedDocument } from '../core/structure';
 import type { ComponentDefinition } from '../types';
@@ -4737,9 +4738,10 @@ function tableBlocker(
         }
         continue;
       }
-      // An image or a paragraph is rendered; anything else falls back to a
-      // placeholder run, which is content in its own right — the cell says
-      // what it could not render rather than going blank.
+      // An image, a visual or a paragraph is rendered; anything else — which
+      // validation refuses — falls back to a placeholder run and a warning
+      // (`cellChildren`): the cell says what it could not render rather than
+      // going blank, and the author is told.
       if (content.name !== 'paragraph') continue;
       const text = String((content.props as { text?: unknown })?.text ?? '');
       const syntax = containsUnsupportedSyntax(text);
@@ -4953,12 +4955,22 @@ function cellChildren(
       return wrap(cellVisual(content, scope));
     }
     if (content.name !== 'paragraph') {
-      // The cell says what it could not render, in the same grey the missing
-      // image placeholder uses.
+      // Validation refuses this (`unsupported_cell_content`), so it arrives
+      // only round it: a plugin's output, a caller with validation off. The
+      // cell says what it could not render, in the same grey the missing
+      // image placeholder uses — and the author hears about it, since a
+      // placeholder nobody is told of is a defect that ships.
+      const text = unrenderedComponentText(content.name);
+      warnOnce(
+        ctx,
+        'table',
+        `${scope.path} holds a "${content.name}", which a table cell cannot render, so it shows "${text}" instead. A cell takes a string, a paragraph, an image, a visual or a highcharts chart; set statistics side by side with a columns component.`,
+        'W_UNSUPPORTED_CELL_CONTENT'
+      );
       return wrap([
         {
           kind: 'text',
-          text: `[Unsupported component type: ${content.name}]`,
+          text,
           formatting: placeholderFormatting(base),
         },
       ]);

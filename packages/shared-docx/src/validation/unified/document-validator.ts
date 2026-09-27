@@ -25,6 +25,7 @@ import {
   collectIndentConflicts,
   collectNoteRevisionConflicts,
   collectTextBoxShapeConflicts,
+  collectUnsupportedCellContent,
 } from './deep-validator';
 
 // JsonComponentDefinitionSchema is just an alias for ComponentDefinitionSchema
@@ -78,6 +79,13 @@ const SEMANTIC_COLLECTORS: readonly {
     why: 'renderer profile compatibility',
     collect: collectDocxRendererErrors,
   },
+  {
+    // A cell renders one paragraph; anything else in one could only paint a
+    // placeholder. The containment-relaxed schema below takes any component
+    // in a cell, so this rule is what refuses it, on every path.
+    why: 'table cell content a cell cannot render',
+    collect: collectUnsupportedCellContent,
+  },
 ];
 
 /**
@@ -116,8 +124,11 @@ function referencesCustomComponent(node: unknown, names: Set<string>): boolean {
  * cell content) keep their live component typing here. Passing it only as
  * children once left those factories on the static schemas, whose regions are
  * `Type.Any()` — the gate then also relaxed embedded-region typing and
- * re-admitted a wrong-typed sibling key inside a header. Built lazily: only
- * the empty-walk path below ever needs it.
+ * re-admitted a wrong-typed sibling key inside a header. Table cells take the
+ * full union here too, which relaxes what a cell holds along with what a
+ * container holds: that containment is enforced instead by the
+ * `collectUnsupportedCellContent` semantic rule, which every document runs.
+ * Built lazily: only the empty-walk path below ever needs it.
  */
 let containmentRelaxedSchema: TSchema | undefined;
 function getContainmentRelaxedSchema(): TSchema {

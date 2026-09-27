@@ -922,6 +922,115 @@ describe('analyzeRenderedDocument', () => {
   });
 });
 
+describe('renderer placeholder text', () => {
+  // Captured from LibreOffice: three statistics set in a three-column table,
+  // each cell painting the compiler's placeholder, wrapped onto two lines
+  // but contiguous in poppler's stream.
+  const cells = [82, 233, 383];
+  const placeholderPage = () =>
+    page([
+      word('Audit', 72, 100),
+      ...cells.flatMap((x) => [
+        word('[Unsupported', x, 160, 58),
+        word('component', x + 60, 160, 48),
+        word('type:', x + 110, 160, 24),
+        word('statistic]', x + 48, 171, 44),
+      ]),
+    ]);
+  const cellPath = (column: number) =>
+    `/children/0/children/2/props/columns/${column}/cells/0/content`;
+  const placeholderEntries = cells.map((_, column) =>
+    entry(
+      cellPath(column),
+      '[Unsupported component type: statistic]',
+      'table-cell',
+      { optional: true }
+    )
+  );
+
+  it('reports each at the cell that holds the component, and nothing as missing', () => {
+    const result = analyzeRenderedDocument({
+      format: 'docx',
+      pages: [placeholderPage()],
+      inventory: [entry('/h', 'Audit', 'heading'), ...placeholderEntries],
+    });
+    expect(codes(result.findings)).toEqual([
+      QUALITY_CODES.RENDERED_PLACEHOLDER,
+      QUALITY_CODES.RENDERED_PLACEHOLDER,
+      QUALITY_CODES.RENDERED_PLACEHOLDER,
+    ]);
+    expect(
+      result.findings.map((f) => [f.path, f.context?.mapping, f.certainty])
+    ).toEqual(
+      cells.map((_, column) => [cellPath(column), 'mapped', 'rendered'])
+    );
+    expect(result.findings[0]).toMatchObject({
+      severity: 'warning',
+      category: 'integrity',
+      message:
+        'Page 1 shows "[Unsupported component type: statistic]": the renderer could not draw a statistic there and painted this instead.',
+      context: {
+        kind: 'unrendered-component',
+        component: 'statistic',
+        page: 1,
+      },
+    });
+  });
+
+  it('reports one nothing inventoried on its page, unmapped, with the name it reads', () => {
+    const result = analyzeRenderedDocument({
+      format: 'docx',
+      pages: [placeholderPage()],
+      inventory: [entry('/h', 'Audit', 'heading')],
+    });
+    expect(
+      result.findings.map((f) => [
+        f.code,
+        f.path,
+        f.context?.mapping,
+        f.context?.component,
+      ])
+    ).toEqual(
+      cells.map(() => [
+        QUALITY_CODES.RENDERED_PLACEHOLDER,
+        '',
+        'unmapped',
+        'statistic',
+      ])
+    );
+    expect(result.summary.findings.unmapped).toBe(3);
+  });
+
+  it('does not guess a name the stream does not carry whole', () => {
+    const result = analyzeRenderedDocument({
+      format: 'docx',
+      pages: [
+        page([
+          word('[Unsupported', 82, 160, 58),
+          word('[Unsupported', 233, 160, 58),
+          word('component', 142, 160, 48),
+          word('component', 292, 160, 48),
+        ]),
+      ],
+      inventory: [],
+    });
+    expect(result.findings).toHaveLength(2);
+    for (const f of result.findings) {
+      expect(f.message).toContain('"[Unsupported component type: …]"');
+      expect(f.context).not.toHaveProperty('component');
+    }
+  });
+
+  it('is silent when the placeholder the inventory expected never rendered', () => {
+    const result = analyzeRenderedDocument({
+      format: 'docx',
+      pages: [page([word('Audit', 72, 100)])],
+      inventory: [entry('/h', 'Audit', 'heading'), ...placeholderEntries],
+    });
+    expect(result.findings).toEqual([]);
+  });
+});
+
 describe('the rendered pass under a profile and policy', () => {
   const clippedPage = () =>
     page([
@@ -946,6 +1055,10 @@ describe('the rendered pass under a profile and policy', () => {
     const pptx = analyzeRenderedDocument({ ...input(), format: 'pptx' });
     expect(pptx.analysis.evaluatedRuleIds).not.toContain(
       'rendered/heading-stranded'
+    );
+    // Only the docx compiler paints a placeholder.
+    expect(pptx.analysis.evaluatedRuleIds).not.toContain(
+      'rendered/placeholder'
     );
     expect(pptx.analysis.evaluatedRuleIds).not.toContain(
       'rendered/paragraph-split'

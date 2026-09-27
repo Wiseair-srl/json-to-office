@@ -668,26 +668,6 @@ export const CASES: CorpusCase[] = [
       ],
     }),
   },
-  {
-    name: 'tables/unsupported-nested-component',
-    // A component the cell renderer does not handle falls back to a
-    // placeholder run rather than throwing.
-    document: tableDoc({
-      columns: [
-        {
-          header: { content: 'Kind' },
-          cells: [{ content: 'list' }, { content: 'heading' }],
-        },
-        {
-          header: { content: 'Rendered as' },
-          cells: [
-            { content: { name: 'list', props: { items: ['a', 'b'] } } },
-            { content: { name: 'heading', props: { text: 'Nope', level: 2 } } },
-          ],
-        },
-      ],
-    }),
-  },
 
   // --- pagination and row-parallel props ----------------------------------
   {

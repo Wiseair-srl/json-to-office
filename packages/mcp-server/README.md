@@ -338,6 +338,7 @@ The cores name their generation warnings in a dialect of their own too — bare 
 | `E_INVALID_VALUE`                  | Right type and shape, but not a value this position accepts.                                                |
 | `E_UNKNOWN_COMPONENT`              | `name` is not a component of this format, or not one allowed here.                                          |
 | `E_MUTUALLY_EXCLUSIVE`             | Two props that exclude each other were both set.                                                            |
+| `E_UNSUPPORTED_CELL_CONTENT`       | A DOCX table cell holds a component it cannot render; the message names what a cell takes.                  |
 | `E_THEME_NOT_FOUND`                | A theme the document names does not exist.                                                                  |
 | `E_ASSET_UNREADABLE`               | An image the document names — a file, or a URL — cannot be read, and generation fails over it.              |
 | `E_EMPTY_DOCUMENT`                 | The document has no content.                                                                                |
@@ -375,6 +376,7 @@ The cores name their generation warnings in a dialect of their own too — bare 
 | `W_HOST_NOTE`                      | A note the render emitted mid-run — unknown theme, unreadable theme file, staged font.                      |
 | `W_UNKNOWN_THEME`                  | A theme name — the `theme` option or the document's `props.theme` — matched nothing; generation falls back. |
 | `W_ASSET_UNREADABLE`               | An image file that cannot be read where generation draws a placeholder instead (a DOCX table cell).         |
+| `W_UNSUPPORTED_CELL_CONTENT`       | A DOCX table cell met at generation holds one it cannot render; it shows a placeholder.                     |
 | `W_BLANK_DOCUMENT`                 | A workspace was opened on an empty skeleton, with no content yet.                                           |
 | `W_SCAFFOLD_DRAFT`                 | A scaffold opened; the message says how many markers are still owed.                                        |
 | `W_BRIEF_UNUSED`                   | A brief key matched no metadata field or chrome slot of the variant.                                        |

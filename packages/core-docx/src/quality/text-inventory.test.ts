@@ -66,6 +66,59 @@ describe('collectDocxTextInventory', () => {
     expect(entries[0].level).toBe(2);
   });
 
+  it('inventories the placeholder a cell paints for a component it cannot render', () => {
+    const entries = collectDocxTextInventory([
+      {
+        name: 'table',
+        props: {
+          columns: [
+            {
+              header: { content: 'Tested' },
+              cells: [
+                {
+                  content: {
+                    name: 'statistic',
+                    props: { number: '22', description: 'Journeys tested' },
+                  },
+                },
+                {
+                  content: {
+                    name: 'image',
+                    props: { path: 'a.png', caption: 'In cell' },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      },
+    ]);
+    // The statistic's own number and description never reach the page, so
+    // they are not looked for; the placeholder is, at the cell, optional.
+    expect(
+      entries.map((e) => [e.role, e.path, e.text, e.optional ?? false])
+    ).toEqual([
+      [
+        'table-header',
+        '/children/0/props/columns/0/header/content',
+        'Tested',
+        false,
+      ],
+      [
+        'table-cell',
+        '/children/0/props/columns/0/cells/0/content',
+        '[Unsupported component type: statistic]',
+        true,
+      ],
+      [
+        'caption',
+        '/children/0/props/columns/0/cells/1/content/props/caption',
+        'In cell',
+        false,
+      ],
+    ]);
+  });
+
   it('skips disabled subtrees, empty strings and strings the page never shows', () => {
     const entries = collectDocxTextInventory([
       { name: 'paragraph', props: { text: '  ' } },
@@ -114,8 +167,8 @@ describe('collectDocxTextInventory', () => {
                     cells: [
                       {
                         content: {
-                          name: 'heading',
-                          props: { text: 'Page {PAGE}', level: 4 },
+                          name: 'paragraph',
+                          props: { text: 'Page {PAGE}' },
                         },
                       },
                     ],
@@ -255,9 +308,11 @@ describe('collectDocxTextInventory', () => {
     ).toEqual(['Key finding']);
   });
 
-  it('never collects a heading inside a table cell into a contents field', () => {
+  it('never collects a style-mapped paragraph inside a table cell into a contents field', () => {
+    // A heading cannot sit in a cell at all — it paints a placeholder — but a
+    // paragraph can, and one in a style the field maps is still not collected.
     const entries = collectDocxTextInventory([
-      { name: 'toc', props: {} },
+      { name: 'toc', props: { styles: [{ styleId: 'Callout', level: 1 }] } },
       {
         name: 'table',
         props: {
@@ -267,8 +322,8 @@ describe('collectDocxTextInventory', () => {
               cells: [
                 {
                   content: {
-                    name: 'heading',
-                    props: { text: 'Cell heading', level: 1 },
+                    name: 'paragraph',
+                    props: { text: 'Cell callout', themeStyle: 'Callout' },
                   },
                 },
               ],
@@ -276,7 +331,13 @@ describe('collectDocxTextInventory', () => {
           ],
         },
       },
+      {
+        name: 'paragraph',
+        props: { text: 'Body callout', themeStyle: 'Callout' },
+      },
     ]);
-    expect(entries.filter((e) => e.role === 'toc-entry')).toEqual([]);
+    expect(
+      entries.filter((e) => e.role === 'toc-entry').map((e) => e.text)
+    ).toEqual(['Body callout']);
   });
 });

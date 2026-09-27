@@ -13,16 +13,27 @@
  * string: a colour, a style name or a file path is a string the page never
  * shows, and an entry the PDF cannot contain would read as clipped text.
  *
- * Two kinds of string are painted without being authored where they show.
+ * Three kinds of string are painted without being authored where they show.
  * A table of contents repeats the headings it collects — cached into the
  * field so headless LibreOffice shows them — and a native chart sets its
  * title and axis titles inside the drawing. Both are inventoried where they
  * render so a heading's first occurrence is not stolen by the contents page;
  * the contents entries are `optional`, since which headings a field collects
- * is the field's decision and an entry the page lacks is no defect.
+ * is the field's decision and an entry the page lacks is no defect. And a
+ * table cell holding a component it cannot render paints a placeholder in
+ * its place: the placeholder is what is inventoried there, never the
+ * component's own text, so the rendered pass reports the placeholder at the
+ * cell rather than the component's text as missing.
  */
 
-import type { QualityFact } from '@json-to-office/quality';
+import {
+  unrenderedComponentText,
+  type QualityFact,
+} from '@json-to-office/quality';
+import { TABLE_CELL_COMPONENTS } from '@json-to-office/shared-docx';
+
+/** What a table cell renders as itself; anything else it paints a placeholder for. */
+const CELL_COMPONENTS: ReadonlySet<string> = new Set(TABLE_CELL_COMPONENTS);
 
 export type DocxTextRole =
   | 'heading'
@@ -174,7 +185,21 @@ export function collectDocxTextInventory(
         add(`${path}/content`, rec.content, cellRole, extra);
       else {
         const inner = asRecord(rec.content);
-        if (inner)
+        if (
+          inner &&
+          typeof inner.name === 'string' &&
+          !CELL_COMPONENTS.has(inner.name)
+        ) {
+          // The compiler paints its placeholder here, not the component, so
+          // that is the text the page carries — and what the rendered pass
+          // maps back to this cell. Optional: its absence is no defect.
+          add(
+            `${path}/content`,
+            unrenderedComponentText(inner.name),
+            cellRole,
+            { ...extra, optional: true }
+          );
+        } else if (inner)
           visitNode(inner, `${path}/content`, { ...inherited, inCell: true });
       }
       return;

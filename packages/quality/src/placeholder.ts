@@ -18,6 +18,22 @@ import { QUALITY_CODES, type QualityRuleFinding } from './types';
 export const SCAFFOLD_MARKER_SYNTAX = '{{…}}';
 
 /**
+ * The text a renderer paints where it could not draw a component: a DOCX
+ * table cell holding one the cell has no form for. Validation refuses such a
+ * document, so the text reaching a page means something went round it — a
+ * plugin's output, a caller that turned validation off. Spelled here so the
+ * renderer that paints it and the rendered pass that looks for it agree.
+ */
+export function unrenderedComponentText(name: string): string {
+  return `[Unsupported component type: ${name}]`;
+}
+
+/** The component named by an {@link unrenderedComponentText}, if `text` holds one. */
+export function unrenderedComponentName(text: string): string | undefined {
+  return /\[Unsupported component type: ([^\]]*\S)\s*\]/.exec(text)?.[1];
+}
+
+/**
  * Whether a value is one scaffold marker and nothing else: `{{Client name}}`,
  * with the same body rule the placeholder pattern applies (something to say,
  * no newline). The slot budgets exempt exactly what this rule reports and

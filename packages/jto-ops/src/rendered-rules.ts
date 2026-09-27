@@ -22,6 +22,7 @@ export type RenderedRuleId =
   | 'rendered/spill'
   | 'rendered/overlap'
   | 'rendered/text-missing'
+  | 'rendered/placeholder'
   | 'rendered/font-substituted'
   | 'rendered/empty-page'
   | 'rendered/heading-stranded'
@@ -90,6 +91,15 @@ export const RENDERED_QUALITY_RULES: QualityRulePack = {
         'An authored string that appears nowhere in the PDF: fully clipped, hidden, or dropped by the renderer.',
       category: 'integrity',
       defaultSeverity: 'warning',
+    }),
+    renderedRule({
+      id: 'rendered/placeholder',
+      code: QUALITY_CODES.RENDERED_PLACEHOLDER,
+      description:
+        'DOCX: the renderer painted "[Unsupported component type: …]" where it could not draw a component — a table cell holding one it cannot render. Mapped to the cell when the document puts it there; reported on its page, unmapped, when it came from somewhere the document does not show, such as a plugin\'s output.',
+      category: 'integrity',
+      defaultSeverity: 'warning',
+      formats: ['docx'],
     }),
     renderedRule({
       id: 'rendered/font-substituted',

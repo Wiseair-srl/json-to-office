@@ -3,6 +3,8 @@ import {
   collectPlaceholders,
   detectPlaceholder,
   SCAFFOLD_MARKER_SYNTAX,
+  unrenderedComponentName,
+  unrenderedComponentText,
 } from './placeholder';
 
 describe('scaffold markers', () => {
@@ -148,5 +150,35 @@ describe('collectPlaceholders', () => {
     expect(
       collectPlaceholders({ children: [{ props: { text: 'Real copy.' } }] })
     ).toEqual([]);
+  });
+});
+
+describe('unrendered-component text', () => {
+  it('names the component it stands in for, and reads back', () => {
+    const text = unrenderedComponentText('statistic');
+    expect(text).toBe('[Unsupported component type: statistic]');
+    expect(unrenderedComponentName(text)).toBe('statistic');
+  });
+
+  it('is found inside a longer run, as a page reads it', () => {
+    expect(
+      unrenderedComponentName(
+        'Journeys [Unsupported component type: text-box] tested'
+      )
+    ).toBe('text-box');
+  });
+
+  it('reads as filler to the authored-text detector too', () => {
+    expect(detectPlaceholder(unrenderedComponentText('list'))).toMatchObject({
+      kind: 'filler',
+      pattern: 'bracketed',
+    });
+  });
+
+  it('ignores ordinary bracketed prose', () => {
+    expect(unrenderedComponentName('[Client name]')).toBeUndefined();
+    expect(
+      unrenderedComponentName('[Unsupported component type: ]')
+    ).toBeUndefined();
   });
 });

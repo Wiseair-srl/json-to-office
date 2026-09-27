@@ -233,7 +233,7 @@ Tables are **column-based**, not row-based: you describe each column once — it
 }
 ```
 
-Column widths are points, or `"%"` strings relative to the table width; columns without a width share the leftover space. A cell's `content` can be a plain string — or a full nested component (an `image`, a `list`, even a `columns` block), which is how you build composite layouts inside cells. Border color/size, `hideBorders` (globally or per side, including `insideHorizontal`/`insideVertical`), cell padding, and background colors are all available; see the [table reference](/reference/docx/components#table).
+Column widths are points, or `"%"` strings relative to the table width; columns without a width share the leftover space. A cell's `content` is a plain string or one component a cell renders — a `paragraph`, an `image`, a `visual` or a `highcharts` chart. A cell is one paragraph, so a `statistic`, `list` or `columns` cannot sit in one and validation says so (`unsupported_cell_content`); set statistics side by side with a `columns` component instead. Border color/size, `hideBorders` (globally or per side, including `insideHorizontal`/`insideVertical`), cell padding, and background colors are all available; see the [table reference](/reference/docx/components#table).
 
 ## Lists
 
