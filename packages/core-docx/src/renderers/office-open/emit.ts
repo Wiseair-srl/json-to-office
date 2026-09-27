@@ -162,6 +162,26 @@ function simpleField(instruction: string, cachedText?: string): Opts {
   };
 }
 
+/**
+ * A length in twips, or tracking in twentieths of a point, as docx.js writes
+ * it: floored to a whole number.
+ *
+ * OOXML states these as integers — `ST_TwipsMeasure`, `ST_SignedTwipsMeasure`,
+ * a width's `w:w` — and the compiler hands over whatever its arithmetic gave:
+ * a theme's tracking is a share of an em times the size, 12.8 twentieths of a
+ * point for an 8pt eyebrow, and a nested cell's padding halves a remainder.
+ * docx.js floors each such attribute on the way out, below zero too (its
+ * `decimalNumber` is `Math.floor`); this backend writes a number as it is
+ * given, so the same IR came out schema-invalid here, and LibreOffice set the
+ * client report's eyebrow and running head that much wider.
+ *
+ * Only where docx.js floors. Paragraph spacing, tab stops and text frames go
+ * out as given on both backends, so they agree whatever the IR holds.
+ */
+function twips(value: number): number {
+  return Math.floor(value);
+}
+
 /* ------------------------------------------------------------------ *
  * Runs
  * ------------------------------------------------------------------ */
@@ -224,7 +244,14 @@ export function runProperties(
   if (formatting.scalePercent !== undefined)
     out.scale = formatting.scalePercent;
   if (formatting.characterSpacingTwentieths !== undefined) {
-    out.characterSpacing = formatting.characterSpacingTwentieths;
+    const stated = formatting.characterSpacingTwentieths;
+    const twentieths = twips(stated);
+    // docx.js tests the value before it floors it, so tracking under one
+    // twentieth still writes `w:val="0"`, a zero that overrides a style's
+    // own. The backend drops a zero, but it floors a length in points itself,
+    // and `0pt` is a zero it keeps.
+    out.characterSpacing =
+      twentieths === 0 && stated !== 0 ? '0pt' : twentieths;
   }
   if (formatting.language) out.language = { value: formatting.language };
   if (formatting.noProof !== undefined) out.noProof = formatting.noProof;
@@ -824,16 +851,16 @@ export function paragraphProperties(
   if (formatting.indent) {
     const indent: Opts = {};
     if (formatting.indent.leftTwips !== undefined) {
-      indent.left = formatting.indent.leftTwips;
+      indent.left = twips(formatting.indent.leftTwips);
     }
     if (formatting.indent.rightTwips !== undefined) {
-      indent.right = formatting.indent.rightTwips;
+      indent.right = twips(formatting.indent.rightTwips);
     }
     if (formatting.indent.firstLineTwips !== undefined) {
-      indent.firstLine = formatting.indent.firstLineTwips;
+      indent.firstLine = twips(formatting.indent.firstLineTwips);
     }
     if (formatting.indent.hangingTwips !== undefined) {
-      indent.hanging = formatting.indent.hangingTwips;
+      indent.hanging = twips(formatting.indent.hangingTwips);
     }
     out.indent = indent;
   }
@@ -1034,7 +1061,7 @@ export function table(value: DocxIrTable, ctx: EmitContext): Opts {
         value.width.kind === 'auto'
           ? 0
           : value.width.kind === 'twips'
-            ? Math.floor(value.width.value)
+            ? twips(value.width.value)
             : value.width.value,
       type:
         value.width.kind === 'twips'
@@ -1048,7 +1075,7 @@ export function table(value: DocxIrTable, ctx: EmitContext): Opts {
     // not the same as one whose columns are all zero wide. The compiler hands
     // over every grid in twips; floored for the same reason as the width.
     ...(value.columnGrid.values.length > 0
-      ? { columnWidths: value.columnGrid.values.map(Math.floor) }
+      ? { columnWidths: value.columnGrid.values.map(twips) }
       : {}),
     ...(value.alignment ? { alignment: alignment(value.alignment) } : {}),
     ...(value.borders ? { borders: borders(value.borders) } : {}),
@@ -1066,28 +1093,36 @@ function tableFloat(floating: DocxIrTableFloating): Opts {
       ? { verticalAnchor: floating.verticalAnchor }
       : {}),
     ...(floating.absoluteHorizontalPositionTwips !== undefined
-      ? { absoluteHorizontalPosition: floating.absoluteHorizontalPositionTwips }
+      ? {
+          absoluteHorizontalPosition: twips(
+            floating.absoluteHorizontalPositionTwips
+          ),
+        }
       : {}),
     ...(floating.relativeHorizontalPosition
       ? { relativeHorizontalPosition: floating.relativeHorizontalPosition }
       : {}),
     ...(floating.absoluteVerticalPositionTwips !== undefined
-      ? { absoluteVerticalPosition: floating.absoluteVerticalPositionTwips }
+      ? {
+          absoluteVerticalPosition: twips(
+            floating.absoluteVerticalPositionTwips
+          ),
+        }
       : {}),
     ...(floating.relativeVerticalPosition
       ? { relativeVerticalPosition: floating.relativeVerticalPosition }
       : {}),
     ...(floating.topFromTextTwips !== undefined
-      ? { topFromText: floating.topFromTextTwips }
+      ? { topFromText: twips(floating.topFromTextTwips) }
       : {}),
     ...(floating.rightFromTextTwips !== undefined
-      ? { rightFromText: floating.rightFromTextTwips }
+      ? { rightFromText: twips(floating.rightFromTextTwips) }
       : {}),
     ...(floating.bottomFromTextTwips !== undefined
-      ? { bottomFromText: floating.bottomFromTextTwips }
+      ? { bottomFromText: twips(floating.bottomFromTextTwips) }
       : {}),
     ...(floating.leftFromTextTwips !== undefined
-      ? { leftFromText: floating.leftFromTextTwips }
+      ? { leftFromText: twips(floating.leftFromTextTwips) }
       : {}),
     ...(floating.overlap ? { overlap: floating.overlap } : {}),
   };
@@ -1098,7 +1133,10 @@ function tableRow(row: DocxIrTableRow, ctx: EmitContext): Opts {
     cells: row.cells.map((cell) => tableCell(cell, ctx)),
     ...(row.heightTwips !== undefined
       ? {
-          height: { value: row.heightTwips, rule: row.heightRule ?? 'atLeast' },
+          height: {
+            value: twips(row.heightTwips),
+            rule: row.heightRule ?? 'atLeast',
+          },
         }
       : {}),
     ...(row.isHeader !== undefined ? { tableHeader: row.isHeader } : {}),
@@ -1127,7 +1165,7 @@ function tableCell(cell: DocxIrTableCell, ctx: EmitContext): Opts {
   return {
     children,
     ...(cell.widthTwips !== undefined
-      ? { width: { size: cell.widthTwips, type: 'dxa' } }
+      ? { width: { size: twips(cell.widthTwips), type: 'dxa' } }
       : {}),
     ...(cell.verticalAlign ? { verticalAlign: cell.verticalAlign } : {}),
     ...(cell.shading ? { shading: shading(cell.shading) } : {}),
@@ -1205,7 +1243,7 @@ function cellMargins(margins: {
   rightTwips?: number;
 }): Opts {
   const side = (value: number | undefined): Opts | undefined =>
-    value === undefined ? undefined : { size: value, type: 'dxa' };
+    value === undefined ? undefined : { size: twips(value), type: 'dxa' };
   const out: Opts = {};
   for (const [name, value] of [
     ['top', margins.topTwips],
@@ -1267,23 +1305,23 @@ export function section(
         // Orientation is implied by the width/height pair, which is how this
         // pipeline has always expressed it; stating it as well changes `w:pgSz`.
         size: {
-          width: page.widthTwips,
-          height: page.heightTwips,
+          width: twips(page.widthTwips),
+          height: twips(page.heightTwips),
           ...(page.code !== undefined ? { code: page.code } : {}),
         },
         margin: {
-          top: page.margins.topTwips,
-          right: page.margins.rightTwips,
-          bottom: page.margins.bottomTwips,
-          left: page.margins.leftTwips,
+          top: twips(page.margins.topTwips),
+          right: twips(page.margins.rightTwips),
+          bottom: twips(page.margins.bottomTwips),
+          left: twips(page.margins.leftTwips),
           ...(page.margins.headerTwips !== undefined
-            ? { header: page.margins.headerTwips }
+            ? { header: twips(page.margins.headerTwips) }
             : {}),
           ...(page.margins.footerTwips !== undefined
-            ? { footer: page.margins.footerTwips }
+            ? { footer: twips(page.margins.footerTwips) }
             : {}),
           ...(page.margins.gutterTwips !== undefined
-            ? { gutter: page.margins.gutterTwips }
+            ? { gutter: twips(page.margins.gutterTwips) }
             : {}),
         },
         ...(value.properties.pageNumbers
@@ -1319,7 +1357,7 @@ export function section(
             column: {
               count: columns.count,
               ...(columns.spaceTwips !== undefined
-                ? { space: columns.spaceTwips }
+                ? { space: twips(columns.spaceTwips) }
                 : {}),
               ...(columns.separator !== undefined
                 ? { separate: columns.separator }
@@ -1330,9 +1368,9 @@ export function section(
               ...(columns.widths
                 ? {
                     children: columns.widths.map((column) => ({
-                      width: column.widthTwips,
+                      width: twips(column.widthTwips),
                       ...(column.spaceTwips !== undefined
-                        ? { space: column.spaceTwips }
+                        ? { space: twips(column.spaceTwips) }
                         : {}),
                     })),
                   }
@@ -1444,10 +1482,10 @@ export function numberingConfig(numbering: DocxIrNumbering): Opts {
               paragraph: {
                 indent: {
                   ...(level.indent.leftTwips !== undefined
-                    ? { left: level.indent.leftTwips }
+                    ? { left: twips(level.indent.leftTwips) }
                     : {}),
                   ...(level.indent.hangingTwips !== undefined
-                    ? { hanging: level.indent.hangingTwips }
+                    ? { hanging: twips(level.indent.hangingTwips) }
                     : {}),
                 },
               },

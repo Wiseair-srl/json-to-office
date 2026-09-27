@@ -6,8 +6,8 @@
  * asserted is that the IR *means* the same thing to both: the same text in the
  * same order, the same number of tables, rows, cells, drawings, links, note and
  * comment references, drawing extents, the same paper and margins section by
- * section, the same note and comment parts, and the same bold, italic and size
- * on every style the IR declares.
+ * section, the same note and comment parts, and the same bold, italic, size
+ * and tracking on every style the IR declares.
  * The second backend may need extra equivalent media parts when the same image
  * is drawn at different sizes because it stores extents on deduplicated media.
  * Every run and paragraph starts from the same document defaults on both, and
@@ -26,9 +26,10 @@
  * what is asserted is that both set such text apart from the Latin beside it
  * in the same places — none — whatever the Latin properties themselves say.
  *
- * One rule is held on each backend on its own: every table cell ends on a
- * paragraph, over the corpus and the two report templates the block matrix
- * is generated from.
+ * Two rules are held on each backend on its own, over the corpus and the two
+ * report templates the block matrix is generated from: every table cell ends
+ * on a paragraph, and every length OOXML states in whole twips is written as
+ * one.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -109,11 +110,14 @@ const COMPLEX_SCRIPT_TWINS = [
   ['w:i', 'w:iCs'],
 ] as const;
 
-/** A run property as stated: half-points for a size, else `on` or `off`. */
+/**
+ * A run property as stated: half-points for a size, twentieths of a point for
+ * tracking, else `on` or `off`.
+ */
 function statedValue(rPr: string, name: string): string | undefined {
   const match = new RegExp(`<${name}(?:\\s+w:val="([^"]*)")?\\s*/>`).exec(rPr);
   if (!match) return undefined;
-  if (name.startsWith('w:sz')) return match[1];
+  if (name.startsWith('w:sz') || name === 'w:spacing') return match[1];
   // docx.js spells off `false`, the other backend `0`.
   return match[1] === undefined || ['1', 'true', 'on'].includes(match[1])
     ? 'on'
@@ -247,11 +251,15 @@ function documentDefaults(styles: string): Shape['docDefaults'] {
   return { run: properties('rPr'), paragraph: properties('pPr') };
 }
 
-/** What a style's own `w:rPr` states about weight, slant and size. */
-type StyleRun = Record<'bold' | 'italic' | 'size', string | undefined>;
+/** What a style's own `w:rPr` states about weight, slant, size and tracking. */
+type StyleRun = Record<
+  'bold' | 'italic' | 'size' | 'tracking',
+  string | undefined
+>;
 
 /**
- * Each declared style's weight, slant and size, from its last definition.
+ * Each declared style's weight, slant, size and tracking, from its last
+ * definition.
  *
  * The last, because docx.js writes its own `Heading1`-`Heading6` and `Title`
  * before the ones it was given, under the same ids, and LibreOffice applies
@@ -275,6 +283,7 @@ function styleRuns(
           bold: statedValue(rPr, 'w:b'),
           italic: statedValue(rPr, 'w:i'),
           size: statedValue(rPr, 'w:sz'),
+          tracking: statedValue(rPr, 'w:spacing'),
         },
       ];
     })
@@ -430,6 +439,73 @@ describe('both DOCX backends over the corpus', () => {
       const { styles } = await shapeOf(buffer, ['Heading5']);
       expect(styles.Heading5.italic, renderer).toBe('on');
     }
+  }, 60_000);
+
+  it('reads the tracking it compares, in whole twentieths', async () => {
+    // The same guard for tracking. `consulting`'s eyebrow tracks 8% of an em
+    // at 8pt, 12.8 twentieths of a point, which `w:spacing` cannot state:
+    // docx.js floors it to 12, and the other backend wrote 12.8.
+    const document = {
+      name: 'docx',
+      props: { theme: 'consulting' },
+      children: [{ name: 'paragraph', props: { text: 'Body.' } }],
+    };
+    const { ir } = await compileDocumentToIr(
+      structuredClone(document) as never,
+      { warnings: [] }
+    );
+    const eyebrow = ir.styles.paragraph.find((style) => style.id === 'eyebrow');
+    expect(eyebrow?.run?.characterSpacingTwentieths).toBeCloseTo(12.8);
+
+    for (const renderer of ['docxjs', 'office-open'] as const) {
+      const { buffer } = await generateBufferViaIr(
+        structuredClone(document) as never,
+        { renderer }
+      );
+      const { styles } = await shapeOf(buffer, ['eyebrow']);
+      expect(styles.eyebrow.tracking, renderer).toBe('12');
+    }
+  }, 60_000);
+
+  it('floors run tracking as docx.js does, at the edges no style reaches', async () => {
+    // A run's tracking goes through the same floor as a style's. Below zero it
+    // floors away from zero; below one twentieth docx.js still writes a zero,
+    // which overrides the tracking of the run's style.
+    const tracked = (text: string, type: string, value: number) => ({
+      name: 'paragraph',
+      props: { text, font: { characterSpacing: { type, value } } },
+    });
+    const document = {
+      name: 'docx',
+      props: { theme: 'minimal' },
+      children: [
+        tracked('A', 'expanded', 12.8),
+        tracked('B', 'condensed', 9.456),
+        tracked('C', 'expanded', 0.5),
+        tracked('D', 'expanded', 0),
+      ],
+    };
+    const tracking = async (renderer: 'docxjs' | 'office-open') => {
+      const { buffer } = await generateBufferViaIr(
+        structuredClone(document) as never,
+        { renderer }
+      );
+      const zip = await JSZip.loadAsync(buffer);
+      const body = (await zip.file('word/document.xml')?.async('string')) ?? '';
+      return Object.fromEntries(
+        [...body.matchAll(/<w:r(?:\s[^>]*)?>([\s\S]*?)<\/w:r>/g)].flatMap(
+          ([, run]) => {
+            const text = /<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>/.exec(run)?.[1];
+            const rPr = /<w:rPr>([\s\S]*?)<\/w:rPr>/.exec(run)?.[1] ?? '';
+            return text ? [[text, statedValue(rPr, 'w:spacing')]] : [];
+          }
+        )
+      );
+    };
+
+    const floored = { A: '12', B: '-10', C: '0', D: undefined };
+    expect(await tracking('docxjs')).toEqual(floored);
+    expect(await tracking('office-open')).toEqual(floored);
   }, 60_000);
 
   it('keeps per-placement extents for every image type', async () => {
@@ -712,6 +788,142 @@ describe('every table cell ends on a paragraph', () => {
           { renderer, baseDir: TEMPLATES_DIR }
         );
         expect(await cellsNotEndingOnAParagraph(buffer)).toEqual([]);
+      },
+      60_000
+    );
+  });
+});
+
+/**
+ * The attributes, by element, that OOXML types as a whole number of twips —
+ * `ST_TwipsMeasure` or `ST_SignedTwipsMeasure` — among those written from the
+ * IR. A width's `w:w` in twips, `w:type="dxa"`, is held to it wherever it
+ * stands: a table's, a cell's, a cell margin's.
+ */
+const WHOLE_TWIPS: Readonly<Record<string, readonly string[]>> = {
+  'w:spacing': ['w:val'],
+  'w:ind': [
+    'w:left',
+    'w:right',
+    'w:start',
+    'w:end',
+    'w:hanging',
+    'w:firstLine',
+  ],
+  'w:trHeight': ['w:val'],
+  'w:tblpPr': [
+    'w:tblpX',
+    'w:tblpY',
+    'w:leftFromText',
+    'w:rightFromText',
+    'w:topFromText',
+    'w:bottomFromText',
+  ],
+  'w:gridCol': ['w:w'],
+  'w:pgSz': ['w:w', 'w:h'],
+  'w:pgMar': [
+    'w:top',
+    'w:right',
+    'w:bottom',
+    'w:left',
+    'w:header',
+    'w:footer',
+    'w:gutter',
+  ],
+  'w:cols': ['w:space'],
+  'w:col': ['w:w', 'w:space'],
+};
+
+const ELEMENT = /<([\w:]+)((?:\s+[\w:.-]+="[^"]*")*)\s*\/?>/g;
+const ATTRIBUTE = /([\w:.-]+)="([^"]*)"/g;
+
+/** Each attribute of a part held to whole twips that holds anything else. */
+function fractionalTwipsIn(path: string, xml: string): string[] {
+  const found: string[] = [];
+  for (const [, name, attributes] of xml.matchAll(ELEMENT)) {
+    const values = new Map(
+      [...attributes.matchAll(ATTRIBUTE)].map(([, key, value]) => [key, value])
+    );
+    const whole = new Set([
+      ...(WHOLE_TWIPS[name] ?? []),
+      ...(values.get('w:type') === 'dxa' ? ['w:w'] : []),
+    ]);
+    for (const attribute of whole) {
+      const value = values.get(attribute);
+      if (value !== undefined && !/^-?\d+$/.test(value))
+        found.push(`${path} <${name} ${attribute}="${value}">`);
+    }
+  }
+  return found;
+}
+
+async function fractionalTwips(buffer: Buffer): Promise<string[]> {
+  const zip = await JSZip.loadAsync(buffer);
+  const found: string[] = [];
+  for (const [path, entry] of Object.entries(zip.files)) {
+    if (!/^word\/[^/]+\.xml$/.test(path)) continue;
+    found.push(...fractionalTwipsIn(path, await entry.async('string')));
+  }
+  return found;
+}
+
+/**
+ * A length OOXML states in twips is a whole number of them, which the IR does
+ * not promise: a theme's tracking is a share of an em times the size, 12.8
+ * twentieths of a point for an 8pt eyebrow, and a nested cell's padding halves
+ * a remainder. docx.js floors each such attribute on the way out; the other
+ * backend wrote what it was given, a document the schema refuses, and
+ * LibreOffice set the client report's eyebrow and running head that much
+ * wider. Each backend is held to it on its own.
+ *
+ * Paragraph spacing, tab stops and text frames are left out: docx.js writes
+ * them as given, so the two backends agree whatever the IR holds — and a line
+ * height taken from a multiple of 1.157 is 277.68 twips on both.
+ */
+describe('every length in twips is a whole number', () => {
+  it('reads the lengths it holds to whole twips, and only those', () => {
+    expect(
+      fractionalTwipsIn(
+        'word/document.xml',
+        '<w:pPr><w:spacing w:before="0.5" w:line="277.68"/>' +
+          '<w:ind w:left="-9.5" w:hanging="360"/></w:pPr>' +
+          '<w:rPr><w:spacing w:val="12.8"/></w:rPr><w:tcPr>' +
+          '<w:tcW w:w="206.5" w:type="dxa"/><w:tcMar>' +
+          '<w:left w:w="112.5" w:type="dxa"/></w:tcMar></w:tcPr>' +
+          '<w:tblW w:w="33.5" w:type="pct"/>'
+      )
+    ).toEqual([
+      'word/document.xml <w:ind w:left="-9.5">',
+      'word/document.xml <w:spacing w:val="12.8">',
+      'word/document.xml <w:tcW w:w="206.5">',
+      'word/document.xml <w:left w:w="112.5">',
+    ]);
+  });
+
+  describe.each([
+    ['docxjs', CORPUS],
+    ['office-open', COMMON],
+  ] as const)('on %s', (renderer, cases) => {
+    it.each(cases.map((c) => [c.name, c] as const))(
+      'in %s',
+      async (_name, testCase) => {
+        const { buffer } = await generateBufferViaIr(
+          structuredClone(testCase.document) as never,
+          { renderer }
+        );
+        expect(await fractionalTwips(buffer)).toEqual([]);
+      },
+      60_000
+    );
+
+    it.each(BLOCK_TEMPLATES.map((t) => [t.name, t] as const))(
+      'in the %s template',
+      async (_name, template) => {
+        const { buffer } = await generateBufferViaIr(
+          structuredClone(template.document) as never,
+          { renderer, baseDir: TEMPLATES_DIR }
+        );
+        expect(await fractionalTwips(buffer)).toEqual([]);
       },
       60_000
     );
