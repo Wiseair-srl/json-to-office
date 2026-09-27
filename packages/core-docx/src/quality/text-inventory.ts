@@ -69,6 +69,12 @@ export interface DocxTextFact extends QualityFact {
    * so its absence is not a defect and never a `missing` finding.
    */
   optional?: boolean;
+  /**
+   * The component a table cell could not render, when this entry is the
+   * placeholder the compiler paints in its place. Only an entry the inventory
+   * made for that is one: authored text that quotes the phrase is not.
+   */
+  unrendered?: string;
 }
 
 /** A `toc` component's outline range, as the field parses `props.depth`. */
@@ -197,7 +203,7 @@ export function collectDocxTextInventory(
             `${path}/content`,
             unrenderedComponentText(inner.name),
             cellRole,
-            { ...extra, optional: true }
+            { ...extra, optional: true, unrendered: inner.name }
           );
         } else if (inner)
           visitNode(inner, `${path}/content`, { ...inherited, inCell: true });

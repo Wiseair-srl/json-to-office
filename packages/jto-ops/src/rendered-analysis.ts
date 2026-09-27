@@ -66,6 +66,12 @@ export interface RenderedTextEntry extends InventoryEntry {
   level?: number;
   /** A declared box the text must fit: a docx frame, a pptx text box. */
   box?: { widthPt?: number; heightPt?: number };
+  /**
+   * Set when the entry is the placeholder a renderer paints for a component
+   * it could not draw there: the component's name. Authored text that quotes
+   * the placeholder's wording carries none.
+   */
+  unrendered?: string;
 }
 
 export interface RequestedFont {
@@ -562,12 +568,12 @@ function draftRenderedFindings(input: RenderedAnalysisInput): RenderedDraft {
   }
 
   // -- Placeholder: the renderer's own "[Unsupported component type: …]",
-  // painted where it could not draw a component. The inventory expects that
-  // text at the cell holding one, so a match is reported there; any other
-  // occurrence — a plugin's output, anything the inventory never saw — is
-  // still reported, on its page, because a placeholder nobody hears of is
-  // exactly the defect that ships.
-  const placeholderWords = new Set<string>();
+  // painted where it could not draw a component. The inventory marks the
+  // entry it expects at a cell holding one, so a match is reported there;
+  // any other occurrence nothing owns — a plugin's output, anything the
+  // inventory never saw — is still reported, on its page, because a
+  // placeholder nobody hears of is exactly the defect that ships. Words an
+  // entry owns are its text: an author quoting the phrase wrote it.
   const placeholderFinding = (
     name: string | undefined,
     page: number,
@@ -596,13 +602,9 @@ function draftRenderedFindings(input: RenderedAnalysisInput): RenderedDraft {
     });
   };
   for (const match of matches) {
-    if (match.status !== 'mapped') continue;
-    const name = unrenderedComponentName(match.entry.text);
-    if (name === undefined) continue;
+    const name = match.entry.unrendered;
+    if (match.status !== 'mapped' || name === undefined) continue;
     for (const o of match.occurrences) {
-      for (const part of o.parts)
-        for (const w of part.words)
-          placeholderWords.add(`${part.pageIndex}:${w}`);
       findings.push(
         placeholderFinding(name, o.pageIndex + 1, match.entry.path, 'mapped')
       );
@@ -611,7 +613,7 @@ function draftRenderedFindings(input: RenderedAnalysisInput): RenderedDraft {
   pages.forEach((page, pageIndex) => {
     page.words.forEach((word, index) => {
       if (!word.text.startsWith('[Unsupported')) return;
-      if (placeholderWords.has(`${pageIndex}:${index}`)) return;
+      if (ownerOf(pageIndex, index)) return;
       // The name ends the phrase, a few words on in stream order. Where
       // poppler ran neighbouring cells together the phrase is not
       // contiguous, and the finding says so rather than guess a name.
