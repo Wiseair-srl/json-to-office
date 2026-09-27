@@ -1079,9 +1079,25 @@ function tableRow(row: DocxIrTableRow, ctx: EmitContext): Opts {
   };
 }
 
+/**
+ * A table cell, closed by a paragraph whatever its last block is.
+ *
+ * Word ends every cell on a paragraph, whose mark is the cell's end mark, and
+ * its notes on ECMA-376 (MS-OI29500, §17.4.65 `tc`) ask for a `w:p` as the
+ * last block of a `w:tc`. docx.js appends `<w:p/>` to any cell whose last
+ * child is not a paragraph. The backend appends one only when the last child
+ * is neither a paragraph nor a table, so a text box whose content ends on a
+ * table became a cell ending on `</w:tbl>`. Word tolerates that; LibreOffice
+ * set the cover's floating band in the flow under the subtitle, without its
+ * top border (#468). The same empty paragraph is appended here, so every cell
+ * ends as it does on docx.js.
+ */
 function tableCell(cell: DocxIrTableCell, ctx: EmitContext): Opts {
+  const children = cell.children.map((child) => block(child, ctx));
+  if (cell.children[cell.children.length - 1]?.kind !== 'paragraph')
+    children.push({ paragraph: { children: [] } });
   return {
-    children: cell.children.map((child) => block(child, ctx)),
+    children,
     ...(cell.widthTwips !== undefined
       ? { width: { size: cell.widthTwips, type: 'dxa' } }
       : {}),
@@ -1275,8 +1291,16 @@ function headerFooterSet(
  * and closes between blocks, which is what OOXML allows and what a reader
  * expects to find.
  *
- * The document's last section still ends in a paragraph after a text frame:
- * one point tall, exact, no spacing, as the docx.js adapter sets it. When the
+ * A section still ends in a paragraph one point tall, exact, no spacing,
+ * wherever the docx.js adapter ends it in one. docx.js closes the range in
+ * such a paragraph after a table or a contents field; without it, a table
+ * here was followed by the paragraph that holds the section's properties,
+ * which is where LibreOffice anchors a floating table. When such a table
+ * reached past the bottom margin, as the report cover's band does once its
+ * content wraps, LibreOffice ran the section on to one more page, carrying
+ * nothing (#468).
+ *
+ * And the document's last section ends in one after a text frame. When the
  * body ends on consecutive framed paragraphs in a section with its own header
  * or footer, LibreOffice drops the frame of the one before last and sets its
  * text at the top of the page. An earlier section never ends the body, since
@@ -1289,14 +1313,17 @@ function sectionChildren(
 ): Opts[] {
   const blocks = value.children.map((child) => block(child, ctx));
   const last = value.children[value.children.length - 1];
-  if (closesDocument && last?.kind === 'paragraph' && last.frame !== undefined)
+  const bookmark = value.bookmark;
+  if (
+    (bookmark?.closes && last?.kind !== 'paragraph') ||
+    (closesDocument && last?.kind === 'paragraph' && last.frame !== undefined)
+  )
     blocks.push({
       paragraph: {
         children: [],
         spacing: { before: 0, after: 0, line: 20, lineRule: 'exact' },
       },
     });
-  const bookmark = value.bookmark;
   if (!bookmark) return blocks;
 
   return [
