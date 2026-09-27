@@ -633,3 +633,197 @@ describe('styles', () => {
     expect(options.default.footnoteReference.run).toMatchObject(twins);
   });
 });
+
+describe('lengths in twips', () => {
+  // OOXML states them as whole numbers and the IR does not promise one. docx.js
+  // floors each it is handed; this backend writes what it is given, so the
+  // consulting eyebrow's tracking was 12.8 twentieths here and 12 there.
+  it('floors tracking as docx.js does, below zero and below one twentieth', () => {
+    expect(runProperties({ characterSpacingTwentieths: 12.8 })).toMatchObject({
+      characterSpacing: 12,
+    });
+    expect(runProperties({ characterSpacingTwentieths: -9.456 })).toMatchObject(
+      { characterSpacing: -10 }
+    );
+    // docx.js writes the zero a fraction floors to. The backend drops a zero
+    // stated as a number and keeps one stated in points.
+    expect(runProperties({ characterSpacingTwentieths: 0.5 })).toMatchObject({
+      characterSpacing: '0pt',
+    });
+    expect(runProperties({ characterSpacingTwentieths: 0 })).toMatchObject({
+      characterSpacing: 0,
+    });
+  });
+
+  it('floors indents as docx.js does', () => {
+    expect(
+      paragraphProperties({
+        indent: {
+          leftTwips: 360.9,
+          rightTwips: -0.5,
+          firstLineTwips: 12.5,
+          hangingTwips: 283.5,
+        },
+      })
+    ).toMatchObject({
+      indent: { left: 360, right: -1, firstLine: 12, hanging: 283 },
+    });
+    expect(
+      numberingConfig({
+        reference: 'ref',
+        levels: [
+          {
+            level: 0,
+            format: 'bullet',
+            text: '•',
+            indent: { leftTwips: 720.5, hangingTwips: 360.5 },
+          },
+        ],
+      })
+    ).toMatchObject({
+      levels: [
+        { style: { paragraph: { indent: { left: 720, hanging: 360 } } } },
+      ],
+    });
+  });
+
+  it('floors table lengths as docx.js does', () => {
+    const table: DocxIrTable = {
+      kind: 'table',
+      id: 't',
+      path: 't',
+      rows: [
+        {
+          heightTwips: 283.5,
+          cells: [
+            { children: [], widthTwips: 1902.5, margins: { leftTwips: 112.5 } },
+          ],
+        },
+      ],
+      columnGrid: { unit: 'twips', values: [1902.5] },
+      width: { kind: 'twips', value: 1902.5 },
+      layout: 'fixed',
+      cellMargins: { topTwips: 0.5 },
+      floating: {
+        absoluteHorizontalPositionTwips: -0.5,
+        absoluteVerticalPositionTwips: 100.9,
+        topFromTextTwips: 0.5,
+        rightFromTextTwips: 1.5,
+        bottomFromTextTwips: 2.5,
+        leftFromTextTwips: 3.5,
+      },
+    };
+
+    expect(block(table).table).toMatchObject({
+      width: { size: 1902, type: 'dxa' },
+      columnWidths: [1902],
+      margins: { top: { size: 0, type: 'dxa' } },
+      float: {
+        absoluteHorizontalPosition: -1,
+        absoluteVerticalPosition: 100,
+        topFromText: 0,
+        rightFromText: 1,
+        bottomFromText: 2,
+        leftFromText: 3,
+      },
+      rows: [
+        {
+          height: { value: 283 },
+          cells: [
+            {
+              width: { size: 1902, type: 'dxa' },
+              margins: { left: { size: 112, type: 'dxa' } },
+            },
+          ],
+        },
+      ],
+    });
+  });
+
+  it('floors page lengths as docx.js does', () => {
+    const emitted = section(
+      {
+        id: 's',
+        path: 's',
+        children: [],
+        properties: {
+          page: {
+            widthTwips: 11906.4,
+            heightTwips: 16838.9,
+            orientation: 'portrait',
+            margins: {
+              topTwips: 1440.5,
+              bottomTwips: 1440.5,
+              leftTwips: 1080.5,
+              rightTwips: 1080.5,
+              headerTwips: 708.5,
+              footerTwips: 708.5,
+              gutterTwips: 0.5,
+            },
+          },
+          columns: {
+            count: 2,
+            spaceTwips: 708.5,
+            widths: [
+              { widthTwips: 4500.5, spaceTwips: 708.5 },
+              { widthTwips: 4500.5 },
+            ],
+          },
+        },
+      },
+      emptyContext()
+    );
+
+    expect(emitted.properties).toMatchObject({
+      page: {
+        size: { width: 11906, height: 16838 },
+        margin: {
+          top: 1440,
+          bottom: 1440,
+          left: 1080,
+          right: 1080,
+          header: 708,
+          footer: 708,
+          gutter: 0,
+        },
+      },
+      column: {
+        space: 708,
+        children: [{ width: 4500, space: 708 }, { width: 4500 }],
+      },
+    });
+  });
+
+  it('leaves the lengths docx.js writes as given', () => {
+    // Paragraph spacing, tab stops and frames: docx.js writes these as it is
+    // handed them, so the two backends agree whatever the IR holds, and
+    // flooring them here alone would part them.
+    expect(
+      paragraphProperties({
+        spacing: { beforeTwips: 0.5, afterTwips: 120.5, lineTwips: 277.68 },
+        tabStops: [{ positionTwips: 4513.5, type: 'right' }],
+      })
+    ).toMatchObject({
+      spacing: { before: 0.5, after: 120.5, line: 277.68 },
+      tabStops: [{ position: 4513.5 }],
+    });
+    expect(
+      block({
+        kind: 'paragraph',
+        id: 'p',
+        path: 'p',
+        children: [],
+        frame: {
+          widthTwips: 2000.5,
+          heightTwips: 300.5,
+          anchorHorizontal: 'page',
+          anchorVertical: 'page',
+          xTwips: 100.5,
+          yTwips: 200.5,
+        },
+      }).paragraph
+    ).toMatchObject({
+      frame: { width: 2000.5, height: 300.5, position: { x: 100.5, y: 200.5 } },
+    });
+  });
+});
