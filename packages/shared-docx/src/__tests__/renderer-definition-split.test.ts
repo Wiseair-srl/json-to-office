@@ -6,11 +6,14 @@ import {
   docxComponentDefinitionName,
   type DocxRendererId,
 } from '../schemas/renderer';
+import { TABLE_CELL_COMPONENTS } from '../schemas/components/table';
 
 /**
  * Every position that reaches components through the recursive definition —
- * a section header or footer, a table cell's content, `componentDefaults` —
- * has to get the rules of the document's *own* renderer.
+ * a section header or footer, `componentDefaults` — has to get the rules of
+ * the document's *own* renderer. A table cell's content reaches its narrower
+ * set of components inlined rather than through the definition, and is held
+ * to the same rule below.
  *
  * Both branches used to embed that definition under one shared
  * `$id: 'ComponentDefinition'`, and the export pass keys `definitions` by
@@ -60,8 +63,6 @@ describe('per-renderer component definitions', () => {
       );
 
       const section = variant(renderer, 'section').properties.props.properties;
-      const table = variant(renderer, 'table').properties.props.properties;
-      const cell = table.columns.items.properties.cells.items;
       // Built from the *static* section props, so this one reaches the
       // definition through an untyped placeholder rather than a live ref.
       const defaults = variant(renderer, 'docx').properties.props.properties
@@ -70,7 +71,6 @@ describe('per-renderer component definitions', () => {
       for (const [label, position] of [
         ['section header', section.header],
         ['section footer', section.footer],
-        ['table cell content', cell.properties.content],
         ['componentDefaults section header', defaults.header],
       ] as const) {
         const refs = JSON.stringify(position);
@@ -85,6 +85,42 @@ describe('per-renderer component definitions', () => {
       expect(branch).toContain(own);
       for (const foreign of other) expect(branch).not.toContain(foreign);
     }
+  });
+
+  it('narrows table cell content to what a cell renders, in each renderer’s own terms', () => {
+    const cellContents = (renderer: DocxRendererId) => {
+      const column = variant(renderer, 'table').properties.props.properties
+        .columns.items.properties;
+      return [
+        column.cells.items.properties.content,
+        column.header.properties.content,
+      ];
+    };
+    for (const renderer of DOCX_RENDERER_IDS) {
+      for (const content of cellContents(renderer)) {
+        const [text, components] = content.anyOf;
+        expect(text).toEqual({ type: 'string' });
+        expect(
+          unionBranches(components).map(
+            (branch: any) => branch.properties.name.const
+          )
+        ).toEqual([...TABLE_CELL_COMPONENTS]);
+        // Inlined: no renderer's recursive definition — its own or another's
+        // — is reachable from a cell.
+        for (const id of DOCX_RENDERER_IDS) {
+          expect(JSON.stringify(content)).not.toContain(
+            `#/definitions/${docxComponentDefinitionName(id)}`
+          );
+        }
+      }
+    }
+    // Only office-open draws a native visual, in a cell as anywhere else.
+    expect(JSON.stringify(cellContents('office-open'))).toContain(
+      'DocxVisualNativeProps'
+    );
+    expect(JSON.stringify(cellContents('docxjs'))).not.toContain(
+      'DocxVisualNativeProps'
+    );
   });
 
   it('carries each renderer’s own rules into those positions', () => {

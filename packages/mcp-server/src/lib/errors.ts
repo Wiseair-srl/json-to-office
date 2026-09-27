@@ -114,6 +114,11 @@ export const ERROR_CODES = {
   UNKNOWN_COMPONENT: 'E_UNKNOWN_COMPONENT',
   /** Two props that exclude each other were both set. */
   MUTUALLY_EXCLUSIVE: 'E_MUTUALLY_EXCLUSIVE',
+  /**
+   * A DOCX table cell holds a component a cell cannot render — a statistic, a
+   * heading, a list; the message names what a cell does take.
+   */
+  UNSUPPORTED_CELL_CONTENT: 'E_UNSUPPORTED_CELL_CONTENT',
   /** A theme the document names does not exist. */
   THEME_NOT_FOUND: 'E_THEME_NOT_FOUND',
   /**
@@ -221,6 +226,7 @@ const CORE_CODES = new Map<string, string>(
     unsupported_value: ERROR_CODES.INVALID_VALUE,
     unknown_component: ERROR_CODES.UNKNOWN_COMPONENT,
     mutually_exclusive: ERROR_CODES.MUTUALLY_EXCLUSIVE,
+    unsupported_cell_content: ERROR_CODES.UNSUPPORTED_CELL_CONTENT,
     theme_not_found: ERROR_CODES.THEME_NOT_FOUND,
     empty_input: ERROR_CODES.EMPTY_DOCUMENT,
     json_parse_error: ERROR_CODES.INVALID_JSON,

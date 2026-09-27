@@ -191,6 +191,69 @@ describe('jto_validate', () => {
     }
   });
 
+  it('refuses a component a table cell cannot render, at the cell, with the fix', async () => {
+    // The KPI row that shipped: statistics in table cells, each rendered as
+    // "[Unsupported component type: statistic]" with no diagnostic anywhere.
+    const statistic = (number: string, description: string) => ({
+      name: 'statistic',
+      props: { number, description },
+    });
+    const { result } = await validate({
+      format: 'docx',
+      document: {
+        name: 'docx',
+        props: { theme: 'minimal' },
+        children: [
+          {
+            name: 'section',
+            props: {},
+            children: [
+              {
+                name: 'table',
+                props: {
+                  columns: [
+                    {
+                      cells: [{ content: statistic('22', 'Journeys tested') }],
+                    },
+                    { cells: [{ content: statistic('31', 'Issues found') }] },
+                    { cells: [{ content: 'Plain text' }] },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(result.ok).toBe(false);
+    const errors = result.diagnostics.filter(
+      (entry: any) => entry.severity === 'error'
+    );
+    expect(errors.map((entry: any) => [entry.code, entry.path])).toEqual([
+      [
+        'E_UNSUPPORTED_CELL_CONTENT',
+        '/children/0/children/0/props/columns/0/cells/0/content',
+      ],
+      [
+        'E_UNSUPPORTED_CELL_CONTENT',
+        '/children/0/children/0/props/columns/1/cells/0/content',
+      ],
+    ]);
+    expect(errors[0]).toMatchObject({
+      message: expect.stringContaining(
+        'one of "paragraph", "image", "visual", "highcharts"'
+      ),
+      suggestion: expect.stringContaining(
+        'columns component with one statistic per column'
+      ),
+      context: {
+        value: 'statistic',
+        validatorCode: 'unsupported_cell_content',
+      },
+    });
+  });
+
   it('reports every defect in the published code vocabulary', async () => {
     // The four defects an agent actually makes. Each used to arrive as a
     // stringified TypeBox ValueErrorType ordinal — "42", "54", "45" — which

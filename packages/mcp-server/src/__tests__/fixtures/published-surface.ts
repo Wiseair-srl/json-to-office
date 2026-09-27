@@ -32,6 +32,11 @@ export interface PublishedComponentSurface {
    * component with children appears; leaves do not.
    */
   allowedChildren: Record<string, readonly string[]>;
+  /**
+   * Components a table cell's `content` accepts besides a string, unioned
+   * across renderers. DOCX only: a PPTX cell holds text.
+   */
+  tableCellContent?: readonly string[];
 }
 
 export const PUBLISHED_SURFACE: Record<FormatName, PublishedComponentSurface> =
@@ -152,6 +157,10 @@ export const PUBLISHED_SURFACE: Record<FormatName, PublishedComponentSurface> =
           'visual',
         ],
       },
+      // A cell renders one paragraph: text, or a drawing in it. A statistic,
+      // heading, list or table used to be accepted here and painted
+      // "[Unsupported component type: …]" in its place.
+      tableCellContent: ['paragraph', 'image', 'visual', 'highcharts'],
     },
 
     pptx: {

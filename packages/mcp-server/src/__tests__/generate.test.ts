@@ -455,6 +455,50 @@ describe('jto_generate', () => {
     expect(capped.truncated).toBe(true);
   });
 
+  it('refuses a statistic in a table cell rather than render its placeholder', async () => {
+    const result = await generate({
+      format: 'docx',
+      document: {
+        name: 'docx',
+        props: { theme: 'minimal' },
+        children: [
+          {
+            name: 'section',
+            props: {},
+            children: [
+              {
+                name: 'table',
+                props: {
+                  columns: [
+                    {
+                      cells: [
+                        {
+                          content: {
+                            name: 'statistic',
+                            props: { number: '22', description: 'Tested' },
+                          },
+                        },
+                      ],
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(result.ok).toBe(false);
+    expect(
+      result.diagnostics.map((entry: any) => [entry.code, entry.path])
+    ).toEqual([
+      [
+        'E_UNSUPPORTED_CELL_CONTENT',
+        '/children/0/children/0/props/columns/0/cells/0/content',
+      ],
+    ]);
+  });
+
   it('refuses an unknown renderer before doing any work', async () => {
     const result = await generate({
       format: 'pptx',

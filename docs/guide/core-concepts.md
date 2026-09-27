@@ -52,7 +52,7 @@ The internal TypeScript types for the DOCX root are named `ReportProps` / `Repor
 Components fall into two categories:
 
 - **Containers** hold other components via `children`. Each container declares exactly which child names it accepts, and the schemas narrow the union accordingly — so validation tells you precisely when a child is out of place.
-- **Content components** are leaves. They render actual output (text, images, charts, tables) and must not carry `children`. Any nesting they support happens through props — for example, DOCX table cells embed components via `content`, and a block's component slot carries a whole component.
+- **Content components** are leaves. They render actual output (text, images, charts, tables) and must not carry `children`. Any nesting they support happens through props — for example, a DOCX table cell's `content` embeds one component (a paragraph, an image, a visual or a highcharts chart), and a block's component slot carries a whole component.
 
 Allowed children per container:
 

@@ -1250,3 +1250,17 @@ overrides its page keeps its override, which is why
 `page-override-per-section` moves only in the sections that inherit. Nothing
 about a document's content or its authored styles changes; a document that
 names neither theme is untouched.
+
+### Table cell content
+
+One DOCX corpus case is retired, `tables/unsupported-nested-component`, with
+its golden; no other golden moves. It rendered a `list` and a `heading` in
+table cells as the compiler's grey `[Unsupported component type: …]` run, and
+validation now refuses such a document (`unsupported_cell_content`): a cell
+holds a string, a `paragraph`, an `image`, a `visual` or a `highcharts`
+chart, and the live schema says so. The corpus holds documents that validate,
+so the fallback moved to `__tests__/table-cell-content.test.ts`, which renders
+it on both backends. The run is unchanged; what changed is that the compiler
+now also warns `W_UNSUPPORTED_CELL_CONTENT` for each cell that paints it,
+naming the cell, since the only documents still reaching it went round
+validation — a plugin's output, a caller with validation off.

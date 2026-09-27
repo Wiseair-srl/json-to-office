@@ -40,9 +40,11 @@ import { FORMAT_NAMES } from '../lib/schema.js';
 import type { FormatName } from '../lib/adapters.js';
 import {
   childNamesOf,
+  deref,
   formatSchemas,
   registryEntries,
 } from '../tools/discover.js';
+import { unionBranches } from '@json-to-office/shared';
 import { loadCore } from '../lib/core.js';
 import { RESOURCE_URIS } from '../resources/index.js';
 import { designNote, designNoteNames } from '../lib/design-notes.js';
@@ -166,6 +168,30 @@ function acceptedChildren(format: FormatName, component: string): string[] {
   return [...accepted];
 }
 
+/** Components a DOCX table cell accepts as content, unioned over the profiles. */
+function acceptedCellContent(): string[] {
+  const { profiles, definitions } = formatSchemas('docx');
+  const names = (node: unknown): string[] => {
+    const resolved = (deref(node, definitions) ?? node) as Record<string, any>;
+    const branches = unionBranches(resolved);
+    if (branches.length) return branches.flatMap(names);
+    const name = resolved?.properties?.name?.const;
+    return typeof name === 'string' ? [name] : [];
+  };
+  const accepted = new Set<string>();
+  for (const profile of profiles) {
+    const column = (profile.components.get('table') as Record<string, any>)
+      ?.properties?.props?.properties?.columns?.items?.properties;
+    if (!column) continue;
+    for (const content of [
+      column.cells.items.properties.content,
+      column.header.properties.content,
+    ])
+      for (const name of names(content)) accepted.add(name);
+  }
+  return [...accepted];
+}
+
 describe('the recorded surface still describes what is generated', () => {
   const ACKNOWLEDGE =
     'If the change was intended, record it in src/__tests__/fixtures/published-surface.ts and say why in the commit.';
@@ -241,6 +267,16 @@ describe('the recorded surface still describes what is generated', () => {
       }
     }
   );
+
+  it('docx: a table cell accepts exactly the recorded components', () => {
+    expectSameNames(
+      `docx table cell content (${ACKNOWLEDGE})`,
+      'generated schema',
+      acceptedCellContent(),
+      'recorded surface',
+      PUBLISHED_SURFACE.docx.tableCellContent ?? []
+    );
+  });
 
   it.each([...FORMAT_NAMES])(
     '%s: the root component is the recorded one',

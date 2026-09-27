@@ -6,7 +6,8 @@
  * the preview PDF, the fonts the PDF embeds, and the document's authored
  * text inventory, and reports the defects only ink can show: text past the
  * page or its frame, words drawn over each other, text that never rendered
- * (fully clipped, or set in a place poppler cannot read), faces substituted
+ * (fully clipped, or set in a place poppler cannot read), a placeholder the
+ * renderer painted where it could not draw a component, faces substituted
  * on the way, pages with nothing on them, headings stranded at a page foot
  * and paragraphs split into a lone line.
  *
@@ -28,6 +29,8 @@
 
 import {
   QualityEngine,
+  unrenderedComponentName,
+  unrenderedComponentText,
   type QualityAnalysis,
   type QualityAnalyzeOptions,
   type QualityDiagnostic,
@@ -557,6 +560,76 @@ function draftRenderedFindings(input: RenderedAnalysisInput): RenderedDraft {
       })
     );
   }
+
+  // -- Placeholder: the renderer's own "[Unsupported component type: …]",
+  // painted where it could not draw a component. The inventory expects that
+  // text at the cell holding one, so a match is reported there; any other
+  // occurrence — a plugin's output, anything the inventory never saw — is
+  // still reported, on its page, because a placeholder nobody hears of is
+  // exactly the defect that ships.
+  const placeholderWords = new Set<string>();
+  const placeholderFinding = (
+    name: string | undefined,
+    page: number,
+    path: string,
+    mapping: RenderedMapping
+  ): RenderedFindingDraft => {
+    const text = name
+      ? unrenderedComponentText(name)
+      : '[Unsupported component type: …]';
+    return finding({
+      ruleId: 'rendered/placeholder',
+      mapping,
+      page,
+      path,
+      message: `Page ${page} shows "${text}": the renderer could not draw ${name ? `a ${name}` : 'a component'} there and painted this instead.`,
+      suggestion:
+        'Put only what the position renders there — a table cell takes a string, a paragraph, an image, a visual or a highcharts chart — or move the component out of the table; statistics side by side are a columns component.',
+      evidence: {
+        summary: 'Renderer placeholder text in the PDF',
+        actual: text,
+      },
+      context: {
+        kind: 'unrendered-component',
+        ...(name && { component: name }),
+      },
+    });
+  };
+  for (const match of matches) {
+    if (match.status !== 'mapped') continue;
+    const name = unrenderedComponentName(match.entry.text);
+    if (name === undefined) continue;
+    for (const o of match.occurrences) {
+      for (const part of o.parts)
+        for (const w of part.words)
+          placeholderWords.add(`${part.pageIndex}:${w}`);
+      findings.push(
+        placeholderFinding(name, o.pageIndex + 1, match.entry.path, 'mapped')
+      );
+    }
+  }
+  pages.forEach((page, pageIndex) => {
+    page.words.forEach((word, index) => {
+      if (!word.text.startsWith('[Unsupported')) return;
+      if (placeholderWords.has(`${pageIndex}:${index}`)) return;
+      // The name ends the phrase, a few words on in stream order. Where
+      // poppler ran neighbouring cells together the phrase is not
+      // contiguous, and the finding says so rather than guess a name.
+      const phrase: string[] = [];
+      for (const next of page.words.slice(index, index + 6)) {
+        phrase.push(next.text);
+        if (next.text.endsWith(']')) break;
+      }
+      findings.push(
+        placeholderFinding(
+          unrenderedComponentName(phrase.join(' ')),
+          pageIndex + 1,
+          '',
+          'unmapped'
+        )
+      );
+    });
+  });
 
   // -- Font substitution: a requested family absent from the PDF.
   let substituted = 0;

@@ -8,7 +8,31 @@ import { CommentSchema } from './comment';
 import { LineSpacingSchema } from './common';
 import { RevisionMarkSchema, RevisionSchema } from './revision';
 
-// Define Cell type - can be plain text or a component definition
+/**
+ * The components a table cell holds, besides a string.
+ *
+ * A cell renders one paragraph: a string or a `paragraph` gives its text, an
+ * `image` or a `visual` sits in it as a drawing, and a `highcharts` chart
+ * arrives as the image it renders to. Anything else — a statistic, a heading,
+ * a list, a nested table — has no cell form, and validation refuses it
+ * (`unsupported_cell_content`) rather than let the cell paint a placeholder.
+ * The live schema narrows cell content to these, and the deep validator
+ * checks names against the same list.
+ */
+export const TABLE_CELL_COMPONENTS = [
+  'paragraph',
+  'image',
+  'visual',
+  'highcharts',
+] as const;
+
+export type TableCellComponentName = (typeof TABLE_CELL_COMPONENTS)[number];
+
+// Cell content as structure only — plain text or a component definition. The
+// static props schema feeds the deep walk and the TypeScript types; which
+// components a cell holds is checked by name (`collectUnsupportedCellContent`)
+// and narrowed in the live schema, so a statistic in a cell is reported once,
+// by the rule that can say what to do instead.
 const CellContentSchema = Type.Recursive((This) =>
   Type.Union([
     Type.String(),
@@ -189,11 +213,20 @@ const CellDefaultsSchema = Type.Object(
 
 /**
  * Build TablePropsSchema with a given cell-content type.
- * Called with `CellContentSchema` for the static export below, and with a
- * live recursive ref at schema-generation time.
+ *
+ * `componentRef` is what a cell's `content` may hold besides a string:
+ * `CellContentSchema` for the static export below, and at schema-generation
+ * time the union of the {@link TABLE_CELL_COMPONENTS} branches (plus plugins)
+ * the schema builder narrows it to. It stays a union of its own inside the
+ * content union — a pure component union is what `jto_describe_component`
+ * collapses to a list of names, where a string branch beside the components
+ * would have it inline every branch instead.
  */
 export function createTablePropsSchema(componentRef: TSchema): TSchema {
-  const cellContent = Type.Union([Type.String(), componentRef]);
+  const cellContent = Type.Union([Type.String(), componentRef], {
+    description:
+      'Plain text (with inline formatting), or one component: a paragraph, an image, a visual or a highcharts chart. A cell renders one paragraph, so a statistic, heading, list or table cannot sit in one; for a row of statistics use a columns component with one statistic per column.',
+  });
 
   const cellFields = {
     color: Type.Optional(HexColorSchema),

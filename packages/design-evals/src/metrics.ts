@@ -163,6 +163,7 @@ interface Diagnostic {
 const PLACEHOLDER_CODES = new Set([
   'W_QUALITY_PLACEHOLDER_TEXT',
   'W_QUALITY_SCAFFOLD_MARKER',
+  'W_QUALITY_RENDERED_PLACEHOLDER',
 ]);
 
 /** Codes the cores emit when a requested family was not available. */

@@ -118,6 +118,36 @@ describe('jto_describe_component', () => {
     expect(JSON.stringify(result.schema).length).toBeLessThan(16 * 1024);
   });
 
+  it('collapses a table cell’s content to the components a cell holds', async () => {
+    // `columns` is over the per-prop budget on its styling alone, so it is
+    // asked for; what matters is that a cell names its four components
+    // rather than inlining each one's schema.
+    const result = await describeComponent({
+      format: 'docx',
+      name: 'table',
+      expandProps: ['columns'],
+    });
+    expect(result.ok).toBe(true);
+    const column =
+      result.schema?.properties?.props?.properties?.columns?.items?.properties;
+    for (const content of [
+      column?.cells?.items?.properties?.content,
+      column?.header?.properties?.content,
+    ]) {
+      const [text, components] = content?.anyOf ?? [];
+      expect(text).toEqual({ type: 'string' });
+      expect(components?.properties?.name?.enum).toEqual([
+        'paragraph',
+        'image',
+        'visual',
+        'highcharts',
+      ]);
+      expect(components?.description).toContain('jto_describe_component');
+      // Inlined, the four branches are tens of kilobytes per cell.
+      expect(JSON.stringify(content).length).toBeLessThan(1024);
+    }
+  });
+
   it('elides props that are whole documents, and hands them back on request', async () => {
     const lean = await describeComponent({ format: 'docx', name: 'docx' });
     expect(lean.ok).toBe(true);

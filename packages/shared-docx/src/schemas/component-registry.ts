@@ -29,7 +29,11 @@ import { ParagraphPropsSchema } from './components/paragraph';
 import { TextBoxPropsSchema } from './components/text-box';
 import { ImagePropsSchema } from './components/image';
 import { StatisticPropsSchema } from './components/statistic';
-import { TablePropsSchema, createTablePropsSchema } from './components/table';
+import {
+  TABLE_CELL_COMPONENTS,
+  TablePropsSchema,
+  createTablePropsSchema,
+} from './components/table';
 import { ListPropsSchema } from './components/list';
 import { TocPropsSchema } from './components/toc';
 import { DividerPropsSchema } from './components/divider';
@@ -72,6 +76,14 @@ export interface EmbeddedComponentRegion {
    * adds per-component prop errors and must not double-report.
    */
   reportStructure: boolean;
+  /**
+   * The standard components the position holds, when not every one. The
+   * schema builder hands the factory the union of these branches (and any
+   * plugins) instead of the full recursive ref, so the published schema says
+   * what renders there. Omitted: any component. Every region of one component
+   * that names a list must name the same list — the factory takes one ref.
+   */
+  components?: readonly string[];
 }
 
 /**
@@ -277,25 +289,28 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
       propsSchema: TablePropsSchema,
       createPropsSchema: createTablePropsSchema,
       embeddedComponents: [
-        // Cell content is `string | component`. The table's own props schema
-        // already validates the cell structure, so the walk only adds the
-        // per-component prop errors the loose static content ref misses —
-        // reporting structure here would double-report.
+        // Cell content is a string or one of the components a cell renders.
+        // The table's own props schema already validates the cell structure,
+        // so the walk only adds the per-component prop errors the loose
+        // static content ref misses — reporting structure here would
+        // double-report.
         {
           path: ['columns', '*', 'header', 'content'],
           arity: 'component',
           reportStructure: false,
+          components: TABLE_CELL_COMPONENTS,
         },
         {
           path: ['columns', '*', 'cells', '*', 'content'],
           arity: 'component',
           reportStructure: false,
+          components: TABLE_CELL_COMPONENTS,
         },
       ],
       hasChildren: false,
       category: 'content',
       description:
-        'Data table, declared COLUMN-MAJOR: `props.columns[]`, each with its own `header` and its own `cells[]` running down the column. Note the PPTX `table` is the other way round — rows of cells — so a table cannot be moved between the formats unchanged. Fixed column widths are points and must fit the page; leave some columns unsized so they share the leftover space.',
+        'Data table, declared COLUMN-MAJOR: `props.columns[]`, each with its own `header` and its own `cells[]` running down the column. Note the PPTX `table` is the other way round — rows of cells — so a table cannot be moved between the formats unchanged. A cell holds a string, a paragraph, an image, a visual or a highcharts chart — never a statistic, heading, list or table; set statistics side by side with columns instead. Fixed column widths are points and must fit the page; leave some columns unsized so they share the leftover space.',
     },
     {
       name: 'list',
@@ -401,6 +416,33 @@ export function isStandardComponent(name: string): boolean {
   return STANDARD_COMPONENTS_REGISTRY.some((c) => c.name === name);
 }
 
+/**
+ * The components a component's embedded regions hold, when they name them —
+ * the list its props factory is handed a union of. `undefined` when the
+ * regions take any component (section header and footer) or there are none.
+ * Throws on regions that disagree, since the factory takes a single ref.
+ */
+export function embeddedComponentNames(
+  component: StandardComponentDefinition
+): readonly string[] | undefined {
+  const regions = component.embeddedComponents ?? [];
+  const [first] = regions;
+  if (!first?.components) {
+    if (regions.some((region) => region.components))
+      throw new Error(
+        `${component.name}: every embedded region must name the same components, or none may`
+      );
+    return undefined;
+  }
+  for (const region of regions) {
+    if (!region.components || !sameNames(region.components, first.components))
+      throw new Error(
+        `${component.name}: every embedded region must name the same components, or none may`
+      );
+  }
+  return first.components;
+}
+
 // ============================================================================
 // Schema Generation Helpers
 // ============================================================================
@@ -466,8 +508,9 @@ export function createComponentSchemaObject(
         );
   }
 
-  // selfRef (full union) is intentionally passed to createPropsSchema so that
-  // header/footer sub-schemas and table cell content can reference any component.
+  // `selfRef` is what the factory embeds: the full union for section
+  // header/footer, the narrowed cell union for table cell content (the builder
+  // passes the one the component's regions name).
   const basePropsSchema =
     component.createPropsSchema && selfRef
       ? component.createPropsSchema(selfRef)
@@ -547,9 +590,9 @@ function sameNames(a: readonly string[], b: readonly string[]): boolean {
  * Plugin schemas join the flow definition and every inlined union, so a plugin
  * is allowed wherever a standard component is.
  *
- * @param selfRef - The Type.Recursive self-reference: table cell content,
- *   section header and footer, plugin children — the positions that take any
- *   component at all.
+ * @param selfRef - The Type.Recursive self-reference: section header and
+ *   footer, plugin children — the positions that take any component at all.
+ *   Table cell content takes the narrower union its regions name.
  * @param pluginSchemas - Plugin component schemas (always allowed in all containers)
  * @returns every standard branch (`schemas`, by name in `byName`), the flow
  *   definition, and `roots` — the branches outside flow (`docx`, `section`).
@@ -576,15 +619,44 @@ export function createAllComponentSchemasNarrowed(
   const inFlow = new Set<string>(FLOW_CHILDREN);
   const byName = new Map<string, TSchema>();
 
-  // Leaves first: selfRef is passed so factories (e.g. table) can wire up
-  // recursive refs.
-  for (const comp of components) {
-    if (!comp.hasChildren) {
-      byName.set(
-        comp.name,
-        createComponentSchemaObject(comp, undefined, selfRef, profile)
+  // Leaves first. A factory embeds `selfRef` — any component — unless its
+  // regions name the components they hold (table cell content); those leaves
+  // come last and embed the union of the branches they name, which are leaves
+  // built in the first pass. A name this renderer does not draw has no branch
+  // and drops out, as it does from `allowedChildren`.
+  const leaves = components.filter((comp) => !comp.hasChildren);
+  for (const comp of leaves) {
+    if (embeddedComponentNames(comp)) continue;
+    byName.set(
+      comp.name,
+      createComponentSchemaObject(comp, undefined, selfRef, profile)
+    );
+  }
+  for (const comp of leaves) {
+    const names = embeddedComponentNames(comp);
+    if (!names) continue;
+    const branches = names.map((name) => {
+      const declared = STANDARD_COMPONENTS_REGISTRY.find(
+        (c) => c.name === name
       );
-    }
+      if (!declared || declared.hasChildren || embeddedComponentNames(declared))
+        throw new Error(
+          `${comp.name} embeds "${name}", which is not a leaf without embedded regions`
+        );
+      return byName.get(name);
+    });
+    byName.set(
+      comp.name,
+      createComponentSchemaObject(
+        comp,
+        undefined,
+        Type.Union([
+          ...branches.filter((s): s is TSchema => s !== undefined),
+          ...pluginSchemas,
+        ]),
+        profile
+      )
+    );
   }
 
   /**

@@ -97,6 +97,8 @@ export {
   type PlaceholderMatch,
   type PlaceholderOccurrence,
   isScaffoldMarker,
+  unrenderedComponentName,
+  unrenderedComponentText,
 } from './placeholder';
 export {
   QualityEngine,

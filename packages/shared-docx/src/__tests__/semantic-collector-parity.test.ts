@@ -60,6 +60,27 @@ const OFFENDERS: [string, Record<string, unknown>, string][] = [
     'no autofit',
   ],
   [
+    'a statistic in a table cell',
+    {
+      name: 'table',
+      props: {
+        columns: [
+          {
+            cells: [
+              {
+                content: {
+                  name: 'statistic',
+                  props: { number: '22', description: 'Journeys tested' },
+                },
+              },
+            ],
+          },
+        ],
+      },
+    },
+    'A table cell cannot hold a "statistic"',
+  ],
+  [
     'a native visual under the default renderer',
     {
       name: 'visual',

@@ -74,6 +74,18 @@ describe('ships', () => {
     ).toBe(true);
   });
 
+  it('refuses a placeholder the renderer painted', () => {
+    // Three KPI cells rendered "[Unsupported component type: statistic]" in a
+    // document a reviewer marked shippable; the page is what counts.
+    const clean = { ...base, noIntegrityDefect: true };
+    expect(
+      ships(
+        clean,
+        facts({ qualityByCode: { W_QUALITY_RENDERED_PLACEHOLDER: 3 } })
+      )
+    ).toBe(false);
+  });
+
   it('counts empty and under-filled pages together against a ceiling', () => {
     const pages = { ...base, maximumPageDefects: 1 };
     expect(

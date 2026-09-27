@@ -382,8 +382,6 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
     'ceb8d99bc3e84dbf5ace7c62189f4d8ea88985fa5705dcfe6a7f402426c8d249',
   'tables/cell-text-decorators':
     '3e9066dd44334b400b5a3ff7142df8072a1800b4a7a741422743b80dbad579f5',
-  'tables/unsupported-nested-component':
-    '4f827909673cbac734d2bc696f5713c5d55bab2321d94f72e86ef13169d66576',
   'tables/pagination-flags':
     'e619e6e7bfe38d0d7cca382d7a346a4eb7d5e0fab4b4c5ff54495a10ae89024b',
   'tables/row-properties':

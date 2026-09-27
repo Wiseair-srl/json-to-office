@@ -384,6 +384,91 @@ export function collectTextBoxShapeConflicts(data: unknown): ValidationError[] {
   return errors;
 }
 
+// The table's cell positions and what they hold, as the registry declares them
+// for the schema builder — so this walk reads exactly the positions the live
+// schema narrows.
+const TABLE_CELL_REGIONS = (
+  STANDARD_COMPONENTS_REGISTRY.find((c) => c.name === 'table')
+    ?.embeddedComponents ?? []
+).filter((region) => region.components);
+const STANDARD_COMPONENT_NAMES = new Set(
+  STANDARD_COMPONENTS_REGISTRY.map((c) => c.name)
+);
+
+const quoted = (names: readonly string[]): string =>
+  names.map((name) => `"${name}"`).join(', ');
+
+/**
+ * Collect table cells holding a component a cell cannot render, anywhere in a
+ * document.
+ *
+ * A cell renders one paragraph: a string or a `paragraph` gives it text, an
+ * `image`, a `visual` or a `highcharts` chart sits in it as a drawing. Any
+ * other standard component has no cell form, and the renderer could only
+ * paint a grey `[Unsupported component type: …]` where it stands — which is
+ * what shipped when this was allowed, unnoticed by the author and by every
+ * check. The live schema narrows cell content to the same list; this rule is
+ * what says so at the cell, once, whichever path the document took, and it
+ * runs unconditionally because the containment-relaxed schema the empty-walk
+ * gate consults does not narrow cells.
+ *
+ * Plugin components are left alone: what one renders is decided by its code,
+ * and the plugin layer validates it. An unknown name is the walk's to report.
+ */
+export function collectUnsupportedCellContent(
+  data: unknown
+): ValidationError[] {
+  const errors: ValidationError[] = [];
+
+  const visit = (node: any, path: string): void => {
+    if (Array.isArray(node)) {
+      node.forEach((item, i) => visit(item, `${path}/${i}`));
+      return;
+    }
+    if (!node || typeof node !== 'object') return;
+
+    if (node.name === 'table' && node.props && typeof node.props === 'object') {
+      for (const region of TABLE_CELL_REGIONS) {
+        const holds = region.components!;
+        resolveRegionValues(
+          node.props,
+          region.path,
+          `${path}/props`,
+          (content, contentPath) => {
+            const name = content?.name;
+            if (
+              typeof name !== 'string' ||
+              !STANDARD_COMPONENT_NAMES.has(name) ||
+              holds.includes(name)
+            )
+              return;
+            errors.push({
+              path: contentPath,
+              message:
+                `A table cell cannot hold a "${name}": a cell renders one paragraph, ` +
+                `so its content is a string or one of ${quoted(holds)}. ` +
+                `A "${name}" here would render as a placeholder instead.`,
+              code: 'unsupported_cell_content',
+              value: name,
+              suggestion:
+                name === 'statistic'
+                  ? 'To set statistics side by side, use a columns component with one statistic per column instead of a table.'
+                  : `Give the cell a string or a paragraph, or move the ${name} out of the table — into a columns or a text-box beside it.`,
+            });
+          }
+        );
+      }
+    }
+
+    for (const key of Object.keys(node)) {
+      visit(node[key], `${path}/${key}`);
+    }
+  };
+
+  visit(data, '');
+  return errors;
+}
+
 /**
  * Deep validate a document to collect ALL errors, not just union-level errors
  */
