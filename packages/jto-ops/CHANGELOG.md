@@ -1,5 +1,34 @@
 # @json-to-office/jto-ops
 
+## 7.2.0
+
+### Minor Changes
+
+- 8f09402: A DOCX table cell's `content` now takes a string or one of `paragraph`, `image`, `visual` and `highcharts`, and validation refuses anything else. The schema typed cell content as any component, but a cell renders one paragraph: a `statistic`, `heading`, `list`, nested `table` or any other component came out as the grey text `[Unsupported component type: statistic]`, and nothing told the author. Three statistics set in a table as a KPI row shipped that way.
+
+  - Validation reports `unsupported_cell_content` at the cell's `content`, once per cell, naming what a cell takes; `jto_validate` returns it as `E_UNSUPPORTED_CELL_CONTENT` with the fix in `suggestion`. A block whose output puts one in a cell is refused at the slot the author wrote. To set statistics side by side, use a `columns` component with one `statistic` per column.
+  - The published schema narrows cell content the same way, so an editor offers only those four and `jto_describe_component` names them. `TABLE_CELL_COMPONENTS` exports the list.
+  - A document that still reaches generation with one — a plugin's output, a caller that turned validation off — renders as before, but generation now warns `W_UNSUPPORTED_CELL_CONTENT` for each such cell, naming where it is.
+  - The rendered pass gains `rendered/placeholder` (`W_QUALITY_RENDERED_PLACEHOLDER`): the placeholder on a page is reported at the cell that holds the component, or on its page when nothing in the document accounts for it. The text inventory expects the placeholder at such a cell rather than the component's own text, so the statistic's number and label are no longer reported missing. `unrenderedComponentText` and `unrenderedComponentName` in `@json-to-office/quality` spell the placeholder for the renderer and the pass alike.
+  - The design evals count the new code as an integrity defect and a placeholder leak.
+
+### Patch Changes
+
+- e7b1389: The rendered pass no longer reports a table cell as clipped when poppler ran two cells of its row together.
+
+  Tight cell padding can leave the gap before the next cell as narrow as a word space, or narrower: 1.8pt in a row whose spaces are 2.6. The two cells then came out as one run of words, the reading order set a wrapped cell's second line after its neighbour ("operable by 2.1.1 Keyboard keyboard"), and the rendered pass reported the cell as cut off while every word of it was on the page. A row now also parts where a word starts on the edge of a column the rows around it mark, after a gap that is not the row's own word space, provided no row between them sets a word across that edge.
+
+  This removes the ten false `W_QUALITY_RENDERED_CLIP` findings left in the #409 verification corpus, every one a table cell; no other rendered finding in the corpus changes.
+
+- Updated dependencies [df59c3f]
+- Updated dependencies [ae26236]
+- Updated dependencies [75679d4]
+- Updated dependencies [8f09402]
+- Updated dependencies [4352752]
+  - @json-to-office/core-docx@7.2.0
+  - @json-to-office/shared-docx@7.2.0
+  - @json-to-office/quality@7.2.0
+
 ## 7.1.1
 
 ### Patch Changes
