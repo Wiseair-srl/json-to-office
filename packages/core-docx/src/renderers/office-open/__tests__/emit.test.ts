@@ -26,6 +26,7 @@ import type {
   DocxIrBlock,
   DocxIrShapeRun,
   DocxIrTable,
+  DocxIrTableOfContents,
 } from '../../../ir/types';
 
 const PNG_BYTES = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
@@ -412,6 +413,89 @@ describe('tables', () => {
         right: { style: 'single', size: 4, color: 'C7C8CA' },
       },
     });
+  });
+
+  it('hands a table of contents in a cell over as its entries between markers', () => {
+    // The backend drops a cell child that is neither a paragraph nor a table,
+    // so the field is put around these entries once the package exists
+    // (`cellTocs.ts`). A cell that ends on one still ends on a paragraph, as
+    // docx.js ends it; one that goes on past it needs none.
+    const toc: DocxIrTableOfContents = {
+      kind: 'toc',
+      id: 'toc',
+      path: 'sections[0].children[0].rows[0].cells[0].children[0]',
+      alias: 'Contents',
+      headingRange: { from: 1, to: 2 },
+      hyperlink: true,
+      cachedEntries: [
+        { text: 'Alpha', level: 1 },
+        { text: 'Beta', level: 2 },
+      ],
+    };
+    const ctx = emptyContext();
+    const emitted = block(
+      {
+        ...table,
+        rows: [
+          {
+            cells: [
+              { children: [toc] },
+              {
+                children: [
+                  toc,
+                  {
+                    kind: 'paragraph',
+                    id: 'p',
+                    path: 'sections[0].children[0].rows[0].cells[1].children[1]',
+                    children: [{ kind: 'text', text: 'After' }],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      ctx
+    ).table as { rows: Array<{ cells: Array<{ children: unknown[] }> }> };
+    const [ending, continuing] = emitted.rows[0].cells;
+    const [first, second] = ctx.cellTocs;
+    const marker = (text: string) => ({ paragraph: { children: [{ text }] } });
+    const entries = [
+      {
+        paragraph: {
+          style: 'TOC1',
+          children: [{ text: 'Alpha' }, { children: [{ tab: true }] }],
+        },
+      },
+      {
+        paragraph: {
+          style: 'TOC2',
+          children: [{ text: 'Beta' }, { children: [{ tab: true }] }],
+        },
+      },
+    ];
+
+    expect(ctx.cellTocs).toHaveLength(2);
+    expect(first).toMatchObject({
+      alias: 'Contents',
+      options: { hyperlink: true, headingStyleRange: '1-2' },
+    });
+    expect(first.options).not.toHaveProperty('entries');
+    expect(
+      new Set([first.start, first.end, second.start, second.end]).size
+    ).toBe(4);
+    expect(ending.children).toEqual([
+      marker(first.start),
+      ...entries,
+      marker(first.end),
+      { paragraph: { children: [] } },
+    ]);
+    expect(continuing.children).toEqual([
+      marker(second.start),
+      ...entries,
+      marker(second.end),
+      { paragraph: { children: [{ text: 'After' }] } },
+    ]);
   });
 });
 

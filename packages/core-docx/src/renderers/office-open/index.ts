@@ -22,6 +22,7 @@ import type {
   DocxIrNote,
 } from '../../ir/types';
 import { spliceChartParts } from './chartParts';
+import { spliceCellTocs, type StringifyTableOfContents } from './cellTocs';
 import {
   rasterizeSvgFallbacks,
   type SvgFallbackJob,
@@ -37,6 +38,7 @@ import {
   emuToPixels,
   numberingConfig,
   section,
+  type CellToc,
   type EmitContext,
   type ImageMediaFactory,
 } from './emit';
@@ -105,6 +107,7 @@ interface OfficeOpenBackend {
     options: Record<string, unknown>,
     packerOptions?: { type?: string }
   ) => Promise<Uint8Array>;
+  stringifyTableOfContents: StringifyTableOfContents;
 }
 
 export async function createOfficeOpenDocxRenderer(): Promise<DocxRenderer> {
@@ -114,10 +117,15 @@ export async function createOfficeOpenDocxRenderer(): Promise<DocxRenderer> {
     /* @vite-ignore */ OFFICE_OPEN_DOCX
   )) as unknown as OfficeOpenBackend;
 
-  if (typeof backend.generateDocument !== 'function') {
-    throw new Error(
-      `${OFFICE_OPEN_DOCX} does not export generateDocument(); the installed version is not compatible with this adapter.`
-    );
+  for (const name of [
+    'generateDocument',
+    'stringifyTableOfContents',
+  ] as const) {
+    if (typeof backend[name] !== 'function') {
+      throw new Error(
+        `${OFFICE_OPEN_DOCX} does not export ${name}(); the installed version is not compatible with this adapter.`
+      );
+    }
   }
 
   return {
@@ -126,10 +134,12 @@ export async function createOfficeOpenDocxRenderer(): Promise<DocxRenderer> {
     capabilities: OFFICE_OPEN_CAPABILITIES,
     async render(ir: DocxIR, options?: DocxRenderOptions): Promise<Uint8Array> {
       const charts: DocxIrChartRun[] = [];
+      const cellTocs: CellToc[] = [];
       const document = await buildDocumentOptions(
         ir,
         charts,
-        options?.svgRasterFallback
+        options?.svgRasterFallback,
+        cellTocs
       );
       const bytes = await backend.generateDocument(document, {
         type: 'uint8array',
@@ -141,10 +151,13 @@ export async function createOfficeOpenDocxRenderer(): Promise<DocxRenderer> {
       // The backend writes a chart's cached values and nothing that sources
       // them: no workbook, no series colours, no axis titles. Splicing those
       // in is what separates a chart that draws from one a recipient can
-      // actually edit — see `chartParts.ts`.
-      if (charts.length > 0) {
+      // actually edit — see `chartParts.ts`. A table of contents in a table
+      // cell it drops outright, so its entries went in between markers for
+      // the field to be put around them here — see `cellTocs.ts`.
+      if (charts.length > 0 || cellTocs.length > 0) {
         const zip = new AdmZip(raw);
         spliceChartParts(zip, charts);
+        spliceCellTocs(zip, cellTocs, backend.stringifyTableOfContents);
         raw = zip.toBuffer();
       }
 
@@ -176,7 +189,8 @@ export async function createOfficeOpenDocxRenderer(): Promise<DocxRenderer> {
 export async function buildDocumentOptions(
   ir: DocxIR,
   charts: DocxIrChartRun[] = [],
-  svgRasterFallback?: boolean
+  svgRasterFallback?: boolean,
+  cellTocs: CellToc[] = []
 ): Promise<Record<string, unknown>> {
   // One counter for the whole document. `wp:docPr` ids only have to be unique
   // within their part, and numbering across every part is both simpler and
@@ -186,6 +200,7 @@ export async function buildDocumentOptions(
     pictures: await prepareImages(ir, svgRasterFallback),
     nextDrawingId: () => nextDrawingId++,
     charts,
+    cellTocs,
   };
 
   return {
