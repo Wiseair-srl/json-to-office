@@ -4,7 +4,9 @@
  * coded issues, a cover and three openers under one running head generated
  * warning-clean on every bundled theme with the title on every page after
  * the cover, and the same report rendered through LibreOffice so the header
- * and the `n / N` field are read off every page rather than out of the XML.
+ * and the `n / N` field are read off every page rather than out of the XML,
+ * and the cover's floating band is found where its anchor puts it on both
+ * renderers.
  *
  * The rendered part skips itself when LibreOffice is not on PATH;
  * `JTO_REQUIRE_LIBREOFFICE=1` turns that into a failure.
@@ -19,6 +21,7 @@ import { promisify } from 'node:util';
 import { validateDocument } from '@json-to-office/shared-docx';
 import { generateBufferWithWarnings } from '../../core/generator';
 import { analyzeDocxQuality } from '../../quality/preflight';
+import type { DocxRendererId } from '../../renderers/types';
 import { expandBlocks } from '../index';
 import {
   consultingTheme,
@@ -29,8 +32,11 @@ import {
 import { block, example, on, para, section } from './example';
 import {
   findLibreOffice,
+  hasPdftoppm,
   hasPdftotext,
   requireIfInsisted,
+  pdfPageGray,
+  pdfPageSizes,
   pdfWordBoxes,
   textRows,
 } from '../../__tests__/libreoffice';
@@ -38,6 +44,7 @@ import {
 const run = promisify(execFile);
 
 const THEMES = ['consulting', 'minimal', 'vermilion', 'devportal'] as const;
+const RENDERERS: readonly DocxRendererId[] = ['docxjs', 'office-open'];
 type Theme = (typeof THEMES)[number];
 const THEME_CONFIG = {
   consulting: consultingTheme,
@@ -51,7 +58,7 @@ const THEME_CONFIG = {
 const TRACKERS = ['Year in brief', 'Regional picture', 'Twelve months on'];
 
 /** A cover in its own section, then three sections under one running head. */
-const report = (theme: Theme) => {
+const report = (theme: Theme, client = 'Acme Holdings') => {
   const doc = example();
   doc.props.theme = theme;
   doc.props.metadata = { title: 'Annual review', author: 'JTO' };
@@ -60,7 +67,7 @@ const report = (theme: Theme) => {
       block('cover', {
         title: 'Growth improved as delivery became more reliable',
         subtitle: 'Annual performance review',
-        client: 'Acme Holdings',
+        client,
         date: 'September 2026',
         confidentiality: 'Confidential',
       })
@@ -227,8 +234,91 @@ describe('the report architecture blocks', () => {
 
 const soffice = await findLibreOffice();
 const pdftotext = await hasPdftotext();
+const pdftoppm = await hasPdftoppm();
 requireIfInsisted(Boolean(soffice), 'a LibreOffice binary on PATH');
 requireIfInsisted(pdftotext, 'pdftotext');
+requireIfInsisted(pdftoppm, 'pdftoppm');
+
+/**
+ * A client name at the slot's six-word budget, which wraps under its label
+ * and so takes the band down towards the bottom margin.
+ */
+const WIDE_CLIENT = 'Acme Holdings International Group Services Limited';
+
+/** The cover band's labels, and the value `report` fills in under each. */
+const BAND = [
+  ['Prepared', 'Acme'],
+  ['Date', 'September'],
+  ['Classification', 'Confidential'],
+] as const;
+
+/**
+ * The cover band read off page 1 and checked where it stands: its labels in
+ * the bottom fifth of the page, each flush with the value under it, and a
+ * rule running across the band just above them; and no page of the document
+ * left without text. Returns the top of the label row and the page count,
+ * for the renderers to be compared on.
+ */
+async function coverBand(
+  pdf: string,
+  label: string
+): Promise<{ top: number; pages: number }> {
+  const xml = pdf.replace(/\.pdf$/, '.xml');
+  await run('pdftotext', ['-bbox', pdf, xml]);
+  const source = await readFile(xml, 'utf8');
+  const pages = pdfWordBoxes(source);
+  const [words] = pages;
+  const [page] = pdfPageSizes(source);
+  expect(
+    pages.flatMap((onPage, index) => (onPage.length ? [] : [index + 1])),
+    `${label}: pages with no text`
+  ).toEqual([]);
+  // The topmost match at or below `from`: the client's name is also the
+  // eyebrow above the title, and the band's is the one under its label.
+  const find = (text: string, from = 0) =>
+    words
+      .filter((w) => w.text.toLowerCase() === text.toLowerCase())
+      .filter((w) => w.yMin >= from)
+      .sort((a, b) => a.yMin - b.yMin)[0];
+  const cells = BAND.map(([name, value]) => {
+    const head = find(name);
+    expect(head, `${label}: ${name}`).toBeDefined();
+    const under = find(value, head!.yMin);
+    expect(under, `${label}: ${value} under ${name}`).toBeDefined();
+    return { head: head!, under: under! };
+  });
+  const top = Math.min(...cells.map((cell) => cell.head.yMin));
+  expect(top, `${label}: the band at the foot`).toBeGreaterThan(
+    page.height * 0.8
+  );
+  for (const { head, under } of cells)
+    expect(
+      Math.abs(head.xMin - under.xMin),
+      `${label}: ${head.text} flush with ${under.text}`
+    ).toBeLessThan(0.5);
+
+  // A rule is not text, so it is looked for in pixels: the longest run of
+  // ink along any row of the strip above the labels, against the width from
+  // the first label to the end of the last value.
+  const scale = 144 / 72;
+  const gray = await pdfPageGray(pdf, 1, 144);
+  const [left, right] = [
+    Math.floor(cells[0].head.xMin * scale),
+    Math.ceil(cells[2].under.xMax * scale),
+  ];
+  let longest = 0;
+  for (let y = Math.floor((top - 14) * scale); y < top * scale; y++) {
+    let inked = 0;
+    for (let x = left; x < right; x++) {
+      inked = gray.pixels[y * gray.width + x] < 245 ? inked + 1 : 0;
+      longest = Math.max(longest, inked);
+    }
+  }
+  expect(longest, `${label}: the band's top rule`).toBeGreaterThan(
+    (right - left) * 0.95
+  );
+  return { top, pages: pages.length };
+}
 
 describe.skipIf(!soffice || !pdftotext)('rendered through LibreOffice', () => {
   it('paints the title and n / N on every page after the cover, with the sections flowing, on every theme', async () => {
@@ -403,4 +493,65 @@ describe.skipIf(!soffice || !pdftotext)('rendered through LibreOffice', () => {
       await rm(dir, { recursive: true, force: true });
     }
   }, 300_000);
+
+  // #468. The cover band is a text box floated to the foot of the text area,
+  // and what it holds ends on a table. `office-open` closed the box's cell on
+  // that table, which Word tolerates and LibreOffice misreads: the band came
+  // out in the flow under the subtitle, with no top rule and its first label
+  // indented past its value. Floated where it belongs, a band that wraps its
+  // client name reaches past the bottom margin, and with nothing between it
+  // and the cover's section break LibreOffice gave the cover a second, empty
+  // page. So the pages are read, on both renderers.
+  it.skipIf(!pdftoppm)(
+    'pins the cover band to the foot of the page under its rule, the same on both renderers, on every theme',
+    async () => {
+      const dir = await mkdtemp(join(tmpdir(), 'jto-cover-band-'));
+      try {
+        const names = THEMES.flatMap((theme) =>
+          RENDERERS.map((renderer) => `${theme}-${renderer}`)
+        );
+        for (const theme of THEMES)
+          for (const renderer of RENDERERS) {
+            const { buffer } = await generateBufferWithWarnings(
+              report(theme, WIDE_CLIENT),
+              { renderer }
+            );
+            await writeFile(join(dir, `${theme}-${renderer}.docx`), buffer);
+          }
+        await run(
+          soffice as string,
+          [
+            `-env:UserInstallation=file://${join(dir, 'profile').replace(/\\/g, '/')}`,
+            '--headless',
+            '--convert-to',
+            'pdf',
+            '--outdir',
+            dir,
+            ...names.map((name) => join(dir, `${name}.docx`)),
+          ],
+          { timeout: 240_000 }
+        );
+        for (const theme of THEMES) {
+          const bands: Array<{ top: number; pages: number }> = [];
+          for (const renderer of RENDERERS)
+            bands.push(
+              await coverBand(
+                join(dir, `${theme}-${renderer}.pdf`),
+                `${theme} on ${renderer}`
+              )
+            );
+          expect(
+            Math.abs(bands[0].top - bands[1].top),
+            `${theme}: the band's height on each renderer`
+          ).toBeLessThan(1);
+          expect(bands[1].pages, `${theme}: pages on each renderer`).toBe(
+            bands[0].pages
+          );
+        }
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
+    },
+    300_000
+  );
 });

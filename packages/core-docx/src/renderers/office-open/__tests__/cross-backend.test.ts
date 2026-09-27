@@ -25,15 +25,23 @@
  * twin is checked against its own Latin property rather than across backends:
  * what is asserted is that both set such text apart from the Latin beside it
  * in the same places — none — whatever the Latin properties themselves say.
+ *
+ * One rule is held on each backend on its own: every table cell ends on a
+ * paragraph, over the corpus and the two report templates the block matrix
+ * is generated from.
  */
 
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import JSZip from 'jszip';
 import { imageIntegrityDefect } from '@json-to-office/shared/images/node';
 import {
   compileDocumentToIr,
   generateBufferViaIr,
 } from '../../../core/generateFromIr';
+import type { DocxIrBlock } from '../../../ir/types';
 import { resolveDocxRenderer } from '../../registry';
 import { CORPUS } from '../../../__tests__/fixtures/corpus';
 import {
@@ -466,6 +474,156 @@ describe('both DOCX backends over the corpus', () => {
 
     await expect(officeOpen.render(ir)).rejects.toThrow(/no intact IEND/);
   }, 60_000);
+});
+
+/**
+ * Every start, end and empty-element tag of a part, in order. An attribute
+ * value is matched whole, since one may hold a `>`.
+ */
+const TAG =
+  /<(\/?)([\w:.-]+)(?:\s+[\w:.-]+\s*=\s*(?:"[^"]*"|'[^']*'))*\s*(\/?)>/g;
+
+/**
+ * The last child element of every `w:tc` in a part, in document order, at any
+ * depth: `none` for a cell that holds nothing at all.
+ */
+function cellEndings(xml: string): string[] {
+  const open: Array<{ name: string; cell?: number; last?: string }> = [];
+  const endings: string[] = [];
+  for (const [, closing, name, empty] of xml.matchAll(TAG)) {
+    if (closing) {
+      const element = open.pop();
+      if (element?.cell !== undefined)
+        endings[element.cell] = element.last ?? 'none';
+      continue;
+    }
+    const parent = open[open.length - 1];
+    if (parent) parent.last = name;
+    const cell = name === 'w:tc' ? endings.push('none') - 1 : undefined;
+    if (!empty) open.push({ name, cell });
+  }
+  return endings;
+}
+
+/** The parts a table can stand in: the body, the headers and the footers. */
+const TABLE_PARTS = /^word\/(document|header\d*|footer\d*)\.xml$/;
+
+/** Every cell of a package whose last block is not a paragraph. */
+async function cellsNotEndingOnAParagraph(buffer: Buffer): Promise<string[]> {
+  const zip = await JSZip.loadAsync(buffer);
+  const found: string[] = [];
+  for (const [path, entry] of Object.entries(zip.files)) {
+    if (!TABLE_PARTS.test(path)) continue;
+    cellEndings(await entry.async('string')).forEach((last, index) => {
+      if (last !== 'w:p') found.push(`${path} cell ${index + 1}: ${last}`);
+    });
+  }
+  return found;
+}
+
+/** Cells of the IR, at any depth, whose last block is a table. */
+function cellsEndingOnATable(blocks: readonly DocxIrBlock[]): number {
+  let count = 0;
+  for (const value of blocks) {
+    if (value.kind !== 'table') continue;
+    for (const cell of value.rows.flatMap((row) => row.cells)) {
+      if (cell.children[cell.children.length - 1]?.kind === 'table') count++;
+      count += cellsEndingOnATable(cell.children);
+    }
+  }
+  return count;
+}
+
+const TEMPLATES_DIR = fileURLToPath(
+  new URL('../../../../../jto/src/client/public/templates/', import.meta.url)
+);
+
+/** A `highcharts` needs an export server, which no test here has: an image. */
+function chartsAsImages(node: unknown): unknown {
+  if (Array.isArray(node)) return node.map(chartsAsImages);
+  if (typeof node !== 'object' || node === null) return node;
+  if ((node as { name?: unknown }).name === 'highcharts')
+    return { name: 'image', props: { base64: PNG_4X2, width: 320 } };
+  return Object.fromEntries(
+    Object.entries(node).map(([key, value]) => [key, chartsAsImages(value)])
+  );
+}
+
+/** The report templates the block matrix is generated from. */
+const BLOCK_TEMPLATES = [
+  'client-report-blocks.docx.json',
+  'technical-report-blocks.docx.json',
+].map((name) => ({
+  name,
+  document: chartsAsImages(
+    JSON.parse(readFileSync(join(TEMPLATES_DIR, name), 'utf8'))
+  ),
+}));
+
+/**
+ * Word ends every table cell on a paragraph. A cell whose last block is a
+ * nested table is one Word tolerates and LibreOffice misreads: the client
+ * report's cover band, a floating text box ending on a table, stopped floating
+ * on `office-open` and lost its top border (#468). Each backend is held to the
+ * rule on its own rather than to the other, over every case it draws and over
+ * the two report templates, whose blocks nest tables in text boxes.
+ */
+describe('every table cell ends on a paragraph', () => {
+  it('reads the last block of every cell, nested ones included', () => {
+    expect(
+      cellEndings(
+        '<w:tbl><w:tr><w:tc><w:tcPr><w:tcW w:w="1"/></w:tcPr><w:tbl><w:tr>' +
+          '<w:tc><w:p><w:fldSimple w:instr="IF 2 > 1"/><w:r><w:t>a > b</w:t>' +
+          '</w:r></w:p></w:tc></w:tr></w:tbl></w:tc><w:tc><w:tcPr/></w:tc>' +
+          '<w:tc/></w:tr></w:tbl>'
+      )
+    ).toEqual(['w:tbl', 'w:p', 'w:tcPr', 'none']);
+  });
+
+  it('checks templates that end a cell on a table', async () => {
+    for (const template of BLOCK_TEMPLATES) {
+      const { ir } = await compileDocumentToIr(
+        structuredClone(template.document) as never,
+        { baseDir: TEMPLATES_DIR, warnings: [] }
+      );
+      const blocks = ir.sections.flatMap((section) => [
+        ...section.children,
+        ...[section.headers, section.footers].flatMap((set) =>
+          Object.values(set ?? {}).flatMap((part) => part?.children ?? [])
+        ),
+      ]);
+      expect(cellsEndingOnATable(blocks), template.name).toBeGreaterThan(0);
+    }
+  }, 60_000);
+
+  describe.each([
+    ['docxjs', CORPUS],
+    ['office-open', COMMON],
+  ] as const)('on %s', (renderer, cases) => {
+    it.each(cases.map((c) => [c.name, c] as const))(
+      'in %s',
+      async (_name, testCase) => {
+        const { buffer } = await generateBufferViaIr(
+          structuredClone(testCase.document) as never,
+          { renderer }
+        );
+        expect(await cellsNotEndingOnAParagraph(buffer)).toEqual([]);
+      },
+      60_000
+    );
+
+    it.each(BLOCK_TEMPLATES.map((t) => [t.name, t] as const))(
+      'in the %s template',
+      async (_name, template) => {
+        const { buffer } = await generateBufferViaIr(
+          structuredClone(template.document) as never,
+          { renderer, baseDir: TEMPLATES_DIR }
+        );
+        expect(await cellsNotEndingOnAParagraph(buffer)).toEqual([]);
+      },
+      60_000
+    );
+  });
 });
 
 describe('the office-open backend', () => {

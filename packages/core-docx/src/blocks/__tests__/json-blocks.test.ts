@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import AdmZip from 'adm-zip';
+import { execFile } from 'node:child_process';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { promisify } from 'node:util';
 import { Type } from '@sinclair/typebox';
 import { validateDocument } from '@json-to-office/shared-docx';
 import { ComponentValidationError } from '../../plugin/validation';
@@ -20,8 +25,17 @@ import { QUALITY_CODES } from '@json-to-office/quality';
 import { createDocumentGenerator } from '../../plugin/createDocumentGenerator';
 import { createComponent } from '../../plugin/createComponent';
 import { prepareDocxQualityDocument } from '../../quality/facts';
+import type { DocxRendererId } from '../../renderers/types';
+import {
+  findLibreOffice,
+  hasPdftotext,
+  pdfWordBoxes,
+  requireIfInsisted,
+} from '../../__tests__/libreoffice';
 
 import { example, invocation, on } from './example';
+
+const run = promisify(execFile);
 const simple = () => {
   const doc = example();
   doc.children = [
@@ -788,4 +802,112 @@ describe('JSON report blocks from playground templates', () => {
       ).toEqual([]);
     });
   });
+});
+
+const soffice = await findLibreOffice();
+const pdftotext = await hasPdftotext();
+requireIfInsisted(Boolean(soffice), 'a LibreOffice binary on PATH');
+requireIfInsisted(pdftotext, 'pdftotext');
+
+const THEMES = ['consulting', 'minimal', 'vermilion', 'devportal'] as const;
+const RENDERERS: readonly DocxRendererId[] = ['docxjs', 'office-open'];
+
+/** Four KPIs at their widest: every value, unit and delta at its budget. */
+const widestKpis = (theme: string) =>
+  on(theme, {
+    name: 'block',
+    props: {
+      ref: 'kpi-row',
+      slots: {
+        items: [
+          ['−123.00', '−123,456.0'],
+          ['−234.00', '−234,567.0'],
+          ['−345.00', '−345,678.0'],
+          ['−456.00', '−456,789.0'],
+        ].map(([value, delta]) => ({
+          value,
+          unit: ' €mmm',
+          label: 'Revenue year to date',
+          delta,
+          trend: 'neutral',
+        })),
+      },
+    },
+  });
+
+describe.skipIf(!soffice || !pdftotext)('rendered through LibreOffice', () => {
+  // #468. At its widest a KPI's delta wraps under its figure, onto a line of
+  // its own that needs leading of its own. While `office-open` wrote Word's
+  // `lines` document grid into every section, LibreOffice laid those lines out
+  // on it: 26.2 squeezed the delta up against the figure, their boxes
+  // overlapping on devportal, and 24.2 pushed it 6 to 12pt further down than
+  // the default renderer does. So the gap is measured against that renderer,
+  // in the same converter and faces, and must be positive on both.
+  it('keeps the widest KPI delta clear of its figure, as on the default renderer, on every theme', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'jto-kpi-leading-'));
+    try {
+      const names = THEMES.flatMap((theme) =>
+        RENDERERS.map((renderer) => `${theme}-${renderer}`)
+      );
+      for (const theme of THEMES)
+        for (const renderer of RENDERERS) {
+          const { buffer } = await generateBufferWithWarnings(
+            widestKpis(theme),
+            { renderer }
+          );
+          await writeFile(join(dir, `${theme}-${renderer}.docx`), buffer);
+        }
+      await run(
+        soffice as string,
+        [
+          `-env:UserInstallation=file://${join(dir, 'profile').replace(/\\/g, '/')}`,
+          '--headless',
+          '--convert-to',
+          'pdf',
+          '--outdir',
+          dir,
+          ...names.map((name) => join(dir, `${name}.docx`)),
+        ],
+        { timeout: 240_000 }
+      );
+      for (const theme of THEMES) {
+        const gaps: number[] = [];
+        for (const renderer of RENDERERS) {
+          const label = `${theme} on ${renderer}`;
+          const xml = join(dir, `${theme}-${renderer}.xml`);
+          await run('pdftotext', [
+            '-f',
+            '1',
+            '-l',
+            '1',
+            '-bbox',
+            join(dir, `${theme}-${renderer}.pdf`),
+            xml,
+          ]);
+          const [words] = pdfWordBoxes(await readFile(xml, 'utf8'));
+          const figure = words.find((w) => w.text === '−123.00');
+          const delta = words.find((w) => w.text === '−123,456.0');
+          expect(figure, `${label}: the figure`).toBeDefined();
+          expect(delta, `${label}: the delta`).toBeDefined();
+          // Wrapped, which is the case in question: the delta starts below
+          // the middle of the figure's line rather than beside it.
+          expect(delta!.yMin, `${label}: the delta wraps`).toBeGreaterThan(
+            (figure!.yMin + figure!.yMax) / 2
+          );
+          const gap = delta!.yMin - figure!.yMax;
+          expect(
+            gap,
+            `${label}: the delta clear of the figure`
+          ).toBeGreaterThan(0);
+          gaps.push(gap);
+        }
+        expect(
+          Math.abs(gaps[0] - gaps[1]),
+          `${theme}: the delta's leading on each renderer`
+        ).toBeLessThan(0.5);
+      }
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  }, 300_000);
 });

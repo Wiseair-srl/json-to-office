@@ -18,10 +18,15 @@ import {
   numberingConfig,
   paragraphProperties,
   runProperties,
+  section,
   type EmitContext,
 } from '../emit';
 import { emitStyles } from '../styles';
-import type { DocxIrShapeRun, DocxIrTable } from '../../../ir/types';
+import type {
+  DocxIrBlock,
+  DocxIrShapeRun,
+  DocxIrTable,
+} from '../../../ir/types';
 
 const PNG_BYTES = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
 
@@ -324,6 +329,33 @@ describe('tables', () => {
     });
   });
 
+  it('closes a cell on an empty paragraph unless it ends on one, as docx.js does', () => {
+    // The backend takes a nested table as a cell's last block, and a cell
+    // ending on one is what LibreOffice misread in the cover band (#468).
+    const paragraph = (text: string) => ({
+      kind: 'paragraph' as const,
+      id: text,
+      path: text,
+      children: [{ kind: 'text' as const, text }],
+    });
+    const cells = [[paragraph('a')], [paragraph('b'), table], []].map(
+      (children) => ({ children })
+    );
+    const emitted = block({ ...table, rows: [{ cells }] }).table as {
+      rows: Array<{ cells: Array<{ children: unknown[] }> }>;
+    };
+    const [flat, nested, empty] = emitted.rows[0].cells.map(
+      (cell) => cell.children
+    );
+
+    const closing = { paragraph: { children: [] } };
+    expect(flat).toHaveLength(1);
+    expect(nested).toHaveLength(3);
+    expect(nested[1]).toHaveProperty('table');
+    expect(nested[2]).toEqual(closing);
+    expect(empty).toEqual([closing]);
+  });
+
   it('spells every stated cell border side and leaves the table bare', () => {
     // The table model already adjudicated the borders: every cell states all
     // four sides — `none` included — and facing halves of a shared edge agree
@@ -380,6 +412,69 @@ describe('tables', () => {
         right: { style: 'single', size: 4, color: 'C7C8CA' },
       },
     });
+  });
+});
+
+describe('sections', () => {
+  const paragraph = {
+    kind: 'paragraph' as const,
+    id: 'p',
+    path: 'p',
+    children: [],
+  };
+  const table: DocxIrTable = {
+    kind: 'table',
+    id: 't',
+    path: 't',
+    rows: [{ cells: [{ children: [paragraph] }] }],
+    columnGrid: { unit: 'twips', values: [2400] },
+    width: { kind: 'percent', value: 100 },
+    layout: 'fixed',
+  };
+  /** The last two children of a bookmarked section holding `children`. */
+  const ending = (children: DocxIrBlock[]) =>
+    (
+      section(
+        {
+          id: 's',
+          path: 's',
+          children,
+          properties: {
+            page: {
+              widthTwips: 11906,
+              heightTwips: 16838,
+              orientation: 'portrait',
+              margins: {
+                topTwips: 1440,
+                bottomTwips: 1440,
+                leftTwips: 1440,
+                rightTwips: 1440,
+              },
+            },
+          },
+          bookmark: { id: 7, name: '_Section_7', opens: true, closes: true },
+        },
+        emptyContext()
+      ).children as unknown[]
+    ).slice(-2);
+
+  it('closes a bookmarked section that ends on a table after a one-point paragraph, as docx.js does', () => {
+    // Without it the table is followed by the paragraph holding the section's
+    // properties, where LibreOffice anchors a floating table: the cover band,
+    // floated past the bottom margin, left the cover an empty page (#468).
+    expect(ending([paragraph, table])).toEqual([
+      {
+        paragraph: {
+          children: [],
+          spacing: { before: 0, after: 0, line: 20, lineRule: 'exact' },
+        },
+      },
+      { bookmarkEnd: { id: 7 } },
+    ]);
+    const [last, end] = ending([table, paragraph]);
+    expect(last).toHaveProperty('paragraph');
+    expect(last).not.toHaveProperty('paragraph.spacing');
+    expect(end).toEqual({ bookmarkEnd: { id: 7 } });
   });
 });
 
