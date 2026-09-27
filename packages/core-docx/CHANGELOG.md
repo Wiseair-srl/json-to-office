@@ -1,5 +1,30 @@
 # @json-to-office/core-docx
 
+## 7.2.0
+
+### Minor Changes
+
+- 8f09402: A DOCX table cell's `content` now takes a string or one of `paragraph`, `image`, `visual` and `highcharts`, and validation refuses anything else. The schema typed cell content as any component, but a cell renders one paragraph: a `statistic`, `heading`, `list`, nested `table` or any other component came out as the grey text `[Unsupported component type: statistic]`, and nothing told the author. Three statistics set in a table as a KPI row shipped that way.
+
+  - Validation reports `unsupported_cell_content` at the cell's `content`, once per cell, naming what a cell takes; `jto_validate` returns it as `E_UNSUPPORTED_CELL_CONTENT` with the fix in `suggestion`. A block whose output puts one in a cell is refused at the slot the author wrote. To set statistics side by side, use a `columns` component with one `statistic` per column.
+  - The published schema narrows cell content the same way, so an editor offers only those four and `jto_describe_component` names them. `TABLE_CELL_COMPONENTS` exports the list.
+  - A document that still reaches generation with one — a plugin's output, a caller that turned validation off — renders as before, but generation now warns `W_UNSUPPORTED_CELL_CONTENT` for each such cell, naming where it is.
+  - The rendered pass gains `rendered/placeholder` (`W_QUALITY_RENDERED_PLACEHOLDER`): the placeholder on a page is reported at the cell that holds the component, or on its page when nothing in the document accounts for it. The text inventory expects the placeholder at such a cell rather than the component's own text, so the statistic's number and label are no longer reported missing. `unrenderedComponentText` and `unrenderedComponentName` in `@json-to-office/quality` spell the placeholder for the renderer and the pass alike.
+  - The design evals count the new code as an integrity defect and a placeholder leak.
+
+### Patch Changes
+
+- df59c3f: Every table cell the `office-open` DOCX renderer writes now ends on a paragraph, as on the default renderer. A cell whose content ended on a nested table was closed right after `</w:tbl>`, which Word tolerates and LibreOffice misreads: the client report's cover band, a text box floated to the foot of the page with a table inside, rendered in the flow under the subtitle in the LibreOffice preview, without its top rule and with its first label indented past its value. Such a cell now gets the empty paragraph the default renderer writes there, and the band lands at the foot of the cover on both renderers.
+
+  A section that ends on a table or a table of contents now closes its bookmark after a one-point paragraph on `office-open`, as on the default renderer. Without it a floating table there was followed directly by the section break, and a cover band whose client name wraps, reaching past the bottom margin, gave the cover a second, empty page in the LibreOffice preview.
+
+- ae26236: A table of contents inside a table cell — a `text-box` rendered as a table, or `columns` inside one — is now written by the `office-open` DOCX renderer, as it is by the default renderer. `@office-open/docx` writes nothing but paragraphs and tables in a cell, so the field vanished without a warning and left its title above an empty box. Its entries now go into the cell and the field is put around them once the package is written: the same content control the backend writes for a table of contents in the body.
+- 75679d4: The `office-open` DOCX renderer now writes lengths in twips as whole numbers, floored the way the default renderer floors them. A theme's tracking is a share of an em times the size, so the `consulting` eyebrow's came out as `<w:spacing w:val="12.8"/>`, which OOXML does not allow, and LibreOffice set the client report's eyebrow and running head wider than the default renderer does. Tracking, indents, cell widths and margins, row heights, a floating table's offsets and the page's size, margins and columns now match the default renderer's integers, and the client report renders the same on both.
+- 4352752: Both DOCX renderers now write a line height set as a multiple in whole twips. A multiple was converted to 240ths without rounding, so `devportal`'s 1.02-line title came out as `<w:spacing w:line="244.8"/>` and the annual-report templates wrote values such as `277.68` and `266.40000000000003`, which OOXML does not allow; neither renderer rounds `w:line`. The compiler now rounds it to the nearest twip, and does the same for a theme's exact or at-least line height in points and for a tab stop, a paragraph frame's size and offsets, a statistic's spacing and the gap above a table-of-contents title stated with a fraction. LibreOffice renders the affected documents exactly as before.
+- Updated dependencies [8f09402]
+  - @json-to-office/shared-docx@7.2.0
+  - @json-to-office/quality@7.2.0
+
 ## 7.1.2
 
 ### Patch Changes
