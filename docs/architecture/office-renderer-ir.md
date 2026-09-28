@@ -497,7 +497,7 @@ docx.js one rather than a translation layer on top of it.
 | run size                            | half-points                                           | **points** — the backend doubles what it is given                                   |
 | cell margins                        | `{marginUnitType, top, …}`                            | `{top: {size, type}, …}`                                                            |
 | `wp:docPr` ids                      | a **process-wide counter** — see below                | a **module-level counter** — see below                                              |
-| theme part (`theme1.xml`)           | `Document.theme`: name, colours, heading/body fonts   | Office's theme always, no option for another; not mapped yet                        |
+| theme part (`theme1.xml`)           | `Document.theme`: name, colours, heading/body fonts   | Office's theme always, no option for another; the adapter splices the IR theme in   |
 
 `@office-open/docx` numbers `wp:docPr` from `_docPropsIdGen`, a module-level
 generator, whenever a drawing does not state an id. That is process-global: the
@@ -940,11 +940,15 @@ glyphs touching the figure's where they clear them by 2.7pt without the grid,
 while 24.2 spaces such lines at the grid's pitch, as Word does, 6 to 12pt
 further apart than docx.js. `blocks/__tests__/json-blocks.test.ts` measures
 that gap through LibreOffice and holds it equal on both backends.
-Word's built-in styles in `styles.xml`, its 2013 compatibility settings and a
-theme part are written on this backend only and are left alone. jto refers to
-none of them; the one that applies unasked, the default table style's 108-twip
-cell margins, reaches only a cell that states no margins of its own, which in
-the corpus is eight cells of `tables/ragged-and-empty-cells`. The
+Word's built-in styles in `styles.xml` and its 2013 compatibility settings are
+written on this backend only and are left alone. jto refers to none of them; the
+one that applies unasked, the default table style's 108-twip cell margins,
+reaches only a cell that states no margins of its own, which in the corpus is
+eight cells of `tables/ragged-and-empty-cells`. Some of those styles — Heading
+7–9, Quote, Intense Quote, Intense Reference and the heading, title, subtitle
+and quote character styles — and the first run of every contents field name
+theme colours and fonts, so they follow the theme part, which `themePart.ts`
+replaces with the document's own (see Recorded output differences). The
 complex-script twins of a size or bold (`w:szCs`, `w:bCs`), which docx.js adds
 to every run and style and this backend does not, are not stated yet.
 
@@ -1031,7 +1035,7 @@ previous implementation finds what a feature checklist does not.
 | A native `chart` draws on `docxjs`, through docx 9.8's `ChartRun` (13 new cases: `chart/*` and `blocks/chart-figure-native`; no existing golden moved).                                                              | docx.js had no chart primitive until 9.8.0 added `docx/charts`, so the capability gate refused a chart on the default renderer. The adapter now maps the IR's chart run onto `ChartRun`, which writes the chart part, its relationship and its own workbook; the text roles are shared with office-open, so both state the same face, size, weight and colour on every text element. The entry is imported when `render()` starts, not with the package, so an older docx fails only a document that draws a chart. Both renderers now refuse a multi-series pie, a negative pie or doughnut value, an empty series, a non-finite value and a chart with no room, naming the path. How both renderers style the plot is under Native charts on docx.js.                                                                                              |
 | `office-open` charts take Word's Insert Chart look, as `docxjs` draws it: gridlines, axis lines, ticks, gaps, markers, slice borders, a doughnut's hole; no golden moved.                                            | `@office-open/docx` states none of a chart's plot styling, so each reader drew its own and the two renderers' charts differed; two gaps misdrew the data — scatter x values went in as text, plotted at 1, 2, 3…, and an untitled chart got a title from its series' name, which rescaled its value axis. `office-open/chartLook.ts` states the `docxjs` look (#478). `docxjs` moved in no package and pptx in none; on `office-open` the 13 chart cases and `native-chart` moved, in `word/charts/chart*.xml` and the scatter workbook only. In Word and LibreOffice 12 of the 14 render pixel-identical to `docxjs`; `chart/in-text-box` sits a point higher, from a bookmark paragraph, and `chart/in-header-and-footer` keeps the chrome gap under Native charts.                                                                                |
 | The default renderer draws a native `visual` (#478): four `drawings/*` corpus cases were added, recorded on docx.js, and no existing golden moved.                                                                   | docx 9.8.0's `docx/shapes` gives docx.js a drawing group, so `drawing-groups` joined its capability set and `renderMode: "native"` no longer needs `"renderer": "office-open"`. `docx/shapes` is imported, and the post-pack repair (`drawingGroupRepair.ts`) runs, only when the IR holds a group, so no other package can change: a dump of every corpus case, gallery template and example moved 0 of 296 docx.js and 0 of 291 office-open packages, and `examples/native-visual.docx.json` now renders on docx.js too. The new cases keep every child inside its canvas, so the cross-backend comparison holds their text, counts and extents to office-open's.                                                                                                                                                                                  |
-| Every document's `word/theme/theme1.xml` carries its jto theme instead of Office's: the theme's name, ten scheme colours and heading/body fonts (every corpus golden moved, all 282 cases, `theme1.xml` only).       | Word's Design tab, colour menus and font menu offered Office's blue, orange and Calibri in a jto document. The slots are the twin deck's (#258): dk1, lt1, dk2 and lt2 hold `text`, `background`, `textSecondary` and `backgroundSecondary`; accent1–6 hold `primary`, `secondary`, `accent` and `accent4`–`accent6`; the major and minor fonts are the heading and body families. hlink and folHlink keep Office's: jto has no link colour. Nothing `docxjs` writes refers to the theme, so no page moves; the proof follows below the table.                                                                                                                                                                                                                                                                                                       |
+| Every document's `word/theme/theme1.xml` carries its jto theme instead of Office's: the theme's name, ten scheme colours and heading/body fonts (every corpus golden moved, all 282 cases, `theme1.xml` only).       | Word's Design tab, colour menus and font menu offered Office's blue, orange and Calibri in a jto document. The slots are the twin deck's (#258): dk1, lt1, dk2 and lt2 hold `text`, `background`, `textSecondary` and `backgroundSecondary`; accent1–6 hold `primary`, `secondary`, `accent` and `accent4`–`accent6`; the major and minor fonts are the heading and body families. hlink and folHlink keep Office's: jto has no link colour. Nothing `docxjs` writes refers to the theme, so no page moves; the proof, and what `office-open` does differently, follow below the table.                                                                                                                                                                                                                                                              |
 
 | A `statistic` renders its `unit`, `size`, `trend` and `trendValue`, under two styles the document now defines. | All four props were declared, accepted by the schema and read by nothing: `{ "number": "99", "unit": "%" }` rendered `99`, and the shipped `docx-report` starter lost its percent sign with no diagnostic anywhere in the pipeline. The two paragraphs also named `StatisticNumber` and `StatisticDescription`, which no theme and no generator ever defined — an undefined `w:pStyle` resolves to Normal in silence, so the component purpose-built for KPIs set at body size and weight. The styles are appended only to documents that contain a statistic, so nothing else moved. `format` stays unimplemented and now warns (`W_STATISTIC_FORMAT_IGNORED`) rather than vanishing. |
 | A body paragraph or list item directly under a table gets 120 twips above it. | OOXML gives a table no space-after — the property does not exist — so the block below one drew hard against its bottom rule. A heading was already spaced by its own style and is left alone; only styles that contribute nothing of their own are topped up. |
@@ -1356,6 +1360,27 @@ words. What changes is what someone editing the document is offered, and what
 they insert: a chart, SmartArt or table style added in Word picks up the jto
 accents.
 
+`office-open` writes Office's theme and takes no option for another, so
+`renderers/office-open/themePart.ts` splices the same name, colours and fonts
+into it, and `cross-backend.test.ts` holds the two backends' theme parts equal
+over the corpus. Dumped the same way, all 291 `office-open` packages moved, in
+`theme1.xml` only and there only in the blanked values, and no `docxjs` package
+moved; in each of the 289 packages both backends write, the two theme parts now
+name the same theme, colours and Latin faces, PANOSE included. Unlike `docxjs`,
+this backend does refer to its theme: the built-in styles it adds (Heading 7–9,
+Quote, Intense Quote, Intense Reference and the heading, title, subtitle and
+quote character styles) and the first run of every contents field name theme
+colours and fonts. jto content applies none of those styles and the field run
+draws no glyph, so in LibreOffice the invoice, `native-visual`, the
+`technical-report-blocks`, `tech-report`, `client-report-blocks` and
+`vermilion-annual-report` templates, `headings/toc-default` and
+`theme/builtin-minimal` render as before, glyph for glyph and pixel for pixel;
+in Word they follow the jto theme once someone applies such a style or updates
+the field. A native chart's axis lines and tick marks state no colour and are
+drawn from Text 1: on `vermilion` they went from grey 139 to 142 in LibreOffice
+(`examples/native-chart`, 1,183 pixels at 60 dpi), the only pixels that moved
+over 56 pages.
+
 ## Post-emit rewrite inventory
 
 These are the production sites that edit an emitted OOXML package. Backend
@@ -1367,6 +1392,7 @@ relationship or make deterministic renumbering miss a newly-added part.
 | `packages/shared/src/rendering/chart-parts.ts`                    | Format-neutral repair for chart XML and workbook data omitted by both `@office-open` backends | Chart XML strings, workbook XML and relationship XML consumed by the format adapters       | Called by the format adapter before package canonicalization; it never opens a package itself    |
 | `packages/core-docx/src/renderers/office-open/chartParts.ts`      | Word packaging for native `office-open` charts                                                | `[Content_Types].xml`, `word/charts/chart*.xml`, chart `.rels`, `word/embeddings/*.xlsx`   | Runs before `canonicalizeDocxBuffer` so new parts and relationships are included in finalization |
 | `packages/core-docx/src/renderers/office-open/cellTocs.ts`        | A table of contents in a table cell, which `office-open` drops                                | `word/document.xml`, `word/header*.xml`, `word/footer*.xml`                                | Runs after the chart splice on the same ZIP, before `canonicalizeDocxBuffer`                     |
+| `packages/core-docx/src/renderers/office-open/themePart.ts`       | The document's theme, which `office-open` always writes as Office's                           | `word/theme/theme1.xml`                                                                    | Runs first on the ZIP the chart and cell-TOC splices share, before `canonicalizeDocxBuffer`      |
 | `packages/core-pptx/src/renderers/office-open/chartParts.ts`      | PowerPoint packaging for native `office-open` charts                                          | `[Content_Types].xml`, `ppt/charts/chart*.xml`, chart `.rels`, `ppt/embeddings/*.xlsx`     | Runs before `canonicalizeChartIds`; workbook names and chart references are renumbered together  |
 | `packages/core-pptx/src/renderers/pptxgenjs/packaging.ts`         | PptxGenJS-only sentinel fills and hard-coded table-style repair                               | `ppt/slides/slide*.xml`                                                                    | Runs before generic `finalizePackage`, on the same open ZIP                                      |
 | `packages/core-pptx/src/renderers/pptxgenjs/svgRasterFallback.ts` | Replaces PptxGenJS's Node broken-image SVG preview                                            | PNG media parts paired to SVG picture relationships                                        | Called from PptxGenJS packaging before generic finalization and timestamp normalization          |
