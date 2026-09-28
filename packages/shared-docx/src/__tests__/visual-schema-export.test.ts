@@ -69,11 +69,11 @@ describe('visual JSON Schema export', () => {
       JSON.stringify(branch)
     );
 
-    // Both shapes reach the document only through a `$ref`…
-    expect(docxjs).toContain('#/definitions/DocxVisualRasterProps');
-    expect(officeOpen).toContain('#/definitions/DocxVisualRasterProps');
-    expect(officeOpen).toContain('#/definitions/DocxVisualNativeProps');
-    // …and the default backend, which cannot draw a group, is not offered one.
-    expect(docxjs).not.toContain('#/definitions/DocxVisualNativeProps');
+    // Both shapes reach the document only through a `$ref`, under either
+    // backend: both draw a native group.
+    for (const branch of [docxjs, officeOpen]) {
+      expect(branch).toContain('#/definitions/DocxVisualRasterProps');
+      expect(branch).toContain('#/definitions/DocxVisualNativeProps');
+    }
   });
 });

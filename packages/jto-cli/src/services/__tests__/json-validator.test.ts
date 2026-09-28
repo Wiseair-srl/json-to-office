@@ -108,11 +108,11 @@ describe('JsonValidator custom schemas', () => {
     // A section header reaches components through the recursive component
     // definition, not through the narrowed child union a section body uses.
     // While both renderer branches shared one definition, whichever branch the
-    // exporter walked last (office-open) answered for both: a native `visual`
-    // was accepted under docxjs, and a docxjs threaded comment was refused.
-    // The runtime validator was right about both throughout, so nothing bad
-    // shipped — a schema-driven editor just showed the other renderer's
-    // diagnostics.
+    // exporter walked last (office-open) answered for both: a docxjs threaded
+    // comment was refused. The runtime validator was right throughout, so
+    // nothing bad shipped — a schema-driven editor just showed the other
+    // renderer's diagnostics. A native `visual` is drawn by both renderers, so
+    // it validates under each.
     const directory = await mkdtemp(join(tmpdir(), 'jto-json-validator-'));
     directories.push(directory);
     const schemaPath = join(directory, 'document.schema.json');
@@ -173,15 +173,15 @@ describe('JsonValidator custom schemas', () => {
       return result.valid;
     };
 
-    // Omitted renderer means docxjs, which cannot draw a native visual...
+    // Omitted renderer means docxjs, which draws a native visual...
     expect(await validateHeader('docxjs-native', undefined, nativeVisual)).toBe(
-      false
+      true
     );
-    // ...but can thread a comment.
+    // ...and threads a comment.
     expect(
       await validateHeader('docxjs-thread', undefined, threadedComment)
     ).toBe(true);
-    // office-open is the mirror image on both counts.
+    // office-open draws the visual too, but cannot thread the comment.
     expect(await validateHeader('oo-native', 'office-open', nativeVisual)).toBe(
       true
     );

@@ -19,7 +19,7 @@
 import AdmZip from 'adm-zip';
 import { readFile, writeFile } from 'fs/promises';
 
-const DRAWING_PART =
+export const DRAWING_PART =
   /^word\/(document|header|footer|footnotes|endnotes|comments)(\d*)\.xml$/;
 const RANK = [
   'document',
@@ -31,7 +31,7 @@ const RANK = [
 ];
 
 /** The order ids are allocated in: body, headers, footers, notes, comments. */
-function partOrder(a: string, b: string): number {
+export function compareDrawingParts(a: string, b: string): number {
   const ma = DRAWING_PART.exec(a)!;
   const mb = DRAWING_PART.exec(b)!;
   const rank = RANK.indexOf(ma[1]) - RANK.indexOf(mb[1]);
@@ -50,7 +50,7 @@ export function fixFloatingImageIdsInBuffer(buffer: Buffer): Buffer {
   const parts = zip
     .getEntries()
     .filter((entry) => DRAWING_PART.test(entry.entryName))
-    .sort((a, b) => partOrder(a.entryName, b.entryName));
+    .sort((a, b) => compareDrawingParts(a.entryName, b.entryName));
 
   let idCounter = 1;
   for (const entry of parts) {

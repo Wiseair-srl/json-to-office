@@ -56,18 +56,36 @@ import {
   type EmitResources,
   type ImageRunFactory,
 } from './emit';
+import { docxSubpath } from './docxSubpath';
+import {
+  chooseMarkers,
+  createDrawingGroupFactory,
+  type GroupPictureSource,
+} from './drawingGroup';
+import { repairDrawingGroupsInBuffer } from './drawingGroupRepair';
 import { emuToPixels } from '../../ir/units';
 
 export const DOCXJS_RENDERER_ID: DocxRendererId = 'docxjs';
 
 /**
+ * `docx/shapes`, loaded only by a render whose IR holds a drawing group. It is
+ * 186 KB minified and costs about 13 ms and 1.5 MB of heap to load, none of
+ * which a document without a native visual should pay.
+ */
+const shapes = docxSubpath(
+  'docx/shapes',
+  'visual',
+  () => import('docx/shapes')
+);
+
+/**
  * Explicit allowlist of what this adapter can express today.
  *
  * A new `DocxFeature` stays unsupported until this adapter deliberately adds
- * and tests it. Most omissions are slice boundaries. Since docx 9.8.0 the
- * backend has what this one needs; the adapter does not map it yet (#478):
- *
- * - `drawing-groups`: `docx/shapes`.
+ * and tests it. Most omissions are slice boundaries. `charts` and
+ * `drawing-groups` were backend gaps until docx 9.8.0; they are drawn through
+ * `docx/charts` and `docx/shapes`, each imported at render time rather than
+ * with the package (see `docxSubpath.ts`, #478).
  */
 const DOCXJS_CAPABILITIES: ReadonlySet<DocxFeature> = new Set([
   'paragraphs',
@@ -84,6 +102,7 @@ const DOCXJS_CAPABILITIES: ReadonlySet<DocxFeature> = new Set([
   'charts',
   'text-frames',
   'text-boxes',
+  'drawing-groups',
   'toc',
   'cached-toc',
   'fields',
@@ -112,19 +131,38 @@ export function createDocxJsRenderer(): DocxRenderer {
       renderOptions?: DocxRenderOptions
     ): Promise<Uint8Array> {
       await loadDocxCharts();
-      const resources = await prepareImages(
+      const prepared = await prepareImages(
         ir,
         renderOptions?.svgRasterFallback
       );
+      // A document without a drawing group never loads `docx/shapes`, never
+      // has its strings walked for markers and never goes through the repair
+      // pass, so its bytes are exactly what they were before groups existed.
+      const markers =
+        prepared.drawingGroups > 0 ? chooseMarkers(ir) : undefined;
+      let resources: EmitResources = prepared.images;
+      if (markers) {
+        await shapes.load();
+        resources = Object.assign(prepared.images, {
+          drawingGroup: createDrawingGroupFactory(
+            shapes.get(),
+            prepared.pictureSource,
+            markers
+          ),
+        });
+      }
       const document = buildDocument(ir, resources);
       const packed = (await Packer.toBuffer(document)) as Buffer;
       const fixed = fixFloatingImageIdsInBuffer(packed);
+      const repaired = markers
+        ? repairDrawingGroupsInBuffer(fixed, markers)
+        : fixed;
 
       if (renderOptions?.deterministic === false)
-        return new Uint8Array(normalizeDocxCaseBuffer(fixed));
+        return new Uint8Array(normalizeDocxCaseBuffer(repaired));
       return new Uint8Array(
         canonicalizeDocxBuffer(
-          fixed,
+          repaired,
           resolveGenerationDate({
             deterministic: renderOptions?.deterministic,
             generatedAt: renderOptions?.generatedAt,
@@ -251,13 +289,19 @@ function numberingConfig(numbering: DocxIrNumbering): {
  * for the fallback Word draws below 2016, and that is asynchronous while
  * building the document is not. The raster depends on the size the image is
  * drawn at, so every placement of a vector resource is rasterised up front and
- * the factory looks the right one up.
+ * the factory looks the right one up. A picture inside a drawing group is a
+ * placement too, and `pictureSource` hands it the same bytes and fallback.
  */
 async function prepareImages(
   ir: DocxIR,
   svgRasterFallback?: boolean
-): Promise<EmitResources> {
-  const placements = collectImagePlacements(ir);
+): Promise<{
+  images: Map<string, ImageRunFactory>;
+  pictureSource: GroupPictureSource;
+  /** How many drawing groups the IR holds; none means no `docx/shapes`. */
+  drawingGroups: number;
+}> {
+  const { placements, drawingGroups } = collectImagePlacements(ir);
   const jobs: SvgFallbackJob[] = [];
 
   for (const resource of ir.resources) {
@@ -315,24 +359,76 @@ async function prepareImages(
       } as ConstructorParameters<typeof ImageRun>[0]);
     });
   }
-  return resources;
+
+  const pictureSource: GroupPictureSource = (resourceId, placement) => {
+    const resource = ir.resources.find(
+      (candidate) => candidate.kind === 'image' && candidate.id === resourceId
+    );
+    if (!resource) {
+      throw new Error(`no image was prepared for resource "${resourceId}"`);
+    }
+    const data = Buffer.from(resource.bytes);
+    if (resource.mediaType !== 'svg') {
+      return {
+        type: resource.mediaType as 'jpg' | 'png' | 'gif' | 'bmp',
+        data,
+      };
+    }
+    // The same fallback rule as an image run's, keyed by the drawn size.
+    const size = `${emuToPixels(placement.widthEmu)}x${emuToPixels(placement.heightEmu)}`;
+    return {
+      type: 'svg',
+      data,
+      fallback: {
+        type: 'png',
+        data: rasters.get(`${resourceId}:${size}`) ?? data,
+      },
+    };
+  };
+
+  return { images: resources, pictureSource, drawingGroups };
 }
 
 /**
- * Every size each image resource is drawn at, as `WxH` in pixels.
+ * Every size each image resource is drawn at, as `WxH` in pixels, and how
+ * many drawing groups the IR holds.
  *
- * Only vector resources need this, but the walk cannot know which is which
- * without the resource list, and walking twice would cost more than it saves.
+ * Only vector resources need the sizes, but the walk cannot know which is
+ * which without the resource list, and walking twice would cost more than it
+ * saves. The group count rides along for the same reason.
  */
-function collectImagePlacements(ir: DocxIR): Map<string, Set<string>> {
+function collectImagePlacements(ir: DocxIR): {
+  placements: Map<string, Set<string>>;
+  drawingGroups: number;
+} {
   const placements = new Map<string, Set<string>>();
+  let drawingGroups = 0;
+
+  const record = (
+    resourceId: string,
+    widthEmu: number,
+    heightEmu: number
+  ): void => {
+    const key = `${emuToPixels(widthEmu)}x${emuToPixels(heightEmu)}`;
+    const sizes = placements.get(resourceId) ?? new Set<string>();
+    sizes.add(key);
+    placements.set(resourceId, sizes);
+  };
 
   const visitInline = (inline: DocxIrInline): void => {
     if (inline.kind === 'image') {
-      const key = `${emuToPixels(inline.widthEmu)}x${emuToPixels(inline.heightEmu)}`;
-      const sizes = placements.get(inline.resourceId) ?? new Set<string>();
-      sizes.add(key);
-      placements.set(inline.resourceId, sizes);
+      record(inline.resourceId, inline.widthEmu, inline.heightEmu);
+      return;
+    }
+    if (inline.kind === 'drawingGroup') {
+      drawingGroups += 1;
+      for (const child of inline.children) {
+        if (child.kind === 'picture') {
+          record(child.resourceId, child.frame.widthEmu, child.frame.heightEmu);
+        } else {
+          child.text?.paragraphs.forEach(visitBlock);
+        }
+      }
       return;
     }
     if (inline.kind === 'hyperlink' || inline.kind === 'revision') {
@@ -369,7 +465,7 @@ function collectImagePlacements(ir: DocxIR): Map<string, Set<string>> {
     note.children.forEach(visitBlock);
   }
 
-  return placements;
+  return { placements, drawingGroups };
 }
 
 function sectionOptions(

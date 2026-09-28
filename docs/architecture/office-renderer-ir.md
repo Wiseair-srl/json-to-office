@@ -446,7 +446,7 @@ Run `pnpm generate:renderer-docs` after changing a feature or capability set.
 | `svg-images`         | SVG pictures with raster fallbacks.            | yes      | yes           |
 | `text-frames`        | Floating paragraph frames.                     | yes      | yes           |
 | `text-boxes`         | Native shape text boxes.                       | yes      | yes           |
-| `drawing-groups`     | Grouped DrawingML shapes and pictures.         | —        | yes           |
+| `drawing-groups`     | Grouped DrawingML shapes and pictures.         | yes      | yes           |
 | `charts`             | Native charts with embedded workbooks.         | yes      | yes           |
 | `toc`                | Table-of-contents fields.                      | yes      | yes           |
 | `cached-toc`         | Pre-rendered table-of-contents entries.        | yes      | yes           |
@@ -487,7 +487,7 @@ docx.js one rather than a translation layer on top of it.
 | inline and floating images          | yes                                                   | yes                                                                                 |
 | SVG with a raster fallback          | yes                                                   | yes — `PictureOptions` has an `svg` type with a `fallback`, unlike its pptx sibling |
 | text boxes (`wps:wsp`), text frames | yes                                                   | yes                                                                                 |
-| drawing groups (`wpg:wgp`)          | **no** — `docx/shapes` has one; not mapped yet        | yes — a paragraph-level `wpgGroup` run taking shape, group and picture children     |
+| drawing groups (`wpg:wgp`)          | yes — `docx/shapes` `ShapeGroupRun`, loaded on demand | yes — a paragraph-level `wpgGroup` run taking shape, group and picture children     |
 | footnotes, endnotes                 | yes                                                   | yes                                                                                 |
 | native charts                       | yes — `docx/charts` `ChartRun`, with its own workbook | yes, with an embedded workbook spliced in — see below                               |
 | comments                            | yes                                                   | yes, but flat — see below                                                           |
@@ -525,12 +525,12 @@ rather than losing content:
 | `comment-threads`                                                  | `CommentOptions` is `{id, author, initials, date, children}` — no parent, no resolved state, so a reply would flatten into an unrelated top-level comment |
 | `table-merged-cells`, `cached-fields`, `shading`, `borders`, `rtl` | the vocabulary no lowering covers yet, so nothing can require them; both adapters leave them out so a declared set means "proven by a test"               |
 
-`docxjs` withholds one capability of its own, and it is what turns a natively
-drawn `visual` handed to the default backend into a named capability error
-rather than a document with the figure missing. It was a backend gap until
-docx 9.8.0 added the primitive; the adapter does not map it yet (#478):
-
-- `drawing-groups`: `docx/shapes`.
+`docxjs` withholds no capability of its own any more. `drawing-groups` and
+`charts` were backend gaps — docx.js had no `wpg:wgp` and no chart primitive —
+until docx 9.8.0 added `docx/shapes` and `docx/charts`. The adapter maps both
+and imports each entry at render time rather than with the package, so a
+consumer on an older docx still loads jto and gets a named error only from a
+document that needs one (#478).
 
 ### Native charts
 
@@ -713,29 +713,34 @@ A `visual` is normally rasterized: it becomes a one-slide PPTX, LibreOffice
 draws it, and the PNG is embedded as an `image` — all of it before the compiler
 sees the tree. `renderMode: "native"` takes a different path entirely. The
 component survives desugaring, the compiler lowers it to a
-`DocxIrDrawingGroupRun`, and the office-open adapter emits one `wpg:wgp`. No
-PPTX, no rasterizer request, no pre-pass counter moves.
+`DocxIrDrawingGroupRun`, and either adapter emits one `wpg:wgp` — office-open
+through its `wpgGroup` run, docx.js through `docx/shapes` (see below). No PPTX,
+no rasterizer request, no pre-pass counter moves.
 
 The IR node is backend-neutral by construction: it says what is drawn and where
 (EMU frames in the group's own child coordinate space, resolved colours,
 registered picture resources), never how. The gate is the ordinary capability
-one, so IR that reaches `docxjs` by some other route is refused rather than
-dropped.
+one: both adapters declare `drawing-groups`, and a backend that did not would
+refuse the document rather than drop the graphic.
 
 Native mode is strict on purpose. Its element model — `text`, `shape`, `image`
 — is narrower than the PPTX slide-content union, and every native schema is
 `additionalProperties: false`, so a gradient fill or a chart element is a
 validation error instead of a silent omission. `collectDocxRendererErrors`
-carries the two rules a schema cannot: `renderMode: "native"` under any other
-renderer is reported at the component's `props/renderMode`, and an element kind
-with no native form at `props/elements/N/name`.
+carries the rule a schema cannot, under either renderer: an element kind with
+no native form is reported at `props/elements/N/name`. It looks no further into
+a visual, whose elements are slide or drawing elements and never docx
+components, so a raster visual's pptx `chart` element is not taken for the
+docx `chart` component.
 
-Native cases stay out of the shared corpus — every corpus case is rendered by
-the default backend, which refuses a group — and live in
-`__tests__/native-visual.test.ts` instead, which asserts the emitted DrawingML,
-the absence of any rasterizer contact, byte determinism across sequential and
-concurrent renders, and the docxjs refusal. `libreoffice-smoke.test.ts` opens
-one for real.
+Four native cases are in the shared corpus (`fixtures/corpus-drawings.ts`): a
+canvas with a background and one without, pictures cropped and fitted, and a
+group floating with a caption, in a table cell and in a header. Their goldens
+pin the docx.js bytes, and the cross-backend comparison holds them to
+office-open's text, counts and extents. `__tests__/native-visual.test.ts`
+asserts, on both backends, the emitted DrawingML, the absence of any rasterizer
+contact and byte determinism across sequential and concurrent renders.
+`libreoffice-smoke.test.ts` opens one from each backend for real.
 
 Both `visual.props` shapes carry an `$id` so the JSON-Schema export hoists them
 into definitions rather than inlining them at every position a component can
@@ -809,6 +814,83 @@ and from generating, unzipping and rendering real files — not from its README.
 Anything not proven by a test stays out of the adapter's capability set, so it
 fails loudly instead of producing a document with content missing.
 
+### Native visuals on docx.js
+
+docx 9.8.0's `docx/shapes` draws the group (#478). The adapter uses
+`ShapeGroupRun` rather than `ShapeCanvasRun`: a canvas's children keep their
+own size, so a canvas authored at one size and placed at another cannot be
+expressed, and a canvas writes the diagram twice (`wpc:wpc` with a `wpg:wgp`
+fallback in `mc:AlternateContent`, 2497 bytes against 896 for one child). A
+group scales its children onto its extent and writes one bare `wpg:wgp`, as
+office-open does. `renderers/docxjs/drawingGroup.ts` builds the option bag and
+`presetShapes.ts` maps the IR's OOXML preset and dash names onto docx's
+readable ones: 187 presets and 11 dashes, each map total and checked at compile
+time, and each throwing on a name it does not know, where docx would write an
+empty `<a:prstDash/>` that draws solid.
+
+`docx/shapes` is imported when a render meets a drawing group rather than with
+the package (`docxSubpath.ts`): the entry does not exist before docx 9.8.0, and
+it is 186 KB minified and costs about 13 ms and 1.5 MB of heap to load. A
+document without a group never loads it, never has its strings walked and never
+goes through the repair below, which is why no existing golden moved.
+
+`ShapeGroupRun` has no child-space option: `a:chOff`/`a:chExt` are the union of
+the children's unrotated boxes. The IR's child space is the whole canvas, so
+when the children do not reach every edge — any visual without a background —
+the bottom-most child is an invisible rectangle the size of the canvas, marked
+decorative so screen readers skip it: the pad upstream's own canvas fallback
+uses. With a background the union already is the canvas, and the child list
+matches office-open's. The compiler rounds each offset and extent on its own,
+so an edge can be overshot by an EMU; within 2 EMU that still counts as the
+edge. A child that really reaches past the canvas keeps the authored scale: the
+group's extent grows by the overflow, where office-open draws it outside a
+frame of the placed size. The alternative, rewriting `a:chOff`, `a:chExt`,
+`a:ext` and `wp:extent` to office-open's values after packing, is more brittle
+and is not built. The corpus keeps every child inside its canvas.
+
+Three things docx writes cannot be stated through its options, so a post-pack
+pass, `drawingGroupRepair.ts`, puts them right, only for a package whose IR
+holds a group:
+
+- **Child ids.** Every `cNvPr` in a group comes from docx's process-wide drawing
+  counter. They are renumbered in one sequence after the highest drawing id
+  anywhere else in the package, walking the parts in `fixFloatingImageIds`'s
+  order, and every part holding a group is rewritten, for that pass's reason.
+- **Rotation.** docx writes `rot` as degrees × 60000 unrounded (`7.123456°`
+  becomes `rot="427407.36"`, which `ST_Angle` forbids). It is rounded and not
+  wrapped, exactly as office-open writes it, so `-30°` stays `-1800000`.
+- **Markers.** With no truthy alt text docx describes the group from its
+  children's names, and it cannot write `wps:cNvSpPr txBox="1"`. The adapter
+  passes a marker description, and a marker title on a text box's `wps:cNvPr`;
+  the repair drops the first and turns the second into `txBox`. The markers are
+  chosen per document so that no string in it contains one, and a marker that
+  survives the repair throws, naming the part.
+
+Where docx's defaults differ from OOXML's the adapter states OOXML's: text
+anchored at the top rather than centred, no fill, and no line rather than a
+black 1pt one. An outline with no colour strokes nothing, and one with a colour
+and no width is a hairline, as office-open draws them. A line width or text
+inset past 1584pt — docx's range and `ST_LineWidth`'s maximum — is clamped
+rather than refused, since the schema sets no maximum for either. A run's own
+underline colour, which only a native visual's text states, reaches docx.js
+runs too.
+
+What still differs from office-open's output: docx.js computes
+`wp:effectExtent` for rotated and line shapes where office-open writes zeros;
+`anchor="t"`, `a:noFill` and `a:ln/a:noFill` are stated; a colour-only outline
+writes `w="0"` rather than no `w`; a colourless outline writes `a:ln/a:noFill`
+rather than an `a:ln` with no fill; `line`-family presets use `wps:cNvCnPr`; a
+picture with no crop writes an empty `<a:srcRect/>`; group-child ids follow the
+last `wp:docPr` rather than their own group's; the pad carries
+`adec:decorative`; insets and line widths past 1584pt are clamped; and an
+overflowing child grows the frame.
+
+LibreOffice draws `examples/native-visual.docx.json` and three of the four
+corpus cases pixel-identically on both backends. On the canvas without a
+background it sizes office-open's group to its children, so that drawing sits
+above and left of where its canvas puts it; the docx.js pad keeps the canvas,
+and the same pad spliced into office-open's output makes the two identical.
+
 ### Packaging notes for `@office-open/*`
 
 ESM-only, no `require` condition, no peer dependencies, no install scripts, no
@@ -819,7 +901,7 @@ They were optional peers until an integration run showed what that cost: under
 `npx`, where nobody has a project to `pnpm add` into, `office-open` was
 advertised by `jto_info`, `jto_discover` and `jto_validate` and installed by
 none of them, so the only way to discover it could not run was to fail a render
-— and with it the `visual` component's `renderMode: "native"`, which is
+— and with it the `visual` component's `renderMode: "native"`, which was then
 documented as needing that backend. Installed by default, and reported with
 `available` beside the id, both halves of that are gone.
 
@@ -947,6 +1029,7 @@ previous implementation finds what a feature checklist does not.
 | Embedded Office packages are normalized recursively; an office-open chart workbook's own ZIP headers now follow a caller's `generatedAt` (no golden moved; unchanged at the default date).                           | docx.js stamps a native chart's workbook ZIP entries from the wall clock, so two renders a second apart differed in `word/embeddings/*.xlsx` alone. Package finalization now walks every embedded xlsx, xlsm, docx and pptx, three levels deep as the pptx packager does, pins its `docProps/core.xml` dates and ZIP headers to `generatedAt`, and rewrites a package only when something in it differs, keeping every inner compressed stream. office-open's workbooks are built pinned to the default date, so at that date they come out byte for byte as before; with a caller's `generatedAt` their headers now carry it instead of 2000-01-01, and nothing else in the package changes. No corpus case embeds a package.                                                                                                                       |
 | A native `chart` draws on `docxjs`, through docx 9.8's `ChartRun` (13 new cases: `chart/*` and `blocks/chart-figure-native`; no existing golden moved).                                                              | docx.js had no chart primitive until 9.8.0 added `docx/charts`, so the capability gate refused a chart on the default renderer. The adapter now maps the IR's chart run onto `ChartRun`, which writes the chart part, its relationship and its own workbook; the text roles are shared with office-open, so both state the same face, size, weight and colour on every text element. The entry is imported when `render()` starts, not with the package, so an older docx fails only a document that draws a chart. Both renderers now refuse a multi-series pie, a negative pie or doughnut value, an empty series, a non-finite value and a chart with no room, naming the path. How both renderers style the plot is under Native charts on docx.js.                                                                                              |
 | `office-open` charts take Word's Insert Chart look, as `docxjs` draws it: gridlines, axis lines, ticks, gaps, markers, slice borders, a doughnut's hole; no golden moved.                                            | `@office-open/docx` states none of a chart's plot styling, so each reader drew its own and the two renderers' charts differed; two gaps misdrew the data — scatter x values went in as text, plotted at 1, 2, 3…, and an untitled chart got a title from its series' name, which rescaled its value axis. `office-open/chartLook.ts` states the `docxjs` look (#478). `docxjs` moved in no package and pptx in none; on `office-open` the 13 chart cases and `native-chart` moved, in `word/charts/chart*.xml` and the scatter workbook only. In Word and LibreOffice 12 of the 14 render pixel-identical to `docxjs`; `chart/in-text-box` sits a point higher, from a bookmark paragraph, and `chart/in-header-and-footer` keeps the chrome gap under Native charts.                                                                                |
+| The default renderer draws a native `visual` (#478): four `drawings/*` corpus cases were added, recorded on docx.js, and no existing golden moved.                                                                   | docx 9.8.0's `docx/shapes` gives docx.js a drawing group, so `drawing-groups` joined its capability set and `renderMode: "native"` no longer needs `"renderer": "office-open"`. `docx/shapes` is imported, and the post-pack repair (`drawingGroupRepair.ts`) runs, only when the IR holds a group, so no other package can change: a dump of every corpus case, gallery template and example moved 0 of 296 docx.js and 0 of 291 office-open packages, and `examples/native-visual.docx.json` now renders on docx.js too. The new cases keep every child inside its canvas, so the cross-backend comparison holds their text, counts and extents to office-open's.                                                                                                                                                                                  |
 
 | A `statistic` renders its `unit`, `size`, `trend` and `trendValue`, under two styles the document now defines. | All four props were declared, accepted by the schema and read by nothing: `{ "number": "99", "unit": "%" }` rendered `99`, and the shipped `docx-report` starter lost its percent sign with no diagnostic anywhere in the pipeline. The two paragraphs also named `StatisticNumber` and `StatisticDescription`, which no theme and no generator ever defined — an undefined `w:pStyle` resolves to Normal in silence, so the component purpose-built for KPIs set at body size and weight. The styles are appended only to documents that contain a statistic, so nothing else moved. `format` stays unimplemented and now warns (`W_STATISTIC_FORMAT_IGNORED`) rather than vanishing. |
 | A body paragraph or list item directly under a table gets 120 twips above it. | OOXML gives a table no space-after — the property does not exist — so the block below one drew hard against its bottom rule. A heading was already spaced by its own style and is left alone; only styles that contribute nothing of their own are topped up. |
@@ -1084,17 +1167,18 @@ of the whole measure and a chart's default width are now of the box or column
 they stand in rather than the page: an image with no width in a text box padded
 72pt a side came out two inches wider than the box in every reader, since a
 drawing's extent is absolute. The corpus's one image in a text box
-(`blocks/text-box-mixed-children`) states its width in pixels, and the default
-backend drew neither charts nor drawing groups then, so no golden moved; now
-that it draws charts, `chart/in-text-box` covers one.
-`__tests__/media-measure.test.ts` pins the extents on both backends for images,
-shapes and charts and on `office-open` for visuals, and LibreOffice sets all
-four inside the box. Heights stay page-relative, anchored positions stay
-relative to the page or its margins as OOXML defines them, `widthRelativeTo:
-'page'` stays page-wide, and an image in a table cell keeps its nominal
-300 × 200 px box. A `highcharts` chart keeps a page-relative type scale: it is
-rendered while externals are desugared, before layout knows what holds it, so
-in a narrower box it is placed to fit with proportionally smaller type.
+(`blocks/text-box-mixed-children`) states its width in pixels, no corpus case
+puts a native visual in one, and the default backend drew neither charts nor
+drawing groups then, so no golden moved; now that it draws charts,
+`chart/in-text-box` covers one. `__tests__/media-measure.test.ts` pins the
+extents on both backends for images, shapes, native visuals and charts, and
+LibreOffice sets all four inside the box. Heights stay page-relative, anchored
+positions stay relative to the page or its margins as OOXML defines them,
+`widthRelativeTo: 'page'` stays page-wide, and an image in a table cell keeps
+its nominal 300 × 200 px box. A `highcharts` chart keeps a page-relative type
+scale: it is rendered while externals are desugared, before layout knows what
+holds it, so in a narrower box it is placed to fit with proportionally smaller
+type.
 
 280 goldens moved when a theme's header and footer distances started to reach
 the page. The theme schema requires `page.margins.header` and `footer`, and
@@ -1264,6 +1348,7 @@ relationship or make deterministic renumbering miss a newly-added part.
 | `packages/core-pptx/src/renderers/office-open/chartParts.ts`      | PowerPoint packaging for native `office-open` charts                                          | `[Content_Types].xml`, `ppt/charts/chart*.xml`, chart `.rels`, `ppt/embeddings/*.xlsx`     | Runs before `canonicalizeChartIds`; workbook names and chart references are renumbered together  |
 | `packages/core-pptx/src/renderers/pptxgenjs/packaging.ts`         | PptxGenJS-only sentinel fills and hard-coded table-style repair                               | `ppt/slides/slide*.xml`                                                                    | Runs before generic `finalizePackage`, on the same open ZIP                                      |
 | `packages/core-pptx/src/renderers/pptxgenjs/svgRasterFallback.ts` | Replaces PptxGenJS's Node broken-image SVG preview                                            | PNG media parts paired to SVG picture relationships                                        | Called from PptxGenJS packaging before generic finalization and timestamp normalization          |
+| `packages/core-docx/src/renderers/docxjs/drawingGroupRepair.ts`   | docx.js drawing groups: child `cNvPr` ids, whole-unit `rot`, alt-text and text-box markers    | Parts that hold a `wpg:wgp`: `word/document.xml`, headers, footers, notes, comments        | Runs after `fixFloatingImageIds`, before `canonicalizeDocxBuffer`, when the IR holds a group     |
 | `packages/core-docx/src/utils/fixFloatingImageIds.ts`             | docx.js-specific `wp:docPr` renumbering, one sequence per package                             | `word/document.xml`, headers, footers, footnotes, endnotes, comments                       | Runs after docx.js emits and before `canonicalizeDocxBuffer`                                     |
 | `packages/core-docx/src/utils/packageDocument.ts`                 | Generic DOCX relationship-id, embedded-package, metadata and ZIP timestamp canonicalization   | Relationship parts and owners, embedded packages, `docProps/core.xml`, ZIP entry headers   | Final DOCX pass, after every backend-specific repair                                             |
 | `packages/core-pptx/src/core/finalizePackage.ts`                  | Generic PPTX chart-id, nested-package, core-metadata and ZIP timestamp canonicalization       | Chart names and references, embedded Office packages, `docProps/core.xml`, ZIP entry dates | Final PPTX pass, after chart and PptxGenJS-specific repairs                                      |

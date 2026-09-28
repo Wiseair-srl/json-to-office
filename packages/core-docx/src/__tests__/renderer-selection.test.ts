@@ -63,6 +63,9 @@ describe('the registry', () => {
     // carry neither a parent nor a resolved state.
     expect(docxjs.capabilities.has('comment-threads')).toBe(true);
     expect(officeOpen.capabilities.has('comment-threads')).toBe(false);
+    // A drawing group is on both: docx.js draws one through `docx/shapes`.
+    expect(docxjs.capabilities.has('drawing-groups')).toBe(true);
+    expect(officeOpen.capabilities.has('drawing-groups')).toBe(true);
   });
 });
 
