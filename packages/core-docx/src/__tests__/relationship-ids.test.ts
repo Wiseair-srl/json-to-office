@@ -13,6 +13,7 @@ import AdmZip from 'adm-zip';
 import { createHash } from 'node:crypto';
 import { generateBufferFromJson } from '../core/generator';
 import { CORPUS } from './fixtures/corpus';
+import { PNG_4X2 } from './fixtures/corpus-blocks';
 
 const RUNS = 4;
 
@@ -247,5 +248,53 @@ describe('relationship id canonicalization', () => {
     expect(targets).toEqual(
       Array.from({ length: 8 }, () => ['https://example.com/alpha'])
     );
+  }, 60_000);
+
+  it('declares the relationship for a link after an image', async () => {
+    // docx.js writes empty attributes on every drawing (`name=""` on
+    // `wp:docPr`, among others). Renaming by pairs of quotes lost step on
+    // them, so the link's relationship was renamed and its `r:id` was not.
+    // The corpus never puts an image before a link, which is why the corpus
+    // sweep above could not see it.
+    const document = {
+      name: 'docx',
+      props: {},
+      children: [
+        {
+          name: 'section',
+          props: {},
+          children: [
+            { name: 'image', props: { base64: PNG_4X2 } },
+            {
+              name: 'paragraph',
+              props: { text: 'See [alpha](https://example.com/a).' },
+            },
+          ],
+        },
+      ],
+    };
+
+    const zip = open(
+      (await generateBufferFromJson(
+        structuredClone(document) as never
+      )) as Buffer
+    );
+    const known =
+      declaredIds(zip).get('word/_rels/document.xml.rels') ?? new Set();
+    const used = referencedIds(zip).get('word/document.xml') ?? [];
+    expect(used.filter((id) => !known.has(id))).toEqual([]);
+
+    const rels = zip.readAsText('word/_rels/document.xml.rels');
+    const targets = new Map(
+      [...rels.matchAll(/Id="([^"]+)"[^>]*Target="([^"]+)"/g)].map((m) => [
+        m[1],
+        m[2],
+      ])
+    );
+    const body = zip.readAsText('word/document.xml');
+    const links = [...body.matchAll(/<w:hyperlink[^>]*r:id="([^"]+)"/g)].map(
+      (m) => targets.get(m[1])
+    );
+    expect(links).toEqual(['https://example.com/a']);
   }, 60_000);
 });
