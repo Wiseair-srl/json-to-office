@@ -56,7 +56,7 @@ describe('table repeatHeaderOnPageBreak', () => {
     const xml = await readDocumentXml(
       await generateBufferFromJson(tableDocument(false))
     );
-    expect(xml).toMatch(/<w:tblHeader w:val="false"\s*\/>/);
+    expect(xml).toMatch(/<w:tblHeader w:val="off"\s*\/>/);
     expect(xml).not.toMatch(/<w:tblHeader\s*\/>/);
   });
 });

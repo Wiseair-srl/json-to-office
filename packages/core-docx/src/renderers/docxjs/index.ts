@@ -20,6 +20,7 @@ import {
   Paragraph,
   type Run,
   Table,
+  type TableOfContents,
   type ICommentOptions,
   type ILevelsOptions,
   type ISectionOptions,
@@ -62,8 +63,12 @@ export const DOCXJS_RENDERER_ID: DocxRendererId = 'docxjs';
  * Explicit allowlist of what this adapter can express today.
  *
  * A new `DocxFeature` stays unsupported until this adapter deliberately adds
- * and tests it. Most omissions are slice boundaries; `drawing-groups` and
- * `charts` are backend gaps in docx.js itself.
+ * and tests it. Most omissions are slice boundaries. Since docx 9.8.0 the
+ * backend has what these two need; the adapter does not map it yet (#478):
+ *
+ * - `charts`: `docx/charts`.
+ *
+ * - `drawing-groups`: `docx/shapes`.
  */
 const DOCXJS_CAPABILITIES: ReadonlySet<DocxFeature> = new Set([
   'paragraphs',
@@ -459,8 +464,14 @@ function chromeSlots(
   return Object.keys(out).length > 0 ? out : undefined;
 }
 
-function partChildren(part: DocxIrHeaderFooter, resources: EmitResources) {
-  return part.children.map((block) => emitBlock(block, resources));
+function partChildren(
+  part: DocxIrHeaderFooter,
+  resources: EmitResources
+): (Paragraph | Table)[] {
+  return part.children.map((block) => emitBlock(block, resources)) as (
+    | Paragraph
+    | Table
+  )[];
 }
 
 /**
@@ -485,13 +496,13 @@ function sectionChildren(
   section: DocxIrSection,
   resources: EmitResources,
   closesDocument = false
-): (Paragraph | Table)[] {
+): (Paragraph | Table | TableOfContents)[] {
   const blocks = section.children.map((block) => emitBlock(block, resources));
   const bookmark = section.bookmark;
   const endsInFrame = closesDocument && lastBlockIsFrame(section);
   if (!bookmark && !endsInFrame) return blocks;
 
-  const out: (Paragraph | Table)[] = [...blocks];
+  const out: (Paragraph | Table | TableOfContents)[] = [...blocks];
   if (bookmark?.opens) {
     const start = new BookmarkStart(bookmark.name, bookmark.id);
     const first = out[0];

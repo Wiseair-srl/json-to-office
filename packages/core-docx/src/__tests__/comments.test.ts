@@ -204,14 +204,21 @@ describe('comment anchors and bodies', () => {
     expect(comments).toMatch(/w:date="1970-01-01T00:00:00/);
   });
 
-  it('leaves the comments part empty when nothing is commented', async () => {
-    // docx always writes word/comments.xml; what must not appear is a comment.
+  it('writes no comments part when nothing is commented', async () => {
+    // docx 9.8.0 writes word/comments.xml only when there are comments
+    // (dolanmiu/docx#3544); before it, every document carried an empty one.
     const zip = await generate([
       { name: 'paragraph', props: { text: 'Plain' } },
     ]);
-    const comments = await read(zip, 'word/comments.xml');
 
-    expect(comments).not.toContain('<w:comment ');
+    expect(zip.file('word/comments.xml')).toBeNull();
+    expect(zip.file('word/_rels/comments.xml.rels')).toBeNull();
+    expect(await read(zip, '[Content_Types].xml')).not.toContain(
+      '/word/comments.xml'
+    );
+    expect(await read(zip, 'word/_rels/document.xml.rels')).not.toContain(
+      'comments.xml'
+    );
     expect(await read(zip, 'word/document.xml')).not.toContain(
       '<w:commentRangeStart'
     );

@@ -12,11 +12,11 @@
  *
  * Two text features are deliberately absent:
  *
- * - Real external hyperlinks (`[text](url)` on the linkifying path). docx@9.7.1
- *   mints each hyperlink relationship id from `Math.random`, and nothing in the
- *   packaging step canonicalizes it, so a document containing one is not
- *   byte-stable and cannot carry a golden hash. `text/link-syntax-literal`
- *   covers the non-linkifying halves of the same syntax instead.
+ * - Real external hyperlinks (`[text](url)` on the linkifying path). They live
+ *   in `corpus-links.ts`: docx mints each hyperlink relationship id at random
+ *   and `canonicalizeRelationshipIds` (`utils/packageDocument.ts`) renames it
+ *   during packaging. `text/link-syntax-literal` covers the non-linkifying
+ *   halves of the same syntax here.
  * - The `text-space-after` component. It exists only as a legacy plugin
  *   component and is not in the JSON component registry, so a document using it
  *   fails validation with `unknown_component` before it can render.

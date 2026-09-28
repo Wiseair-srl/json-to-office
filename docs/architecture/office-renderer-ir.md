@@ -487,27 +487,35 @@ docx.js one rather than a translation layer on top of it.
 | inline and floating images          | yes                                                   | yes                                                                                 |
 | SVG with a raster fallback          | yes                                                   | yes — `PictureOptions` has an `svg` type with a `fallback`, unlike its pptx sibling |
 | text boxes (`wps:wsp`), text frames | yes                                                   | yes                                                                                 |
-| drawing groups (`wpg:wgp`)          | **no** — docx.js has no group primitive               | yes — a paragraph-level `wpgGroup` run taking shape, group and picture children     |
+| drawing groups (`wpg:wgp`)          | **no** — `docx/shapes` has one; not mapped yet        | yes — a paragraph-level `wpgGroup` run taking shape, group and picture children     |
 | footnotes, endnotes                 | yes                                                   | yes                                                                                 |
-| native charts                       | **no** — docx.js has no chart primitive               | yes, with an embedded workbook spliced in — see below                               |
+| native charts                       | **no** — `docx/charts` has one; not mapped yet        | yes, with an embedded workbook spliced in — see below                               |
 | comments                            | yes                                                   | yes, but flat — see below                                                           |
 | revisions                           | one `w:ins`/`w:del` per run                           | a real wrapper element, so the id appears once per range                            |
 | fields                              | a run child per known instruction, plus `w:fldSimple` | `simpleField` takes any instruction with its cached result                          |
 | table of contents, cached entries   | title/level pairs, entry paragraphs built internally  | fully-built entry blocks, so this adapter writes them                               |
 | run size                            | half-points                                           | **points** — the backend doubles what it is given                                   |
 | cell margins                        | `{marginUnitType, top, …}`                            | `{top: {size, type}, …}`                                                            |
-| `wp:docPr` ids                      | duplicated, repaired after packaging                  | a **module-level counter** — see below                                              |
+| `wp:docPr` ids                      | a **process-wide counter** — see below                | a **module-level counter** — see below                                              |
 
 `@office-open/docx` numbers `wp:docPr` from `_docPropsIdGen`, a module-level
 generator, whenever a drawing does not state an id. That is process-global: the
 same document rendered twice came out with different ids, and two rendered at
 once interleaved — 38 of the 272 corpus cases were byte-unstable because of it.
 The adapter therefore states an id on every drawing, allocated per render in
-document order. docx.js has the mirror-image problem — it _duplicates_ ids
-(dolanmiu/docx#2719) — and is repaired by renumbering the packaged
-`document.xml`. Both are covered by `__tests__/document-isolation.test.ts`,
-which renders a document carrying a picture, a shape and a header image twice
-and concurrently, on both backends.
+document order. docx.js had the mirror-image problem until 9.8.0 — it
+_duplicated_ ids (dolanmiu/docx#2719), and every drawing outside `document.xml`
+was `id="1"` — and since 9.8.0 has this one: every drawing takes the next value
+of a counter shared by the whole process (dolanmiu/docx#3521). Rather than state
+an id on each drawing it builds (`altText.id` would take one), the docx.js
+adapter renumbers the packaged file, one sequence across every part that can
+hold a drawing: `document.xml` first, then headers and footers by number, then
+footnotes, endnotes and comments (`utils/fixFloatingImageIds.ts`). Both are
+covered by `__tests__/document-isolation.test.ts`, which renders a document
+carrying a picture, a shape and a header image twice and concurrently, on both
+backends, and asserts the ids unique across the package;
+`__tests__/floating-docpr-uniqueness.test.ts` moves docx's counter between two
+builds of a document with header and footer drawings and expects the same ids.
 
 Deliberately **not** declared, so a document using them fails before rendering
 rather than losing content:
@@ -517,11 +525,15 @@ rather than losing content:
 | `comment-threads`                                                  | `CommentOptions` is `{id, author, initials, date, children}` — no parent, no resolved state, so a reply would flatten into an unrelated top-level comment |
 | `table-merged-cells`, `cached-fields`, `shading`, `borders`, `rtl` | the vocabulary no lowering covers yet, so nothing can require them; both adapters leave them out so a declared set means "proven by a test"               |
 
-`docxjs` withholds two capabilities of its own: `drawing-groups` and `charts`.
-Both are real backend gaps rather than slice boundaries — docx.js has no
-`wpg:wgp` and no chart primitive at all — and they are what turn a natively
-drawn `visual` or a `chart` handed to the default backend into a named
-capability error rather than a document with the figure missing.
+`docxjs` withholds two capabilities of its own, and they are what turn a
+natively drawn `visual` or a `chart` handed to the default backend into a named
+capability error rather than a document with the figure missing. Both were
+backend gaps until docx 9.8.0 added the primitives; the adapter does not map
+them yet (#478):
+
+- `drawing-groups`: `docx/shapes`.
+
+- `charts`: `docx/charts`.
 
 ### Native charts
 
@@ -863,6 +875,7 @@ previous implementation finds what a feature checklist does not.
 | On `office-open`, a table of contents in a table cell — a table-rendered `text-box`, `columns` inside one — is written where it was dropped, as `docxjs` writes it (no corpus golden moved).                         | `@office-open/docx` writes a cell's paragraphs and tables and nothing else (`stringifyCellChild` answers any other child with an empty string), so the field vanished on this backend alone, its title left above nothing. The adapter now hands the cached entries over as paragraphs between two marker paragraphs and, once the package exists, replaces the three with the backend's own `stringifyTableOfContents` around them: the `w:sdt` it writes for the same table of contents in the body, byte for byte (`renderers/office-open/cellTocs.ts`). A cell that ends on one closes with `<w:p/>`, as on `docxjs`. Every corpus case rendered to the same digest on both backends before and after; LibreOffice draws the entries inside the box, laid out as on `docxjs`.                                                                    |
 | On `office-open`, tracking, indents, cell widths and margins, row heights, a floating table's offsets and the page's size, margins and columns are floored to whole twips, as on `docxjs` (no corpus golden moved).  | OOXML states them in whole twips (`ST_TwipsMeasure`, `ST_SignedTwipsMeasure`, a `dxa` width); the IR holds what its arithmetic gave, and a theme's tracking is a share of an em times the size: `consulting`'s 8pt eyebrow tracks 12.8 twentieths of a point, its `tracker` 9.6. docx.js floors each such attribute (`decimalNumber` is `Math.floor`: −9.456 becomes −10, and under one twentieth still writes `w:val="0"`); `@office-open/docx` wrote `<w:spacing w:val="12.8"/>`, which the schema refuses, and LibreOffice set the client report's eyebrow and running head wider — the one pixel difference between the backends on that template, now gone. Paragraph spacing, tab stops and frames stay as given, as docx.js writes them. The last paragraph of this section gives the check.                                                  |
 | A line height set as a multiple is written in whole twips on both backends, as is a tab stop, a frame or a statistic's spacing stated with a fraction (the four `devportal` cases moved, `word/styles.xml` only).    | OOXML types `w:line` as `ST_SignedTwipsMeasure` and `w:before`/`w:after` as `ST_TwipsMeasure`, integers both, and the compiler turned a multiple into 240ths unrounded: `devportal`'s 1.02-line Title wrote `w:line="244.8"`, and three annual-report templates 299 values such as 277.68 for 1.157 lines and `266.40000000000003` for 1.11. docx.js writes these as given, as it does `w:tab`'s `w:pos` and `w:framePr`, and `@office-open/docx` passes a number through, so both wrote the same invalid value. The compiler now rounds each to the nearest twip (`wholeTwips` in `ir/units.ts`). Only line heights were fractional in the corpus and the gallery, so nothing else moved, and LibreOffice draws the moved documents as before. The last paragraph of this section gives the check.                                                  |
+| docx 9.7.1 → 9.8.0 (#478): every corpus golden moved (all 282 cases), in sixteen classes of package change; `office-open` did not move.                                                                              | The release fixes a run of schema-order and vocabulary defects and adds a theme part. The classes, the parts each touches and the proof that nothing else moved follow the table.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 
 | A `statistic` renders its `unit`, `size`, `trend` and `trendValue`, under two styles the document now defines. | All four props were declared, accepted by the schema and read by nothing: `{ "number": "99", "unit": "%" }` rendered `99`, and the shipped `docx-report` starter lost its percent sign with no diagnostic anywhere in the pipeline. The two paragraphs also named `StatisticNumber` and `StatisticDescription`, which no theme and no generator ever defined — an undefined `w:pStyle` resolves to Normal in silence, so the component purpose-built for KPIs set at body size and weight. The styles are appended only to documents that contain a statistic, so nothing else moved. `format` stays unimplemented and now warns (`W_STATISTIC_FORMAT_IGNORED`) rather than vanishing. |
 | A body paragraph or list item directly under a table gets 120 twips above it. | OOXML gives a table no space-after — the property does not exist — so the block below one drew hard against its bottom rule. A heading was already spaced by its own style and is left alone; only styles that contribute nothing of their own are topped up. |
@@ -1101,6 +1114,61 @@ report templates, which the four `devportal` cases failed on both before,
 and generates one document that states each of those lengths with a fraction
 and failed at every one of them.
 
+Every corpus golden moved with docx 9.7.1 → 9.8.0 (#478), and the move was
+checked part by part: every corpus case, the eight DOCX gallery templates and
+the six `examples/` documents that render on `docxjs` — 296 packages — were
+generated on both backends before and after, the old code reproducing all 282
+recorded digests first. `office-open` did not change: all 291 of its packages
+are byte-identical. On `docxjs` each difference falls in one of sixteen
+classes, and normalising those leaves nothing. With the number of packages each
+touches:
+
+- `word/theme/theme1.xml` is written, with its relationship and content-type
+  override — docx's stock Office theme, byte-identical in all 296
+  (dolanmiu/docx#3536). No `docxjs` part names a theme font or colour, so it
+  changes nothing this backend draws.
+- The empty `word/comments.xml`, its `.rels`, relationship and override are
+  gone (282: every package with no comment; dolanmiu/docx#3544).
+- `document.xml.rels` renumbers around those two: the theme takes the comments
+  part's place, so headers and footers move down one, or, in a commented
+  package, fontTable moves up one. Every reference resolves to the same target
+  (296).
+- `word/styles.xml` no longer carries docx's own `Title` and `Heading1`–`6`
+  ahead of the compiler's under the same ids (296; dolanmiu/docx#3543), and
+  `Normal` is `w:default="1"` (296; dolanmiu/docx#3554).
+- `word/numbering.xml` writes `w:tentative` for `w15:tentative` (296), a
+  level's `w:pStyle` after `w:numFmt` where CT_Lvl puts it (8) and `w:lvlJc`
+  `left`/`right` for `start`/`end` (1, `lists/level-marker-alignment`), all
+  dolanmiu/docx#3543.
+- A percentage `w:tblW` is written in fiftieths of a percent, `100%` as `5000`
+  (71; dolanmiu/docx#3476).
+- A bare `<w:shd w:fill>` gains `w:val="clear"` (15), `w:tblOverlap` moves out of
+  `w:tblpPr` to sit beside it (7), and a row's `w:cantSplit` or `w:tblHeader`
+  `false` is written `off` (2), all dolanmiu/docx#3543.
+- In the 14 commented packages the `w:comments` root declares
+  `mc:Ignorable="w14 w15 wp14"` and the comments override follows the fontTable
+  and theme overrides (dolanmiu/docx#3543, #3544).
+- `wp:docPr` ids in headers and footers continue the body's sequence instead of
+  repeating `id="1"` (9: `structure/header-image`, `theme/example-field-review`,
+  `theme/example-practice-note` and six gallery templates); body ids are unchanged.
+- A tight wrap is written `<wp:wrapTight wrapText="left">` around a
+  full-extent `wp:wrapPolygon` where 9.7.1 wrote `distT`/`distB` on an element
+  that allows neither, requires the polygon, and lost the side (1,
+  `blocks/image-floating-wrap-variants`; dolanmiu/docx#3523). The sides now
+  match `office-open`'s. The polygons differ: docx writes the rectangle in
+  Word's 21600-unit space, `office-open` in EMUs with a negative height.
+
+In LibreOffice 26.2 the gallery templates, `invoice`, the other examples and
+the cases that exercise each class — numbering, cross-references, tight wraps,
+row properties, shading, a floating table in a text box, comments — render
+glyph for glyph as before: 112,465 glyphs over 161 pages, of which 140 moved.
+Those are `contract-v1` and `contract-v2`, whose signature table rises 1pt. It
+follows the styles dedupe alone: deleting only docx's `Heading2` from the old
+`styles.xml` reproduces it, and changing that definition's size does not, so it
+is LibreOffice's reading of a duplicated style id rather than any property
+either definition states. What Word made of the duplicates is for the Word
+check.
+
 ## Post-emit rewrite inventory
 
 These are the production sites that edit an emitted OOXML package. Backend
@@ -1115,7 +1183,7 @@ relationship or make deterministic renumbering miss a newly-added part.
 | `packages/core-pptx/src/renderers/office-open/chartParts.ts`      | PowerPoint packaging for native `office-open` charts                                          | `[Content_Types].xml`, `ppt/charts/chart*.xml`, chart `.rels`, `ppt/embeddings/*.xlsx`     | Runs before `canonicalizeChartIds`; workbook names and chart references are renumbered together  |
 | `packages/core-pptx/src/renderers/pptxgenjs/packaging.ts`         | PptxGenJS-only sentinel fills and hard-coded table-style repair                               | `ppt/slides/slide*.xml`                                                                    | Runs before generic `finalizePackage`, on the same open ZIP                                      |
 | `packages/core-pptx/src/renderers/pptxgenjs/svgRasterFallback.ts` | Replaces PptxGenJS's Node broken-image SVG preview                                            | PNG media parts paired to SVG picture relationships                                        | Called from PptxGenJS packaging before generic finalization and timestamp normalization          |
-| `packages/core-docx/src/utils/fixFloatingImageIds.ts`             | docx.js-specific duplicate `wp:docPr` id repair                                               | `word/document.xml`                                                                        | Runs after docx.js emits and before `canonicalizeDocxBuffer`                                     |
+| `packages/core-docx/src/utils/fixFloatingImageIds.ts`             | docx.js-specific `wp:docPr` renumbering, one sequence per package                             | `word/document.xml`, headers, footers, footnotes, endnotes, comments                       | Runs after docx.js emits and before `canonicalizeDocxBuffer`                                     |
 | `packages/core-docx/src/utils/packageDocument.ts`                 | Generic DOCX relationship-id, core-metadata and ZIP timestamp canonicalization                | Relationship parts and owners, `docProps/core.xml`, ZIP entry headers                      | Final DOCX pass, after every backend-specific repair                                             |
 | `packages/core-pptx/src/core/finalizePackage.ts`                  | Generic PPTX chart-id, nested-package, core-metadata and ZIP timestamp canonicalization       | Chart names and references, embedded Office packages, `docProps/core.xml`, ZIP entry dates | Final PPTX pass, after chart and PptxGenJS-specific repairs                                      |
 
