@@ -333,3 +333,70 @@ describe('native chart end to end', () => {
     expect(read(zip, 'word/charts/chart2.xml')).toContain('<c:v>Second</c:v>');
   });
 });
+
+/**
+ * Four ways the backend's own chart misdrew the data before office-open took
+ * docx.js's plot look (`chartLook.ts`). How the rest of that look compares
+ * with docx.js is `chart-cross-backend.test.ts`; these pin the four on their
+ * own, since each was wrong on office-open before docx.js drew charts at all.
+ */
+describe("office-open charts in Word's Insert Chart look", () => {
+  const chartOf = async (extra: Record<string, unknown>): Promise<string> =>
+    read(
+      await render(document('office-open', extra)),
+      'word/charts/chart1.xml'
+    );
+
+  it("plots a scatter chart's x values as numbers, in the part and its workbook", async () => {
+    // Text x values are placed at 1, 2, 3… by Word and LibreOffice alike, so
+    // a point authored at x = 2.5 was drawn at x = 2.
+    const extra = {
+      type: 'scatter',
+      data: [{ name: 'Plant', labels: ['1', '2.5', '6'], values: [3, 4, 7] }],
+    };
+    const zip = await render(document('office-open', extra));
+    const chart = read(zip, 'word/charts/chart1.xml');
+    expect(chart).toContain(
+      '<c:xVal><c:numRef><c:f>Sheet1!$A$2:$A$4</c:f><c:numCache>' +
+        '<c:formatCode>General</c:formatCode><c:ptCount val="3"/>' +
+        '<c:pt idx="0"><c:v>1</c:v></c:pt><c:pt idx="1"><c:v>2.5</c:v></c:pt>' +
+        '<c:pt idx="2"><c:v>6</c:v></c:pt></c:numCache></c:numRef></c:xVal>'
+    );
+    expect(chart).toContain('<c:scatterStyle val="lineMarker"/>');
+
+    const sheet = new AdmZip(
+      zip.getEntry('word/embeddings/chart1.xlsx')!.getData()
+    )
+      .getEntry('xl/worksheets/sheet1.xml')!
+      .getData()
+      .toString('utf8');
+    expect(sheet).toContain('<c r="A3"><v>2.5</v></c>');
+    expect(sheet).not.toContain('t="inlineStr"><is><t>2.5');
+  });
+
+  it('draws a line chart straight, not as a curve through its points', async () => {
+    // An unstated `c:smooth` is drawn smoothed by both Word and LibreOffice.
+    const chart = await chartOf({ type: 'line' });
+    expect(chart.match(/<c:smooth val="0"\/>/g)).toHaveLength(2);
+    expect(chart).toContain(
+      '<c:marker><c:symbol val="circle"/><c:size val="5"/>'
+    );
+  });
+
+  it('gives a doughnut its hole', async () => {
+    const chart = await chartOf({ type: 'doughnut' });
+    expect(chart).toContain('<c:holeSize val="50"/>');
+  });
+
+  it('keeps an untitled chart untitled', async () => {
+    // Word and LibreOffice title a single-series chart with no title of its
+    // own after the series, which also takes plot height and rescales the
+    // value axis.
+    const untitled = await chartOf({
+      title: undefined,
+      data: [{ name: 'Revenue', labels: ['Q1', 'Q2'], values: [12, 18] }],
+    });
+    expect(untitled).toContain('<c:autoTitleDeleted val="1"/>');
+    expect(await chartOf({})).toContain('<c:autoTitleDeleted val="0"/>');
+  });
+});

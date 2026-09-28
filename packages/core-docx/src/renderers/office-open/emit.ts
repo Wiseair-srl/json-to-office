@@ -45,6 +45,7 @@ import type {
   DocxIrTableRow,
 } from '../../ir/types';
 import { emuToPixels, pixelsToEmu } from '../../ir/units';
+import { seriesLook } from './chartLook';
 
 type Opts = Record<string, unknown>;
 
@@ -576,10 +577,12 @@ function drawingGroupOptions(
 /**
  * A chart run, in the vocabulary the backend actually reads.
  *
- * Only the fields `@office-open/docx` forwards are set. Everything else the IR
- * node carries — series colours, axis titles, the workbook behind "Edit Data" —
- * is spliced into the emitted part afterwards, because the backend's chart run
- * drops those options rather than emitting them. See `chartParts.ts`.
+ * Only the fields `@office-open/docx` forwards are set, each series with the
+ * marker, smoothing and sign handling docx.js draws (`chartLook.ts`). Everything
+ * else the IR node carries — series colours, axis titles, the workbook behind
+ * "Edit Data", the rest of that look — is spliced into the emitted part
+ * afterwards, because the backend's chart run drops those options rather than
+ * emitting them. See `chartParts.ts`.
  *
  * A shared category axis means the categories are the first series' labels; the
  * compiler has already refused a document whose series disagree about them.
@@ -597,6 +600,7 @@ function chartOptions(chart: DocxIrChartRun, ctx: EmitContext): Opts {
     series: chart.series.map((entry, index) => ({
       name: entry.name ?? `Series ${index + 1}`,
       values: entry.values,
+      ...seriesLook(chart.chartType),
     })),
     ...(chart.title && chart.showTitle !== false ? { title: chart.title } : {}),
     ...(chart.showLegend !== undefined ? { showLegend: chart.showLegend } : {}),

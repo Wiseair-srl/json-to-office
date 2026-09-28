@@ -143,12 +143,15 @@ describe('chart part splicing', () => {
   });
 
   it('paints each series its resolved colour', async () => {
+    // With no outline, as Word draws a bar (`chartLook.ts`).
     const xml = read(await spliced(), 'word/charts/chart1.xml');
     expect(xml).toContain(
-      '<c:spPr><a:solidFill><a:srgbClr val="1F4E79"/></a:solidFill></c:spPr>'
+      '<c:spPr><a:solidFill><a:srgbClr val="1F4E79"/></a:solidFill>' +
+        '<a:ln><a:noFill/></a:ln></c:spPr>'
     );
     expect(xml).toContain(
-      '<c:spPr><a:solidFill><a:srgbClr val="C00000"/></a:solidFill></c:spPr>'
+      '<c:spPr><a:solidFill><a:srgbClr val="C00000"/></a:solidFill>' +
+        '<a:ln><a:noFill/></a:ln></c:spPr>'
     );
     // The chartSpace and legend keep their own non-empty spPr untouched.
     expect(xml).toContain('<c:spPr><a:noFill/>');
@@ -163,8 +166,10 @@ describe('chart part splicing', () => {
       { ...chart, chartType: 'line', colors: ['00AA00'] },
     ]);
     const xml = read(new AdmZip(zip.toBuffer()), 'word/charts/chart1.xml');
+    // 2.25pt with round caps and joins, as Word draws a line series.
     expect(xml).toContain(
-      '<c:spPr><a:ln><a:solidFill><a:srgbClr val="00AA00"/></a:solidFill></a:ln></c:spPr>'
+      '<c:spPr><a:ln w="28575" cap="rnd"><a:solidFill><a:srgbClr val="00AA00"/>' +
+        '</a:solidFill><a:round/></a:ln></c:spPr>'
     );
     expect(xml).toContain('<c:marker>');
   });
@@ -180,7 +185,8 @@ describe('chart part splicing', () => {
     const zip = new AdmZip(await renderedPackage());
     spliceChartParts(zip, [{ ...chart, colors: [] }]);
     const xml = read(new AdmZip(zip.toBuffer()), 'word/charts/chart1.xml');
-    expect(xml).toContain('<c:spPr/>');
+    // No fill, so the reader's palette; the outline is still stated absent.
+    expect(xml).toContain('<c:spPr><a:ln><a:noFill/></a:ln></c:spPr>');
     // The only colour left is the theme text colour on the chart's text.
     const series = xml.match(/<c:ser>[\s\S]*?<\/c:ser>/g) ?? [];
     expect(series.length).toBeGreaterThan(0);
