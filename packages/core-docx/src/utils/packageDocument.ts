@@ -141,6 +141,110 @@ function canonicalizeRelationshipIds(zip: AdmZip): void {
   }
 }
 
+/** The `docProps/core.xml` creation and modification timestamps. */
+const CORE_TIMESTAMP =
+  /(<dcterms:(?:created|modified)\b[^>]*>)[^<]*(<\/dcterms:(?:created|modified)>)/g;
+
+/** A part that is itself an Office package: a workbook, a document, a deck. */
+const EMBEDDED_OFFICE_PACKAGE = /\.(?:docx|pptx|xlsx|xlsm)$/i;
+
+/**
+ * How deep the walk goes. A chart's workbook is depth 1; nothing this pipeline
+ * writes nests further, and the bound keeps a hostile package from recursing
+ * without end.
+ */
+const MAX_EMBEDDED_DEPTH = 3;
+
+/**
+ * Pin the timestamps inside every Office package embedded in this one.
+ *
+ * A package that carries another — a native chart's workbook above all — is
+ * only as reproducible as the one inside it, and docx.js stamps its chart
+ * workbooks' ZIP entries from the wall clock: two renders a second apart
+ * differed in `word/embeddings/*.xlsx` alone. So the nested package gets what
+ * the outer one gets — `docProps/core.xml` dates and every ZIP header stamped
+ * with `generatedAt` — and the walk recurses, mirroring the pptx packager.
+ *
+ * A package is rewritten only when something in it differs. One that is
+ * already pinned — office-open's chart workbooks at the default date — keeps
+ * its exact bytes, and a rewritten one keeps every entry's compressed stream:
+ * only the headers change. A part named like a package that does not open as
+ * one is left as it is: it is someone's data, not something to repair.
+ *
+ * Returns whether anything changed.
+ */
+function canonicalizeEmbeddedPackages(
+  zip: AdmZip,
+  generatedAt: Date,
+  depth = 1
+): boolean {
+  // Names first, then lookups: the same two-phase rule as the relationship
+  // pass above.
+  const names = zip
+    .getEntries()
+    .map((entry) => entry.entryName)
+    .filter((name) => EMBEDDED_OFFICE_PACKAGE.test(name));
+
+  let changed = false;
+  for (const name of names) {
+    const entry = zip.getEntry(name);
+    if (!entry) continue;
+    let nested: AdmZip;
+    try {
+      nested = new AdmZip(entry.getData());
+      nested.getEntries();
+    } catch {
+      continue;
+    }
+    if (canonicalizeNestedPackage(nested, generatedAt, depth)) {
+      zip.updateFile(entry, nested.toBuffer());
+      changed = true;
+    }
+  }
+  return changed;
+}
+
+/** One embedded package, normalized in place. Returns whether it changed. */
+function canonicalizeNestedPackage(
+  zip: AdmZip,
+  generatedAt: Date,
+  depth: number
+): boolean {
+  let changed = false;
+
+  const coreProperties = zip.getEntry('docProps/core.xml');
+  if (coreProperties) {
+    const xml = coreProperties.getData().toString('utf8');
+    const normalized = xml.replace(
+      CORE_TIMESTAMP,
+      `$1${generatedAt.toISOString()}$2`
+    );
+    if (normalized !== xml) {
+      zip.updateFile(coreProperties, Buffer.from(normalized, 'utf8'));
+      changed = true;
+    }
+  }
+
+  if (
+    depth < MAX_EMBEDDED_DEPTH &&
+    canonicalizeEmbeddedPackages(zip, generatedAt, depth + 1)
+  ) {
+    changed = true;
+  }
+
+  // The raw DOS field, for the reason given in `canonicalizeDocxBuffer`.
+  const zipTimestamp = toDosTime(generatedAt);
+  for (const entry of zip.getEntries()) {
+    const header = entry.header as unknown as { timeval: number };
+    if (header.timeval !== zipTimestamp) {
+      header.timeval = zipTimestamp;
+      changed = true;
+    }
+  }
+
+  return changed;
+}
+
 /**
  * Normalize package-level values that otherwise change on every render.
  * ZIP headers are written from UTC components because DOS timestamps carry no
@@ -153,6 +257,7 @@ export function canonicalizeDocxBuffer(
   const zip = new AdmZip(buffer);
   normalizeTextCase(zip);
   canonicalizeRelationshipIds(zip);
+  canonicalizeEmbeddedPackages(zip, generatedAt);
 
   const isoTimestamp = generatedAt.toISOString();
   const coreProperties = zip.getEntry('docProps/core.xml');
@@ -161,10 +266,7 @@ export function canonicalizeDocxBuffer(
     const normalized = coreProperties
       .getData()
       .toString('utf8')
-      .replace(
-        /(<dcterms:(?:created|modified)\b[^>]*>)[^<]*(<\/dcterms:(?:created|modified)>)/g,
-        `$1${isoTimestamp}$2`
-      );
+      .replace(CORE_TIMESTAMP, `$1${isoTimestamp}$2`);
     zip.updateFile(coreProperties, Buffer.from(normalized, 'utf8'));
   }
 
