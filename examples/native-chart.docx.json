@@ -1,6 +1,5 @@
 {
   "name": "docx",
-  "renderer": "office-open",
   "props": {
     "metadata": {
       "title": "Q3 Revenue Review",

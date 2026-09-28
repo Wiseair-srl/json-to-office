@@ -1,12 +1,12 @@
 # Charts
 
-json-to-office gives you two ways to put charts in a document: **native charts** (the `chart` component) and **Highcharts-rendered images** (the `highcharts` component). Both formats have both. Two caveats on the native one: the docx `chart` needs `renderer: "office-open"`, because docx.js has no chart primitive, and `bubble` is drawn only by the pptx `pptxgenjs` renderer. This page helps you choose between them and get each one running.
+json-to-office gives you two ways to put charts in a document: **native charts** (the `chart` component) and **Highcharts-rendered images** (the `highcharts` component). Both formats have both, on every renderer. One caveat on the native one: `bubble` is drawn only by the pptx `pptxgenjs` renderer. This page helps you choose between them and get each one running.
 
 ## Native charts vs Highcharts
 
 |                        | `chart` (native)                                                                                                                                                       | `highcharts`                                                                             |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Formats                | pptx (both renderers, `bubble` on `pptxgenjs` only); docx with `renderer: "office-open"`                                                                               | pptx + docx, every renderer                                                              |
+| Formats                | pptx (both renderers, `bubble` on `pptxgenjs` only); docx (both renderers)                                                                                             | pptx + docx, every renderer                                                              |
 | Output                 | Real PowerPoint / Word chart object                                                                                                                                    | PNG image                                                                                |
 | Editable by recipients | Yes — data and styling editable in the Office app                                                                                                                      | No — it's a picture                                                                      |
 | Scaling                | Vector, crisp at any zoom                                                                                                                                              | Raster (use `scale` for sharper exports)                                                 |
@@ -15,14 +15,14 @@ json-to-office gives you two ways to put charts in a document: **native charts**
 | Chart catalog          | pptx 9 types: area, bar, bar3D, bubble, doughnut, line, pie, radar, scatter — `bubble` on `pptxgenjs` only; docx 8: the same minus `bar3D` and `bubble`, plus `column` | The full Highcharts catalog: heatmaps, treemaps, gauges, combined series, annotations, … |
 | Theme integration      | Palette + text colors follow the theme automatically                                                                                                                   | Theme palette injected when `options.colors` unset                                       |
 
-**Rule of thumb**: reach for native `chart` first. It needs no infrastructure, recipients can tweak it, and it covers the common business-chart types. Reach for `highcharts` when you need chart types or styling an Office chart can't express — or when you're generating a Word document on the default `docxjs` renderer, where `highcharts` is the only chart component.
+**Rule of thumb**: reach for native `chart` first. It needs no infrastructure, recipients can tweak it, and it covers the common business-chart types. Reach for `highcharts` when you need chart types or styling an Office chart can't express.
 
-::: info Why the docx chart is renderer-scoped
-docx.js has no chart primitive at all, so the component is absent from that renderer's schema rather than accepted and dropped. `@office-open/docx` does have one, though it writes only the cached values: json-to-office splices in the embedded workbook, the series colors and the axis titles afterwards, which is what makes **Edit Data** work and the theme palette apply. See the [component reference](/reference/docx/components#chart).
+::: info How each renderer draws a docx chart
+Both docx renderers write a real Word chart with the embedded workbook **Edit Data** opens, in the theme's palette and fonts. The default `docxjs` renderer uses docx's own chart run (docx 9.8 or later), which writes the whole chart. `@office-open/docx` writes only the cached values, so json-to-office splices in the workbook, the series colors and the axis titles afterwards. The data, colors, titles, legend and text sizes come out the same on both; the plot's own styling does not — on `docxjs` it is what Word's Insert Chart draws, with gridlines and Word's bar gaps, while `office-open` leaves those to the reader. The differences are listed in the [renderer notes](https://github.com/Wiseair-srl/json-to-office/blob/main/docs/architecture/office-renderer-ir.md#native-charts-on-docxjs). See the [component reference](/reference/docx/components#chart).
 
 The pptx `office-open` renderer needs the same repair: the same pass writes the workbook there too, so both pptx backends draw an editable native chart. `@office-open/pptx` forwards more of the chart options than its docx sibling, so only the cell references and the series colors have to be spliced in.
 
-One exception: the native `bubble` chart is `pptxgenjs`-only, and is absent from the docx component altogether. `@office-open` spells a bubble series as x/y/size triples rather than categories and values, and there is no unambiguous reading of a category label as a numeric x — so it is refused by name rather than guessed at. A Highcharts bubble chart is unaffected: `highcharts` keeps its full catalog on every renderer.
+One exception: the native `bubble` chart is `pptxgenjs`-only, and is absent from the docx component altogether. A bubble needs a size for every point, and a docx series is labels and values with nowhere to put one — so it is refused by name rather than guessed at. A Highcharts bubble chart is unaffected: `highcharts` keeps its full catalog on every renderer.
 :::
 
 ## Theme palette
@@ -83,6 +83,36 @@ No server needed — this renders anywhere:
 ```
 
 Every series needs both `labels` and `values`; pie and doughnut charts take a single series. The full option set (axes, legend, data labels, bar/line/pie specifics) is in the [pptx charts reference](/reference/pptx/charts).
+
+### Native docx chart
+
+The docx `chart` takes the same `type`, `data`, `title` and `chartColors`, and flows like an image: `width`/`height` in inches, `alignment`, `caption`. It draws on the default renderer:
+
+```json
+{
+  "name": "chart",
+  "props": {
+    "type": "doughnut",
+    "data": [
+      {
+        "name": "2025",
+        "labels": ["Retail", "Wholesale", "Online"],
+        "values": [60, 30, 10]
+      },
+      {
+        "name": "2026",
+        "labels": ["Retail", "Wholesale", "Online"],
+        "values": [55, 30, 15]
+      }
+    ],
+    "title": "Revenue mix",
+    "height": 3,
+    "caption": "Revenue mix, 2025 and 2026."
+  }
+}
+```
+
+A pie draws one series; a doughnut draws one ring per series, as above. Pie and doughnut values cannot be negative, and neither has axes, so axis titles on one are not drawn (with a warning). On a scatter chart each label is the point's x and should be a number: a label that is not one is placed at its position, 1, 2, 3…, with a warning. A series with no points, a value that is not a number and a chart with no room to draw in are refused, naming the chart.
 
 ### pptx `highcharts`
 
@@ -174,7 +204,7 @@ Nothing is drawn locally: json-to-office POSTs one JSON body per `highcharts` co
 | `resources`            | Your `resources` prop, with the registered non-safe theme families inlined as `@font-face` CSS (the font bytes, base64) ahead of it                                                                                         |
 | `type`, `b64`, `scale` | Export format (`png`, base64) and the raster scale                                                                                                                                                                          |
 
-Nothing else about the document goes: not its text, its other components, its metadata or its theme file. A `chart` (native, office-open) or a `visual` sends nothing anywhere.
+Nothing else about the document goes: not its text, its other components, its metadata or its theme file. A native `chart` or a `visual` sends nothing anywhere.
 
 Because the body carries the data, **where it goes is opt-in**. An export server the address itself proves private — `localhost`, a loopback, RFC 1918 or link-local address, a unique-local IPv6 address, or a `.local`, `.internal` or `.home.arpa` name — needs nothing. A hostname that DNS decides (`charts`, `charts.corp`) is not guessed at: it takes the same switch as a public one. Any other URL is refused at generation time until you set `services.highcharts.allowRemote: true` (CLI, playground and MCP: `HIGHCHARTS_ALLOW_REMOTE=1`), and once allowed every generation reports `W_HIGHCHARTS_REMOTE_EXPORT` once per export server it reached, naming the URL that received the chart data — in the generation warnings, and as a warning diagnostic from `jto_generate`. A server that is down is a failed generation, not a skipped figure: the document is not produced without its chart.
 
