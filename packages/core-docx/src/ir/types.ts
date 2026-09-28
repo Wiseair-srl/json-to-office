@@ -51,6 +51,8 @@ export interface DocxIR {
   schemaVersion: typeof DOCX_IR_SCHEMA_VERSION;
   metadata: DocxIrMetadata;
   settings: DocxIrSettings;
+  /** The document's Word theme. Absent: the backend's own (Office's). */
+  theme?: DocxIrTheme;
   /** Resolved paragraph and character styles, in registration order. */
   styles: DocxIrStyles;
   /** Numbering definitions referenced by list paragraphs. */
@@ -92,6 +94,54 @@ export interface DocxIrSettings {
   trackRevisions: boolean;
   /** Words the proofer should skip, applied as `w:noProof` on matching runs. */
   noProofWords?: string[];
+}
+
+/* ------------------------------------------------------------------ *
+ * Theme
+ * ------------------------------------------------------------------ */
+
+/**
+ * Scheme colour slots, by their ST_ThemeColor names, in the order
+ * `a:clrScheme` lists them.
+ */
+export const DOCX_IR_THEME_COLOR_SLOTS = [
+  'dark1',
+  'light1',
+  'dark2',
+  'light2',
+  'accent1',
+  'accent2',
+  'accent3',
+  'accent4',
+  'accent5',
+  'accent6',
+  'hyperlink',
+  'followedHyperlink',
+] as const;
+
+export type DocxIrThemeColorSlot = (typeof DOCX_IR_THEME_COLOR_SLOTS)[number];
+
+/**
+ * A character XML 1.0 cannot carry (outside `Char`). docx.js writes attribute
+ * values raw, so one would corrupt the package.
+ */
+export const NOT_XML_CHAR =
+  /[^\t\n\r\u0020-\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}]/u;
+
+/**
+ * `word/theme/theme1.xml`: what Word's Design tab, colour menus and font menu
+ * offer, and what content inserted in Word picks up. Nothing the docx.js
+ * adapter writes refers to it, so on that backend it changes no rendering.
+ */
+export interface DocxIrTheme {
+  /** `a:theme/@name`, and the name of its colour and font schemes. */
+  name: string;
+  /** A slot left out keeps Office's colour. */
+  colors: Partial<Record<DocxIrThemeColorSlot, DocxIrColor>>;
+  /** Latin typeface of the major (headings) font. Latin only: see ir/theme.ts. */
+  headingFont?: string;
+  /** Latin typeface of the minor (body) font. */
+  bodyFont?: string;
 }
 
 /* ------------------------------------------------------------------ *
