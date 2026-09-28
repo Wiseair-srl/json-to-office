@@ -1405,7 +1405,7 @@ Two corpus cases are added, `blocks/report-data-consulting` and `blocks/report-d
 
 ### Figures and footnotes (#337)
 
-Two corpus cases are added, `blocks/figures-consulting` and `blocks/figures-fallback`: numbered `figure` captions over `source-line`s and the `footnotes` list, on the house theme and on `minimal`. No existing golden moves. The `{SEQ:name}` placeholder is new syntax — a `SEQ name \* ARABIC` field written by both renderers with the compiler's count as its cached result (docxjs as a split complex field, office-open as `w:fldSimple`) — so no document that never used it changes. `chart-figure` has no golden: a `highcharts` chart needs the export server and a native `chart` the office-open renderer, and the corpus runs one service-free pipeline.
+Two corpus cases are added, `blocks/figures-consulting` and `blocks/figures-fallback`: numbered `figure` captions over `source-line`s and the `footnotes` list, on the house theme and on `minimal`. No existing golden moves. The `{SEQ:name}` placeholder is new syntax — a `SEQ name \* ARABIC` field written by both renderers with the compiler's count as its cached result (docxjs as a split complex field, office-open as `w:fldSimple`) — so no document that never used it changes. `chart-figure` had no golden: a `highcharts` chart needs the export server and a native `chart` then needed the office-open renderer, and the corpus runs one service-free pipeline. Since #478 the default renderer draws the native chart, and `blocks/chart-figure-native` records it.
 
 ### Column layout inside blocks (#343)
 

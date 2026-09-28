@@ -254,25 +254,18 @@ function injectProbe(value: unknown, path: PositionPath): unknown {
 // ---------------------------------------------------------------------------
 
 /**
- * Wrap a component instance into a whole document. `chart` needs the
- * `office-open` renderer to validate without `unsupported_renderer_feature`
- * noise; everything else — a native `visual` included — stays on the default
- * `docxjs`, since office-open has gaps of its own (it rejects comment threads,
- * which several props sweeps hit).
+ * Wrap a component instance into a whole document on the default `docxjs`
+ * renderer, which draws every component — `chart` and a native `visual`
+ * included since #478. (`office-open` has gaps of its own: it rejects comment
+ * threads, which several props sweeps hit.)
  */
-const OFFICE_OPEN_ONLY = new Set(['chart']);
-
 function componentDoc(name: string, props: unknown): Json {
-  const renderer = OFFICE_OPEN_ONLY.has(name)
-    ? { renderer: 'office-open' }
-    : {};
   if (name === 'docx') {
-    return { name: 'docx', ...renderer, props, children: [] };
+    return { name: 'docx', props, children: [] };
   }
   const component: Json = { name, props };
   return {
     name: 'docx',
-    ...renderer,
     props: {
       theme: 'minimal',
       ...(name === 'block' && {
