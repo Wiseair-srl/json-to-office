@@ -23,6 +23,7 @@ import type {
 } from '../../ir/types';
 import { spliceChartParts } from './chartParts';
 import { spliceCellTocs, type StringifyTableOfContents } from './cellTocs';
+import { spliceTheme } from './themePart';
 import {
   rasterizeSvgFallbacks,
   type SvgFallbackJob,
@@ -153,9 +154,15 @@ export async function createOfficeOpenDocxRenderer(): Promise<DocxRenderer> {
       // in is what separates a chart that draws from one a recipient can
       // actually edit — see `chartParts.ts`. A table of contents in a table
       // cell it drops outright, so its entries went in between markers for
-      // the field to be put around them here — see `cellTocs.ts`.
-      if (charts.length > 0 || cellTocs.length > 0) {
+      // the field to be put around them here — see `cellTocs.ts`. And it
+      // always writes Office's theme and takes no option for another, so the
+      // document's is spliced in — see `themePart.ts`. The compiler always
+      // sets `ir.theme`, so every render now takes this pass. That is
+      // deliberate and costs nothing: `canonicalizeDocxBuffer` re-zips
+      // anyway. Do not narrow the condition back.
+      if (ir.theme || charts.length > 0 || cellTocs.length > 0) {
         const zip = new AdmZip(raw);
+        if (ir.theme) spliceTheme(zip, ir.theme);
         spliceChartParts(zip, charts);
         spliceCellTocs(zip, cellTocs, backend.stringifyTableOfContents);
         raw = zip.toBuffer();
