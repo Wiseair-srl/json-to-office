@@ -133,10 +133,10 @@ export const NOT_XML_CHAR =
  * and (Headings) and (Body) in its font menu offer, and what content inserted
  * in Word picks up. Word's Design > Colors and Design > Fonts galleries list
  * only built-in and saved schemes, never this one by name. Outside a native
- * chart, which takes a tint of Text 1 for its gridlines and axis lines and
- * Background 1 for its slice borders as Word's own charts do, nothing the
- * docx.js adapter writes refers to it, so on that backend it moves no other
- * rendering.
+ * chart, which on both backends takes a tint of Text 1 for its gridlines and
+ * axis lines and Background 1 for its slice borders as Word's own charts do,
+ * nothing the docx.js adapter writes refers to it, so on that backend it moves
+ * no other rendering.
  */
 export interface DocxIrTheme {
   /** `a:theme/@name`, and the name of its colour and font schemes. */
