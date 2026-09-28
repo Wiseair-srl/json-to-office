@@ -12,6 +12,8 @@ import AdmZip from 'adm-zip';
 import { describe, expect, it } from 'vitest';
 import { generateBufferViaIr } from '../../../core/generateFromIr';
 import type { ReportComponentDefinition } from '../../../types';
+import { buildChartWorkbook } from '../../../utils/chartWorkbook';
+import { toDosTime } from '../../../utils/packageDocument';
 
 const document = (renderer: string, extra: Record<string, unknown> = {}) =>
   ({
@@ -160,6 +162,35 @@ describe('native chart end to end', () => {
       renderer: 'office-open',
     });
     expect(first.buffer.equals(second.buffer)).toBe(true);
+  });
+
+  it('leaves the workbook exactly as built at the default date', async () => {
+    // The workbook is built pinned to the default date, so normalizing the
+    // packages a docx embeds finds nothing to change in it.
+    const zip = await render(document('office-open'));
+    expect(zip.getEntry('word/embeddings/chart1.xlsx')!.getData()).toEqual(
+      Buffer.from(
+        buildChartWorkbook([
+          { name: 'Revenue', labels: ['Q1', 'Q2', 'Q3'], values: [12, 18, 15] },
+          { name: 'Cost', labels: ['Q1', 'Q2', 'Q3'], values: [7, 9, 8] },
+        ])
+      )
+    );
+  });
+
+  it("stamps the workbook's own entries with a caller's generatedAt", async () => {
+    const generatedAt = '2024-01-01T00:00:00Z';
+    const zip = await render(document('office-open'), { generatedAt });
+    const workbook = new AdmZip(
+      zip.getEntry('word/embeddings/chart1.xlsx')!.getData()
+    );
+    expect(workbook.getEntries().length).toBeGreaterThan(0);
+    for (const entry of workbook.getEntries()) {
+      expect(
+        (entry.header as unknown as { timeval: number }).timeval,
+        entry.entryName
+      ).toBe(toDosTime(new Date(generatedAt)));
+    }
   });
 
   it('states the drawing id rather than letting the backend allocate one', async () => {
