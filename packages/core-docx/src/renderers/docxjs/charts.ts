@@ -10,8 +10,9 @@
  * and the anchor, and a chart area with no fill and no border. The plot's
  * internals — gridlines, tick marks, axis lines, bar gaps — follow what Word
  * writes for a chart made with Insert Chart, which is what `ChartRun`
- * defaults to; `docs/architecture/office-renderer-ir.md` records each
- * difference from office-open.
+ * defaults to, and office-open writes the same (`../office-open/chartLook.ts`);
+ * a `ChartRun` default that changes has to change there too, or the
+ * cross-backend chart test fails.
  *
  * The chart-wide font carries no size in `ChartRun` (`Omit<ChartFont,
  * "size">`), so every text element states its own. A new text element — data

@@ -27,43 +27,48 @@ import type {
 import type { DocxIrChartRun } from '../../ir/types';
 import { buildChartWorkbook } from '../../utils/chartWorkbook';
 import { chartTextRoles } from '../chartText';
+import { plotLook } from './chartLook';
 
 /**
  * One chart run, in the shared splice's vocabulary.
  *
  * The docx component exposes a smaller styling surface than the pptx one, so
- * only the axis titles have anywhere to go — the rest of `ChartAxisEdits` has
- * no authored prop behind it in this format yet. The theme's chart text style
- * goes on both: as the chart-wide default the tick labels and legend inherit,
- * and on each axis title, which would otherwise take Word's large bold default.
- * The roles themselves — which text takes the style as is, and which adjusts
- * it — are shared with the docx.js renderer (`../chartText`).
+ * only the axis titles have an authored prop behind them. The theme's chart
+ * text style goes on both: as the chart-wide default the tick labels and
+ * legend inherit, and on each axis title, which would otherwise take Word's
+ * large bold default. The roles themselves — which text takes the style as
+ * is, and which adjusts it — are shared with the docx.js renderer
+ * (`../chartText`). Everything else is the look docx.js draws, from
+ * `chartLook.ts`: gridlines, ticks, axis lines, gaps, markers and borders.
  */
 function spliceInput(chart: DocxIrChartRun): ChartPartInput {
   const roles = chartTextRoles(chart.textFont);
   const textFont: ChartTextStyle = roles.text;
   const axisTitleFont: ChartTextStyle = roles.axisTitle;
   const chartTitleFont: ChartTextStyle = roles.title;
+  const look = plotLook(chart);
+  const categoryAxis = {
+    ...look.categoryAxis,
+    ...(chart.categoryAxisTitle
+      ? { title: chart.categoryAxisTitle, titleFont: axisTitleFont }
+      : {}),
+  };
+  const valueAxis = {
+    ...look.valueAxis,
+    ...(chart.valueAxisTitle
+      ? { title: chart.valueAxisTitle, titleFont: axisTitleFont }
+      : {}),
+  };
   return {
+    ...look,
     chartType: chart.chartType,
     series: chart.series,
     colors: chart.colors,
     textFont,
     titleFont: chartTitleFont,
     ...(chart.legendPosition ? { legendPosition: chart.legendPosition } : {}),
-    ...(chart.categoryAxisTitle
-      ? {
-          categoryAxis: {
-            title: chart.categoryAxisTitle,
-            titleFont: axisTitleFont,
-          },
-        }
-      : {}),
-    ...(chart.valueAxisTitle
-      ? {
-          valueAxis: { title: chart.valueAxisTitle, titleFont: axisTitleFont },
-        }
-      : {}),
+    ...(Object.keys(categoryAxis).length > 0 ? { categoryAxis } : {}),
+    ...(Object.keys(valueAxis).length > 0 ? { valueAxis } : {}),
   };
 }
 
@@ -116,14 +121,21 @@ export function spliceChartParts(
 
   for (const { ordinal, xml, chart } of matchChartParts(parts, charts)) {
     const workbookName = `chart${ordinal}.xlsx`;
+    const input = spliceInput(chart);
 
     zip.updateFile(
       zip.getEntry(`word/charts/chart${ordinal}.xml`)!,
-      Buffer.from(spliceChartXml(xml, spliceInput(chart)), 'utf8')
+      Buffer.from(spliceChartXml(xml, input), 'utf8')
     );
+    // A scatter chart's column A holds the x values its `c:xVal` caches.
     zip.addFile(
       `word/embeddings/${workbookName}`,
-      Buffer.from(buildChartWorkbook(chart.series))
+      Buffer.from(
+        buildChartWorkbook(
+          chart.series,
+          input.scatterXValues ? { categoryValues: input.scatterXValues } : {}
+        )
+      )
     );
     zip.addFile(
       `word/charts/_rels/chart${ordinal}.xml.rels`,

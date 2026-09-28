@@ -42,8 +42,10 @@ export {
 
 export type {
   ChartAxisEdits,
+  ChartColor,
   ChartPartInput,
   ChartPartSeries,
+  ChartStroke,
   ChartTextStyle,
 } from './chart-parts';
 export {
