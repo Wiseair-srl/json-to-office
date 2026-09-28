@@ -19,9 +19,13 @@
  * one, not a synthesized weight alias, so (Headings) names a real family.
  *
  * Nothing here is referred to from a style or a run: no `w:themeColor`, no
- * `w:asciiTheme`. Every colour and face the document draws stays stated hex and
- * a stated family, so on `docxjs` the theme part changes what Word offers
- * someone editing the document and nothing it renders.
+ * `w:asciiTheme`. Every colour and face the document's text and shapes draw
+ * stays stated hex and a stated family. The one exception on `docxjs` is a
+ * native chart, which writes what Word's own charts do: a tint of Text 1 on its
+ * gridlines and axis lines, Background 1 on pie and doughnut slice borders and
+ * the theme's East Asian body font beside every stated Latin face. Apart from
+ * those lines, the theme part changes what Word offers someone editing the
+ * document and nothing it renders.
  */
 
 import type { ThemeConfig } from '../styles';

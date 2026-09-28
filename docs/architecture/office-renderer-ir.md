@@ -1035,7 +1035,7 @@ previous implementation finds what a feature checklist does not.
 | A native `chart` draws on `docxjs`, through docx 9.8's `ChartRun` (13 new cases: `chart/*` and `blocks/chart-figure-native`; no existing golden moved).                                                              | docx.js had no chart primitive until 9.8.0 added `docx/charts`, so the capability gate refused a chart on the default renderer. The adapter now maps the IR's chart run onto `ChartRun`, which writes the chart part, its relationship and its own workbook; the text roles are shared with office-open, so both state the same face, size, weight and colour on every text element. The entry is imported when `render()` starts, not with the package, so an older docx fails only a document that draws a chart. Both renderers now refuse a multi-series pie, a negative pie or doughnut value, an empty series, a non-finite value and a chart with no room, naming the path. How both renderers style the plot is under Native charts on docx.js.                                                                                              |
 | `office-open` charts take Word's Insert Chart look, as `docxjs` draws it: gridlines, axis lines, ticks, gaps, markers, slice borders, a doughnut's hole; no golden moved.                                            | `@office-open/docx` states none of a chart's plot styling, so each reader drew its own and the two renderers' charts differed; two gaps misdrew the data — scatter x values went in as text, plotted at 1, 2, 3…, and an untitled chart got a title from its series' name, which rescaled its value axis. `office-open/chartLook.ts` states the `docxjs` look (#478). `docxjs` moved in no package and pptx in none; on `office-open` the 13 chart cases and `native-chart` moved, in `word/charts/chart*.xml` and the scatter workbook only. In Word and LibreOffice 12 of the 14 render pixel-identical to `docxjs`; `chart/in-text-box` sits a point higher, from a bookmark paragraph, and `chart/in-header-and-footer` keeps the chrome gap under Native charts.                                                                                |
 | The default renderer draws a native `visual` (#478): four `drawings/*` corpus cases were added, recorded on docx.js, and no existing golden moved.                                                                   | docx 9.8.0's `docx/shapes` gives docx.js a drawing group, so `drawing-groups` joined its capability set and `renderMode: "native"` no longer needs `"renderer": "office-open"`. `docx/shapes` is imported, and the post-pack repair (`drawingGroupRepair.ts`) runs, only when the IR holds a group, so no other package can change: a dump of every corpus case, gallery template and example moved 0 of 296 docx.js and 0 of 291 office-open packages, and `examples/native-visual.docx.json` now renders on docx.js too. The new cases keep every child inside its canvas, so the cross-backend comparison holds their text, counts and extents to office-open's.                                                                                                                                                                                  |
-| Every document's `word/theme/theme1.xml` carries its jto theme instead of Office's: the theme's name, ten scheme colours and heading/body fonts (every corpus golden moved, all 282 cases, `theme1.xml` only).       | Word's Design tab, colour menus and font menu offered Office's blue, orange and Calibri in a jto document. The slots are the twin deck's (#258): dk1, lt1, dk2 and lt2 hold `text`, `background`, `textSecondary` and `backgroundSecondary`; accent1–6 hold `primary`, `secondary`, `accent` and `accent4`–`accent6`; the major and minor fonts are the heading and body families. hlink and folHlink keep Office's: jto has no link colour. Nothing `docxjs` writes refers to the theme, so no page moves; the proof, and what `office-open` does differently, follow below the table.                                                                                                                                                                                                                                                              |
+| Every document's `word/theme/theme1.xml` carries its jto theme instead of Office's: the theme's name, ten scheme colours and heading/body fonts (every corpus golden moved, all 299 cases, `theme1.xml` only).       | Word's Design tab, colour menus and font menu offered Office's blue, orange and Calibri in a jto document. The slots are the twin deck's (#258): dk1, lt1, dk2 and lt2 hold `text`, `background`, `textSecondary` and `backgroundSecondary`; accent1–6 hold `primary`, `secondary`, `accent` and `accent4`–`accent6`; the major and minor fonts are the heading and body families. hlink and folHlink keep Office's: jto has no link colour. On `docxjs` only a native chart refers to the theme, as Word's own charts do, so no page moves but a chart's gridlines and axis lines, now a tint of the jto Text 1; the proof, and what `office-open` does differently, follow below the table.                                                                                                                                                        |
 
 | A `statistic` renders its `unit`, `size`, `trend` and `trendValue`, under two styles the document now defines. | All four props were declared, accepted by the schema and read by nothing: `{ "number": "99", "unit": "%" }` rendered `99`, and the shipped `docx-report` starter lost its percent sign with no diagnostic anywhere in the pipeline. The two paragraphs also named `StatisticNumber` and `StatisticDescription`, which no theme and no generator ever defined — an undefined `w:pStyle` resolves to Normal in silence, so the component purpose-built for KPIs set at body size and weight. The styles are appended only to documents that contain a statistic, so nothing else moved. `format` stays unimplemented and now warns (`W_STATISTIC_FORMAT_IGNORED`) rather than vanishing. |
 | A body paragraph or list item directly under a table gets 120 twips above it. | OOXML gives a table no space-after — the property does not exist — so the block below one drew hard against its bottom rule. A heading was already spaced by its own style and is left alone; only styles that contribute nothing of their own are topped up. |
@@ -1342,44 +1342,56 @@ extent accounts for.
 
 Every corpus golden moved when the jto theme reached `theme1.xml` (#478), and
 only there. Every part of every corpus case, shipped template and example was
-dumped on both backends before and after: all 296 `docxjs` packages moved, in
-`theme1.xml` and nothing else, and none of the 291 `office-open` packages did.
+dumped on both backends before and after: all 315 `docxjs` packages moved, in
+`theme1.xml` and nothing else, and none of the 308 `office-open` packages did.
 Once the theme and scheme names, the ten scheme colours and the two Latin fonts
 are blanked, every `theme1.xml` is byte-identical too, so hlink, folHlink, the
 format scheme and Office's per-script fonts are untouched. That proof says only
 what else moved; the values themselves are pinned by
 `ir/__tests__/theme.test.ts` and
-`renderers/docxjs/__tests__/theme-part.test.ts`. Nothing `docxjs` writes names a
-theme colour or font — every colour and face in `styles.xml` and `document.xml`
-is stated, and none of the other 5,431 XML and relationship parts of those
-packages refers to the theme — so its pages cannot move. In LibreOffice 26.2 the
-invoice, the `tech-report`, `technical-report-blocks`, `client-report-blocks`
-and `vermilion-annual-report` templates and `theme/builtin-minimal` and
-`theme/builtin-devportal` render pixel for pixel as before: 54 pages, 4,962
-words. What changes is what someone editing the document is offered, and what
-they insert: a chart, SmartArt or table style added in Word picks up the jto
-accents.
+`renderers/docxjs/__tests__/theme-part.test.ts`. Outside a native chart, nothing
+`docxjs` writes names a theme colour or font: every colour and face in
+`styles.xml` and `document.xml` is stated, and of the other 5,785 XML and
+relationship parts of those packages only the 20 chart parts of the 14 charted
+ones refer to the theme. They name slots, as Word's own charts do: a tint of
+Text 1 on the gridlines and axis lines, Background 1 on pie and doughnut slice
+borders, and the East Asian body font (`+mn-ea`) beside every stated Latin face.
+In LibreOffice 26.2 the invoice, the `tech-report`, `technical-report-blocks`,
+`client-report-blocks` and `vermilion-annual-report` templates and
+`theme/builtin-minimal` and `theme/builtin-devportal` render pixel for pixel as
+before: 54 pages, 4,962 words. So do the four `drawings/*` cases,
+`native-visual`, `chart/pie` and `chart/doughnut-rings`, whose Background 1 is
+white under either theme. The other ten `chart/*` cases,
+`blocks/chart-figure-native` and `native-chart` move in their gridlines and axis
+lines alone, from a tint of Office's black to one of the jto Text 1 (the
+gridlines from grey 217 to 226, 226, 224 on `minimal`): 28,083 pixels at 60 dpi
+over 13 pages, all on those lines, the radar's spokes and rings included. What
+changes otherwise is what someone editing the document is offered, and what they
+insert: a chart, SmartArt or table style added in Word picks up the jto accents.
 
 `office-open` writes Office's theme and takes no option for another, so
 `renderers/office-open/themePart.ts` splices the same name, colours and fonts
 into it, and `cross-backend.test.ts` holds the two backends' theme parts equal
-over the corpus. Dumped the same way, all 291 `office-open` packages moved, in
+over the corpus. Dumped the same way, all 308 `office-open` packages moved, in
 `theme1.xml` only and there only in the blanked values, and no `docxjs` package
-moved; in each of the 289 packages both backends write, the two theme parts now
-name the same theme, colours and Latin faces, PANOSE included. Unlike `docxjs`,
-this backend does refer to its theme: the built-in styles it adds (Heading 7–9,
-Quote, Intense Quote, Intense Reference and the heading, title, subtitle and
-quote character styles) and the first run of every contents field name theme
-colours and fonts. jto content applies none of those styles and the field run
-draws no glyph, so in LibreOffice the invoice, `native-visual`, the
-`technical-report-blocks`, `tech-report`, `client-report-blocks` and
-`vermilion-annual-report` templates, `headings/toc-default` and
-`theme/builtin-minimal` render as before, glyph for glyph and pixel for pixel;
-in Word they follow the jto theme once someone applies such a style or updates
-the field. A native chart's axis lines and tick marks state no colour and are
-drawn from Text 1: on `vermilion` they went from grey 139 to 142 in LibreOffice
-(`examples/native-chart`, 1,183 pixels at 60 dpi), the only pixels that moved
-over 56 pages.
+moved; in each of the 308 packages both backends write, the two theme parts now
+name the same theme, colours and Latin faces, PANOSE included. Beyond native
+charts, this backend refers to its theme where `docxjs` does not: the built-in
+styles it adds (Heading 7–9, Quote, Intense Quote, Intense Reference and the
+heading, title, subtitle and quote character styles) and the first run of every
+contents field name theme colours and fonts. jto content applies none of those
+styles and the field run draws no glyph, so in LibreOffice the invoice,
+`native-visual`, the `technical-report-blocks`, `tech-report`,
+`client-report-blocks` and `vermilion-annual-report` templates,
+`headings/toc-default` and `theme/builtin-minimal` render as before, glyph for
+glyph and pixel for pixel; in Word they follow the jto theme once someone
+applies such a style or updates the field. A native chart's axis lines and tick
+marks state no colour and are drawn from Text 1: on `vermilion` they went from
+grey 139 to 142 in LibreOffice (`examples/native-chart`, 1,183 pixels at 60
+dpi), the only pixels that moved over those 56 pages. The corpus's charts move
+the same way, on `minimal` from 139 to 145, 145, 144: 8,630 pixels over 13 pages
+with `native-chart`, while its pie and doughnut, the four `drawings/*` cases and
+`native-visual` do not move.
 
 ## Post-emit rewrite inventory
 
