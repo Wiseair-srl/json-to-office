@@ -804,9 +804,12 @@ export interface DocxIrTextWrap {
    * OOXML's own vocabulary.
    *
    * `tight` is reachable only from the authoring values `around` and `through`,
-   * which have no OOXML equivalent of their own; asking for `tight` directly is
-   * rejected at compile time because it needs polygon geometry no backend here
-   * emits.
+   * which have no OOXML equivalent of their own. `wp:wrapTight` requires a
+   * wrap polygon, and both backends write one: `docxjs` the drawing's full
+   * extent in Word's 21600-unit polygon space, `office-open` the extent in EMUs
+   * with a negative height, which Word reads as a wrap region reaching far
+   * above the drawing. Asking for `tight` directly stays rejected at compile
+   * time until `office-open` writes a polygon Word reads as the drawing's box.
    */
   type: 'none' | 'square' | 'tight' | 'topAndBottom';
   side?: 'bothSides' | 'left' | 'right' | 'largest';

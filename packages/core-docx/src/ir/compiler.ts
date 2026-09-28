@@ -4208,8 +4208,8 @@ function alignValue(
  * Authoring wrap types, in OOXML's vocabulary.
  *
  * `around` and `through` are VML spellings with no OOXML element of their own;
- * tight wrapping is the closest thing OOXML has, which is what they have always
- * produced.
+ * tight wrapping is the closest thing OOXML has. `DocxIrTextWrap` says which
+ * wrap polygon each backend writes with it.
  */
 function wrapType(value: string): DocxIrTextWrap['type'] {
   switch (value) {
@@ -4420,9 +4420,12 @@ function compileFloating(
   ctx: CompileContext,
   path: string
 ): DocxIrFloating {
+  // `around` and `through` already compile to a tight wrap. The direct
+  // spelling stays refused until `office-open` writes a wrap polygon Word
+  // reads as the drawing's box (see `DocxIrTextWrap`).
   if (floating.wrap?.type === 'tight') {
     throw new Error(
-      "Image floating wrap.type 'tight' is not supported due to invalid OOXML emitted by docx. Use 'square', 'topAndBottom', or 'none'."
+      "Image floating wrap.type 'tight' is not supported. Use 'square', 'topAndBottom', or 'none'."
     );
   }
 
