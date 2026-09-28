@@ -3,12 +3,15 @@
  *
  * Every chart case in the corpus is rendered on both backends, and their chart
  * parts are paired by content (`chartPartSignature`: series names, categories
- * and values). What each pair must agree on is what the reader of the chart
- * sees as its content and placement: the kind of plot, the series colours, the
- * title and axis titles with their face, size, weight and colour, the legend
- * and where it sits, the size the tick labels are drawn at, the extent on the
- * page, and a workbook behind it. The plot's own styling — gridlines, tick
- * marks, gaps — is allowed to differ; `office-renderer-ir.md` records how.
+ * and values). Each pair must agree on everything the reader of the chart
+ * sees: the kind of plot, the series colours, the title and axis titles with
+ * their face, size, weight and colour, the legend and where it sits, the size
+ * the tick labels are drawn at, the extent on the page, a workbook behind it —
+ * and the plot's own styling, which is Word's Insert Chart look on both
+ * (`chartLook.ts`): where each axis sits, its gridlines, tick marks and line,
+ * bar gaps, series lines and markers, slice borders, a doughnut's hole, a
+ * scatter chart's x values and whether an untitled chart gets a title
+ * invented for it.
  *
  * No `docx` import here: the boundary keeps it out of this directory, and the
  * comparison reads the packages rather than either backend's objects.
@@ -76,6 +79,97 @@ function effectiveSize(element: string, chartSpaceSize?: string): string {
 const firstColor = (fragment: string): string | undefined =>
   /<a:srgbClr val="([0-9A-Fa-f]{6})"/.exec(fragment)?.[1]?.toUpperCase();
 
+/** The first colour in a fragment, a theme slot and its modifiers included. */
+function colorOf(fragment: string): string | undefined {
+  const scheme =
+    /<a:schemeClr val="(\w+)"(?:\/>|>([\s\S]*?)<\/a:schemeClr>)/.exec(fragment);
+  if (scheme) {
+    const modifiers = [...(scheme[2] ?? '').matchAll(/<a:(\w+) val="(\d+)"/g)]
+      .map((m) => `${m[1]} ${m[2]}`)
+      .join(', ');
+    return modifiers ? `${scheme[1]} (${modifiers})` : scheme[1];
+  }
+  return firstColor(fragment);
+}
+
+/**
+ * The line an `spPr` draws, as the reader sees it: none, or its width, cap,
+ * colour and (for a series) join. `flat` is `ST_LineCap`'s default, so
+ * stating it and leaving it out draw the same line.
+ */
+function strokeOf(spPr: string | undefined, withJoin = false) {
+  if (spPr === undefined) return undefined;
+  const line = /<a:ln\b([^>]*?)(?:\/>|>([\s\S]*?)<\/a:ln>)/.exec(spPr);
+  if (!line) return undefined;
+  const [, attributes, body = ''] = line;
+  if (body.startsWith('<a:noFill/>')) return 'none';
+  const cap = /\bcap="(\w+)"/.exec(attributes)?.[1];
+  return {
+    width: /\bw="(\d+)"/.exec(attributes)?.[1],
+    cap: cap === 'flat' ? undefined : cap,
+    color: colorOf(body),
+    ...(withJoin ? { join: /<a:(round|bevel|miter)\b/.exec(body)?.[1] } : {}),
+  };
+}
+
+/** One `val` attribute: `<c:tag val="…"/>`. */
+const valueOf = (fragment: string, tag: string): string | undefined =>
+  new RegExp(`<c:${tag} val="([^"]*)"\\/>`).exec(fragment)?.[1];
+
+/** An element's own `c:spPr`, its titles and gridlines taken out. */
+function ownShapeProperties(fragment: string): string | undefined {
+  const bare = withoutTitles(fragment).replace(
+    /<c:(major|minor)Gridlines>[\s\S]*?<\/c:\1Gridlines>/g,
+    ''
+  );
+  return /<c:spPr>([\s\S]*?)<\/c:spPr>/.exec(bare)?.[1];
+}
+
+/** Gridlines: absent, the reader's own, or a stroke. */
+function gridlinesOf(axis: string, kind: 'major' | 'minor') {
+  const grid = new RegExp(
+    `<c:${kind}Gridlines(?:\\/>|>([\\s\\S]*?)<\\/c:${kind}Gridlines>)`
+  ).exec(axis);
+  if (!grid) return undefined;
+  const spPr = /<c:spPr>([\s\S]*?)<\/c:spPr>/.exec(grid[1] ?? '')?.[1];
+  return spPr === undefined ? 'reader' : strokeOf(spPr);
+}
+
+/** What a series draws beyond its colour: its line, markers, borders, x values. */
+function seriesStyle(series: string) {
+  const own = /<\/c:tx>\s*<c:spPr>([\s\S]*?)<\/c:spPr>/.exec(series)?.[1];
+  const marker = /<c:marker>([\s\S]*?)<\/c:marker>/.exec(series)?.[1];
+  const markerSpPr = marker
+    ? /<c:spPr>([\s\S]*?)<\/c:spPr>/.exec(marker)?.[1]
+    : undefined;
+  const xValues = /<c:xVal>([\s\S]*?)<\/c:xVal>/.exec(series)?.[1];
+  return {
+    line: strokeOf(own, true),
+    marker: marker
+      ? {
+          symbol: valueOf(marker, 'symbol'),
+          size: valueOf(marker, 'size'),
+          line: strokeOf(markerSpPr),
+        }
+      : undefined,
+    smooth: valueOf(series, 'smooth'),
+    invertIfNegative: valueOf(series, 'invertIfNegative'),
+    sliceBorders: [
+      ...series.matchAll(/<c:dPt>[\s\S]*?<c:spPr>([\s\S]*?)<\/c:spPr>/g),
+    ].map((m) => strokeOf(m[1])),
+    // The kind of reference decides how a reader places each x: text is put
+    // at 1, 2, 3… whatever it says.
+    x: xValues
+      ? {
+          kind: /<c:(numRef|strRef)>/.exec(xValues)?.[1],
+          values: [...xValues.matchAll(/<c:v>([^<]*)<\/c:v>/g)].map(
+            (m) => m[1]
+          ),
+        }
+      : undefined,
+  };
+}
+
 function chartFacts(xml: string) {
   const chart = xml.slice(0, xml.indexOf('</c:chart>'));
   const chartSpace = xml.slice(xml.indexOf('</c:chart>'));
@@ -118,8 +212,39 @@ function chartFacts(xml: string) {
       kind,
       title: axisTitle ? titleOf(axisTitle) : undefined,
       tickLabelSize: effectiveSize(body, chartSpaceSize),
+      position: valueOf(body, 'axPos'),
+      gridlines: gridlinesOf(body, 'major'),
+      minorGridlines: gridlinesOf(body, 'minor'),
+      majorTickMark: valueOf(body, 'majorTickMark'),
+      minorTickMark: valueOf(body, 'minorTickMark'),
+      tickLabelPosition: valueOf(body, 'tickLblPos'),
+      line: strokeOf(ownShapeProperties(body)),
+      crossBetween: valueOf(body, 'crossBetween'),
     };
   });
+
+  // The plot group's own options, outside its series.
+  const group = plot
+    ? /<c:\w+Chart>([\s\S]*?)<\/c:\w+Chart>/.exec(plotArea)?.[1] ?? ''
+    : '';
+  const groupTail = group.slice(group.lastIndexOf('</c:ser>'));
+  const groupOptions = {
+    gapWidth: valueOf(groupTail, 'gapWidth'),
+    overlap: valueOf(groupTail, 'overlap'),
+    firstSliceAngle: valueOf(groupTail, 'firstSliceAng'),
+    holeSize: valueOf(groupTail, 'holeSize'),
+    markers: valueOf(groupTail, 'marker'),
+    scatterStyle: valueOf(group, 'scatterStyle'),
+    radarStyle: valueOf(group, 'radarStyle'),
+  };
+  const lastAxisOrGroup = Math.max(
+    ...[
+      ...plotArea.matchAll(/<\/c:(?:\w+Chart|catAx|valAx|dateAx|serAx)>/g),
+    ].map((m) => (m.index ?? 0) + m[0].length)
+  );
+  const plotAreaShape = /<c:spPr>([\s\S]*?)<\/c:spPr>/.exec(
+    plotArea.slice(lastAxisOrGroup)
+  )?.[1];
 
   const legendBody = /<c:legend>([\s\S]*?)<\/c:legend>/.exec(chart)?.[1];
   const legend = legendBody
@@ -133,8 +258,18 @@ function chartFacts(xml: string) {
     plot: barDirection ? `${plot} ${barDirection}` : plot,
     colors,
     title: title ? titleOf(title) : undefined,
+    // `1` stops a reader inventing a title for an untitled chart.
+    titleDeleted: valueOf(heading, 'autoTitleDeleted'),
     axes,
     legend,
+    groupOptions,
+    series: (chart.match(/<c:ser>[\s\S]*?<\/c:ser>/g) ?? []).map(seriesStyle),
+    plotArea: plotAreaShape
+      ? {
+          fill: plotAreaShape.startsWith('<a:noFill/>') ? 'none' : 'stated',
+          line: strokeOf(plotAreaShape),
+        }
+      : undefined,
   };
 }
 

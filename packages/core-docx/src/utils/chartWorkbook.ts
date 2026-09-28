@@ -23,11 +23,12 @@ const WORKBOOK_TIMESTAMP = toDosTime(DEFAULT_GENERATION_DATE);
  * order here, so the ZIP central directory is a function of the data alone.
  */
 export function buildChartWorkbook(
-  series: readonly ChartPartSeries[]
+  series: readonly ChartPartSeries[],
+  options: Parameters<typeof chartWorkbookParts>[1] = {}
 ): Uint8Array {
   const zip = new AdmZip();
 
-  for (const [name, content] of chartWorkbookParts(series)) {
+  for (const [name, content] of chartWorkbookParts(series, options)) {
     zip.addFile(name, Buffer.from(content, 'utf8'));
   }
   // AdmZip stamps entries from the wall clock as they are added, so pin every

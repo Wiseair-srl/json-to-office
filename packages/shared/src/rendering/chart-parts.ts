@@ -82,6 +82,32 @@ export interface ChartTextStyle {
   color?: string;
 }
 
+/**
+ * A colour in a chart part: 6-digit hex, or a theme colour slot with
+ * DrawingML's luminance modifiers.
+ *
+ * The slot form exists for the look Word gives a chart made with Insert
+ * Chart, which draws its gridlines and axis lines in a tint of Text 1 (`tx1`,
+ * `lumMod` 15000, `lumOff` 85000) rather than in any colour of its own, so
+ * they follow the document's theme.
+ */
+export type ChartColor =
+  | string
+  | { scheme: string; lumMod?: number; lumOff?: number };
+
+/**
+ * One `a:ln`: width in points, colour, cap and join. What is absent is the
+ * reader's default.
+ */
+export interface ChartStroke {
+  widthPoints?: number;
+  color?: ChartColor;
+  /** `a:ln/@cap`: `rnd`, `sq` or `flat`. */
+  cap?: string;
+  /** The line join: `round`, `bevel` or `miter`. */
+  join?: 'round' | 'bevel' | 'miter';
+}
+
 export interface ChartAxisEdits {
   title?: string;
   /**
@@ -98,15 +124,34 @@ export interface ChartAxisEdits {
   hidden?: boolean;
   /** `false` draws no axis line, leaving its labels. */
   lineVisible?: boolean;
+  /** The axis line's stroke. `lineVisible: false` wins over it. */
+  line?: ChartStroke;
   /** Label rotation, in degrees. */
   labelRotation?: number;
-  gridLine?: { style?: string; size?: number; color?: string };
+  gridLine?: { style?: string; size?: number; color?: ChartColor };
   /** Value-axis bounds; ignored on a category axis, which has no scale. */
   min?: number;
   max?: number;
   majorUnit?: number;
   /** A number format code, e.g. `#,##0`. */
   numberFormat?: string;
+  /**
+   * `c:axPos`: `b`, `l`, `r` or `t`. A backend that writes a horizontal bar
+   * chart's axes where a column chart's go is read as written by LibreOffice,
+   * which then sets the category axis title unturned.
+   */
+  position?: string;
+  /** `c:majorTickMark`: `none`, `in`, `out` or `cross`. */
+  majorTickMark?: string;
+  /** `c:minorTickMark`, in the same vocabulary. */
+  minorTickMark?: string;
+  /** `c:tickLblPos`: `nextTo`, `high`, `low` or `none`. */
+  tickLabelPosition?: string;
+  /**
+   * `c:crossBetween`, on a value axis only: `between` draws each category
+   * between two ticks, `midCat` on one, so an area reaches the plot's edges.
+   */
+  crossBetween?: string;
 }
 
 export interface ChartPartInput {
@@ -119,10 +164,49 @@ export interface ChartPartInput {
   valueAxis?: ChartAxisEdits;
   /** Series line width in points. Only meaningful where the series is a line. */
   lineWidthPoints?: number;
-  /** An outline on filled data elements: bars, areas and slices. */
-  dataBorder?: { widthPoints: number; color: string };
+  /** A line series' cap (`rnd`, `sq`, `flat`), beside `lineWidthPoints`. */
+  lineCap?: string;
+  /** A line series' join, beside `lineWidthPoints`. */
+  lineJoin?: 'round' | 'bevel' | 'miter';
+  /**
+   * The width of a line series' marker outline, in points. Absent, the
+   * outline is written with no width, which a reader draws as a hairline.
+   */
+  markerLineWidthPoints?: number;
+  /**
+   * An outline on filled data elements: bars, areas and slices. `none` states
+   * that there is none, rather than leaving it to the reader.
+   */
+  dataBorder?: { widthPoints: number; color: ChartColor } | 'none';
   /** `standard`, `marker` or `filled`; a backend may hardcode the first. */
   radarStyle?: string;
+  /** `line` or `lineMarker`, …; a backend may hardcode the first. */
+  scatterStyle?: string;
+  /**
+   * Plot options a backend may drop: a bar chart's `c:gapWidth` and
+   * `c:overlap`, a pie's or doughnut's `c:firstSliceAng`, a doughnut's
+   * `c:holeSize`. Each is written only where the plot has none.
+   */
+  gapWidth?: number;
+  overlap?: number;
+  firstSliceAngle?: number;
+  holeSize?: number;
+  /** A line chart's own `c:marker`: whether its series show markers. */
+  lineMarkers?: boolean;
+  /**
+   * `c:autoTitleDeleted`. `true` on a chart with no title of its own stops
+   * Word and LibreOffice drawing one from a lone series' name.
+   */
+  autoTitleDeleted?: boolean;
+  /** An unfilled, unbordered plot area, stated rather than left to the reader. */
+  plotAreaUnfilled?: boolean;
+  /**
+   * A scatter chart's x values, one per point: each series' `c:xVal` is
+   * written as numbers (`c:numRef`) rather than the text the backend writes,
+   * which a reader plots at 1, 2, 3… whatever it says. The workbook's column A
+   * has to hold the same numbers — see `chartWorkbookParts`.
+   */
+  scatterXValues?: readonly number[];
   titleFont?: ChartTextStyle;
   /**
    * The chart-wide default in `c:chartSpace/c:txPr`, which every piece of
@@ -196,7 +280,10 @@ function numberCell(reference: string, value: number): string {
  * references assume it: row 1 is the series names with A1 left blank, column A
  * is the category labels, and the values fill the rectangle between them.
  */
-function sheetXml(series: readonly ChartPartSeries[]): string {
+function sheetXml(
+  series: readonly ChartPartSeries[],
+  categoryValues?: readonly number[]
+): string {
   // The category column is as long as the first series' labels; a value column
   // is as long as *that* series' values. They can differ: the pptx compiler
   // accepts a ragged chart (only the docx one refuses it), and writing a zero
@@ -223,10 +310,15 @@ function sheetXml(series: readonly ChartPartSeries[]): string {
   for (let row = 0; row < rowCount; row++) {
     const reference = row + 2;
     const label = series[0]?.labels[row];
+    // A scatter chart's x values are numbers, and its `c:xVal` says so: a
+    // text cell behind a numeric reference would be read back as 0.
+    const x = categoryValues?.[row];
     const cells = [
-      ...(label !== undefined
-        ? [inlineStringCell(`A${reference}`, label)]
-        : []),
+      ...(x !== undefined
+        ? [numberCell(`A${reference}`, x)]
+        : label !== undefined
+          ? [inlineStringCell(`A${reference}`, label)]
+          : []),
       ...series.flatMap((entry, index) =>
         row < entry.values.length
           ? [
@@ -300,14 +392,21 @@ const CONTENT_TYPES =
  * whose indices are one more thing to keep in step with the cells.
  */
 export function chartWorkbookParts(
-  series: readonly ChartPartSeries[]
+  series: readonly ChartPartSeries[],
+  options: {
+    /**
+     * Column A as numbers rather than the first series' labels: a scatter
+     * chart's x values, the same ones `ChartPartInput.scatterXValues` caches.
+     */
+    categoryValues?: readonly number[];
+  } = {}
 ): ReadonlyArray<readonly [path: string, xml: string]> {
   return [
     ['[Content_Types].xml', CONTENT_TYPES],
     ['_rels/.rels', ROOT_RELS],
     ['xl/workbook.xml', WORKBOOK_XML],
     ['xl/_rels/workbook.xml.rels', WORKBOOK_RELS],
-    ['xl/worksheets/sheet1.xml', sheetXml(series)],
+    ['xl/worksheets/sheet1.xml', sheetXml(series, options.categoryValues)],
   ];
 }
 
@@ -420,9 +519,16 @@ function dataPoint(
   return (
     `<c:dPt><c:idx val="${index}"/><c:bubble3D val="0"/>` +
     `<c:spPr><a:solidFill><a:srgbClr val="${hex}"/></a:solidFill>` +
-    (border ? outline(border.widthPoints, border.color) : '') +
+    (border ? borderLine(border) : '') +
     `</c:spPr></c:dPt>`
   );
+}
+
+/** A data element's outline: stated absent, or a width and colour. */
+function borderLine(border: NonNullable<ChartPartInput['dataBorder']>): string {
+  return border === 'none'
+    ? '<a:ln><a:noFill/></a:ln>'
+    : outline(border.widthPoints, border.color);
 }
 
 /** Paint one series, leaving the empty `<c:spPr/>` alone when there is no colour. */
@@ -464,7 +570,7 @@ function paintSeries(
   const parts: string[] = [];
   if (!stroke) {
     if (color) parts.push(fillFor(color));
-    if (border) parts.push(outline(border.widthPoints, border.color));
+    if (border) parts.push(borderLine(border));
     if (parts.length === 0) return seriesXml;
     return seriesXml.replace('<c:spPr/>', `<c:spPr>${parts.join('')}</c:spPr>`);
   }
@@ -478,11 +584,16 @@ function paintSeries(
   // LibreOffice drew without a word. Colour the existing one when there is
   // one, and write a whole marker only when there is not.
   const fill = color ? fillFor(color) : '';
-  const line = outline(chart.lineWidthPoints, color);
+  const line = lineProperties({
+    widthPoints: chart.lineWidthPoints,
+    color,
+    cap: chart.lineCap,
+    join: chart.lineJoin,
+  });
   const painted = seriesXml.replace('<c:spPr/>', `<c:spPr>${line}</c:spPr>`);
   if (!color) return painted;
 
-  const markerSpPr = `<c:spPr>${fill}<a:ln>${fill}</a:ln></c:spPr>`;
+  const markerSpPr = `<c:spPr>${fill}${outline(chart.markerLineWidthPoints, color)}</c:spPr>`;
   const existing = painted.match(/<c:marker>[\s\S]*?<\/c:marker>/);
   if (!existing) {
     return painted.replace(
@@ -556,16 +667,42 @@ const DASH_STYLES: Readonly<Record<string, string>> = {
   dot: 'sysDot',
 };
 
+/** `a:solidFill` in one colour: hex, or a theme slot with its modifiers. */
+function solidFill(color: ChartColor): string {
+  if (typeof color === 'string') {
+    return `<a:solidFill><a:srgbClr val="${color.toUpperCase()}"/></a:solidFill>`;
+  }
+  // CT_SchemeColor takes its transforms as children, `lumMod` before `lumOff`.
+  const modifiers =
+    (color.lumMod !== undefined
+      ? `<a:lumMod val="${Math.round(color.lumMod)}"/>`
+      : '') +
+    (color.lumOff !== undefined
+      ? `<a:lumOff val="${Math.round(color.lumOff)}"/>`
+      : '');
+  const scheme = `a:schemeClr val="${escapeXml(color.scheme)}"`;
+  return modifiers
+    ? `<a:solidFill><${scheme}>${modifiers}</a:schemeClr></a:solidFill>`
+    : `<a:solidFill><${scheme}/></a:solidFill>`;
+}
+
 /** An `a:ln` of a given width, optionally coloured. */
-function outline(widthPoints: number | undefined, hex?: string): string {
-  const width =
-    widthPoints !== undefined
-      ? ` w="${Math.round(widthPoints * POINTS_TO_EMU)}"`
-      : '';
-  const fill = hex
-    ? `<a:solidFill><a:srgbClr val="${hex.toUpperCase()}"/></a:solidFill>`
-    : '';
-  return `<a:ln${width}>${fill}</a:ln>`;
+function outline(widthPoints: number | undefined, color?: ChartColor): string {
+  return lineProperties({ widthPoints, color });
+}
+
+/**
+ * One `a:ln`. CT_LineProperties fixes the child order: the fill, then the
+ * dash, then the join.
+ */
+function lineProperties(line: ChartStroke): string {
+  const attributes =
+    (line.widthPoints !== undefined
+      ? ` w="${Math.round(line.widthPoints * POINTS_TO_EMU)}"`
+      : '') + (line.cap !== undefined ? ` cap="${escapeXml(line.cap)}"` : '');
+  const fill = line.color ? solidFill(line.color) : '';
+  const join = line.join ? `<a:${line.join}/>` : '';
+  return `<a:ln${attributes}>${fill}${join}</a:ln>`;
 }
 
 /** `c:majorGridlines`, styled if the author said how. */
@@ -575,9 +712,7 @@ function gridLinesElement(
   if (gridLine.style === 'none') return '';
   const parts: string[] = [];
   if (gridLine.color) {
-    parts.push(
-      `<a:solidFill><a:srgbClr val="${gridLine.color.toUpperCase()}"/></a:solidFill>`
-    );
+    parts.push(solidFill(gridLine.color));
   }
   const dash = gridLine.style ? DASH_STYLES[gridLine.style] : undefined;
   if (dash) parts.push(`<a:prstDash val="${dash}"/>`);
@@ -683,7 +818,13 @@ function rewriteAxis(axisXml: string, edits: ChartAxisEdits): string {
   const middle = axisXml.slice(headEnd, crossAxAt);
   let tail = axisXml.slice(crossAxAt);
 
-  // `c:delete` and `c:scaling` both live in the head, in that fixed order.
+  // `c:delete`, `c:scaling` and `c:axPos` all live in the head, in fixed order.
+  if (edits.position !== undefined) {
+    head = head.replace(
+      /<c:axPos val="[^"]*"\/>/,
+      `<c:axPos val="${escapeXml(edits.position)}"/>`
+    );
+  }
   if (edits.hidden !== undefined) {
     head = head.replace(
       /<c:delete val="[^"]*"\/>/,
@@ -731,16 +872,39 @@ function rewriteAxis(axisXml: string, edits: ChartAxisEdits): string {
     edits.numberFormat !== undefined
       ? `<c:numFmt formatCode="${escapeXml(edits.numberFormat)}" sourceLinked="0"/>`
       : existingNumFmt ?? '',
-    existingMajorTick ?? '',
-    existingMinorTick ?? '',
-    existingTickLblPos ?? '',
+    edits.majorTickMark !== undefined
+      ? `<c:majorTickMark val="${escapeXml(edits.majorTickMark)}"/>`
+      : existingMajorTick ?? '',
+    edits.minorTickMark !== undefined
+      ? `<c:minorTickMark val="${escapeXml(edits.minorTickMark)}"/>`
+      : existingMinorTick ?? '',
+    edits.tickLabelPosition !== undefined
+      ? `<c:tickLblPos val="${escapeXml(edits.tickLabelPosition)}"/>`
+      : existingTickLblPos ?? '',
     edits.lineVisible === false
       ? '<c:spPr><a:ln><a:noFill/></a:ln></c:spPr>'
-      : existingSpPr ?? '',
+      : edits.line
+        ? `<c:spPr>${lineProperties(edits.line)}</c:spPr>`
+        : existingSpPr ?? '',
     edits.labelRotation !== undefined || hasTextStyle(edits.labelFont)
       ? textProperties(edits.labelRotation, edits.labelFont)
       : existingTxPr ?? '',
   ].join('');
+
+  // `crossBetween` follows `crosses` (or `crossesAt`) in CT_ValAx, and
+  // CT_CatAx has none. Written before `majorUnit`, which anchors on it.
+  if (edits.crossBetween !== undefined && head.startsWith('<c:valAx>')) {
+    const crossBetween = `<c:crossBetween val="${escapeXml(edits.crossBetween)}"/>`;
+    if (tail.includes('<c:crossBetween')) {
+      tail = tail.replace(/<c:crossBetween[^>]*\/>/, crossBetween);
+    } else {
+      const crosses = tail.match(/<c:crosses(?:At)?[^>]*\/>/)?.[0];
+      const at = crosses
+        ? tail.indexOf(crosses) + crosses.length
+        : tail.indexOf('/>') + 2;
+      tail = tail.slice(0, at) + crossBetween + tail.slice(at);
+    }
+  }
 
   // `majorUnit` follows crossAx/crosses/crossBetween in CT_ValAx.
   if (edits.majorUnit !== undefined && !tail.includes('<c:majorUnit')) {
@@ -784,6 +948,171 @@ function editAxis(
     rewriteAxis(chartXml.slice(start, end), edits) +
     chartXml.slice(end)
   );
+}
+
+/**
+ * A scatter series' x values as numbers.
+ *
+ * The backend writes a scatter chart's x values from the category list, as
+ * text (`c:strRef`), and a reader places text x values at 1, 2, 3… in order
+ * whatever they say — so a point authored at x = 2.5 was drawn at x = 2. The
+ * reference stays; only the cache changes kind.
+ */
+function numericScatterX(seriesXml: string, xs: readonly number[]): string {
+  return seriesXml.replace(
+    /<c:xVal><c:strRef>(<c:f\/>|<c:f>[\s\S]*?<\/c:f>)[\s\S]*?<\/c:strRef><\/c:xVal>/,
+    (_, formula: string) =>
+      `<c:xVal><c:numRef>${formula}<c:numCache>` +
+      `<c:formatCode>General</c:formatCode><c:ptCount val="${xs.length}"/>` +
+      xs
+        .map(
+          (x, index) =>
+            `<c:pt idx="${index}"><c:v>${cellNumber(x)}</c:v></c:pt>`
+        )
+        .join('') +
+      `</c:numCache></c:numRef></c:xVal>`
+  );
+}
+
+/**
+ * Insert one element into a plot group's own tail — after its last `c:ser`,
+ * before the first of `before` that is there, else at the group's end. The
+ * group is `plot`, its closing tag excluded.
+ */
+function insertInPlot(
+  plot: string,
+  element: string,
+  before: readonly string[]
+): string {
+  const lastSeries = plot.lastIndexOf('</c:ser>');
+  const from =
+    lastSeries >= 0 ? lastSeries + '</c:ser>'.length : plot.indexOf('>') + 1;
+  for (const anchor of before) {
+    const at = plot.indexOf(anchor, from);
+    if (at >= 0) return plot.slice(0, at) + element + plot.slice(at);
+  }
+  return plot + element;
+}
+
+/** Whether a plot group states a child of its own, outside its series. */
+function plotHas(plot: string, tag: string): boolean {
+  const lastSeries = plot.lastIndexOf('</c:ser>');
+  return plot.indexOf(`<c:${tag}`, Math.max(lastSeries, 0)) >= 0;
+}
+
+/**
+ * The plot options a backend drops: bar gaps, a pie's first slice angle, a
+ * doughnut's hole, whether a line chart shows its markers. Each is written in
+ * the slot its CT_*Chart gives it, and only where the plot has none — a value
+ * the backend did forward is its answer.
+ */
+function setPlotOptions(chartXml: string, chart: ChartPartInput): string {
+  const plotAreaAt = chartXml.indexOf('<c:plotArea>');
+  const group = /<c:(\w+Chart)>/.exec(chartXml.slice(plotAreaAt));
+  if (plotAreaAt < 0 || !group) return chartXml;
+  const tag = group[1];
+  const start = plotAreaAt + group.index;
+  const end = chartXml.indexOf(`</c:${tag}>`, start);
+  if (end < 0) return chartXml;
+  let plot = chartXml.slice(start, end);
+
+  if (tag === 'barChart') {
+    if (chart.gapWidth !== undefined && !plotHas(plot, 'gapWidth')) {
+      plot = insertInPlot(plot, `<c:gapWidth val="${chart.gapWidth}"/>`, [
+        '<c:overlap',
+        '<c:serLines',
+        '<c:axId',
+        '<c:extLst',
+      ]);
+    }
+    if (chart.overlap !== undefined && !plotHas(plot, 'overlap')) {
+      plot = insertInPlot(plot, `<c:overlap val="${chart.overlap}"/>`, [
+        '<c:serLines',
+        '<c:axId',
+        '<c:extLst',
+      ]);
+    }
+  }
+  if (tag === 'lineChart' && chart.lineMarkers !== undefined) {
+    if (!plotHas(plot, 'marker')) {
+      plot = insertInPlot(
+        plot,
+        `<c:marker val="${chart.lineMarkers ? 1 : 0}"/>`,
+        ['<c:smooth', '<c:axId', '<c:extLst']
+      );
+    }
+  }
+  if (tag === 'pieChart' || tag === 'doughnutChart') {
+    if (
+      chart.firstSliceAngle !== undefined &&
+      !plotHas(plot, 'firstSliceAng')
+    ) {
+      plot = insertInPlot(
+        plot,
+        `<c:firstSliceAng val="${chart.firstSliceAngle}"/>`,
+        ['<c:holeSize', '<c:extLst']
+      );
+    }
+  }
+  if (
+    tag === 'doughnutChart' &&
+    chart.holeSize !== undefined &&
+    !plotHas(plot, 'holeSize')
+  ) {
+    plot = insertInPlot(plot, `<c:holeSize val="${chart.holeSize}"/>`, [
+      '<c:extLst',
+    ]);
+  }
+
+  return chartXml.slice(0, start) + plot + chartXml.slice(end);
+}
+
+/**
+ * Set `c:autoTitleDeleted`, which CT_Chart places after the title and before
+ * everything else.
+ */
+function setAutoTitleDeleted(chartXml: string, deleted: boolean): string {
+  const element = `<c:autoTitleDeleted val="${deleted ? 1 : 0}"/>`;
+  if (/<c:autoTitleDeleted\b[^>]*\/>/.test(chartXml)) {
+    return chartXml.replace(/<c:autoTitleDeleted\b[^>]*\/>/, element);
+  }
+  const chartAt = chartXml.indexOf('<c:chart>');
+  if (chartAt < 0) return chartXml;
+  for (const anchor of [
+    '<c:pivotFmts',
+    '<c:view3D',
+    '<c:floor',
+    '<c:sideWall',
+    '<c:backWall',
+    '<c:plotArea>',
+  ]) {
+    const at = chartXml.indexOf(anchor, chartAt);
+    if (at >= 0) return chartXml.slice(0, at) + element + chartXml.slice(at);
+  }
+  return chartXml;
+}
+
+/**
+ * State the plot area unfilled and unbordered. CT_PlotArea puts its own
+ * `c:spPr` after the plot groups, the axes and any data table; one already
+ * there is the backend's answer.
+ */
+function setPlotAreaUnfilled(chartXml: string): string {
+  const start = chartXml.indexOf('<c:plotArea>');
+  const end = chartXml.indexOf('</c:plotArea>', start);
+  if (start < 0 || end < 0) return chartXml;
+  const plotArea = chartXml.slice(start, end);
+  const closings = [
+    ...plotArea.matchAll(/<\/c:(?:\w+Chart|catAx|valAx|dateAx|serAx|dTable)>/g),
+  ];
+  const last = closings[closings.length - 1];
+  const from = last ? (last.index ?? 0) + last[0].length : 0;
+  const tail = plotArea.slice(from);
+  if (tail.includes('<c:spPr>')) return chartXml;
+  const spPr = '<c:spPr><a:noFill/><a:ln><a:noFill/></a:ln></c:spPr>';
+  const extLst = tail.indexOf('<c:extLst');
+  const at = start + from + (extLst >= 0 ? extLst : tail.length);
+  return chartXml.slice(0, at) + spPr + chartXml.slice(at);
 }
 
 /**
@@ -1008,7 +1337,7 @@ export function spliceChartXml(
       chart.colors.length > 0
         ? chart.colors[index % chart.colors.length]
         : undefined;
-    return paintSeries(
+    const painted = paintSeries(
       withFormulas,
       color,
       chart.chartType,
@@ -1016,6 +1345,9 @@ export function spliceChartXml(
       pointCount,
       chart
     );
+    return chart.scatterXValues
+      ? numericScatterX(painted, chart.scatterXValues)
+      : painted;
   });
 
   // A scatter chart has no category axis: both of its axes are `c:valAx`, X
@@ -1044,6 +1376,13 @@ export function spliceChartXml(
       `<c:radarStyle val="${escapeXml(chart.radarStyle)}"/>`
     );
   }
+  // The same literal, for scatter: `line` whatever was asked for.
+  if (chart.scatterStyle) {
+    result = result.replace(
+      /<c:scatterStyle val="[^"]*"\/>/,
+      `<c:scatterStyle val="${escapeXml(chart.scatterStyle)}"/>`
+    );
+  }
 
   // `legendPosition` is not among the fields either backend forwards, so every
   // legend came out at the default whatever the author asked for.
@@ -1054,11 +1393,19 @@ export function spliceChartXml(
     );
   }
 
+  // Before the grouping, whose overlap defers to one already written.
+  result = setPlotOptions(result, chart);
+
   if (chart.barGrouping && chart.barGrouping !== 'clustered') {
     result = setBarGrouping(result, chart.barGrouping);
   }
 
   result = setVaryColors(result, chart.chartType);
+
+  if (chart.autoTitleDeleted !== undefined) {
+    result = setAutoTitleDeleted(result, chart.autoTitleDeleted);
+  }
+  if (chart.plotAreaUnfilled) result = setPlotAreaUnfilled(result);
 
   // `c:externalData` is the last child of `c:chartSpace`: after `c:chart`,
   // `c:spPr` and `c:txPr`, before nothing. Only written when the backend did
