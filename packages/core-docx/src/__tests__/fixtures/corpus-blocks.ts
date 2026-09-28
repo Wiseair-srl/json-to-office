@@ -1002,8 +1002,7 @@ export const CASES: CorpusCase[] = [
     ]),
   },
   {
-    // Fill plus padding: the fill wins and the border is dropped, which is the
-    // behaviour worth pinning.
+    // Fill, border and padding together: a shape draws all three.
     name: 'blocks/text-box-shape-fill-and-padding',
     document: doc([
       section([

@@ -1700,17 +1700,7 @@ function compileShape(
     );
   }
 
-  // A shape cannot carry both: the two fill groups come out in the wrong order
-  // for CT_ShapeProperties and Word rejects the document. The fill wins.
   const fill = style?.shading?.fill as string | undefined;
-  const dropOutline = Boolean(fill) && Boolean(outline.outline);
-  if (dropOutline) {
-    warnOnce(
-      ctx,
-      'text-box',
-      '[core-docx] text-box renderAs "shape" cannot carry a fill and a border at once (docx emits invalid shape properties); keeping the fill and dropping the border.'
-    );
-  }
 
   ctx.features.require('text-boxes', path);
   if (props.floating) ctx.features.require('floating-images', path);
@@ -1732,9 +1722,7 @@ function compileShape(
           heightPx: height.pixels,
           children: children as DocxIrParagraph[],
           ...(fill ? { fill: irColor(resolveColor(fill, ctx.theme)) } : {}),
-          ...(outline.outline && !dropOutline
-            ? { outline: outline.outline }
-            : {}),
+          ...(outline.outline ? { outline: outline.outline } : {}),
           ...(insets ? { insetsEmu: insets } : {}),
           ...(props.floating
             ? { floating: compileFloating(props.floating, ctx, path) }

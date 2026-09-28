@@ -146,7 +146,7 @@ describe('text-box renderAs shape', () => {
     );
   });
 
-  it('keeps the fill and drops the border when both are asked for', async () => {
+  it('draws the fill and the border together', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     const xml = await documentXml([
@@ -162,11 +162,11 @@ describe('text-box renderAs shape', () => {
     ]);
 
     const shape = shapeXml(xml);
-    expect(shape).toContain('<a:srgbClr val="F0FDF4"/>');
-    expect(shape).not.toContain('<a:ln');
-    expect(warn.mock.calls.flat().join(' ')).toContain(
-      'cannot carry a fill and a border at once'
+    // CT_ShapeProperties order: the fill group, then the outline.
+    expect(shape).toContain(
+      '<a:solidFill><a:srgbClr val="F0FDF4"/></a:solidFill><a:ln w="28575"><a:solidFill><a:srgbClr val="16A34A"/></a:solidFill></a:ln>'
     );
+    expect(warn.mock.calls.flat().join(' ')).not.toContain('fill and a border');
   });
 
   it('warns and uses the first side when the borders differ', async () => {

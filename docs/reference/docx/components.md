@@ -571,7 +571,7 @@ The default `'table'` renders the box as a borderless one-cell table. `'shape'` 
 | Text wrapping                  | Table float clearances only                         | Real wrap modes (`square`, `topAndBottom`, `none`, …)                      |
 | Z-order / behind text          | Not available                                       | `floating.zIndex`, `floating.behindDocument`                               |
 | Borders                        | Per side, each with its own style, width and colour | One uniform `solid` outline                                                |
-| Border **and** fill together   | Both                                                | Fill only — see below                                                      |
+| Border **and** fill together   | Both                                                | Both                                                                       |
 | `width` / `height` percentages | Resolved by Word, so they follow the page           | Resolved at generation time against the current content box                |
 | Children                       | Anything, including nested `columns`                | Paragraph-producing components only                                        |
 
@@ -585,8 +585,6 @@ Both errors name the two ways out: fix the prop, or drop to `renderAs: 'table'`,
 One limit stays a **render-time fallback**, because it depends on what the children render to rather than on the props: non-paragraph content (a nested `columns`, which renders as a table) degrades to the table rendering with a warning.
 
 Two further warnings report a downgrade inside shape mode rather than a fallback: per-side borders that disagree (the first declared side of top/left/bottom/right wins), and a percentage size being frozen.
-
-A shape cannot carry both `style.shading.fill` and `style.border`: docx 9.7.1 writes the two fill groups in an order Word rejects, so when both are given the fill is kept, the border dropped, and a warning raised. Use one or the other, or stay on the table path.
 
 ## `block`
 
