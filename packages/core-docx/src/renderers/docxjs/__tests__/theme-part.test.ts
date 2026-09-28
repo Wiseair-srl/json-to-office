@@ -5,7 +5,8 @@
  * docx.js writes a theme part on every document since 9.8.0. Handing it the
  * IR theme must move that part and only that part — no relationship, content
  * type or other part may notice — since nothing this adapter writes refers to
- * the theme.
+ * the theme outside a native chart's part, and that names slots (Text 1,
+ * Background 1), not their values.
  */
 
 import { describe, expect, it } from 'vitest';

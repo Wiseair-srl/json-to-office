@@ -11,10 +11,11 @@
  * hlink and folHlink unless set, the format scheme, the empty East Asian and
  * complex-script faces — stays the backend's.
  *
- * Unlike docx.js, this backend's own output refers to the theme: the built-in
- * styles it adds and the first run of every contents field name theme colours
- * and fonts. Replacing Office's theme with the document's is what makes those
- * follow the document rather than Office.
+ * Beyond native charts, whose lines follow Text 1 on both backends, this
+ * backend's own output refers to the theme where docx.js's does not: the
+ * built-in styles it adds and the first run of every contents field name theme
+ * colours and fonts. Replacing Office's theme with the document's is what
+ * makes those follow the document rather than Office.
  *
  * Every edit has to find its element exactly once. A part whose shape
  * changed under a backend upgrade fails the render rather than shipping a
