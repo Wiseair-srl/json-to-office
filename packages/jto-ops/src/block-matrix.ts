@@ -559,11 +559,9 @@ function conditions(
     const page = isRecord(props.page) ? props.page : {};
     return { ...child, props: { ...props, page: { ...page, size: canvas } } };
   });
-  // A native chart is drawn by the office-open renderer only.
-  const chart = JSON.stringify(sections).includes('"name":"chart"');
+  // A native chart draws on the default renderer, so the case names none.
   return {
     name: 'docx',
-    ...(chart && { renderer: 'office-open' }),
     props: {
       ...props,
       theme,
