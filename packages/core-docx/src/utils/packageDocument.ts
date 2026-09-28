@@ -111,13 +111,23 @@ function canonicalizeRelationshipIds(zip: AdmZip): void {
       ordered.map((id, index) => [id, `rId${highest + 1 + index}`])
     );
 
-    // One pass over quoted tokens, so a freshly assigned id can never be
-    // rewritten again by a later entry in the map.
+    // One pass over attribute values, so a freshly assigned id can never be
+    // rewritten again by a later entry in the map. Anchored to `name="value"`
+    // rather than to any pair of quotes: an empty value such as the
+    // `name=""` docx.js writes on every drawing's `wp:docPr` used to shift the
+    // pairing by one quote, after which the rest of the part was read between
+    // the values — the relationship was renamed and the reference to it was
+    // not, so a link after an image pointed at nothing.
     const rewrite = (xml: string): string =>
-      xml.replace(/"([^"]+)"/g, (whole, value: string) => {
-        const replacement = rename.get(value);
-        return replacement === undefined ? whole : `"${replacement}"`;
-      });
+      xml.replace(
+        /(\s[\w:.-]+=)"([^"]*)"/g,
+        (whole, prefix: string, value: string) => {
+          const replacement = rename.get(value);
+          return replacement === undefined
+            ? whole
+            : `${prefix}"${replacement}"`;
+        }
+      );
 
     updates.push({ name: relsName, xml: rewrite(relsXml) });
     if (partEntry) {
