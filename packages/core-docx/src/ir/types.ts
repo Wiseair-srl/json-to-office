@@ -130,8 +130,11 @@ export const NOT_XML_CHAR =
 
 /**
  * `word/theme/theme1.xml`: what Word's Design tab, colour menus and font menu
- * offer, and what content inserted in Word picks up. Nothing the docx.js
- * adapter writes refers to it, so on that backend it changes no rendering.
+ * offer, and what content inserted in Word picks up. Outside a native chart,
+ * which takes a tint of Text 1 for its gridlines and axis lines and
+ * Background 1 for its slice borders as Word's own charts do, nothing the
+ * docx.js adapter writes refers to it, so on that backend it moves no other
+ * rendering.
  */
 export interface DocxIrTheme {
   /** `a:theme/@name`, and the name of its colour and font schemes. */
