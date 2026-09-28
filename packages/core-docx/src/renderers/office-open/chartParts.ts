@@ -26,9 +26,7 @@ import type {
 } from '@json-to-office/shared/rendering';
 import type { DocxIrChartRun } from '../../ir/types';
 import { buildChartWorkbook } from '../../utils/chartWorkbook';
-
-/** Word's chart title size over its chart text size: 14pt over 10pt. */
-const CHART_TITLE_SCALE = 1.4;
+import { chartTextRoles } from '../chartText';
 
 /**
  * One chart run, in the shared splice's vocabulary.
@@ -38,22 +36,14 @@ const CHART_TITLE_SCALE = 1.4;
  * no authored prop behind it in this format yet. The theme's chart text style
  * goes on both: as the chart-wide default the tick labels and legend inherit,
  * and on each axis title, which would otherwise take Word's large bold default.
+ * The roles themselves — which text takes the style as is, and which adjusts
+ * it — are shared with the docx.js renderer (`../chartText`).
  */
 function spliceInput(chart: DocxIrChartRun): ChartPartInput {
-  const { bold, ...rest } = chart.textFont;
-  // The chart-wide default carries no weight: a `b` there would also unbold
-  // the chart title.
-  const textFont: ChartTextStyle = rest;
-  const axisTitleFont: ChartTextStyle = { ...rest, bold };
-  // Once the chart-wide default states a size, the chart title has to state
-  // its own: Word scales an unsized title up from that default, LibreOffice
-  // draws it at the default itself — a title no bigger than a tick label. So
-  // it is written at Word's own ratio, bold as Word draws it.
-  const chartTitleFont: ChartTextStyle = {
-    ...rest,
-    fontSize: Math.round(rest.fontSize * CHART_TITLE_SCALE),
-    bold: true,
-  };
+  const roles = chartTextRoles(chart.textFont);
+  const textFont: ChartTextStyle = roles.text;
+  const axisTitleFont: ChartTextStyle = roles.axisTitle;
+  const chartTitleFont: ChartTextStyle = roles.title;
   return {
     chartType: chart.chartType,
     series: chart.series,
