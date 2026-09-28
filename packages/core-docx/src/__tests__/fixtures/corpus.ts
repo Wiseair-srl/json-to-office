@@ -13,6 +13,7 @@
 import type { CorpusCase } from './corpus-types';
 import { CASES as ANNOTATIONS } from './corpus-annotations';
 import { CASES as BLOCKS } from './corpus-blocks';
+import { CASES as CHARTS } from './corpus-charts';
 import { CASES as HEADINGS } from './corpus-headings';
 import { CASES as LINKS } from './corpus-links';
 import { CASES as LISTS } from './corpus-lists';
@@ -31,6 +32,7 @@ export const CORPUS: CorpusCase[] = [
   ...LINKS,
   ...TABLES,
   ...BLOCKS,
+  ...CHARTS,
   ...ANNOTATIONS,
   ...THEME,
 ];

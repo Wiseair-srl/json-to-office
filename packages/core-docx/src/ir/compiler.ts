@@ -124,6 +124,7 @@ import {
   type PlaceholderResolution,
 } from './inline';
 import type { DocxFeature } from './features';
+import { isNumericLabel } from './chartValues';
 import {
   DOCX_IR_SCHEMA_VERSION,
   type DocxIR,
@@ -3925,6 +3926,9 @@ const DEFAULT_CHART_HEIGHT_INCHES = 3;
 /** The largest chart text size, in points: Word's own chart text default. */
 const MAX_CHART_TEXT_POINTS = 10;
 
+/** The smallest chart text size, in points, a chart part can state. */
+const MIN_CHART_TEXT_POINTS = 1;
+
 /**
  * The chart's text style, from the theme: the body face in the primary text
  * colour, at the body size capped to 10pt, never bold.
@@ -3934,6 +3938,12 @@ const MAX_CHART_TEXT_POINTS = 10;
  * bold — nothing like the body text around the chart. Capped because chart
  * labels sit in a small frame beside a lot of other text, where body size
  * crowds the plot; a theme with a smaller body keeps its own.
+ *
+ * Floored at 1pt, the smallest size a chart part can state. A valid theme's
+ * body is at least 8pt, so the floor changes nothing for one; it keeps a
+ * theme that skipped validation from reaching docx.js's chart run, which
+ * throws below 1pt without saying where, or office-open's part, which would
+ * carry a schema-invalid `sz` below 100.
  */
 function chartTextFont(theme: ThemeConfig): DocxIrChartTextFont {
   const bodySize = getThemeFonts(theme).body?.size;
@@ -3945,9 +3955,12 @@ function chartTextFont(theme: ThemeConfig): DocxIrChartTextFont {
   }
   return {
     fontFamily: resolveFontFamily(theme, 'body'),
-    fontSize: Math.min(
-      typeof bodySize === 'number' && bodySize > 0 ? bodySize : 11,
-      MAX_CHART_TEXT_POINTS
+    fontSize: Math.max(
+      MIN_CHART_TEXT_POINTS,
+      Math.min(
+        typeof bodySize === 'number' && bodySize > 0 ? bodySize : 11,
+        MAX_CHART_TEXT_POINTS
+      )
     ),
     bold: false,
     color,
@@ -3962,6 +3975,12 @@ function chartTextFont(theme: ThemeConfig): DocxIrChartTextFont {
  * has labels, stops the document naming that series. The alternative — drawing
  * the series that happened to be complete — ships a chart that looks finished
  * and states something the author never wrote.
+ *
+ * The refusals are the renderers' own limits, stated once here so both say
+ * the same thing and name the path: docx.js's chart run throws on the same
+ * inputs without saying where, and office-open writes a part a reader then
+ * draws as something else — a second pie series nobody sees, a negative slice
+ * drawn as a positive one.
  */
 function compileChart(
   component: ComponentDefinition,
@@ -3971,14 +3990,14 @@ function compileChart(
   const props = (component.props ?? {}) as Record<string, any>;
 
   // Refused by the schema too, which is where an authoring mistake should
-  // land. Stated again here because a caller can skip validation, and the
-  // failure without this is a TypeError raised from inside `@office-open`'s
-  // own bundle: it spells a bubble series as `xValues`/`yValues`/`bubbleSize`
-  // rather than categories and values.
+  // land. Stated again here because a caller can skip validation: a bubble
+  // needs a size for every point, and the component's labels and values have
+  // nowhere to put one.
   if (props.type === 'bubble') {
     throw new Error(
-      `Chart at ${path} is a bubble chart, which no docx renderer draws; ` +
-        'use the pptx `chart` component on the pptxgenjs renderer for one.'
+      `Chart at ${path} is a bubble chart, but the docx \`chart\` component ` +
+        'has no bubble sizes; use the pptx `chart` component on the pptxgenjs ' +
+        'renderer.'
     );
   }
 
@@ -4004,10 +4023,24 @@ function compileChart(
           `${values.length} values; they must be the same length.`
       );
     }
+    if (labels.length === 0) {
+      throw new Error(
+        `Chart series "${label}" at ${path} has no data points; give it at ` +
+          'least one label and value.'
+      );
+    }
+    const numbers = values.map((value) => Number(value));
+    const bad = numbers.findIndex((value) => !Number.isFinite(value));
+    if (bad !== -1) {
+      throw new Error(
+        `Chart series "${label}" at ${path} has a value that is not a finite ` +
+          `number (${JSON.stringify(values[bad])} at "${String(labels[bad])}").`
+      );
+    }
     return {
       ...(typeof raw.name === 'string' ? { name: raw.name } : {}),
       labels: labels.map((value) => String(value)),
-      values: values.map((value) => Number(value)),
+      values: numbers,
     };
   });
 
@@ -4031,6 +4064,54 @@ function compileChart(
           'axis, so every series must name the same categories in the same order.'
       );
     }
+  }
+
+  // A pie draws one series. A second one used to be written and never drawn.
+  if (props.type === 'pie' && series.length > 1) {
+    throw new Error(
+      `Chart at ${path} is a pie with ${series.length} series; a pie draws ` +
+        'one series. Use a doughnut for one ring per series, or a column ' +
+        'chart to compare them.'
+    );
+  }
+  // A slice is a share of the whole, so it cannot be negative.
+  if (props.type === 'pie' || props.type === 'doughnut') {
+    for (const [index, entry] of series.entries()) {
+      const at = entry.values.findIndex((value) => value < 0);
+      if (at === -1) continue;
+      throw new Error(
+        `Chart series "${entry.name ?? `series ${index}`}" at ${path} has a ` +
+          `negative value (${entry.values[at]} at "${entry.labels[at]}"); a ` +
+          `${props.type} chart draws each value as a share of the whole.`
+      );
+    }
+  }
+
+  // A scatter point's x is its label read as a number; a label that is not one
+  // is placed at its position instead — see `chartValues.ts`.
+  if (
+    props.type === 'scatter' &&
+    series.some((entry) => entry.labels.some((label) => !isNumericLabel(label)))
+  ) {
+    warnOnce(
+      ctx,
+      'chart',
+      `Chart at ${path} is a scatter chart whose labels are not all numbers; ` +
+        "each label is its point's x, so these points are placed at 1, 2, 3… " +
+        'in order.'
+    );
+  }
+  if (
+    (props.type === 'pie' || props.type === 'doughnut') &&
+    (typeof props.catAxisTitle === 'string' ||
+      typeof props.valAxisTitle === 'string')
+  ) {
+    warnOnce(
+      ctx,
+      'chart',
+      `Chart at ${path} is a ${props.type} chart, which has no axes; its axis ` +
+        'titles are not drawn.'
+    );
   }
 
   // An explicit palette is the author's and is resolved verbatim, semantic
@@ -4060,14 +4141,27 @@ function compileChart(
     typeof props.height === 'number'
       ? props.height
       : DEFAULT_CHART_HEIGHT_INCHES;
+  const widthEmu = inchesToEmu(widthInches);
+  const heightEmu = inchesToEmu(heightInches);
+  // An explicit tiny size, or a container with no width left to give: either
+  // way there is nothing to draw the chart in.
+  if (!(widthEmu > 0 && heightEmu > 0)) {
+    const inches = (value: number): string =>
+      String(Number.isFinite(value) ? Math.round(value * 100) / 100 : value);
+    throw new Error(
+      `Chart at ${path} has no room: it would be ` +
+        `${inches(widthInches)}×${inches(heightInches)} in. Set \`width\`/` +
+        '`height`, or give it a container with space.'
+    );
+  }
 
   const chart: DocxIrChartRun = {
     kind: 'chart',
     chartType: props.type as DocxIrChartType,
     series,
     colors,
-    widthEmu: inchesToEmu(widthInches),
-    heightEmu: inchesToEmu(heightInches),
+    widthEmu,
+    heightEmu,
     ...(typeof props.title === 'string' ? { title: props.title } : {}),
     ...(props.showTitle !== undefined ? { showTitle: props.showTitle } : {}),
     ...(props.showLegend !== undefined ? { showLegend: props.showLegend } : {}),

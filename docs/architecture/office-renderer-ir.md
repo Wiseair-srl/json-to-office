@@ -447,7 +447,7 @@ Run `pnpm generate:renderer-docs` after changing a feature or capability set.
 | `text-frames`        | Floating paragraph frames.                     | yes      | yes           |
 | `text-boxes`         | Native shape text boxes.                       | yes      | yes           |
 | `drawing-groups`     | Grouped DrawingML shapes and pictures.         | —        | yes           |
-| `charts`             | Native charts with embedded workbooks.         | —        | yes           |
+| `charts`             | Native charts with embedded workbooks.         | yes      | yes           |
 | `toc`                | Table-of-contents fields.                      | yes      | yes           |
 | `cached-toc`         | Pre-rendered table-of-contents entries.        | yes      | yes           |
 | `fields`             | Arbitrary Word fields.                         | yes      | yes           |
@@ -489,7 +489,7 @@ docx.js one rather than a translation layer on top of it.
 | text boxes (`wps:wsp`), text frames | yes                                                   | yes                                                                                 |
 | drawing groups (`wpg:wgp`)          | **no** — `docx/shapes` has one; not mapped yet        | yes — a paragraph-level `wpgGroup` run taking shape, group and picture children     |
 | footnotes, endnotes                 | yes                                                   | yes                                                                                 |
-| native charts                       | **no** — `docx/charts` has one; not mapped yet        | yes, with an embedded workbook spliced in — see below                               |
+| native charts                       | yes — `docx/charts` `ChartRun`, with its own workbook | yes, with an embedded workbook spliced in — see below                               |
 | comments                            | yes                                                   | yes, but flat — see below                                                           |
 | revisions                           | one `w:ins`/`w:del` per run                           | a real wrapper element, so the id appears once per range                            |
 | fields                              | a run child per known instruction, plus `w:fldSimple` | `simpleField` takes any instruction with its cached result                          |
@@ -525,15 +525,12 @@ rather than losing content:
 | `comment-threads`                                                  | `CommentOptions` is `{id, author, initials, date, children}` — no parent, no resolved state, so a reply would flatten into an unrelated top-level comment |
 | `table-merged-cells`, `cached-fields`, `shading`, `borders`, `rtl` | the vocabulary no lowering covers yet, so nothing can require them; both adapters leave them out so a declared set means "proven by a test"               |
 
-`docxjs` withholds two capabilities of its own, and they are what turn a
-natively drawn `visual` or a `chart` handed to the default backend into a named
-capability error rather than a document with the figure missing. Both were
-backend gaps until docx 9.8.0 added the primitives; the adapter does not map
-them yet (#478):
+`docxjs` withholds one capability of its own, and it is what turns a natively
+drawn `visual` handed to the default backend into a named capability error
+rather than a document with the figure missing. It was a backend gap until
+docx 9.8.0 added the primitive; the adapter does not map it yet (#478):
 
 - `drawing-groups`: `docx/shapes`.
-
-- `charts`: `docx/charts`.
 
 ### Native charts
 
@@ -589,6 +586,60 @@ coloured per data point, so the splice writes one `c:dPt` per slice instead of a
 series fill — a series fill paints every slice the same colour. And a scatter
 chart has no `c:catAx` at all: both its axes are `c:valAx`, X first, so its axis
 titles are placed by position rather than by tag.
+
+### Native charts on docx.js
+
+docx 9.8.0 added `docx/charts`, whose `ChartRun` writes a whole chart: the
+`c:chartSpace` part, its relationship and an embedded workbook, so nothing is
+spliced in afterwards. `renderers/docxjs/charts.ts` maps the IR's chart run
+onto its options. Parity with office-open is on content and placement — data,
+series order and names, series colours, the title and axis titles, the legend
+and its position, the extent and anchor, a chart area with no fill and no
+border, and the face, size, weight and colour of every text element, whose
+roles both backends take from `renderers/chartText.ts`.
+`office-open/__tests__/chart-cross-backend.test.ts` pairs every corpus chart's
+parts across the two backends and holds them to exactly that.
+
+`ChartRun` takes no size on its chart-wide font, so every text element states
+its own: tick labels and the legend at the chart text size, axis titles at
+that size and weight, the title at 1.4 times it, bold. A text element added
+later — data labels, a data table — has to state one too, or Word draws it at
+9pt. A scatter point's x is its label read as a number; a label that is not one
+is placed at its position, 1, 2, 3…, and the compiler warns once
+(`ir/chartValues.ts`).
+
+`docx/charts` is imported when `render()` starts rather than with the package
+(`renderers/docxjs/docxSubpath.ts`). `docx` is a peer dependency and the entry
+exists from 9.8.0 on, so a static import would fail the whole package for a
+consumer on an older docx, chart or no chart. The import happens once per
+process (about 6 ms), never rejects, and a failure surfaces — "needs docx 9.8.0
+or later" — only when a document draws a chart. A caller of `buildDocument`
+awaits `loadDocxCharts()` first.
+
+The plot's own styling follows what Word writes for Insert Chart, which is what
+`ChartRun` defaults to, rather than office-open's, whose missing gridlines come
+from writing no `spPr` at all rather than from a choice:
+
+| Area           | `docxjs`                                                                                                                                                  | `office-open`                                       |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| Plot styling   | value-axis gridlines (scatter: Y only; radar: spokes and rings) and a category axis line, in a tint of the theme's Text 1; no tick marks (radar: crossed) | no gridlines; the reader's ticks and axis lines     |
+| Bar spacing    | `gapWidth`/`overlap` 219/−27 on a column chart, 182/0 on a bar chart                                                                                      | neither: the reader's 150/0                         |
+| Pie, doughnut  | `firstSliceAng` 0, a doughnut's `holeSize` 50, slice borders in the theme's Background 1                                                                  | none of the three                                   |
+| Lines          | straight: `c:smooth` 0                                                                                                                                    | unstated, and LibreOffice draws a curve             |
+| Markers        | circles, size 5                                                                                                                                           | the reader's own symbols                            |
+| Radar          | `radarStyle="marker"`                                                                                                                                     | `"standard"`                                        |
+| Scatter        | `scatterStyle="lineMarker"`, x as a number (`numRef`), X axis at the bottom                                                                               | `"line"`, x as text (`strRef`, plotted at 1, 2, 3…) |
+| Untitled chart | `autoTitleDeleted` 1                                                                                                                                      | 0: LibreOffice paints a placeholder title           |
+| Data labels    | an explicit `c:dLbls`, every label off                                                                                                                    | none                                                |
+| Workbook       | docx.js's own `Microsoft_Excel_Worksheet{N}.xlsx`, with shared strings                                                                                    | jto's `chart{N}.xlsx`                               |
+| Alt text       | described from the data when none is authored                                                                                                             | none when none is authored                          |
+
+The office-open scatter x and placeholder title are office-open defects, left
+for a follow-up. So is a chart in a header or footer on office-open:
+`@office-open/docx` 0.11 fills in chart relationship ids in `word/document.xml`
+only, so such a chart keeps an `r:id="{chart:…}"` placeholder with no
+relationship behind it, and LibreOffice draws an empty object in its place.
+docx.js draws it (`chart/in-header-and-footer`).
 
 ### Chart styling
 
@@ -878,6 +929,8 @@ previous implementation finds what a feature checklist does not.
 | docx 9.7.1 → 9.8.0 (#478): every corpus golden moved (all 282 cases), in sixteen classes of package change; `office-open` did not move.                                                                              | The release fixes a run of schema-order and vocabulary defects and adds a theme part. The classes, the parts each touches and the proof that nothing else moved follow the table.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | A shape-mode `text-box` with both a fill and a border draws both, on both backends (`blocks/text-box-shape-fill-and-padding` moved).                                                                                 | docx 9.7.1 wrote the outline ahead of the fill, an order Word rejects, so the compiler dropped the border with a warning; 9.8.0 writes CT_ShapeProperties order (dolanmiu/docx#3521).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | A link after an image in the same part keeps its relationship: package finalization renames relationship ids by attribute rather than by pairs of quotes (no corpus golden moved).                                   | docx.js writes empty attributes on every drawing (`name=""` on `wp:docPr`, among others). Renaming volatile ids by pairs of quotes lost step on an empty value, so after an odd number of them the hyperlink's relationship was renamed and its `r:id` was not — a dangling reference Word reports as a damaged file. No corpus case put an image before a link, which is why the corpus-wide dangling-reference test stayed green; `relationship-ids.test.ts` now builds one. A part changes only where an id followed an empty attribute, which is exactly where the reference used to dangle, so no golden moved. Native charts (`name=""` on every chart drawing) and drawing groups would have made it certain.                                                                                                                                 |
+| Embedded Office packages are normalized recursively; an office-open chart workbook's own ZIP headers now follow a caller's `generatedAt` (no golden moved; unchanged at the default date).                           | docx.js stamps a native chart's workbook ZIP entries from the wall clock, so two renders a second apart differed in `word/embeddings/*.xlsx` alone. Package finalization now walks every embedded xlsx, xlsm, docx and pptx, three levels deep as the pptx packager does, pins its `docProps/core.xml` dates and ZIP headers to `generatedAt`, and rewrites a package only when something in it differs, keeping every inner compressed stream. office-open's workbooks are built pinned to the default date, so at that date they come out byte for byte as before; with a caller's `generatedAt` their headers now carry it instead of 2000-01-01, and nothing else in the package changes. No corpus case embeds a package.                                                                                                                       |
+| A native `chart` draws on `docxjs`, through docx 9.8's `ChartRun` (13 new cases: `chart/*` and `blocks/chart-figure-native`; no existing golden moved).                                                              | docx.js had no chart primitive until 9.8.0 added `docx/charts`, so the capability gate refused a chart on the default renderer. The adapter now maps the IR's chart run onto `ChartRun`, which writes the chart part, its relationship and its own workbook; the text roles are shared with office-open, so both state the same face, size, weight and colour on every text element. The entry is imported when `render()` starts, not with the package, so an older docx fails only a document that draws a chart. Both renderers now refuse a multi-series pie, a negative pie or doughnut value, an empty series, a non-finite value and a chart with no room, naming the path. How the plot's styling differs is under Native charts on docx.js.                                                                                                 |
 
 | A `statistic` renders its `unit`, `size`, `trend` and `trendValue`, under two styles the document now defines. | All four props were declared, accepted by the schema and read by nothing: `{ "number": "99", "unit": "%" }` rendered `99`, and the shipped `docx-report` starter lost its percent sign with no diagnostic anywhere in the pipeline. The two paragraphs also named `StatisticNumber` and `StatisticDescription`, which no theme and no generator ever defined — an undefined `w:pStyle` resolves to Normal in silence, so the component purpose-built for KPIs set at body size and weight. The styles are appended only to documents that contain a statistic, so nothing else moved. `format` stays unimplemented and now warns (`W_STATISTIC_FORMAT_IGNORED`) rather than vanishing. |
 | A body paragraph or list item directly under a table gets 120 twips above it. | OOXML gives a table no space-after — the property does not exist — so the block below one drew hard against its bottom rule. A heading was already spaced by its own style and is left alone; only styles that contribute nothing of their own are topped up. |
@@ -1016,10 +1069,11 @@ they stand in rather than the page: an image with no width in a text box padded
 72pt a side came out two inches wider than the box in every reader, since a
 drawing's extent is absolute. The corpus's one image in a text box
 (`blocks/text-box-mixed-children`) states its width in pixels, and the default
-backend draws neither charts nor drawing groups, so no golden covers it;
-`__tests__/media-measure.test.ts` pins the extents on both backends for images
-and shapes and on `office-open` for visuals and charts, and LibreOffice sets
-all four inside the box. Heights stay page-relative, anchored positions stay
+backend drew neither charts nor drawing groups then, so no golden moved; now
+that it draws charts, `chart/in-text-box` covers one.
+`__tests__/media-measure.test.ts` pins the extents on both backends for images,
+shapes and charts and on `office-open` for visuals, and LibreOffice sets all
+four inside the box. Heights stay page-relative, anchored positions stay
 relative to the page or its margins as OOXML defines them, `widthRelativeTo:
 'page'` stays page-wide, and an image in a table cell keeps its nominal
 300 × 200 px box. A `highcharts` chart keeps a page-relative type scale: it is
@@ -1195,7 +1249,7 @@ relationship or make deterministic renumbering miss a newly-added part.
 | `packages/core-pptx/src/renderers/pptxgenjs/packaging.ts`         | PptxGenJS-only sentinel fills and hard-coded table-style repair                               | `ppt/slides/slide*.xml`                                                                    | Runs before generic `finalizePackage`, on the same open ZIP                                      |
 | `packages/core-pptx/src/renderers/pptxgenjs/svgRasterFallback.ts` | Replaces PptxGenJS's Node broken-image SVG preview                                            | PNG media parts paired to SVG picture relationships                                        | Called from PptxGenJS packaging before generic finalization and timestamp normalization          |
 | `packages/core-docx/src/utils/fixFloatingImageIds.ts`             | docx.js-specific `wp:docPr` renumbering, one sequence per package                             | `word/document.xml`, headers, footers, footnotes, endnotes, comments                       | Runs after docx.js emits and before `canonicalizeDocxBuffer`                                     |
-| `packages/core-docx/src/utils/packageDocument.ts`                 | Generic DOCX relationship-id, core-metadata and ZIP timestamp canonicalization                | Relationship parts and owners, `docProps/core.xml`, ZIP entry headers                      | Final DOCX pass, after every backend-specific repair                                             |
+| `packages/core-docx/src/utils/packageDocument.ts`                 | Generic DOCX relationship-id, embedded-package, metadata and ZIP timestamp canonicalization   | Relationship parts and owners, embedded packages, `docProps/core.xml`, ZIP entry headers   | Final DOCX pass, after every backend-specific repair                                             |
 | `packages/core-pptx/src/core/finalizePackage.ts`                  | Generic PPTX chart-id, nested-package, core-metadata and ZIP timestamp canonicalization       | Chart names and references, embedded Office packages, `docProps/core.xml`, ZIP entry dates | Final PPTX pass, after chart and PptxGenJS-specific repairs                                      |
 
 ## Theme foundation golden changes (#328)

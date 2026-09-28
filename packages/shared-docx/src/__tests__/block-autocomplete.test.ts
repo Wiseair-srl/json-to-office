@@ -222,12 +222,13 @@ describe('block authoring through the real JSON language service', () => {
       ).diagnostics.length
     ).toBeGreaterThan(0);
   });
-  it('uses the selected renderer’s component surface', async () => {
-    const body = '{"name":"chart","props":{"type":"bar","series":[]}}';
-    const normal = await inspect(documentWithBody(body));
-    expect(
-      normal.diagnostics.some((item) => item.message.includes('chart'))
-    ).toBe(true);
+  it('offers a chart whatever the renderer', async () => {
+    const body =
+      '{"name":"chart","props":{"type":"bar","data":[{"name":"A","labels":["x"],"values":[1]}]}}';
+    expect((await inspect(documentWithBody(body))).diagnostics).toEqual([]);
+    expect((await inspect(documentWithBody('{"name":"|"}'))).labels).toContain(
+      'chart'
+    );
     expect(
       (
         await inspect(
@@ -235,5 +236,15 @@ describe('block authoring through the real JSON language service', () => {
         )
       ).labels
     ).toContain('chart');
+  });
+  it('uses the selected renderer’s component surface', async () => {
+    // office-open has no comment threads, so its surface drops `replies`.
+    const body =
+      '{"name":"paragraph","props":{"text":"x","comment":{"text":"c","author":"a","|"}}}';
+    expect((await inspect(documentWithBody(body))).labels).toContain('replies');
+    expect(
+      (await inspect(documentWithBody(body, '"renderer":"office-open",')))
+        .labels
+    ).not.toContain('replies');
   });
 });

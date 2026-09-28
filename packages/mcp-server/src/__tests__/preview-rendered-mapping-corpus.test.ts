@@ -337,6 +337,36 @@ const CASES: Case[] = [
     infos: [],
   },
   {
+    // The same chart on the default renderer, which draws it through docx's
+    // own chart run: its titles are painted inside the drawing the same way.
+    id: 'native-chart-titles-docxjs',
+    document: report([
+      { name: 'heading', props: { text: 'Revenue', level: 1 } },
+      {
+        name: 'chart',
+        props: {
+          type: 'bar',
+          title: 'Revenue by quarter (EUR m)',
+          valAxisTitle: 'EUR m',
+          data: [
+            {
+              name: 'Revenue',
+              labels: ['Q1', 'Q2', 'Q3'],
+              values: [1, 2, 3],
+            },
+          ],
+          caption: 'Figure 1: quarterly revenue, company data',
+        },
+      },
+    ]),
+    labels: {
+      '/children/1/props/title': { status: 'mapped', page: 1 },
+      '/children/1/props/valAxisTitle': { status: 'mapped', page: 1 },
+    },
+    warnings: [],
+    infos: [],
+  },
+  {
     id: 'table-split-across-a-page',
     // Prose sized so the table starts near the foot of page one and only its
     // first row fits there: the split the rendered pass is meant to name.

@@ -1,5 +1,6 @@
 /**
- * Chart Component Schema (DOCX) — a native Word chart, drawn by `office-open`.
+ * Chart Component Schema (DOCX) — a native Word chart, drawn by both renderers:
+ * `docxjs` through docx's `ChartRun`, `office-open` through its own chart run.
  *
  * The sibling of the pptx `chart` component, and deliberately spelled the same
  * way: `type`, `data`, `title`, `showLegend`, `chartColors` carry identical
@@ -25,19 +26,17 @@ import {
 /**
  * The chart types v1 draws.
  *
- * `@office-open/core` reaches twelve; these are the ones the pptx `chart`
- * component also offers, so the two formats agree, plus `column` — which
- * PowerPoint spells as a bar with a vertical direction and Word spells as its
- * own type. `stock`, `surface`, `ofPie` and the 3-D variants are left out until
- * there is a counterpart to be consistent with.
+ * Both backends reach more; these are the ones the pptx `chart` component also
+ * offers, so the two formats agree, plus `column` — which PowerPoint spells as
+ * a bar with a vertical direction and Word spells as its own type. `stock`,
+ * `surface`, `ofPie` and the 3-D variants are left out until there is a
+ * counterpart to be consistent with.
  *
- * `bubble` is left out for a harder reason: `@office-open` spells a bubble
- * series as `xValues`/`yValues`/`bubbleSize` rather than categories and values,
- * and handing it the latter throws a TypeError from inside its own bundle.
- * There is also no unambiguous reading of a category label as a numeric x. The
+ * `bubble` is left out for a harder reason: a bubble needs a size for every
+ * point, and a series here is labels and values, with nowhere to put one. The
  * pptx component refuses it by name for the same reason; here the type simply
- * does not exist, because `office-open` is the only renderer that draws a docx
- * chart at all.
+ * does not exist, and the compiler refuses it for a caller that skipped
+ * validation.
  */
 const ChartTypeSchema = Type.Union(
   [
@@ -67,7 +66,7 @@ const ChartDataSeriesSchema = Type.Object(
     labels: Type.Optional(
       Type.Array(Type.String(), {
         description:
-          'Category labels. Needed on every series, not just the first, and the same length as `values`; a series without both `labels` and `values` drops the whole chart.',
+          "Category labels. Needed on every series, not just the first, and the same length as `values`; a series without both `labels` and `values` drops the whole chart. On a scatter chart each label is the point's x and should be a number.",
       })
     ),
     values: Type.Optional(
@@ -171,7 +170,7 @@ export const ChartPropsSchema = Type.Object(
   },
   {
     description:
-      'Native Word chart - editable, scalable, no export server needed. Requires renderer "office-open".',
+      'Native Word chart - editable, scalable, no export server needed.',
     additionalProperties: false,
   }
 );

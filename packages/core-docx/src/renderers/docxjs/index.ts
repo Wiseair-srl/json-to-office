@@ -26,6 +26,7 @@ import {
   type ISectionOptions,
 } from 'docx';
 import { emitStyles } from './styles';
+import { loadDocxCharts } from './charts';
 import {
   rasterizeSvgFallbacks,
   type SvgFallbackJob,
@@ -64,9 +65,7 @@ export const DOCXJS_RENDERER_ID: DocxRendererId = 'docxjs';
  *
  * A new `DocxFeature` stays unsupported until this adapter deliberately adds
  * and tests it. Most omissions are slice boundaries. Since docx 9.8.0 the
- * backend has what these two need; the adapter does not map it yet (#478):
- *
- * - `charts`: `docx/charts`.
+ * backend has what this one needs; the adapter does not map it yet (#478):
  *
  * - `drawing-groups`: `docx/shapes`.
  */
@@ -82,6 +81,7 @@ const DOCXJS_CAPABILITIES: ReadonlySet<DocxFeature> = new Set([
   'images',
   'floating-images',
   'svg-images',
+  'charts',
   'text-frames',
   'text-boxes',
   'toc',
@@ -111,6 +111,7 @@ export function createDocxJsRenderer(): DocxRenderer {
       ir: DocxIR,
       renderOptions?: DocxRenderOptions
     ): Promise<Uint8Array> {
+      await loadDocxCharts();
       const resources = await prepareImages(
         ir,
         renderOptions?.svgRasterFallback
@@ -138,7 +139,8 @@ export function createDocxJsRenderer(): DocxRenderer {
  * Build the docx.js object graph for an IR document.
  *
  * Exported for tests: asserting on the object graph is far cheaper, and far
- * more legible, than unzipping a package.
+ * more legible, than unzipping a package. An IR with charts needs
+ * `await loadDocxCharts()` first; `render()` does it.
  */
 export function buildDocument(
   ir: DocxIR,

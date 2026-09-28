@@ -45,6 +45,7 @@ import {
   TextWrappingType,
   WidthType,
   WpsShapeRun,
+  type IFloating,
   type IFrameOptions,
   type IParagraphOptions,
   type IRunOptions,
@@ -52,6 +53,7 @@ import {
   type ParagraphChild,
 } from 'docx';
 import { assertNever } from '@json-to-office/shared/rendering';
+import { emitChart } from './charts';
 import type {
   DocxIrBlock,
   DocxIrBorder,
@@ -356,14 +358,20 @@ export function inlineChildren(
             'this document should have been refused by the capability check'
         );
 
-      case 'chart':
-        // Unreachable for the same reason as a drawing group: docx.js has no
-        // chart primitive, declines `charts`, and the capability gate refuses
-        // the document before this adapter is asked for one.
-        throw new Error(
-          'the docxjs renderer has no emitter for a chart; ' +
-            'this document should have been refused by the capability check'
+      case 'chart': {
+        // A break before a chart gets a run of its own, as before an image.
+        const pending = breakOption();
+        if (pending.break) out.push(new TextRun(pending));
+        out.push(
+          emitChart(
+            child,
+            child.floating
+              ? (floatingOptions(child.floating) as IFloating)
+              : undefined
+          )
         );
+        break;
+      }
 
       case 'noteReference':
         out.push(

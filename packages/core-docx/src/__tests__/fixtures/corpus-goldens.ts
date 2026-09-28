@@ -582,4 +582,30 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
     '01f1e1a9a9423059dd4403b8a4ba2d54a3ee09ff346e3af1fe3612af4a9890ad',
   'theme/example-field-review':
     '4d72e65a4fd3bb87450ce0a6390c18eefd806124e711deec3fc6b9b8f321206a',
+  'chart/column-configured':
+    '8e515638946bc2b3ae6ebee69ab4330ad3fb559ec81a3bb937d8d1acdeaab745',
+  'chart/bar-no-legend':
+    'e7a5e6158139fe8e8a5518188f1c93dcbb894a537fef542ce55be72fb134e480',
+  'chart/line-explicit-palette':
+    '90607ee1cd283db36952db50c44b134318c3cb5b5c0c7ee5912592bdd392c7ae',
+  'chart/area-two-series':
+    '13061aa4f97f6ba5b80acb5bea8da8dd92e80b3532a02c4102a935ece878af8b',
+  'chart/pie':
+    '55b352b28814473bbe4d7253034fe0924417c3d698b7578be74ac422b6f284e5',
+  'chart/doughnut-rings':
+    '6c29bd35386845aee5bef65dae383031a1eeef0acc3679664db5fcfb85f7a56a',
+  'chart/radar-axis-titles':
+    '2ef7c0ec312c984513fc792da682bc14665ae67d37db52069ce0d560061fdf56',
+  'chart/scatter-numeric':
+    '18d9ddad6dbafbd3c451f7567b190f6ddc423316c83f8bce67565a4811b5f6ce',
+  'chart/hidden-title':
+    '219d3990714784103b6486fec5d8e004473e7d3deea7b96e8030e9f1dac54e1a',
+  'chart/floating':
+    'b9649451ab12338b1eabbacb53ce6bab182a068011e7d2bd4c1b414a995335c9',
+  'chart/in-header-and-footer':
+    '70bf5c82f27f39c71c1582ec5416cba6c0a440b85d3829078ef10ab2ae534839',
+  'chart/in-text-box':
+    '47e2cf75b9382e203d16dc92b293b880a5e65ed5a98e058aa53e41c3170167d3',
+  'blocks/chart-figure-native':
+    'e2bee80801e5dcd1aa79e05c4d058fe414b9f9dd98a0a005f0b6f3dbd68c9c7b',
 };

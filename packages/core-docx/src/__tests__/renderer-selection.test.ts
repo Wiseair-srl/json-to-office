@@ -57,6 +57,8 @@ describe('the registry', () => {
       expect(renderer.capabilities.has('paragraphs')).toBe(true);
       expect(renderer.capabilities.has('tables')).toBe(true);
     }
+    expect(docxjs.capabilities.has('charts')).toBe(true);
+    expect(officeOpen.capabilities.has('charts')).toBe(true);
     // Threading is a verified gap in the second backend: its comment options
     // carry neither a parent nor a resolved state.
     expect(docxjs.capabilities.has('comment-threads')).toBe(true);

@@ -41,7 +41,7 @@ describe('root children schema', () => {
    *
    * A component the backend cannot draw is absent from that renderer's branch
    * entirely, so the root must not offer it either. Reading the raw registry
-   * list here would demand `chart` of `docxjs`, which has no chart primitive.
+   * list here would demand of a renderer a component scoped away from it.
    */
   function sectionAllowsOn(renderer: 'docxjs' | 'office-open'): string[] {
     return [...(getStandardComponent('section')?.allowedChildren ?? [])].filter(
@@ -66,10 +66,9 @@ describe('root children schema', () => {
     for (const child of sectionAllowsOn('office-open')) {
       expect(names, `${child} missing from root children`).toContain(child);
     }
-    // The point of the renderer dimension: one branch has it, the other does
-    // not, and both are checked against their own expectation.
+    // `chart` draws on both renderers, so both branches offer it.
     expect(names).toContain('chart');
-    expect(rootChildNames()).not.toContain('chart');
+    expect(rootChildNames()).toContain('chart');
   });
 
   it('does not allow a nested docx root', () => {
