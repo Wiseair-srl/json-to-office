@@ -5,7 +5,8 @@
  * export mode. That duplication silently dropped
  * `props.themeOverrides` from the plugin path (issue #133); these tests assert
  * the two produce the same document so the next divergence fails here instead
- * of in a consumer that happens to register a plugin.
+ * of in a consumer that happens to register a plugin. The Word theme part is a
+ * third place an override lands, and so a third place it could be dropped.
  */
 import { describe, it, expect } from 'vitest';
 import JSZip from 'jszip';
@@ -18,7 +19,9 @@ import { devportalTheme } from '../templates/themes';
  * font roles only reach styles.xml — comparing document.xml alone would pass
  * even with theme merging disabled.
  */
-async function parts(buf: Buffer): Promise<{ doc: string; styles: string }> {
+async function parts(
+  buf: Buffer
+): Promise<{ doc: string; styles: string; theme: string }> {
   const zip = await JSZip.loadAsync(buf);
   const read = async (path: string) => {
     const entry = zip.file(path);
@@ -28,6 +31,7 @@ async function parts(buf: Buffer): Promise<{ doc: string; styles: string }> {
   return {
     doc: await read('word/document.xml'),
     styles: await read('word/styles.xml'),
+    theme: await read('word/theme/theme1.xml'),
   };
 }
 
@@ -85,6 +89,10 @@ describe('generateBufferFromJson vs createDocumentGenerator', () => {
     const { core, plugin } = await bothPipelines(doc);
     expect(runColors(plugin.doc)).toEqual(['231F20']);
     expect(runColors(plugin.doc)).toEqual(runColors(core.doc));
+    expect(plugin.theme).toContain(
+      '<a:accent4><a:srgbClr val="231F20"/></a:accent4>'
+    );
+    expect(plugin.theme).toEqual(core.theme);
   });
 
   it('resolves a themeOverrides slot that shadows a base-theme token', async () => {
@@ -107,12 +115,17 @@ describe('generateBufferFromJson vs createDocumentGenerator', () => {
     const { core, plugin } = await bothPipelines(doc);
     expect(plugin.styles).toMatch(/w:rFonts [^>]*w:ascii="Georgia"/);
     expect(plugin.styles).toEqual(core.styles);
+    expect(plugin.theme).toContain(
+      '<a:minorFont><a:latin typeface="Georgia"/>'
+    );
+    expect(plugin.theme).toEqual(core.theme);
   });
 
   it('produces identical output with no overrides at all', async () => {
     const { core, plugin } = await bothPipelines(docWith({}, 'primary'));
     expect(plugin.doc).toEqual(core.doc);
     expect(plugin.styles).toEqual(core.styles);
+    expect(plugin.theme).toEqual(core.theme);
   });
 });
 
