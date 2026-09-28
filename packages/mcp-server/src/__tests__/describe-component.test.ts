@@ -217,19 +217,6 @@ describe('jto_describe_component', () => {
     ]);
   });
 
-  it('says which renderer supports a component the asked-for one does not', async () => {
-    // Asked of docx rather than pptx: the pptx pair no longer disagrees about
-    // any component, while docx.js still has no chart primitive.
-    const result = await describeComponent({
-      format: 'docx',
-      name: 'chart',
-      renderer: 'docxjs',
-    });
-    expect(result.ok).toBe(false);
-    expect(result.diagnostics[0]?.code).toBe('E_UNKNOWN_COMPONENT');
-    expect(result.diagnostics[0]?.suggestion).toContain('office-open');
-  });
-
   it('names the alternatives when a component does not exist', async () => {
     const result = await describeComponent({
       format: 'docx',
@@ -292,7 +279,7 @@ describe('jto_describe_component', () => {
       );
     });
 
-    it("describes the docx chart as office-open's own component", async () => {
+    it('describes the docx chart as drawn by both renderers', async () => {
       const result = await describeComponent({
         format: 'docx',
         name: 'chart',
@@ -300,7 +287,7 @@ describe('jto_describe_component', () => {
       });
       expect(result.ok).toBe(true);
       expect(result.renderers).toEqual([
-        { id: 'docxjs', default: true, supported: false },
+        { id: 'docxjs', default: true, supported: true },
         { id: 'office-open', default: false, supported: true },
       ]);
     });

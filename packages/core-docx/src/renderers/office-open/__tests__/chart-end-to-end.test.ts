@@ -1,11 +1,12 @@
 /**
- * A charted document, from JSON to bytes.
+ * A charted document, from JSON to bytes, on office-open.
  *
  * The unit tests either side of this one pin the halves — what the compiler
  * lowers, what the splice writes. This pins the whole: that a `chart` component
- * reaches a real chart part with a real workbook behind it, that the default
- * backend refuses the same document by name rather than losing the figure, and
- * that two renders of it agree byte for byte.
+ * reaches a real chart part with a real workbook behind it, and that two
+ * renders of it agree byte for byte. The docx.js twin is
+ * `renderers/docxjs/__tests__/chart-render.test.ts`; how the two backends'
+ * parts compare is `chart-cross-backend.test.ts`.
  */
 
 import AdmZip from 'adm-zip';
@@ -146,10 +147,6 @@ describe('native chart end to end', () => {
       'word/document.xml'
     );
     expect(body).toContain('Revenue by quarter');
-  });
-
-  it('refuses the same document on docxjs, naming the capability', async () => {
-    await expect(render(document('docxjs'))).rejects.toThrow(/charts/);
   });
 
   it('renders byte-identically twice', async () => {

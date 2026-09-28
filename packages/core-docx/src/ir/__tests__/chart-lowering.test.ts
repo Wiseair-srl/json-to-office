@@ -13,22 +13,29 @@ import { describe, expect, it } from 'vitest';
 import { compileDocumentToIr } from '../../core/generateFromIr';
 import type { ReportComponentDefinition } from '../../types';
 import type { DocxIrChartRun, DocxIrParagraph } from '../types';
+import type { GenerationWarning } from '@json-to-office/shared';
 
-function documentWith(props: Record<string, unknown>) {
+function documentWith(
+  props: Record<string, unknown>,
+  rootProps: Record<string, unknown> = {}
+) {
   return {
     name: 'docx',
     renderer: 'office-open',
-    props: {},
+    props: rootProps,
     children: [{ name: 'section', children: [{ name: 'chart', props }] }],
   } as never;
 }
 
 const series = [{ name: 'Revenue', labels: ['Q1', 'Q2'], values: [12, 18] }];
 
-async function chartFrom(props: Record<string, unknown>) {
+async function chartFrom(
+  props: Record<string, unknown>,
+  rootProps: Record<string, unknown> = {}
+) {
   const compiled = await compileDocumentToIr(
-    documentWith(props) as ReportComponentDefinition,
-    { validation: { enabled: false } }
+    documentWith(props, rootProps) as ReportComponentDefinition,
+    { validation: { enabled: false }, warnings: [] }
   );
   const run = compiled.ir.sections
     .flatMap((section) => section.children)
@@ -124,14 +131,131 @@ describe('chart lowering', () => {
     ).rejects.toThrow(/Second[\s\S]*category axis|category axis/);
   });
 
-  it('refuses a bubble chart, which no docx renderer draws', async () => {
-    // `@office-open` spells a bubble series as xValues/yValues/bubbleSize
-    // rather than categories and values; handing it the latter throws a
-    // TypeError from inside its own bundle. The schema drops the type too —
-    // this is the guard for a caller that skipped validation.
+  it('refuses a bubble chart, which has no bubble sizes to draw', async () => {
+    // A bubble needs a size for every point, and a series here is labels and
+    // values. The schema drops the type too — this is the guard for a caller
+    // that skipped validation.
     await expect(chartFrom({ type: 'bubble', data: series })).rejects.toThrow(
-      /bubble/
+      /bubble[\s\S]*no bubble sizes/
     );
+  });
+
+  it('refuses a pie with more than one series', async () => {
+    await expect(
+      chartFrom({
+        type: 'pie',
+        data: [
+          { name: 'This year', labels: ['A', 'B'], values: [1, 2] },
+          { name: 'Last year', labels: ['A', 'B'], values: [2, 1] },
+        ],
+      })
+    ).rejects.toThrow(/sections\[0\]\.children\[0\][\s\S]*pie with 2 series/);
+  });
+
+  it.each(['pie', 'doughnut'])(
+    'refuses a negative value in a %s, naming the series',
+    async (type) => {
+      await expect(
+        chartFrom({
+          type,
+          data: [{ name: 'Swing', labels: ['A', 'B'], values: [3, -1] }],
+        })
+      ).rejects.toThrow(/"Swing"[\s\S]*negative value \(-1 at "B"\)/);
+    }
+  );
+
+  it('refuses a series with no data points', async () => {
+    await expect(
+      chartFrom({
+        type: 'bar',
+        data: [{ name: 'Empty', labels: [], values: [] }],
+      })
+    ).rejects.toThrow(/"Empty"[\s\S]*no data points/);
+  });
+
+  it('refuses a value that is not a finite number', async () => {
+    await expect(
+      chartFrom({
+        type: 'bar',
+        data: [{ name: 'Typo', labels: ['Q1'], values: ['x'] }],
+      })
+    ).rejects.toThrow(/"Typo"[\s\S]*not a finite number \("x" at "Q1"\)/);
+  });
+
+  it('refuses a chart with no room to draw in', async () => {
+    await expect(
+      chartFrom({ type: 'bar', data: series, width: 1e-9 })
+    ).rejects.toThrow(
+      /sections\[0\]\.children\[0\] has no room: it would be 0×3 in/
+    );
+  });
+
+  it('warns once that a scatter chart places text labels in order', async () => {
+    const warnings: GenerationWarning[] = [];
+    await compileDocumentToIr(
+      documentWith({
+        type: 'scatter',
+        data: [
+          { name: 'A', labels: ['Jan', 'Feb', '3'], values: [1, 2, 3] },
+          { name: 'B', labels: ['Jan', 'Feb', '3'], values: [3, 2, 1] },
+        ],
+      }) as ReportComponentDefinition,
+      { validation: { enabled: false } },
+      warnings
+    );
+    const placed = warnings.filter((warning) =>
+      /scatter chart whose labels are not all numbers/.test(warning.message)
+    );
+    expect(placed).toHaveLength(1);
+    expect(placed[0].component).toBe('chart');
+  });
+
+  it('says nothing about a scatter chart whose labels are numbers', async () => {
+    const warnings: GenerationWarning[] = [];
+    await compileDocumentToIr(
+      documentWith({
+        type: 'scatter',
+        data: [{ name: 'A', labels: ['1', '2.5', '-4e1'], values: [1, 2, 3] }],
+      }) as ReportComponentDefinition,
+      { validation: { enabled: false } },
+      warnings
+    );
+    expect(warnings.filter((w) => w.component === 'chart')).toEqual([]);
+  });
+
+  it.each(['pie', 'doughnut'])(
+    'warns that a %s draws no axis titles, and keeps them in the IR',
+    async (type) => {
+      const warnings: GenerationWarning[] = [];
+      const compiled = await compileDocumentToIr(
+        documentWith({
+          type,
+          data: series,
+          catAxisTitle: 'Quarter',
+        }) as ReportComponentDefinition,
+        { validation: { enabled: false } },
+        warnings
+      );
+      expect(
+        warnings.filter((warning) =>
+          /has no axes; its axis titles are not drawn/.test(warning.message)
+        )
+      ).toHaveLength(1);
+      // Office-open's part is unchanged; docx.js leaves them out.
+      const run = compiled.ir.sections[0].children
+        .filter((block): block is DocxIrParagraph => block.kind === 'paragraph')
+        .flatMap((paragraph) => paragraph.children)
+        .find((child): child is DocxIrChartRun => child.kind === 'chart');
+      expect(run!.categoryAxisTitle).toBe('Quarter');
+    }
+  );
+
+  it('floors the chart text size at 1pt', async () => {
+    const { chart } = await chartFrom(
+      { type: 'bar', data: series },
+      { themeOverrides: { fonts: { body: { size: 0.5 } } } }
+    );
+    expect(chart!.textFont.fontSize).toBe(1);
   });
 
   it('carries the title, legend and alt text through', async () => {

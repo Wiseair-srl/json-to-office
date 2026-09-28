@@ -45,6 +45,7 @@ export const PUBLISHED_SURFACE: Record<FormatName, PublishedComponentSurface> =
       rootComponent: 'docx',
       renderers: {
         docxjs: [
+          'chart',
           'columns',
           'divider',
           'docx',
@@ -62,9 +63,6 @@ export const PUBLISHED_SURFACE: Record<FormatName, PublishedComponentSurface> =
           'toc',
           'visual',
         ],
-        // `chart` is office-open's alone: docx.js has no chart primitive at
-        // all, so it narrows its own profile rather than accepting a component
-        // it would have to drop. Same shape as the pptx split below.
         'office-open': [
           'chart',
           'columns',
