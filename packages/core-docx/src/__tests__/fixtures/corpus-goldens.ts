@@ -445,7 +445,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'blocks/text-box-shape':
     'c943f438974f94a76da377cc82ac815538590dcb336ab928cc82120a9ba5d4c5',
   'blocks/text-box-shape-fill-and-padding':
-    'cfad361804a695c6e3ad63c2d175f6090831f7f401a77a82068d8c4d440fb5f6',
+    '2336d54e19161ba7e157f5e60ef3bf898c112cb47e08a6d393b9a064b4934488',
   'blocks/text-box-shape-percent-size':
     'b61d5b30bdd77da43c70bd1f5d7738722b52dced49e0d02de712e79224bb76cc',
   'blocks/text-box-shape-floating':

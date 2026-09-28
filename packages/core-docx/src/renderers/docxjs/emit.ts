@@ -516,10 +516,10 @@ export function floatingOptions(
 /**
  * A native text box, as a `wps:wsp` shape run.
  *
- * docx 9.7.1 emits `a:noFill` + `a:ln` for an outline and then `a:solidFill`
- * for the fill — two fill groups, in the wrong order for CT_ShapeProperties,
- * which Word rejects. The compiler resolves that conflict before it gets here,
- * so a shape never arrives with both.
+ * docx 9.8.0 writes the fill and then the outline, the CT_ShapeProperties order
+ * (dolanmiu/docx#3521), so a shape can carry both. 9.7.1 wrote `a:noFill` +
+ * `a:ln` ahead of the `a:solidFill`, which Word rejects, and the compiler used
+ * to drop the border for it.
  */
 function emitShape(
   shape: DocxIrShapeRun,
