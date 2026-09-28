@@ -17,8 +17,8 @@
  *
  * `native` draws the same canvas as one Word DrawingML group — real text
  * boxes, real shapes, real pictures — with no pptx, no rasterizer and no PNG.
- * The text stays searchable and every object stays editable in Word. It needs
- * the `office-open` renderer, and its content model is the narrower, strictly
+ * The text stays searchable and every object stays editable in Word. Both
+ * renderers draw it, and its content model is the narrower, strictly
  * validated one in `./visual-native`.
  */
 
@@ -221,8 +221,7 @@ export const VisualRasterPropsSchema = Type.Object(
 export const VisualNativePropsSchema = Type.Object(
   {
     renderMode: Type.Literal('native', {
-      description:
-        'Draw natively as a Word DrawingML group. Requires the "office-open" renderer.',
+      description: 'Draw natively as a Word DrawingML group.',
     }),
     canvas: NativeVisualCanvasSchema,
     elements: Type.Optional(
@@ -236,8 +235,7 @@ export const VisualNativePropsSchema = Type.Object(
   {
     // Hoisted for the same reason as the raster branch above.
     $id: 'DocxVisualNativeProps',
-    description:
-      'Visual component props (native Word drawing group; requires renderer "office-open")',
+    description: 'Visual component props (native Word drawing group)',
     additionalProperties: false,
   }
 );
@@ -247,8 +245,8 @@ export const VisualNativePropsSchema = Type.Object(
  *
  * Kept as one canonical schema rather than two registry entries because the
  * runtime validator checks an un-profiled schema: both shapes have to be
- * structurally valid here, and which one a *document* may use is decided by
- * its renderer, in `schemas/renderer.ts`.
+ * structurally valid here, and the element kinds a native visual may hold are
+ * checked in `schemas/renderer.ts`.
  */
 export const VisualPropsSchema = Type.Union(
   [VisualRasterPropsSchema, VisualNativePropsSchema],

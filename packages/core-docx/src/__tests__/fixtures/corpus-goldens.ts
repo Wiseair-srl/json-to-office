@@ -608,4 +608,12 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
     '47e2cf75b9382e203d16dc92b293b880a5e65ed5a98e058aa53e41c3170167d3',
   'blocks/chart-figure-native':
     'e2bee80801e5dcd1aa79e05c4d058fe414b9f9dd98a0a005f0b6f3dbd68c9c7b',
+  'drawings/native-visual-basic':
+    'bb2d38da1d4e267632b81b28db69c82ccc2695e0fb0776503f2760ee52e8e21f',
+  'drawings/native-visual-no-background':
+    'f182c9bf2050846493842caa2d5b321556392fea1982e52e587d9571a56353da',
+  'drawings/native-visual-pictures':
+    'afa318d19afaf0b52e1009e28e9e92fb06aa1f5eeb88baf7bd251c410c0683e2',
+  'drawings/native-visual-placed':
+    '523bfb94ee9b40482ed78e4bc5f0c06ed59c8ef69e400fba92a0ca364c35cfaa',
 };

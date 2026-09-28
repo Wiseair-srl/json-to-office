@@ -79,12 +79,13 @@ const document = {
 };
 
 /**
- * A native drawing group, which only the second backend can draw.
+ * A native drawing group, on each backend.
  *
- * Separate from the document above because `docxjs` refuses it by design, and
- * because it is the one construct whose whole point is that it is *not* a
- * picture: if a group were malformed, nothing short of opening the file would
- * say so.
+ * Separate from the document above because it is the one construct whose
+ * whole point is that it is *not* a picture: if a group were malformed,
+ * nothing short of opening the file would say so. The two backends write it
+ * differently enough (docx.js through `docx/shapes` and a repair pass) that
+ * each is opened on its own.
  */
 const nativeVisualDocument = {
   name: 'docx',
@@ -178,5 +179,13 @@ describe.skipIf(!soffice)('LibreOffice can open the output', () => {
 
   it('converts a native drawing group to PDF', async () => {
     await convertsToPdf(nativeVisualDocument, 'office-open', 'native-visual');
+  }, 240_000);
+
+  it('converts a native drawing group drawn by docxjs to PDF', async () => {
+    await convertsToPdf(
+      { ...nativeVisualDocument, renderer: 'docxjs' },
+      'docxjs',
+      'native-visual-docxjs'
+    );
   }, 240_000);
 });

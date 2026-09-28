@@ -227,3 +227,111 @@ describe.each<[DocxRendererId]>([['docxjs'], ['office-open']])(
     }, 60_000);
   }
 );
+
+/**
+ * Native visuals in the body and in a header: a group's children carry
+ * `cNvPr` ids of their own, which docx.js draws from the same process-wide
+ * counter as `wp:docPr`. One visual has no background, so docx.js pads its
+ * canvas with an extra child; the other holds a picture.
+ */
+const groups = {
+  name: 'docx',
+  props: { theme: 'minimal' },
+  children: [
+    {
+      name: 'section',
+      props: {
+        header: [
+          {
+            name: 'visual',
+            props: {
+              renderMode: 'native',
+              canvas: { width: 2, height: 0.5 },
+              elements: [
+                {
+                  name: 'text',
+                  props: { text: 'Header', x: 0.1, y: 0.1, w: 1, h: 0.3 },
+                },
+              ],
+            },
+          },
+        ],
+      },
+      children: [
+        {
+          name: 'visual',
+          props: {
+            renderMode: 'native',
+            canvas: { width: 3, height: 1, background: { color: '#F5F7FA' } },
+            elements: [
+              {
+                name: 'shape',
+                props: { type: 'roundRect', x: 0.1, y: 0.1, w: 1, h: 0.8 },
+              },
+              {
+                name: 'image',
+                props: { base64: PNG_4X2, x: 1.5, y: 0.1, w: 1 },
+              },
+            ],
+          },
+        },
+        { name: 'image', props: { base64: PNG_4X2, width: 40 } },
+      ],
+    },
+  ],
+} as unknown as ReportComponentDefinition;
+
+/** Every drawing id: `wp:docPr`, and the `cNvPr` of each group child. */
+async function groupIds(buffer: Buffer): Promise<string[]> {
+  const zip = await JSZip.loadAsync(buffer);
+  const ids: string[] = [];
+  for (const [path, entry] of Object.entries(zip.files)) {
+    if (entry.dir || !/^word\/[^/]+\.xml$/.test(path)) continue;
+    const xml = await entry.async('string');
+    for (const match of xml.matchAll(/<wp:docPr\b[^>]*?\bid="(\d+)"/g)) {
+      ids.push(match[1]!);
+    }
+    for (const group of xml.match(/<wpg:wgp>[\s\S]*?<\/wpg:wgp>/g) ?? []) {
+      for (const match of group.matchAll(
+        /<(?:wps|pic|wpg):cNvPr\b[^>]*?\bid="(\d+)"/g
+      )) {
+        ids.push(match[1]!);
+      }
+    }
+  }
+  return ids;
+}
+
+describe.each<[DocxRendererId]>([['docxjs'], ['office-open']])(
+  'drawing groups on the %s backend',
+  (renderer) => {
+    const build = (): Promise<Buffer> =>
+      generateBufferFromJson(structuredClone(groups), {
+        renderer,
+        validation: { enabled: false },
+        generatedAt: '2024-01-01T00:00:00Z',
+      });
+
+    it('build the same bytes twice in a row', async () => {
+      const first = await build();
+      const second = await build();
+
+      expect(second.equals(first)).toBe(true);
+    }, 60_000);
+
+    it('build the same bytes when two build at once', async () => {
+      const [a, b] = await Promise.all([build(), build()]);
+
+      expect(b.equals(a)).toBe(true);
+    }, 60_000);
+
+    it('number every drawing and group child once across the package', async () => {
+      const ids = await groupIds(await build());
+
+      // Two groups and their children (a background, a shape, a picture; a
+      // text box), plus the body image — and docx.js's canvas pad on top.
+      expect(ids.length).toBeGreaterThanOrEqual(7);
+      expect(new Set(ids).size).toBe(ids.length);
+    }, 60_000);
+  }
+);

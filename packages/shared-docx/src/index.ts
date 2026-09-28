@@ -314,7 +314,7 @@ export { ChartPropsSchema } from './schemas/components/chart';
 export type { ChartProps } from './schemas/components/chart';
 
 // Visual component schema (standard component — a rasterized pptx slide, or a
-// native Word drawing group under the `office-open` renderer)
+// native Word drawing group)
 export {
   VisualPropsSchema,
   VisualRasterPropsSchema,

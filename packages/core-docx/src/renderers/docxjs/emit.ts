@@ -57,6 +57,7 @@ import { emitChart } from './charts';
 import type {
   DocxIrBlock,
   DocxIrBorder,
+  DocxIrDrawingGroupRun,
   DocxIrFloating,
   DocxIrFrame,
   DocxIrImageRun,
@@ -92,7 +93,19 @@ export const ALIGNMENT: Readonly<
  * asynchronous — it rasterises a fallback. So the renderer builds them all
  * before the document, and this layer only places them.
  */
-export type EmitResources = ReadonlyMap<string, ImageRunFactory>;
+export interface EmitResources extends ReadonlyMap<string, ImageRunFactory> {
+  /**
+   * Builds a drawing group's run. Present only when the IR holds one, because
+   * `docx/shapes` is loaded on demand (`drawingGroup.ts`).
+   */
+  readonly drawingGroup?: DrawingGroupFactory;
+}
+
+/** Builds the run for one drawing group, placed and anchored. */
+export type DrawingGroupFactory = (
+  group: DocxIrDrawingGroupRun,
+  resources: EmitResources
+) => ParagraphChild;
 
 /** Builds the run for one placement, which carries its own size and anchor. */
 export type ImageRunFactory = (image: DocxIrImageRun) => ParagraphChild;
@@ -184,7 +197,14 @@ export function runOptions(
   if (formatting.italic !== undefined) options.italics = formatting.italic;
   if (formatting.underline !== undefined) {
     options.underline = formatting.underline
-      ? { type: formatting.underline.type }
+      ? {
+          type: formatting.underline.type,
+          // A native visual's text is the one place a run states its own
+          // underline colour.
+          ...(formatting.underline.color
+            ? { color: formatting.underline.color.hex }
+            : {}),
+        }
       : undefined;
   }
   if (formatting.strike !== undefined) options.strike = formatting.strike;
@@ -350,13 +370,20 @@ export function inlineChildren(
         out.push(emitShape(child, resources));
         break;
 
-      case 'drawingGroup':
-        // Unreachable: docx.js declines `drawing-groups`, so the capability
-        // gate refuses the document before any adapter is asked to emit one.
-        throw new Error(
-          'the docxjs renderer has no emitter for a drawing group; ' +
-            'this document should have been refused by the capability check'
-        );
+      case 'drawingGroup': {
+        const build = resources.drawingGroup;
+        if (!build) {
+          throw new Error(
+            'the docxjs renderer was handed a drawing group without loading ' +
+              'docx/shapes; render() loads it whenever the IR holds one'
+          );
+        }
+        // A break before a drawing goes on a run of its own, as for an image.
+        const pending = breakOption();
+        if (pending.break) out.push(new TextRun(pending));
+        out.push(build(child, resources));
+        break;
+      }
 
       case 'chart': {
         // A break before a chart gets a run of its own, as before an image.

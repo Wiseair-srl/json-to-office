@@ -5,8 +5,8 @@
  * a share of it. Sized against the page, an image in a text box padded 72pt a
  * side came out two inches wider than the box in every reader, since a
  * drawing's `wp:extent` is an absolute size. What is asserted is that extent:
- * the box's content width, on both backends for an image, a shape and a chart,
- * and on `office-open` — the backend that draws it — for a native visual.
+ * the box's content width, on both backends, for an image, a shape, a native
+ * visual and a chart.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -145,4 +145,27 @@ describe('a native drawing in a text box', () => {
 
     expect(extentCx(xml)).toBe(inchesToEmu(boxContent(xml) / 1440));
   }, 60_000);
+});
+
+describe('a native drawing in a text box on docxjs', () => {
+  it("sizes a visual's percentage width against the box", async () => {
+    const xml = await boxed(
+      {
+        name: 'visual',
+        props: {
+          renderMode: 'native',
+          width: '100%',
+          canvas: { width: 4, height: 2 },
+          elements: [
+            { name: 'shape', props: { type: 'rect', x: 0, y: 0, w: 1, h: 1 } },
+          ],
+        },
+      },
+      'docxjs'
+    );
+
+    expect(extentCx(xml)).toBe(
+      pixelsToEmu(Math.round(twipsToPixels(boxContent(xml))))
+    );
+  });
 });

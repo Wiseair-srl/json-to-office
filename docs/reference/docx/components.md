@@ -686,11 +686,11 @@ A free-canvas graphic — absolute positioning, overlapping shapes and layered a
 
 **`raster`** (the default, and what an omitted `renderMode` means) authors the canvas as a **single PPTX slide** — text, shapes, images, tables and charts positioned in inches — rasterized to a PNG by a PPTX rendering service and placed like an [`image`](#image). This gives Word documents the full expressiveness of the slide engine; see the [PPTX component reference](/reference/pptx/components) for the element types.
 
-**`native`** draws the same canvas as one Word **DrawingML group**: real text boxes, real shapes, real pictures, with no PPTX, no rasterization service and no PNG. Text stays searchable and every object stays editable in Word. It requires `"renderer": "office-open"` on the document, and its content model is narrower — see [Native mode](#visual-native-mode) below.
+**`native`** draws the same canvas as one Word **DrawingML group**: real text boxes, real shapes, real pictures, with no PPTX, no rasterization service and no PNG. Text stays searchable and every object stays editable in Word. Both renderers draw it, and its content model is narrower — see [Native mode](#visual-native-mode) below.
 
 | Prop                                              | Type                                | Required | Default                          | Description                                                                                                                                        |
 | ------------------------------------------------- | ----------------------------------- | -------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `renderMode`                                      | `'raster'` \| `'native'`            | no       | `'raster'`                       | `'native'` draws a Word drawing group instead of a rasterized slide, and requires `"renderer": "office-open"`                                      |
+| `renderMode`                                      | `'raster'` \| `'native'`            | no       | `'raster'`                       | `'native'` draws a Word drawing group instead of a rasterized slide                                                                                |
 | `canvas`                                          | object                              | **yes**  | —                                | `{ width, height }` in **inches** (each ≥ 0.1), optional `theme` (a PPTX theme name) and `background` (`{ color?, image?: { path? \| base64? } }`) |
 | `elements`                                        | PPTX slide-content array            | no       | —                                | The real PPTX slide-content union: `text`, `image`, `shape`, `table`, `highcharts`, `chart` nodes with `x`/`y`/`w`/`h` in inches                   |
 | `dpi`                                             | `number` (36–600)                   | no       | `200`                            | Raster resolution; out-of-range values fail validation (the render-time clamp applies only to unvalidated inputs like `services.pptx.dpi`)         |
@@ -737,9 +737,9 @@ At render time the visual becomes a one-slide presentation `{ name: 'pptx', ... 
 
 ### Native mode {#visual-native-mode}
 
-Set `"renderMode": "native"` and the document's `"renderer": "office-open"`, and the canvas becomes a `wpg:wgp` drawing group placed exactly the way a raster visual is — same `width`/`height`, `alignment`, `caption`, `alt`, `spacing`, `floating`, `keepNext` and `keepLines`.
+Set `"renderMode": "native"`, on either renderer, and the canvas becomes a `wpg:wgp` drawing group placed exactly the way a raster visual is — same `width`/`height`, `alignment`, `caption`, `alt`, `spacing`, `floating`, `keepNext` and `keepLines`.
 
-`dpi` and `serverUrl` are **not valid** in native mode: nothing is rasterized, so a resolution or a service URL would describe work that never happens. Setting either is a validation error, as is `renderMode: "native"` under any other renderer.
+`dpi` and `serverUrl` are **not valid** in native mode: nothing is rasterized, so a resolution or a service URL would describe work that never happens. Setting either is a validation error.
 
 **Canvas.** `{ width, height }` in inches, plus an optional `background` of a `color` and/or an `image`. A background colour becomes the bottom-most rectangle and a background image the bottom-most picture. There is no `theme`: a native visual resolves colours against the document's own docx theme, not a PPTX one.
 
