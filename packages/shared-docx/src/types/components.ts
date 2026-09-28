@@ -149,8 +149,9 @@ export interface TableComponent {
 /**
  * Native chart component with literal name discriminator.
  *
- * Only `office-open` draws it; the schema for every other renderer omits the
- * component entirely.
+ * Both renderers draw it as a Word chart with its workbook: the default
+ * `docxjs` through docx 9.8's `ChartRun`, `office-open` through its own chart
+ * run with the workbook spliced in afterwards.
  */
 export interface ChartComponent {
   name: 'chart';

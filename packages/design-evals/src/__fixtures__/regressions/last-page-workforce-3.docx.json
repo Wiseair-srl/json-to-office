@@ -786,7 +786,7 @@
         ]
       },
       "chart-figure": {
-        "description": "A numbered, sourced chart: the chart itself (highcharts through the export server, or a native chart on the office-open renderer), a caption that says what it shows, an optional takeaway beneath, and the source line the report cites. The source is required; the figure number is a Word SEQ field.",
+        "description": "A numbered, sourced chart: the chart itself (highcharts through the export server, or a native Word chart), a caption that says what it shows, an optional takeaway beneath, and the source line the report cites. The source is required; the figure number is a Word SEQ field.",
         "slots": {
           "chart": {
             "type": "component",
