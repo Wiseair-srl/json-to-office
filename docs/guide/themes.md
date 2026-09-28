@@ -75,7 +75,7 @@ A DOCX document also carries a Word theme (`word/theme/theme1.xml`), filled from
 
 The theme is named after the jto theme (`consulting`), and the hyperlink colours stay Office's.
 
-On the default renderer only a native chart draws from these, as Word's own charts do: its gridlines and axis lines take a tint of Text 1, and a pie or doughnut's slice borders Background 1. Every other colour and font is stated, so apart from those lines the document looks the same under any Word theme. The slots are what someone editing it is offered: the Design tab, the top rows of the colour menus, (Headings) and (Body) in the font menu, and the colours of a chart, SmartArt or table style inserted in Word. Choosing another theme in Word does not restyle jto text.
+On the default renderer only a native chart draws from these, as Word's own charts do: its gridlines and axis lines take a tint of Text 1, and a pie or doughnut's slice borders Background 1. Every other colour and font is stated, so apart from those lines the document looks the same under any Word theme. The slots are what someone editing it is offered: the Theme Colors row of each colour menu (Font Color, Shading, Design > Page Color), (Headings) and (Body) in the font menu, and the colours of a chart, SmartArt or table style inserted in Word. Word does not list the scheme by name: its Design > Colors and Design > Fonts galleries hold only Office's built-in schemes and any saved on the machine. Choosing another theme in Word does not restyle jto text.
 
 Unset `accent4`–`accent6` keep Office's colours. A twin deck writes the same slots.
 
