@@ -142,10 +142,10 @@ denominator, for the same reason.
 
 ### Fallbacks
 
-| Instead of `highcharts` | Gets you                                                              | Costs you                                           |
-| ----------------------- | --------------------------------------------------------------------- | --------------------------------------------------- |
-| `chart`                 | A real, editable Word/PowerPoint chart. No server, no network at all. | docx needs `renderer: "office-open"`; 8 chart types |
-| `visual`                | A pptx slide rendered into the document by LibreOffice.               | Needs LibreOffice; a picture, not a chart           |
+| Instead of `highcharts` | Gets you                                                              | Costs you                                 |
+| ----------------------- | --------------------------------------------------------------------- | ----------------------------------------- |
+| `chart`                 | A real, editable Word/PowerPoint chart. No server, no network at all. | 8 chart types in docx, 9 in pptx          |
+| `visual`                | A pptx slide rendered into the document by LibreOffice.               | Needs LibreOffice; a picture, not a chart |
 
 Reach for native [`chart`](/guide/charts) first: it needs no infrastructure, the
 recipient can edit the data, and it covers the common business chart types.
