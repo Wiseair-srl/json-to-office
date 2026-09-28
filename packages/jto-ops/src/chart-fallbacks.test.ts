@@ -32,17 +32,21 @@ function isOfficePackage(bytes: Buffer): boolean {
 const NO_SERVER = 'http://127.0.0.1:9';
 
 describe('chart fallbacks', () => {
-  it('draws a native chart with no export server in sight', async () => {
-    const adapter = new DocxFormatAdapter();
-    const generator = await adapter.createGenerator([], {
-      renderer: 'office-open',
-      services: { highcharts: { serverUrl: NO_SERVER } },
-    });
-    const buffer = await generator.generateBuffer(
-      example('native-chart.docx.json')
-    );
-    expect(isOfficePackage(buffer)).toBe(true);
-  }, 60_000);
+  it.each(['office-open', 'docxjs'] as const)(
+    'draws a native chart with no export server in sight on %s',
+    async (renderer) => {
+      const adapter = new DocxFormatAdapter();
+      const generator = await adapter.createGenerator([], {
+        renderer,
+        services: { highcharts: { serverUrl: NO_SERVER } },
+      });
+      const buffer = await generator.generateBuffer(
+        example('native-chart.docx.json')
+      );
+      expect(isOfficePackage(buffer)).toBe(true);
+    },
+    60_000
+  );
 
   it('draws a native visual with no rasterizer and no server', async () => {
     const adapter = new DocxFormatAdapter();

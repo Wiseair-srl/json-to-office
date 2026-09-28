@@ -54,10 +54,11 @@ export const DOCX_FEATURES = [
    *
    * Separate from `images` because a chart is not a picture with extra data —
    * it is its own part, its own relationship and its own workbook, and a
-   * backend either writes all three or writes none. docx.js has no chart
-   * primitive at all, which is what turns a `chart` component sent to that
-   * backend into a named capability error rather than a document missing a
-   * figure.
+   * backend either writes all three or writes none. Both DOCX backends do:
+   * docx.js through `docx/charts`, which docx 9.8.0 added (#478), and
+   * office-open through its chart run plus a spliced-in workbook. A backend
+   * without it still turns a `chart` into a named capability error rather
+   * than a document missing a figure.
    */
   'charts',
   /** A table-of-contents field. */

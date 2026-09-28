@@ -348,13 +348,9 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
       name: 'chart',
       propsSchema: ChartPropsSchema,
       hasChildren: false,
-      // docx.js has no chart primitive at all, so this is a backend gap rather
-      // than a slice boundary — the same reasoning that keeps `drawing-groups`
-      // off the docxjs capability set.
-      renderers: ['office-open'],
       category: 'content',
       description:
-        'Native Word chart - editable, scalable, no export server needed. Requires renderer "office-open".',
+        'Native Word chart - editable, scalable, no export server needed.',
     },
     {
       name: 'visual',
