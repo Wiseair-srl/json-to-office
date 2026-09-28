@@ -5,7 +5,8 @@
  * contract the IR promises adapters: resolved colours, integral twip geometry,
  * border styles in OOXML's vocabulary, resolved resource and style references,
  * paired bookmark and comment ranges, note references that point at a note
- * that exists.
+ * that exists, a theme whose colours are resolved hex and whose names XML can
+ * carry.
  *
  * A violation is a compiler bug, so it is an error, not a warning.
  */
@@ -14,6 +15,8 @@ import { assertNever } from '@json-to-office/shared/rendering';
 import {
   DOCX_IR_BORDER_STYLES,
   DOCX_IR_SCHEMA_VERSION,
+  DOCX_IR_THEME_COLOR_SLOTS,
+  NOT_XML_CHAR,
   type DocxIR,
   type DocxIrBlock,
   type DocxIrBorders,
@@ -110,6 +113,25 @@ export function validateDocxIr(ir: DocxIR): IrViolation[] {
       `styles.builtIn.${slot}.paragraph.borders`,
       add
     );
+  }
+
+  if (ir.theme) {
+    const text = (value: string, path: string) => {
+      if (value.trim().length === 0) add(path, 'expected a non-empty value');
+      else if (NOT_XML_CHAR.test(value))
+        add(path, 'contains a character XML cannot carry');
+    };
+    text(ir.theme.name, 'theme.name');
+    const slots: ReadonlySet<string> = new Set(DOCX_IR_THEME_COLOR_SLOTS);
+    for (const [slot, color] of Object.entries(ir.theme.colors)) {
+      if (!slots.has(slot))
+        add(`theme.colors.${slot}`, `unknown theme colour slot "${slot}"`);
+      else if (color) checkColor(color, `theme.colors.${slot}`, add);
+    }
+    for (const key of ['headingFont', 'bodyFont'] as const) {
+      const family = ir.theme[key];
+      if (family !== undefined) text(family, `theme.${key}`);
+    }
   }
 
   const scope: Scope = {

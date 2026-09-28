@@ -189,6 +189,7 @@ import {
   twipsToPixels,
   wholeTwips,
 } from './units';
+import { compileTheme } from './theme';
 
 /** A component the compiler does not yet lower into IR. */
 export interface UnsupportedComponent {
@@ -401,6 +402,7 @@ export function compileDocument(
         ? { noProofWords: noProofWords(structure.theme) }
         : {}),
     },
+    theme: compileTheme(structure.theme, structure.themeName),
     // The statistic styles are appended rather than built with the rest: a
     // document that uses no statistic must keep the exact style set it had
     // before the component had styles, or every recorded golden moves for a

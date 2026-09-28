@@ -5,6 +5,7 @@ import type {
   DocxIrInline,
   DocxIrParagraph,
   DocxIrTable,
+  DocxIrTheme,
 } from '../types';
 import { assertValidDocxIr, validateDocxIr } from '../validation';
 
@@ -546,5 +547,46 @@ describe('validateDocxIr', () => {
     ]);
     expect(validateDocxIr(ir)).toHaveLength(2);
     expect(() => assertValidDocxIr(ir)).toThrow(/failed 2 invariant\(s\)/);
+  });
+});
+
+describe('validateDocxIr: theme', () => {
+  const theme = (overrides: Partial<DocxIrTheme> = {}): DocxIR =>
+    baseIr({
+      theme: {
+        name: 'consulting',
+        colors: { dark1: { hex: '1A1F26' }, accent1: { hex: '1A1F26' } },
+        headingFont: 'Arial',
+        bodyFont: 'Calibri',
+        ...overrides,
+      },
+    });
+  const paths = (ir: DocxIR) => validateDocxIr(ir).map((v) => v.path);
+
+  it('accepts a resolved theme', () => {
+    expect(validateDocxIr(theme())).toEqual([]);
+  });
+
+  it('rejects a colour that is not bare uppercase hex', () => {
+    expect(paths(theme({ colors: { accent1: { hex: '1a1f26' } } }))).toEqual([
+      'theme.colors.accent1',
+    ]);
+  });
+
+  it('rejects a slot that is not a scheme slot', () => {
+    const colors = { accent7: { hex: '1A1F26' } } as DocxIrTheme['colors'];
+    expect(paths(theme({ colors }))).toEqual(['theme.colors.accent7']);
+  });
+
+  it('rejects an empty name', () => {
+    expect(paths(theme({ name: '' }))).toEqual(['theme.name']);
+  });
+
+  it('rejects a name XML cannot carry', () => {
+    expect(paths(theme({ name: 'a\u0000b' }))).toEqual(['theme.name']);
+  });
+
+  it('rejects a blank font', () => {
+    expect(paths(theme({ headingFont: ' ' }))).toEqual(['theme.headingFont']);
   });
 });

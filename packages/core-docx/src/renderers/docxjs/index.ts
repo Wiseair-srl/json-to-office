@@ -24,6 +24,7 @@ import {
   type ICommentOptions,
   type ILevelsOptions,
   type ISectionOptions,
+  type IThemeOptions,
 } from 'docx';
 import { emitStyles } from './styles';
 import { loadDocxCharts } from './charts';
@@ -39,6 +40,7 @@ import type {
   DocxIrNote,
   DocxIrNumbering,
   DocxIrSection,
+  DocxIrTheme,
 } from '../../ir/types';
 import type { DocxFeature } from '../../ir/features';
 import {
@@ -186,6 +188,7 @@ export function buildDocument(
 ): Document {
   return new Document({
     styles: emitStyles(ir.styles),
+    ...(ir.theme ? { theme: themeOptions(ir.theme) } : {}),
     sections: ir.sections.map((section, index) =>
       sectionOptions(section, resources, index === ir.sections.length - 1)
     ),
@@ -228,6 +231,28 @@ export function buildDocument(
         }
       : {}),
   });
+}
+
+/**
+ * The IR theme as docx.js takes it. Slot names are ST_ThemeColor's on both
+ * sides, so this only unwraps the colours. `colors` and `fonts` are passed only
+ * when non-empty: docx.js names a scheme after the theme whenever the object is
+ * present, even empty.
+ */
+function themeOptions(theme: DocxIrTheme): IThemeOptions {
+  const colors: Record<string, string> = {};
+  for (const [slot, color] of Object.entries(theme.colors)) {
+    if (color) colors[slot] = color.hex;
+  }
+  const fonts = {
+    ...(theme.headingFont ? { headings: theme.headingFont } : {}),
+    ...(theme.bodyFont ? { body: theme.bodyFont } : {}),
+  };
+  return {
+    name: theme.name,
+    ...(Object.keys(colors).length > 0 ? { colors } : {}),
+    ...(Object.keys(fonts).length > 0 ? { fonts } : {}),
+  };
 }
 
 /** Note bodies keyed by id, which is how docx.js takes them. */

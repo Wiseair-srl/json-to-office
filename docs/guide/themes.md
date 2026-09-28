@@ -56,6 +56,29 @@ The pptx `chart` and the `highcharts` component in **both** formats default thei
 A theme that fills only some of them behaves identically in both formats too: the unset slot is dropped, the palette is only as long as the theme has tokens defined, and the chart library reuses that shorter list. No warning is emitted — the fallback rule above governs a token named _explicitly_, not the implicit chart palette. Every built-in DOCX theme fills `accent4`–`accent6`, so a docx chart on a bundled theme draws from six curated series colors. See [Charts](/guide/charts#theme-palette).
 :::
 
+### The theme Word sees
+
+A DOCX document also carries a Word theme (`word/theme/theme1.xml`), filled from the jto theme with the same slots a twin deck writes:
+
+| Word slot     | Word calls it | jto token             |
+| ------------- | ------------- | --------------------- |
+| `dk1`         | Text 1        | `text`                |
+| `lt1`         | Background 1  | `background`          |
+| `dk2`         | Text 2        | `textSecondary`       |
+| `lt2`         | Background 2  | `backgroundSecondary` |
+| `accent1`     | Accent 1      | `primary`             |
+| `accent2`     | Accent 2      | `secondary`           |
+| `accent3`     | Accent 3      | `accent`              |
+| `accent4`–`6` | Accent 4–6    | `accent4`–`accent6`   |
+| major font    | (Headings)    | the `heading` family  |
+| minor font    | (Body)        | the `body` family     |
+
+The theme is named after the jto theme (`consulting`), and the hyperlink colours stay Office's.
+
+On the default renderer nothing in the document draws from these — every colour and font is stated — so it looks the same under any Word theme. They are what someone editing it is offered: the Design tab, the top rows of the colour menus, (Headings) and (Body) in the font menu, and the colours of a chart, SmartArt or table style inserted in Word. Choosing another theme in Word does not restyle jto text.
+
+Unset `accent4`–`accent6` keep Office's colours. A twin deck writes the same slots.
+
 ## Shared visual roles
 
 Add a type ladder and palette without changing a bundled theme. For example, use this root on a DOCX document:
