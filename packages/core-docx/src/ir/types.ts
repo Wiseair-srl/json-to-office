@@ -129,9 +129,11 @@ export const NOT_XML_CHAR =
   /[^\t\n\r\u0020-\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}]/u;
 
 /**
- * `word/theme/theme1.xml`: what Word's Design tab, colour menus and font menu
- * offer, and what content inserted in Word picks up. Outside a native chart,
- * which takes a tint of Text 1 for its gridlines and axis lines and
+ * `word/theme/theme1.xml`: what the Theme Colors row of Word's colour menus
+ * and (Headings) and (Body) in its font menu offer, and what content inserted
+ * in Word picks up. Word's Design > Colors and Design > Fonts galleries list
+ * only built-in and saved schemes, never this one by name. Outside a native
+ * chart, which takes a tint of Text 1 for its gridlines and axis lines and
  * Background 1 for its slice borders as Word's own charts do, nothing the
  * docx.js adapter writes refers to it, so on that backend it moves no other
  * rendering.
