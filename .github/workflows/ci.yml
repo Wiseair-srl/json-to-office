@@ -405,12 +405,16 @@ jobs:
         run: |
           node packages/jto-cli/dist/cli.js docx generate examples/invoice.docx.json --output "$RUNNER_TEMP/invoice.docx" --no-google-fonts
           node packages/jto-cli/dist/cli.js pptx generate examples/quarterly-review.pptx.json --output "$RUNNER_TEMP/quarterly-review.pptx" --no-google-fonts
+          # A native chart on the default renderer: docx/charts is loaded at
+          # render time, so this is the test that it resolves from the CLI.
+          node packages/jto-cli/dist/cli.js docx generate examples/native-chart.docx.json --output "$RUNNER_TEMP/native-chart.docx" --no-google-fonts
           # A `visual` normally needs LibreOffice; this one is drawn natively,
           # so it belongs in the dependency-free set and is the smoke test that
           # a drawing group survives the whole CLI path.
           node packages/jto-cli/dist/cli.js docx generate examples/native-visual.docx.json --output "$RUNNER_TEMP/native-visual.docx" --no-google-fonts
           test -s "$RUNNER_TEMP/invoice.docx"
           test -s "$RUNNER_TEMP/quarterly-review.pptx"
+          test -s "$RUNNER_TEMP/native-chart.docx"
           test -s "$RUNNER_TEMP/native-visual.docx"
 
   release:

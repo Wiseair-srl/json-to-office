@@ -56,16 +56,14 @@ Components fall into two categories:
 
 Allowed children per container:
 
-| Format | Container  | Allowed children                                                                                                                                           |
-| ------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| DOCX   | `docx`     | `section` only                                                                                                                                             |
-| DOCX   | `section`  | `heading`, `paragraph`, `image`, `statistic`, `table`, `list`, `toc`, `divider`, `highcharts`, `chart`¹, `visual`, `columns`, `text-box`, `block`, `group` |
-| DOCX   | `columns`  | Same as `section`, minus `columns` (no nested column layouts)                                                                                              |
-| DOCX   | `text-box` | `heading`, `paragraph`, `image`, `divider`                                                                                                                 |
-| PPTX   | `pptx`     | `slide` only                                                                                                                                               |
-| PPTX   | `slide`    | `text`, `image`, `shape`, `table`, `highcharts`, `chart`                                                                                                   |
-
-¹ `chart` needs `renderer: "office-open"`; the default `docxjs` renderer has no chart primitive and omits it from its profile.
+| Format | Container  | Allowed children                                                                                                                                          |
+| ------ | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DOCX   | `docx`     | `section` only                                                                                                                                            |
+| DOCX   | `section`  | `heading`, `paragraph`, `image`, `statistic`, `table`, `list`, `toc`, `divider`, `highcharts`, `chart`, `visual`, `columns`, `text-box`, `block`, `group` |
+| DOCX   | `columns`  | Same as `section`, minus `columns` (no nested column layouts)                                                                                             |
+| DOCX   | `text-box` | `heading`, `paragraph`, `image`, `divider`                                                                                                                |
+| PPTX   | `pptx`     | `slide` only                                                                                                                                              |
+| PPTX   | `slide`    | `text`, `image`, `shape`, `table`, `highcharts`, `chart`                                                                                                  |
 
 Plugin-defined custom components are additionally allowed as children of any container — the processor expands them into standard components before rendering (see [Architecture](/guide/architecture)).
 
@@ -196,7 +194,7 @@ Office files are full of values that would otherwise change on every run, so jso
 - **ZIP entry timestamps** — written from UTC components, so the bytes match regardless of the building machine's timezone.
 - **Generated identifiers** — bookmark, revision, and numbering IDs come from per-document registries rather than counters seeded by the clock.
 - **Date placeholders** — `{DATE}` and `{DATETIME}` resolve against the document's generation date, not `Date.now()`.
-- **Chart IDs** — PPTX chart parts are renumbered from 1, and the XLSX packages embedded in native charts are normalized recursively (they carry their own timestamps).
+- **Chart IDs and workbooks** — PPTX chart parts are renumbered from 1, and the XLSX packages embedded in native charts, in a deck or a document, are normalized recursively (they carry their own timestamps).
 
 Two options control this, on both formats:
 

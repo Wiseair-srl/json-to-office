@@ -8,9 +8,9 @@
  * `section-opener` and `running-head`, the report's data blocks `kpi-row`,
  * `callout` and `data-table`, and the numbered `figure` with the `footnotes`
  * that collect its sources, each on the house theme that declares its recipes
- * and on one that does not. `chart-figure` is absent: its chart needs an
- * export server (`highcharts`) or the office-open renderer (`chart`), and the
- * corpus runs one deterministic pipeline with no service.
+ * and on one that does not. `chart-figure` with a native `chart` is covered in
+ * `corpus-charts.ts`; its `highcharts` form stays absent, since that needs an
+ * export server and the corpus runs one deterministic pipeline with no service.
  *
  * Every image here is an inline base64 data URI: a corpus case is identified by
  * the SHA-256 of the package it produces, so nothing may reach outside the

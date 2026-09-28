@@ -9,7 +9,7 @@ Real-world JSON document definitions you can render with json-to-office.
 | [contract-v2.docx.json](contract-v2.docx.json)               | DOCX   | Service agreement (revised version) for `jto docx diff`                                                                                         |
 | [visual-infographic.docx.json](visual-infographic.docx.json) | DOCX   | `visual` component — a free-canvas chevron infographic authored as a pptx slide and embedded as a PNG (needs LibreOffice + poppler)             |
 | [native-visual.docx.json](native-visual.docx.json)           | DOCX   | The same infographic drawn natively (`renderMode: "native"` + the `office-open` renderer) — editable shapes and text, no rasterizer             |
-| [native-chart.docx.json](native-chart.docx.json)             | DOCX   | Native Word charts (`chart` + the `office-open` renderer) — real chart objects with an embedded workbook, editable in Word, no export server    |
+| [native-chart.docx.json](native-chart.docx.json)             | DOCX   | Native Word charts (`chart`) on either renderer — real chart objects with an embedded workbook, editable in Word, no export server              |
 | [highcharts-report.docx.json](highcharts-report.docx.json)   | DOCX   | `highcharts` charts drawn through a Highcharts Export Server — the theme palette carries, the theme fonts do not (see the Claude Desktop guide) |
 | [quarterly-review.pptx.json](quarterly-review.pptx.json)     | PPTX   | Two-slide quarterly review — designed title and dashboard slides with KPI tiles, a native chart, a styled table, and speaker notes              |
 

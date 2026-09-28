@@ -464,7 +464,7 @@ This is how a landscape-style data appendix or a tight-margin cover section coex
 
 ## Charts and visuals
 
-Two components embed rendered graphics. `highcharts` sends a full Highcharts config to an export server and embeds the resulting image — see [Charts](/guide/charts). `visual` is more general: you author a free-canvas graphic as a **single PPTX slide** (text, shapes, images, tables, charts positioned in inches on a canvas), and json-to-office rasterizes it to a PNG through the PPTX engine and places it like an image:
+A native [`chart`](/reference/docx/components#chart) is a real Word chart with its own workbook, on either renderer and with no service. Two components embed rendered graphics instead. `highcharts` sends a full Highcharts config to an export server and embeds the resulting image — see [Charts](/guide/charts). `visual` is more general: you author a free-canvas graphic as a **single PPTX slide** (text, shapes, images, tables, charts positioned in inches on a canvas), and json-to-office rasterizes it to a PNG through the PPTX engine and places it like an image:
 
 ```json
 {

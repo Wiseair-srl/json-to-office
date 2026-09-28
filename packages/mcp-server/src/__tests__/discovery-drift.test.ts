@@ -385,8 +385,8 @@ describe('tools and resources describe the same surface', () => {
           arguments: {
             format: format.name,
             name: component.name,
-            // Some components live in only one renderer profile — docx
-            // `chart` is office-open only — so ask the renderer that has it.
+            // A component may live in only one renderer profile, so ask a
+            // renderer that has it.
             ...(component.renderers[0] !== undefined && {
               renderer: component.renderers[0],
             }),
