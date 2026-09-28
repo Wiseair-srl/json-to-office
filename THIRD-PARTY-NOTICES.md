@@ -7,7 +7,7 @@ open-source projects listed below; their license terms are reproduced verbatim.
 
 ## Core rendering engines
 
-- **docx** 9.7.1 — MIT — https://github.com/dolanmiu/docx
+- **docx** 9.8.0 — MIT — https://github.com/dolanmiu/docx
 - **@office-open/core** 0.11.0 — MIT — https://github.com/DemoMacro/office-open
 - **@office-open/docx** 0.11.0 — MIT — https://github.com/DemoMacro/office-open
 - **@office-open/pptx** 0.11.0 — MIT — https://github.com/DemoMacro/office-open
@@ -3820,7 +3820,7 @@ MIT License
     SOFTWARE
 ```
 
-### @types/node 18.19.130, 20.11.0, 25.9.5
+### @types/node 18.19.130, 20.11.0, 26.6.3
 
 License: MIT
 
@@ -6548,7 +6548,7 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### docx 9.7.1
+### docx 9.8.0
 
 License: MIT · Author: Dolan Miu
 
@@ -12781,7 +12781,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### nanoid 3.3.11, 5.1.6
+### nanoid 3.3.11, 6.0.1
 
 License: MIT · Author: Andrey Sitnik
 
@@ -16521,7 +16521,7 @@ If the Work includes a "NOTICE" text file as part of its distribution, then any 
 END OF TERMS AND CONDITIONS
 ```
 
-### undici-types 5.26.5, 7.24.6
+### undici-types 5.26.5, 8.9.0
 
 License: MIT
 

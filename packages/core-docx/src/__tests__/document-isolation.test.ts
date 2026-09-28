@@ -220,6 +220,10 @@ describe.each<[DocxRendererId]>([['docxjs'], ['office-open']])(
       for (const ids of Object.values(parts)) {
         expect(new Set(ids).size).toBe(ids.length);
       }
+      // And across the package: OOXML wants a drawing id unique in the whole
+      // document, headers included.
+      const all = Object.values(parts).flat();
+      expect(new Set(all).size).toBe(all.length);
     }, 60_000);
   }
 );

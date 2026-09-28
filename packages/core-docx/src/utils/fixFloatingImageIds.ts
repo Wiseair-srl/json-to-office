@@ -1,43 +1,73 @@
 /**
- * Post-processing utility to fix docx.js floating image bugs
+ * Give every drawing in a docx.js package a deterministic, package-unique
+ * `wp:docPr` id.
  *
- * The docx library (as of v9.7.1) has a known issue with floating images:
- * 1. Duplicate wp:docPr IDs (GitHub issue #2719)
+ * docx 9.8.0 draws `wp:docPr` ids from one counter shared by every drawing in
+ * the process (dolanmiu/docx#3521): unique, but the numbers depend on how many
+ * drawings were created before this document, so the same document rendered
+ * twice produces different bytes. Before 9.8.0 the ids were per instance and
+ * every drawing outside `document.xml` carried `id="1"`.
  *
- * Historical note: We previously also post-processed relativeHeight and
- * wrapTight elements. Those steps were removed because we always provide a
- * valid zIndex upstream and we do not support 'tight' wrapping.
- *
- * This utility extracts the DOCX, fixes duplicate IDs, and re-packages it.
+ * OOXML wants the id unique across the whole document, headers and notes
+ * included, so this pass renumbers one sequence across every part that can
+ * hold a drawing, in a fixed order: the body first, then headers and footers
+ * by number, then footnotes, endnotes and comments. The body's ids are the
+ * ones the pre-9.8.0 pass wrote, so a document without chrome drawings is
+ * unchanged.
  */
 
 import AdmZip from 'adm-zip';
 import { readFile, writeFile } from 'fs/promises';
 
-/** Fix duplicate floating-image IDs without touching the filesystem. */
+const DRAWING_PART =
+  /^word\/(document|header|footer|footnotes|endnotes|comments)(\d*)\.xml$/;
+const RANK = [
+  'document',
+  'header',
+  'footer',
+  'footnotes',
+  'endnotes',
+  'comments',
+];
+
+/** The order ids are allocated in: body, headers, footers, notes, comments. */
+function partOrder(a: string, b: string): number {
+  const ma = DRAWING_PART.exec(a)!;
+  const mb = DRAWING_PART.exec(b)!;
+  const rank = RANK.indexOf(ma[1]) - RANK.indexOf(mb[1]);
+  return rank !== 0 ? rank : Number(ma[2] || 0) - Number(mb[2] || 0);
+}
+
+/** Renumber every `wp:docPr` id in the package, one sequence across parts. */
 export function fixFloatingImageIdsInBuffer(buffer: Buffer): Buffer {
   const zip = new AdmZip(buffer);
-  const documentEntry = zip.getEntry('word/document.xml');
-
-  if (!documentEntry) {
+  if (!zip.getEntry('word/document.xml')) {
     throw new Error('document.xml not found in DOCX');
   }
 
-  let idCounter = 1;
-  // `id` is not guaranteed to be the first attribute on wp:docPr: OOXML does
-  // not fix attribute order and docx does not promise to preserve it. Match it
-  // wherever it sits so a library-side reordering cannot silently turn this
-  // pass into a no-op (which would leave every floating image on id="1" and
-  // make Word prompt for repair).
-  const documentXml = documentEntry
-    .getData()
-    .toString('utf8')
-    .replace(/(<wp:docPr\b[^>]*?\s)id="\d+"/g, (_match, prefix: string) => {
-      const newId = idCounter++;
-      return `${prefix}id="${newId}"`;
-    });
+  // Hold the entries themselves (`filter` copies the list): rewriting one
+  // while walking the rest is safe, and no lookup by name can miss a part.
+  const parts = zip
+    .getEntries()
+    .filter((entry) => DRAWING_PART.test(entry.entryName))
+    .sort((a, b) => partOrder(a.entryName, b.entryName));
 
-  zip.updateFile(documentEntry, Buffer.from(documentXml, 'utf8'));
+  let idCounter = 1;
+  for (const entry of parts) {
+    const xml = entry.getData().toString('utf8');
+    // `id` is not guaranteed to be the first attribute on wp:docPr: match it
+    // wherever it sits so a library-side reordering cannot turn this into a
+    // no-op.
+    const renumbered = xml.replace(
+      /(<wp:docPr\b[^>]*?\s)id="\d+"/g,
+      (_match, prefix: string) => `${prefix}id="${idCounter++}"`
+    );
+    // Unconditionally, even when no id moved: an entry adm-zip rewrites is
+    // deflated again by zlib, one it leaves alone keeps docx's JSZip stream.
+    // Rewriting only the parts whose ids changed would make the package bytes
+    // depend on the process-wide counter even though every part is identical.
+    zip.updateFile(entry, Buffer.from(renumbered, 'utf8'));
+  }
   return zip.toBuffer();
 }
 
