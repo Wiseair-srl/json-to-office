@@ -6,8 +6,8 @@
  * asserted is that the IR *means* the same thing to both: the same text in the
  * same order, the same number of tables, rows, cells, drawings, links, note and
  * comment references, drawing extents, the same paper and margins section by
- * section, the same note and comment parts, and the same bold, italic, size
- * and tracking on every style the IR declares.
+ * section, the same note and comment parts, the same bold, italic, size and
+ * tracking on every style the IR declares, and the same Word theme.
  * The second backend may need extra equivalent media parts when the same image
  * is drawn at different sizes because it stores extents on deduplicated media.
  * Every run and paragraph starts from the same document defaults on both, and
@@ -53,6 +53,10 @@ import {
 } from '../../../__tests__/fixtures/corpus-blocks';
 import { readImageDimensions } from '../../../utils/imageUtils';
 import { minimalTheme } from '../../../templates/themes';
+import {
+  summarizeThemePart,
+  type ThemePartSummary,
+} from '../../../__tests__/fixtures/themePart';
 
 const officeOpen = await resolveDocxRenderer('office-open');
 
@@ -227,6 +231,12 @@ interface Shape {
    * Without one (`default`, or no type at all) a pitch changes nothing.
    */
   grids: string[];
+  /**
+   * The Word theme each backend writes: name, scheme colours, Latin fonts.
+   * `summarizeThemePart` throws on a missing part, so losing it on both
+   * backends cannot compare equal.
+   */
+  theme: ThemePartSummary;
 }
 
 /**
@@ -345,6 +355,7 @@ async function shapeOf(
         ? type
         : `${type} ${attribute('linePitch')} ${attribute('charSpace') ?? 0}`;
     }),
+    theme: summarizeThemePart(await read('word/theme/theme1.xml')),
   };
 }
 

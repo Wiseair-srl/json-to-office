@@ -79,6 +79,8 @@ On the default renderer nothing in the document draws from these — every colou
 
 Unset `accent4`–`accent6` keep Office's colours. A twin deck writes the same slots.
 
+On the experimental `office-open` renderer a few of Word's own spare styles (Quote, Heading 7–9) and a contents field's first run follow the theme, as do a native chart's unstyled axis lines; jto applies none of those styles.
+
 ## Shared visual roles
 
 Add a type ladder and palette without changing a bundled theme. For example, use this root on a DOCX document:
