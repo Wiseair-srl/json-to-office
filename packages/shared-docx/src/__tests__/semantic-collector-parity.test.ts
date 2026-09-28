@@ -81,16 +81,16 @@ const OFFENDERS: [string, Record<string, unknown>, string][] = [
     'A table cell cannot hold a "statistic"',
   ],
   [
-    'a native visual under the default renderer',
+    'a native visual holding an element it cannot draw',
     {
       name: 'visual',
       props: {
         renderMode: 'native',
         canvas: { width: 3, height: 2 },
-        elements: [{ name: 'shape', props: { type: 'rect' } }],
+        elements: [{ name: 'table', props: {} }],
       },
     },
-    'Only the "office-open" renderer draws a native visual',
+    'A native visual cannot draw "table"',
   ],
 ];
 

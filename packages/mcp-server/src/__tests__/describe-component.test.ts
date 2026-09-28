@@ -196,21 +196,20 @@ describe('jto_describe_component', () => {
   it('answers per renderer profile, not per format', async () => {
     const docxjs = await describeComponent({
       format: 'docx',
-      name: 'visual',
+      name: 'paragraph',
       renderer: 'docxjs',
     });
     const officeOpen = await describeComponent({
       format: 'docx',
-      name: 'visual',
+      name: 'paragraph',
       renderer: 'office-open',
     });
     expect(docxjs.renderer).toBe('docxjs');
     expect(officeOpen.renderer).toBe('office-open');
-    // Only `office-open` draws a native visual, so the two profiles must not
-    // hand back the same props schema.
-    expect(JSON.stringify(docxjs.schema)).not.toEqual(
-      JSON.stringify(officeOpen.schema)
-    );
+    // `office-open` cannot thread a comment, so its paragraph profile has no
+    // `comment.replies` and the two must not hand back the same props schema.
+    expect(JSON.stringify(docxjs.schema)).toContain('"replies"');
+    expect(JSON.stringify(officeOpen.schema)).not.toContain('"replies"');
     expect(docxjs.renderers).toEqual([
       { id: 'docxjs', default: true, supported: true },
       { id: 'office-open', default: false, supported: true },

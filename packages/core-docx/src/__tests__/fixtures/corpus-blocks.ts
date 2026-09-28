@@ -14,10 +14,11 @@
  *
  * Every image here is an inline base64 data URI: a corpus case is identified by
  * the SHA-256 of the package it produces, so nothing may reach outside the
- * process. The `visual` and `highcharts` components are deliberately absent for
- * the same reason — they need external services — and so is the `svg` image
+ * process. A raster `visual` and `highcharts` are deliberately absent for the
+ * same reason — they need external services — and so is the `svg` image
  * source, whose PNG fallback is rasterized by a native renderer whose bytes are
- * not guaranteed to match across platforms.
+ * not guaranteed to match across platforms. A native `visual` needs no
+ * service; those cases live in `corpus-drawings.ts`.
  */
 
 import { readFileSync } from 'node:fs';

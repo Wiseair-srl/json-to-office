@@ -397,7 +397,7 @@ interface ServicesConfig {
 }
 ```
 
-`services.pptx` is needed only by `visual` components that rasterize. A visual with `"renderMode": "native"` is drawn by the `office-open` backend itself — it never reaches this service, stages no fonts for it and moves none of its counters — so a document whose visuals are all native generates with `services` omitted entirely. See [Native mode](/reference/docx/components#visual-native-mode).
+`services.pptx` is needed only by `visual` components that rasterize. A visual with `"renderMode": "native"` is drawn by the docx backend itself — it never reaches this service, stages no fonts for it and moves none of its counters — so a document whose visuals are all native generates with `services` omitted entirely. See [Native mode](/reference/docx/components#visual-native-mode).
 
 ### `FontRuntimeOpts`
 

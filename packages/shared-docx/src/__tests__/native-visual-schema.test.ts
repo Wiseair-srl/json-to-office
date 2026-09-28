@@ -2,11 +2,11 @@
  * The `visual` component's two authoring surfaces, and the line between them.
  *
  * A visual can be a rasterized pptx slide or a native Word drawing group, and
- * which one a document may use is decided by its renderer. That makes three
- * things worth pinning here: the exported schema offers the right variants to
- * an editor, the runtime rejects a native visual under a backend that cannot
- * draw one, and native mode is *strict* — an element or a property it would
- * ignore is refused, with a path, rather than silently doing nothing.
+ * both renderers draw either. That makes three things worth pinning here: the
+ * exported schema offers both variants to an editor under either renderer,
+ * the runtime accepts a native visual under either, and native mode is
+ * *strict* — an element or a property it would ignore is refused, with a
+ * path, rather than silently doing nothing.
  *
  * The last of those is the load-bearing one. Native mode exists to keep text
  * and shapes real; a document that validates and then ships without the chart
@@ -23,7 +23,10 @@ import {
   isNativeVisualProps,
   NATIVE_RENDER_MODE,
 } from '../schemas/components/visual';
-import { docxPropsSchemaForRenderer } from '../schemas/renderer';
+import {
+  collectDocxRendererErrors,
+  docxPropsSchemaForRenderer,
+} from '../schemas/renderer';
 import { unionBranches } from '@json-to-office/shared';
 
 const NATIVE_CANVAS = { width: 6.5, height: 3 };
@@ -63,47 +66,22 @@ function errorsOf(doc: Record<string, unknown>): string[] {
 }
 
 describe('renderer profiles for `visual`', () => {
-  it('offers only the raster shape to a backend that cannot draw a group', () => {
-    const profiled = docxPropsSchemaForRenderer(
-      'visual',
-      VisualPropsSchema,
-      'docxjs'
-    );
+  it.each(['docxjs', 'office-open'] as const)(
+    'offers both shapes to `%s`',
+    (renderer) => {
+      const profiled = docxPropsSchemaForRenderer(
+        'visual',
+        VisualPropsSchema,
+        renderer
+      );
 
-    // A plain object, not a union: an editor completing `visual.props` under
-    // the default backend has exactly one set of properties to offer.
-    expect(unionBranches(profiled as never)).toHaveLength(0);
-    expect(Value.Check(profiled, nativeProps())).toBe(false);
-    expect(
-      Value.Check(profiled, { canvas: { width: 4, height: 3 }, dpi: 200 })
-    ).toBe(true);
-  });
-
-  it('offers both shapes to `office-open`', () => {
-    const profiled = docxPropsSchemaForRenderer(
-      'visual',
-      VisualPropsSchema,
-      'office-open'
-    );
-
-    expect(unionBranches(profiled as never)).toHaveLength(2);
-    expect(Value.Check(profiled, nativeProps())).toBe(true);
-    expect(
-      Value.Check(profiled, { canvas: { width: 4, height: 3 }, dpi: 200 })
-    ).toBe(true);
-  });
-
-  it('leaves every other component untouched by the visual rule', () => {
-    const image = docxPropsSchemaForRenderer(
-      'image',
-      VisualPropsSchema,
-      'docxjs'
-    );
-    // Same input schema, a different component name: nothing is pruned, so the
-    // rule is keyed on the component rather than on the shape it happens to
-    // have.
-    expect(unionBranches(image as never)).toHaveLength(2);
-  });
+      expect(unionBranches(profiled as never)).toHaveLength(2);
+      expect(Value.Check(profiled, nativeProps())).toBe(true);
+      expect(
+        Value.Check(profiled, { canvas: { width: 4, height: 3 }, dpi: 200 })
+      ).toBe(true);
+    }
+  );
 });
 
 describe('the raster/native discriminator', () => {
@@ -128,235 +106,229 @@ describe('the raster/native discriminator', () => {
   });
 });
 
-describe('native mode requires the office-open renderer', () => {
-  it('is rejected under the default backend, at the renderMode path', () => {
-    const result = validate.jsonDocument(
-      JSON.stringify(document(nativeProps()))
-    );
-
-    expect(result.valid).toBe(false);
-    expect(result.errors).toContainEqual(
-      expect.objectContaining({
-        path: '/children/0/children/0/props/renderMode',
-        code: 'unsupported_renderer_feature',
-      })
-    );
-  });
-
-  it('is rejected under an explicit `docxjs`', () => {
-    expect(errorsOf(document(nativeProps(), 'docxjs'))).toContain(
-      'unsupported_renderer_feature /children/0/children/0/props/renderMode'
-    );
-  });
-
-  it('is accepted under `office-open`', () => {
-    expect(
-      errorsOf(
-        document(
-          nativeProps([
-            {
-              name: 'shape',
-              props: {
-                type: 'roundRect',
-                x: 0.25,
-                y: 0.25,
-                w: 2,
-                h: 1,
-                fill: { color: '#0F172A' },
+describe('native mode on either renderer', () => {
+  it.each([undefined, 'docxjs', 'office-open'] as const)(
+    'is accepted under %s',
+    (renderer) => {
+      expect(
+        errorsOf(
+          document(
+            nativeProps([
+              {
+                name: 'shape',
+                props: {
+                  type: 'roundRect',
+                  x: 0.25,
+                  y: 0.25,
+                  w: 2,
+                  h: 1,
+                  fill: { color: '#0F172A' },
+                },
               },
-            },
-            {
-              name: 'text',
-              props: { text: 'Editable Word content', x: 2.5, fontSize: 22 },
-            },
-            { name: 'image', props: { path: 'logo.png', w: 1 } },
-          ]),
-          'office-open'
+              {
+                name: 'text',
+                props: { text: 'Editable Word content', x: 2.5, fontSize: 22 },
+              },
+              { name: 'image', props: { path: 'logo.png', w: 1 } },
+            ]),
+            renderer
+          )
         )
-      )
-    ).toEqual([]);
-  });
+      ).toEqual([]);
+    }
+  );
 
   it('leaves a raster visual alone under either renderer', () => {
     const raster = { canvas: { width: 4, height: 3 }, dpi: 200 };
     expect(errorsOf(document(raster, 'docxjs'))).toEqual([]);
     expect(errorsOf(document(raster, 'office-open'))).toEqual([]);
   });
+
+  it("leaves a raster visual's own slide elements to the slide", () => {
+    // A pptx `chart` element inside a raster visual is part of the slide, not
+    // the docx `chart` component, so no docx renderer rule applies to it.
+    const raster = {
+      canvas: { width: 4, height: 3 },
+      elements: [{ name: 'chart', props: { type: 'bar' } }],
+    };
+    expect(collectDocxRendererErrors(document(raster, 'docxjs'))).toEqual([]);
+  });
 });
 
-describe('native mode is strict about what it can draw', () => {
-  it.each(['table', 'highcharts', 'chart'])(
-    'refuses a %s element, naming the element',
-    (name) => {
-      const errors = validate.jsonDocument(
-        JSON.stringify(
-          document(nativeProps([{ name, props: {} }]), 'office-open')
-        )
-      ).errors;
+describe.each(['office-open', 'docxjs'] as const)(
+  'native mode is strict about what it can draw, on %s',
+  (renderer) => {
+    it.each(['table', 'highcharts', 'chart'])(
+      'refuses a %s element, naming the element',
+      (name) => {
+        const errors = validate.jsonDocument(
+          JSON.stringify(document(nativeProps([{ name, props: {} }]), renderer))
+        ).errors;
 
-      expect(errors).toContainEqual(
-        expect.objectContaining({
-          path: '/children/0/children/0/props/elements/0/name',
-          code: 'unsupported_renderer_feature',
+        expect(errors).toContainEqual(
+          expect.objectContaining({
+            path: '/children/0/children/0/props/elements/0/name',
+            code: 'unsupported_renderer_feature',
+          })
+        );
+        expect(errors?.[errors.length - 1]?.message).toContain(name);
+      }
+    );
+
+    it('refuses rasterization properties that would do nothing', () => {
+      for (const [key, value] of [
+        ['dpi', 200],
+        ['serverUrl', 'http://localhost:7802'],
+      ] as const) {
+        expect(
+          errorsOf(document(nativeProps([], { [key]: value }), renderer))
+        ).toContain(`42 /children/0/children/0/props/${key}`);
+      }
+    });
+
+    it('refuses a pptx theme on the canvas, which docx cannot resolve', () => {
+      expect(
+        Value.Check(VisualNativePropsSchema, {
+          renderMode: 'native',
+          canvas: { ...NATIVE_CANVAS, theme: 'dark' },
         })
-      );
-      expect(errors?.[errors.length - 1]?.message).toContain(name);
-    }
-  );
+      ).toBe(false);
+    });
 
-  it('refuses rasterization properties that would do nothing', () => {
-    for (const [key, value] of [
-      ['dpi', 200],
-      ['serverUrl', 'http://localhost:7802'],
-    ] as const) {
-      expect(
-        errorsOf(document(nativeProps([], { [key]: value }), 'office-open'))
-      ).toContain(`42 /children/0/children/0/props/${key}`);
-    }
-  });
+    it.each([
+      ['text', { text: 'x', bullet: true }],
+      ['text', { text: 'x', lineSpacing: 1.5 }],
+      ['text', { text: 'x', style: 'title' }],
+      ['shape', { type: 'rect', fill: { gradient: { stops: [] } } }],
+      ['shape', { type: 'rect', shadow: { type: 'outer' } }],
+      ['shape', { type: 'rect', rectRadius: 0.1 }],
+      ['image', { path: 'a.png', rounding: true }],
+      ['image', { path: 'a.png', hyperlink: { url: 'https://x.test' } }],
+    ] as const)(
+      'refuses a raster-only %s property rather than ignoring it',
+      (name, props) => {
+        expect(
+          errorsOf(document(nativeProps([{ name, props }]), renderer))
+        ).not.toEqual([]);
+      }
+    );
 
-  it('refuses a pptx theme on the canvas, which docx cannot resolve', () => {
-    expect(
-      Value.Check(VisualNativePropsSchema, {
-        renderMode: 'native',
-        canvas: { ...NATIVE_CANVAS, theme: 'dark' },
-      })
-    ).toBe(false);
-  });
-
-  it.each([
-    ['text', { text: 'x', bullet: true }],
-    ['text', { text: 'x', lineSpacing: 1.5 }],
-    ['text', { text: 'x', style: 'title' }],
-    ['shape', { type: 'rect', fill: { gradient: { stops: [] } } }],
-    ['shape', { type: 'rect', shadow: { type: 'outer' } }],
-    ['shape', { type: 'rect', rectRadius: 0.1 }],
-    ['image', { path: 'a.png', rounding: true }],
-    ['image', { path: 'a.png', hyperlink: { url: 'https://x.test' } }],
-  ] as const)(
-    'refuses a raster-only %s property rather than ignoring it',
-    (name, props) => {
-      expect(
-        errorsOf(document(nativeProps([{ name, props }]), 'office-open'))
-      ).not.toEqual([]);
-    }
-  );
-
-  it('still accepts every property native mode does draw', () => {
-    expect(
-      errorsOf(
-        document(
-          nativeProps([
-            {
-              name: 'text',
-              props: {
-                runs: [
-                  { text: 'Bold', bold: true },
-                  {
-                    text: 'and struck',
-                    strike: true,
-                    underline: { style: 'dbl', color: '#FF0000' },
-                    breakLine: true,
-                  },
-                ],
-                x: '10%',
-                y: 0.4,
-                w: '50%',
-                h: 0.5,
-                fontFace: 'Inter',
-                fontSize: 14,
-                color: 'primary',
-                italic: true,
-                align: 'center',
-                valign: 'middle',
-                margin: [2, 4, 2, 4],
-                fill: { color: '#FFFFFF', transparency: 20 },
-                rotate: 90,
-              },
-            },
-            {
-              name: 'shape',
-              props: {
-                type: 'lightning',
-                x: 1,
-                y: 1,
-                w: 1,
-                h: 1,
-                fill: { color: 'accent' },
-                line: { color: '#334155', width: 1.5, dashType: 'dashDot' },
-                text: [{ text: 'Segment', bold: true, breakLine: true }],
-                fontColor: '#FFFFFF',
-                align: 'right',
-                valign: 'bottom',
-                flipH: true,
-                flipV: true,
-                rotate: -15,
-              },
-            },
-            {
-              name: 'image',
-              props: {
-                base64: 'data:image/png;base64,AAAA',
-                x: 0,
-                y: 0,
-                w: 1,
-                h: 1,
-                sizing: { type: 'cover', w: 1, h: 1 },
-                rotate: 30,
-                alt: 'A logo',
-              },
-            },
-          ]),
-          'office-open'
-        )
-      )
-    ).toEqual([]);
-  });
-
-  it('refuses a negative size, however it is spelled', () => {
-    for (const w of [-1.5, '-50%']) {
+    it('still accepts every property native mode does draw', () => {
       expect(
         errorsOf(
           document(
-            nativeProps([{ name: 'shape', props: { type: 'rect', w } }]),
-            'office-open'
+            nativeProps([
+              {
+                name: 'text',
+                props: {
+                  runs: [
+                    { text: 'Bold', bold: true },
+                    {
+                      text: 'and struck',
+                      strike: true,
+                      underline: { style: 'dbl', color: '#FF0000' },
+                      breakLine: true,
+                    },
+                  ],
+                  x: '10%',
+                  y: 0.4,
+                  w: '50%',
+                  h: 0.5,
+                  fontFace: 'Inter',
+                  fontSize: 14,
+                  color: 'primary',
+                  italic: true,
+                  align: 'center',
+                  valign: 'middle',
+                  margin: [2, 4, 2, 4],
+                  fill: { color: '#FFFFFF', transparency: 20 },
+                  rotate: 90,
+                },
+              },
+              {
+                name: 'shape',
+                props: {
+                  type: 'lightning',
+                  x: 1,
+                  y: 1,
+                  w: 1,
+                  h: 1,
+                  fill: { color: 'accent' },
+                  line: { color: '#334155', width: 1.5, dashType: 'dashDot' },
+                  text: [{ text: 'Segment', bold: true, breakLine: true }],
+                  fontColor: '#FFFFFF',
+                  align: 'right',
+                  valign: 'bottom',
+                  flipH: true,
+                  flipV: true,
+                  rotate: -15,
+                },
+              },
+              {
+                name: 'image',
+                props: {
+                  base64: 'data:image/png;base64,AAAA',
+                  x: 0,
+                  y: 0,
+                  w: 1,
+                  h: 1,
+                  sizing: { type: 'cover', w: 1, h: 1 },
+                  rotate: 30,
+                  alt: 'A logo',
+                },
+              },
+            ]),
+            renderer
           )
         )
-      ).not.toEqual([]);
-    }
-  });
+      ).toEqual([]);
+    });
 
-  it('still allows a negative position, which is a real placement', () => {
-    // An element may legitimately start off the top-left of the canvas; only
-    // its size cannot be negative.
-    expect(
-      errorsOf(
-        document(
-          nativeProps([
-            {
-              name: 'shape',
-              props: { type: 'rect', x: '-10%', y: -0.5, w: 1, h: 1 },
-            },
-          ]),
-          'office-open'
+    it('refuses a negative size, however it is spelled', () => {
+      for (const w of [-1.5, '-50%']) {
+        expect(
+          errorsOf(
+            document(
+              nativeProps([{ name: 'shape', props: { type: 'rect', w } }]),
+              renderer
+            )
+          )
+        ).not.toEqual([]);
+      }
+    });
+
+    it('still allows a negative position, which is a real placement', () => {
+      // An element may legitimately start off the top-left of the canvas; only
+      // its size cannot be negative.
+      expect(
+        errorsOf(
+          document(
+            nativeProps([
+              {
+                name: 'shape',
+                props: { type: 'rect', x: '-10%', y: -0.5, w: 1, h: 1 },
+              },
+            ]),
+            renderer
+          )
         )
-      )
-    ).toEqual([]);
-  });
+      ).toEqual([]);
+    });
 
-  it('reports a bad element property against the element, not the whole visual', () => {
-    const errors = validate.jsonDocument(
-      JSON.stringify(
-        document(
-          nativeProps([
-            { name: 'text', props: { text: 'ok' } },
-            { name: 'text', props: { text: 'x', bullet: true } },
-          ]),
-          'office-open'
+    it('reports a bad element property against the element, not the whole visual', () => {
+      const errors = validate.jsonDocument(
+        JSON.stringify(
+          document(
+            nativeProps([
+              { name: 'text', props: { text: 'ok' } },
+              { name: 'text', props: { text: 'x', bullet: true } },
+            ]),
+            renderer
+          )
         )
-      )
-    ).errors;
+      ).errors;
 
-    expect(errors?.some((e) => e.path.includes('/elements/1'))).toBe(true);
-  });
-});
+      expect(errors?.some((e) => e.path.includes('/elements/1'))).toBe(true);
+    });
+  }
+);

@@ -114,11 +114,11 @@ describe('per-renderer component definitions', () => {
         }
       }
     }
-    // Only office-open draws a native visual, in a cell as anywhere else.
+    // Both renderers draw a native visual, in a cell as anywhere else.
     expect(JSON.stringify(cellContents('office-open'))).toContain(
       'DocxVisualNativeProps'
     );
-    expect(JSON.stringify(cellContents('docxjs'))).not.toContain(
+    expect(JSON.stringify(cellContents('docxjs'))).toContain(
       'DocxVisualNativeProps'
     );
   });
@@ -130,9 +130,9 @@ describe('per-renderer component definitions', () => {
     // office-open cannot thread comments; docxjs can.
     expect(docxjs).toContain('"replies"');
     expect(officeOpen).not.toContain('"replies"');
-    // Only office-open draws a native visual.
+    // Both draw a native visual, so threads are the difference.
     expect(officeOpen).toContain('DocxVisualNativeProps');
-    expect(docxjs).not.toContain('DocxVisualNativeProps');
+    expect(docxjs).toContain('DocxVisualNativeProps');
   });
 
   it('resolves every reference it emits', () => {

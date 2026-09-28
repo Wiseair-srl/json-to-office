@@ -358,7 +358,7 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
       hasChildren: false,
       category: 'content',
       description:
-        'Free-canvas graphic for infographics, diagrams and layered compositions the document flow cannot express. Rasterized from a pptx slide by default; renderMode "native" draws it as an editable Word drawing group (renderer "office-open").',
+        'Free-canvas graphic for infographics, diagrams and layered compositions the document flow cannot express. Rasterized from a pptx slide by default; renderMode "native" draws it as an editable Word drawing group.',
     },
   ] as const;
 

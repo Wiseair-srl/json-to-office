@@ -48,17 +48,21 @@ describe('chart fallbacks', () => {
     60_000
   );
 
-  it('draws a native visual with no rasterizer and no server', async () => {
-    const adapter = new DocxFormatAdapter();
-    const generator = await adapter.createGenerator([], {
-      renderer: 'office-open',
-      services: { highcharts: { serverUrl: NO_SERVER } },
-    });
-    const buffer = await generator.generateBuffer(
-      example('native-visual.docx.json')
-    );
-    expect(isOfficePackage(buffer)).toBe(true);
-  }, 60_000);
+  it.each(['office-open', 'docxjs'] as const)(
+    'draws a native visual on %s with no rasterizer and no server',
+    async (renderer) => {
+      const adapter = new DocxFormatAdapter();
+      const generator = await adapter.createGenerator([], {
+        renderer,
+        services: { highcharts: { serverUrl: NO_SERVER } },
+      });
+      const buffer = await generator.generateBuffer(
+        example('native-visual.docx.json')
+      );
+      expect(isOfficePackage(buffer)).toBe(true);
+    },
+    60_000
+  );
 
   it('refuses to generate a highcharts document with no server, by name', async () => {
     // Fail closed, on purpose. A document that quietly lost its figures is

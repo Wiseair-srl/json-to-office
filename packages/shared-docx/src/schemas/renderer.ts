@@ -43,21 +43,17 @@ export function docxFlowDefinitionName(renderer?: DocxRendererId): string {
  * a profile is a *subtraction*: the branches and fields this renderer cannot
  * draw are removed, which is what makes a schema-driven editor offer only what
  * the chosen backend will actually render.
+ *
+ * No subtraction is keyed by component today: both renderers draw a native
+ * `visual`, so the name is kept for the next profile that needs one.
  */
 export function docxPropsSchemaForRenderer(
-  componentName: string,
+  _componentName: string,
   schema: TSchema,
   renderer: DocxRendererId
 ): TSchema {
   const copy = cloneSchema(schema);
   nameComponentPlaceholders(copy, docxComponentDefinitionName(renderer));
-
-  if (componentName === 'visual' && renderer !== 'office-open') {
-    // Only `office-open` draws a native group, so every other backend sees the
-    // raster branch alone — a plain object rather than a union, which is what
-    // gives an editor one unambiguous completion set.
-    return firstUnionBranch(copy) ?? copy;
-  }
 
   if (renderer === 'office-open') pruneThreadFields(copy);
   return copy;
@@ -107,7 +103,10 @@ export function collectDocxRendererErrors(data: unknown): ValidationError[] {
     }
 
     if (object.name === 'visual') {
-      collectVisualErrors(object, `${path}`, isOfficeOpen, errors);
+      collectVisualErrors(object, `${path}`, errors);
+      // A visual holds slide or drawing elements, never docx components: a
+      // raster visual's pptx `chart` element is not the docx `chart`.
+      return;
     }
 
     for (const [key, value] of Object.entries(object)) {
@@ -122,33 +121,21 @@ export function collectDocxRendererErrors(data: unknown): ValidationError[] {
 /**
  * Native-mode rules for one `visual` node.
  *
- * Two separate concerns, and both have to name a path an editor can jump to.
- * A backend that cannot draw a group must reject the mode itself, at
- * `props/renderMode`. A backend that can must still reject element kinds that
- * have no native form — otherwise a `chart` inside a native visual would
- * validate and then vanish, which is exactly the failure mode strictness
- * exists to prevent.
+ * Both renderers draw a native group, so the mode itself is never refused.
+ * Element kinds that have no native form are, under either renderer, at a
+ * path an editor can jump to — otherwise a `chart` inside a native visual
+ * would validate and then vanish, which is exactly the failure mode
+ * strictness exists to prevent.
  */
 function collectVisualErrors(
   node: Record<string, unknown>,
   path: string,
-  isOfficeOpen: boolean,
   errors: ValidationError[]
 ): void {
   const props = node.props;
   if (!props || typeof props !== 'object' || Array.isArray(props)) return;
   const value = props as Record<string, unknown>;
   if (value.renderMode !== NATIVE_RENDER_MODE) return;
-
-  if (!isOfficeOpen) {
-    errors.push({
-      path: `${path}/props/renderMode`,
-      message:
-        'Only the "office-open" renderer draws a native visual. Set the document\'s "renderer" to "office-open", or drop "renderMode" to rasterize.',
-      code: 'unsupported_renderer_feature',
-    });
-    return;
-  }
 
   const elements = value.elements;
   if (!Array.isArray(elements)) return;
@@ -166,14 +153,6 @@ function collectVisualErrors(
       code: 'unsupported_renderer_feature',
     });
   });
-}
-
-/** The first branch of a union schema, if this is one. */
-function firstUnionBranch(schema: TSchema): TSchema | undefined {
-  const branches = (schema as { anyOf?: TSchema[] }).anyOf;
-  return Array.isArray(branches) && branches.length > 0
-    ? branches[0]
-    : undefined;
 }
 
 function pruneThreadFields(node: unknown): void {

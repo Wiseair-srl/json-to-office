@@ -21,6 +21,7 @@ import { CASES as STRUCTURE } from './corpus-structure';
 import { CASES as TABLES } from './corpus-tables';
 import { CASES as TEXT } from './corpus-text';
 import { CASES as THEME } from './corpus-theme';
+import { CASES as DRAWINGS } from './corpus-drawings';
 
 export type { CorpusCase };
 
@@ -35,4 +36,5 @@ export const CORPUS: CorpusCase[] = [
   ...CHARTS,
   ...ANNOTATIONS,
   ...THEME,
+  ...DRAWINGS,
 ];
