@@ -41,9 +41,6 @@
     "@json-to-office/shared": "workspace:^",
     "@json-to-office/shared-pptx": "workspace:^"
   },
-  "peerDependencies": {
-    "pptxgenjs": "^3.12.0"
-  },
   "devDependencies": {
     "@types/node": "22.20.2",
     "tsup": "8.5.0",

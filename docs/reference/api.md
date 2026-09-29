@@ -6,7 +6,7 @@ The programmatic API for generating documents from Node.js (or any JS runtime fo
 pnpm add @json-to-office/json-to-docx @json-to-office/json-to-pptx
 ```
 
-Both packages require Node >= 22, and both declare their rendering backend as a peer dependency: `docx@9.8.1` for `@json-to-office/json-to-docx`, `pptxgenjs@^3.12.0` for `@json-to-office/json-to-pptx`.
+Both packages require Node >= 22. `@json-to-office/json-to-docx` declares its rendering backend as a peer dependency, `docx@9.8.1`. `@json-to-office/json-to-pptx` brings its own: `pptxgenjs@4.0.1` is a pinned dependency of `@json-to-office/core-pptx`, so nothing else needs installing.
 
 ::: info Where functions live
 Everything documented here is importable from the two public packages, with a few exceptions that live in `@json-to-office/core-docx` (a published dependency of `json-to-docx`): `generateBufferFromFile`, `generateAndSaveFromFile`, the theme JSON helpers, and the DOCX plugin API. Each is flagged below.
