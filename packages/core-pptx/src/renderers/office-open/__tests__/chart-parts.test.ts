@@ -2,20 +2,15 @@
  * Native charts on the office-open PPTX backend.
  *
  * This adapter used to refuse them outright, and the reason was specific: the
- * backend writes a chart whose `<c:f>` references are empty and ships no
- * workbook behind them, so the chart draws and "Edit Data" fails. A chart you
- * cannot edit is not the chart that was asked for.
+ * backend writes no workbook behind a chart's cell references, so the chart
+ * draws and "Edit Data" fails. A chart you cannot edit is not the chart that
+ * was asked for.
  *
- * What changed is that the adapter now writes the missing half itself. These
- * tests pin both halves against the *real* backend: what it already emits (so a
- * repair that becomes unnecessary is noticed rather than silently doubling an
- * element), and what this adapter adds on top.
- *
- * Slightly less is missing here than on docx: `@office-open/pptx` hands its
- * whole options object to `chartSpaceDesc`, so the legend position survives
- * where the docx sibling loses it. Everything else — cell references, series
- * colours, axis titles, bar grouping and `c:externalData` — is spliced on both
- * sides. See `chartChild` for why this adapter cannot pass `axes` through.
+ * What changed is that the adapter now supplies the missing half itself: the
+ * cell references, colours, axes, grouping, fonts and `c:externalData` as
+ * backend options (the shared `chartLook`), and the workbook, its
+ * relationship and its content type as parts of its own. These tests pin both
+ * against the *real* backend.
  */
 
 import JSZip from 'jszip';
@@ -109,9 +104,9 @@ describe('native charts on office-open pptx', () => {
     expect(xml).toContain('<a:srgbClr val="C00000"/>');
   });
 
-  it('lets the backend carry what it can, without doubling it', async () => {
+  it('writes each option once', async () => {
     // externalData, the chart title and the legend position all come through
-    // the emitter on this backend. The splice must not add a second copy.
+    // the options; nothing afterwards may add a second copy.
     const xml = await read(await render(deck()), 'ppt/charts/chart1.xml');
     expect(xml.match(/<c:externalData/g)).toHaveLength(1);
     expect(xml).toContain('<c:legendPos val="r"/>');
@@ -119,13 +114,15 @@ describe('native charts on office-open pptx', () => {
     expect(xml.match(/<c:title>/g)).toHaveLength(3);
   });
 
-  it('titles the axes the backend built, rather than replacing them', async () => {
-    // Passing `axes` to the backend replaces its default axis pair wholesale,
-    // and `AxisOptions` requires an `id`/`crossAxisId` this adapter cannot
-    // allocate. Doing it emitted literal `<undefined>` elements and six
+  it('titles whole axes the plot area still points at', async () => {
+    // Passing `axes` to the backend replaces its default axis pair wholesale.
+    // With 0.11 that needed an `id`/`crossAxisId` this adapter could not
+    // allocate: a partial one emitted literal `<undefined>` elements and six
     // `val="undefined"` attributes, and dropped c:catAx entirely — which
-    // LibreOffice tolerates and PowerPoint offers to repair. Asserting the
-    // titles alone did not catch it, so this asserts the structure.
+    // LibreOffice tolerates and PowerPoint offers to repair. 0.14 fills the ids
+    // in per slot, and `chartLook` states the rest of each axis; asserting the
+    // titles alone did not catch the old failure, so this asserts the
+    // structure.
     const xml = await read(await render(deck()), 'ppt/charts/chart1.xml');
 
     expect(xml).not.toContain('undefined');
@@ -413,9 +410,9 @@ describe('native charts on office-open pptx', () => {
       ),
       'ppt/charts/chart1.xml'
     );
-    // `<c:showVal/>` rather than `val="1"`: CT_Boolean's `val` is optional and
-    // defaults to true, so this is the backend's spelling of the same thing.
-    expect(xml.match(/<c:showVal\/>/g)).toHaveLength(2);
+    // `val="1"` spelled out; CT_Boolean's `val` is optional and defaults to
+    // true, so a bare `<c:showVal/>` would say the same.
+    expect(xml.match(/<c:showVal val="1"\/>/g)).toHaveLength(2);
     expect(xml.match(/<c:dLblPos val="outEnd"\/>/g)).toHaveLength(2);
   });
 
@@ -817,10 +814,18 @@ describe('native charts on office-open pptx', () => {
 
     for (const ordinal of [1, 2]) {
       const xml = await read(zip, `ppt/charts/chart${ordinal}.xml`);
+      // `c:externalData` resolves through the part's own relationships to the
+      // workbook, as the backend is asked to point it.
+      const id = /<c:externalData r:id="([^"]+)"/.exec(xml)![1];
+      const rels = await read(zip, `ppt/charts/_rels/chart${ordinal}.xml.rels`);
+      const target = new RegExp(`Id="${id}"[^>]*Target="\\.\\./([^"]+)"`).exec(
+        rels
+      )![1];
+      expect(target).toBe(
+        `embeddings/Microsoft_Excel_Worksheet${ordinal}.xlsx`
+      );
       const book = await JSZip.loadAsync(
-        await zip
-          .file(`ppt/embeddings/Microsoft_Excel_Worksheet${ordinal}.xlsx`)!
-          .async('uint8array')
+        await zip.file(`ppt/${target}`)!.async('uint8array')
       );
       const sheet = await book
         .file('xl/worksheets/sheet1.xml')!
@@ -835,7 +840,7 @@ describe('native charts on office-open pptx', () => {
 
   it('still ships the workbook when finalization is skipped', async () => {
     // A chart without its workbook is broken, not merely undeterministic, so
-    // the splice runs on both sides of the `deterministic: false` shortcut.
+    // the packaging runs on both sides of the `deterministic: false` shortcut.
     const zip = await render(deck(), { deterministic: false });
     expect(
       zip.file('ppt/embeddings/Microsoft_Excel_Worksheet1.xlsx')

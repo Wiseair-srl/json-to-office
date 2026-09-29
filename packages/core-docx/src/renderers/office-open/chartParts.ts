@@ -1,36 +1,34 @@
 /**
- * Packaging a native chart's missing half, for DOCX.
+ * A native chart's look and references, for DOCX.
  *
- * The repairs themselves — the cell references that fill an empty `<c:f/>`, the
- * series colours, the axis titles, the legend position and `c:externalData` —
- * are format-neutral and live in `chart-parts` in
- * `@json-to-office/shared/rendering`, which explains why a chart emitted by
- * `@office-open` needs repairing at all. A `c:chartSpace` is DrawingML: the
- * pptx sibling of this file makes exactly the same edits.
+ * What a chart needs beyond its type and data — the cell references, the
+ * colours, the axes, the fonts, Office's blanks — is format-neutral and is
+ * stated as backend options by `chartLook` in
+ * `@json-to-office/shared/rendering`; the pptx sibling of this file does the
+ * same. `@office-open/docx` 0.14 hands those options to the chart part whole,
+ * and embeds the workbook `c:externalData` points at, with its relationship and
+ * content type, from `externalData.data` — see `chartOptions` in `emit.ts`.
  *
- * What is here is only what a Word package spells its own way — `word/charts`,
- * `word/embeddings`, the chart's rels part, the content-type override — plus
- * adm-zip, which is this core's archive library.
+ * What is left here is the IR's side of that — `chartInput` — and the one
+ * edit no option carries, applied to the emitted parts: a scatter chart's
+ * style (`finishChartXml`).
  */
 
 import type AdmZip from 'adm-zip';
 import {
-  CHART_WORKBOOK_CONTENT_TYPE,
-  chartWorkbookRelsXml,
+  finishChartXml,
   matchChartParts,
-  spliceChartXml,
 } from '@json-to-office/shared/rendering';
 import type {
   ChartPartInput,
   ChartTextStyle,
 } from '@json-to-office/shared/rendering';
 import type { DocxIrChartRun } from '../../ir/types';
-import { buildChartWorkbook } from '../../utils/chartWorkbook';
 import { chartTextRoles } from '../chartText';
 import { plotLook } from './chartLook';
 
 /**
- * One chart run, in the shared splice's vocabulary.
+ * One chart run, in the shared look's vocabulary.
  *
  * The docx component exposes a smaller styling surface than the pptx one, so
  * only the axis titles have an authored prop behind them. The theme's chart
@@ -41,7 +39,7 @@ import { plotLook } from './chartLook';
  * (`../chartText`). Everything else is the look docx.js draws, from
  * `chartLook.ts`: gridlines, ticks, axis lines, gaps, markers and borders.
  */
-function spliceInput(chart: DocxIrChartRun): ChartPartInput {
+export function chartInput(chart: DocxIrChartRun): ChartPartInput {
   const roles = chartTextRoles(chart.textFont);
   const textFont: ChartTextStyle = roles.text;
   const axisTitleFont: ChartTextStyle = roles.axisTitle;
@@ -64,6 +62,7 @@ function spliceInput(chart: DocxIrChartRun): ChartPartInput {
     chartType: chart.chartType,
     series: chart.series,
     colors: chart.colors,
+    ...(chart.title && chart.showTitle !== false ? { title: chart.title } : {}),
     textFont,
     titleFont: chartTitleFont,
     ...(chart.legendPosition ? { legendPosition: chart.legendPosition } : {}),
@@ -72,35 +71,16 @@ function spliceInput(chart: DocxIrChartRun): ChartPartInput {
   };
 }
 
-/** Register the xlsx content type once, if the package does not have it. */
-function declareWorkbookContentType(zip: AdmZip): void {
-  const entry = zip.getEntry('[Content_Types].xml');
-  if (!entry) return;
-  const xml = entry.getData().toString('utf8');
-  if (xml.includes(`Extension="xlsx"`)) return;
-  zip.updateFile(
-    entry,
-    Buffer.from(
-      xml.replace(
-        '<Default Extension="xml"',
-        `<Default Extension="xlsx" ContentType="${CHART_WORKBOOK_CONTENT_TYPE}"/><Default Extension="xml"`
-      ),
-      'utf8'
-    )
-  );
-}
-
 /**
- * Give every chart in the package its workbook, colours and axis titles.
+ * Finish every chart part in the package with what no option says.
  *
  * Parts are matched to IR nodes by content rather than by position: the emitter
  * fills its array while *building* the backend's document object and the
  * backend numbers its parts while *stringifying* that object, and the two walks
- * disagree the moment a chart sits in a header or footer. Pairing by position
- * handed charts another chart's workbook, so a recipient choosing "Edit Data"
- * saw a different chart's numbers.
+ * disagree the moment a chart sits in a header or footer. The match also
+ * proves every emitted chart reached the package.
  */
-export function spliceChartParts(
+export function finishChartParts(
   zip: AdmZip,
   charts: readonly DocxIrChartRun[]
 ): void {
@@ -119,29 +99,13 @@ export function spliceChartParts(
         ] as const
     );
 
-  for (const { ordinal, xml, chart } of matchChartParts(parts, charts)) {
-    const workbookName = `chart${ordinal}.xlsx`;
-    const input = spliceInput(chart);
-
+  const inputs = charts.map(chartInput);
+  for (const { ordinal, xml, chart } of matchChartParts(parts, inputs)) {
+    const finished = finishChartXml(xml, chart);
+    if (finished === xml) continue;
     zip.updateFile(
       zip.getEntry(`word/charts/chart${ordinal}.xml`)!,
-      Buffer.from(spliceChartXml(xml, input), 'utf8')
-    );
-    // A scatter chart's column A holds the x values its `c:xVal` caches.
-    zip.addFile(
-      `word/embeddings/${workbookName}`,
-      Buffer.from(
-        buildChartWorkbook(
-          chart.series,
-          input.scatterXValues ? { categoryValues: input.scatterXValues } : {}
-        )
-      )
-    );
-    zip.addFile(
-      `word/charts/_rels/chart${ordinal}.xml.rels`,
-      Buffer.from(chartWorkbookRelsXml(workbookName), 'utf8')
+      Buffer.from(finished, 'utf8')
     );
   }
-
-  declareWorkbookContentType(zip);
 }

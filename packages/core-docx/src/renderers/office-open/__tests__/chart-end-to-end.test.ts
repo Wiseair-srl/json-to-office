@@ -212,8 +212,9 @@ describe('native chart end to end', () => {
     // The emitter fills its array while building the backend's document
     // object; the backend numbers its parts while stringifying that object,
     // body before chrome. Pairing by position therefore handed a header chart
-    // the body's workbook — "Edit Data" showed another chart's numbers. Parts
-    // are matched by content instead, and this is that regression.
+    // the body's workbook — "Edit Data" showed another chart's numbers — and
+    // 0.11 left a header or footer chart pointing at no part at all (#485).
+    // Every chart is followed here from the part it sits in to its workbook.
     const chartNode = (name: string) => ({
       name: 'chart',
       props: {
@@ -246,19 +247,64 @@ describe('native chart end to end', () => {
       .filter((name) => /^word\/charts\/chart\d+\.xml$/.test(name));
     expect(parts).toHaveLength(6);
 
-    for (const part of parts) {
-      const ordinal = part.match(/chart(\d+)\.xml$/)![1];
-      const inChart = read(zip, part).match(/<c:v>([A-Z]\d)<\/c:v>/)![1];
-      const workbook = new AdmZip(
-        zip.getEntry(`word/embeddings/chart${ordinal}.xlsx`)!.getData()
-      );
-      const inWorkbook = workbook
-        .getEntry('xl/worksheets/sheet1.xml')!
-        .getData()
-        .toString('utf8')
-        .match(/<t>([A-Z]\d)<\/t>/)![1];
-      expect(inWorkbook, `${part} points at the wrong workbook`).toBe(inChart);
+    /** A relationship's target, resolved against the part that holds it. */
+    const follow = (part: string, id: string): string => {
+      const dir = part.slice(0, part.lastIndexOf('/'));
+      const rels = `${dir}/_rels/${part.slice(dir.length + 1)}.rels`;
+      const target = new RegExp(`Id="${id}"[^>]*Target="([^"]+)"`).exec(
+        read(zip, rels)
+      )?.[1];
+      expect(target, `${id} in ${rels}`).toBeDefined();
+      const path = [...dir.split('/')];
+      for (const step of target!.split('/')) {
+        if (step === '..') path.pop();
+        else path.push(step);
+      }
+      return path.join('/');
+    };
+
+    // Every chart, body and chrome, is reached from the part it sits in, and
+    // its `c:externalData` from the chart: no `{chart:…}` placeholder left.
+    const reached: Record<string, string> = {};
+    for (const part of zip
+      .getEntries()
+      .map((entry) => entry.entryName)
+      .filter((name) =>
+        /^word\/(document|header\d+|footer\d+)\.xml$/.test(name)
+      )) {
+      const xml = read(zip, part);
+      expect(xml, part).not.toContain('{chart:');
+      for (const [, id] of xml.matchAll(/<c:chart\b[^>]*\br:id="([^"]+)"/g)) {
+        const chartPart = follow(part, id);
+        const inChart = read(zip, chartPart).match(/<c:v>([A-Z]\d)<\/c:v>/)![1];
+        reached[inChart] = part;
+        const externalData = /<c:externalData r:id="([^"]+)"/.exec(
+          read(zip, chartPart)
+        )![1];
+        const workbook = new AdmZip(
+          zip.getEntry(follow(chartPart, externalData))!.getData()
+        );
+        const inWorkbook = workbook
+          .getEntry('xl/worksheets/sheet1.xml')!
+          .getData()
+          .toString('utf8')
+          .match(/<t>([A-Z]\d)<\/t>/)![1];
+        expect(inWorkbook, `${chartPart} points at the wrong workbook`).toBe(
+          inChart
+        );
+      }
     }
+    expect(Object.keys(reached).sort()).toEqual([
+      'B1',
+      'B2',
+      'B3',
+      'F1',
+      'H1',
+      'H2',
+    ]);
+    expect(reached.B1).toBe('word/document.xml');
+    expect(reached.F1).toMatch(/^word\/footer\d+\.xml$/);
+    expect(reached.H2).toMatch(/^word\/header\d+\.xml$/);
   });
 
   it('refuses a series with fewer labels than the categories', async () => {

@@ -2,8 +2,9 @@
  * The experimental `@office-open/pptx` renderer.
  *
  * Selecting it is explicit and opt-in; `pptxgenjs` stays the default. The
- * backend is an optional peer dependency, resolved at call time so a missing
- * package surfaces as an install hint rather than a module-resolution failure.
+ * backend is a dependency of this package, loaded at call time: only a deck
+ * that selects this renderer pays for loading it, and a broken install
+ * surfaces as an install hint rather than a module-resolution failure.
  *
  * The capability set below is deliberately narrow. A feature is listed only
  * when it has been proven against the real package, never from its README, and
@@ -13,6 +14,11 @@
  */
 
 import { readFile } from 'node:fs/promises';
+import type {
+  PresentationOptions,
+  SlideOptions,
+  ThemeOptions,
+} from '@office-open/pptx';
 import { imageIntegrityDefect } from '@json-to-office/shared/images/node';
 import { assetUnreadableError } from '@json-to-office/shared/rendering';
 import {
@@ -21,7 +27,7 @@ import {
   writePackage,
   resolveGeneratedAt,
 } from '../../core/finalizePackage';
-import { spliceChartParts } from './chartParts';
+import { packageChartParts } from './chartParts';
 import type { PptxFeature } from '../../ir/features';
 import type {
   PptxIR,
@@ -35,8 +41,9 @@ import { background, slideChild, type OfficeOpenEmitContext } from './emit';
 export const OFFICE_OPEN_PPTX_RENDERER_ID: PptxRendererId = 'office-open';
 
 /**
- * Module specifier held in a variable so TypeScript does not resolve the
- * optional dependency at build time and the failure lands at selection time.
+ * Module specifier held in a variable so neither TypeScript nor a bundler
+ * resolves the backend statically, and a missing one fails at selection time.
+ * Its types are imported by name alone (`import type`), which erases.
  */
 const OFFICE_OPEN_PPTX = '@office-open/pptx';
 
@@ -79,17 +86,16 @@ const OFFICE_OPEN_PPTX = '@office-open/pptx';
  * every cell — see `tableChild` in `emit.ts`.
  *
  * The ten `chart-*` capabilities are the styling half of `charts`, and all ten
- * are declared: the emitter forwards what `ChartSpaceOptions` and
- * `ChartSeriesCommon` carry, and `chartParts.ts` splices in the rest. Each was
+ * are declared: the emitter states each as `ChartSpaceOptions`, through the
+ * shared `chartLook` (`chartParts.ts`). Each was
  * declared only once its mapping landed and was tested, never before — an
  * ignored `valAxisMaxVal` draws a different chart from the authored one with
  * nothing in the file to say so, which is what the split exists to prevent.
  *
- * `charts` *is* declared, and used to not be. The backend writes chart XML
- * whose `<c:f>` references are empty and which has no workbook behind them, so
- * "Edit Data" failed and a chart you cannot edit is not the chart that was
- * asked for. Rather than refuse, the adapter now writes the missing half
- * itself — see `chartParts.ts`.
+ * `charts` *is* declared, and used to not be. The backend writes no workbook
+ * behind a chart's cell references, so "Edit Data" failed and a chart you
+ * cannot edit is not the chart that was asked for. Rather than refuse, the
+ * adapter packages the workbook itself — see `chartParts.ts`.
  */
 const OFFICE_OPEN_CAPABILITIES: ReadonlySet<PptxFeature> = new Set([
   'rich-text',
@@ -129,16 +135,15 @@ const OFFICE_OPEN_CAPABILITIES: ReadonlySet<PptxFeature> = new Set([
   'rtl',
 ]);
 
-interface OfficeOpenBackend {
-  generatePresentation: (
-    options: Record<string, unknown>,
-    packerOptions?: { type?: string }
-  ) => Promise<Uint8Array>;
-}
+/** The entry point this adapter calls, typed as the package types it. */
+type OfficeOpenBackend = Pick<
+  typeof import('@office-open/pptx'),
+  'generatePresentation'
+>;
 
 export async function createOfficeOpenPptxRenderer(): Promise<PptxRenderer> {
-  // Throws `Cannot find package '@office-open/pptx'` when the optional
-  // dependency is absent; the registry rewrites that into an install hint.
+  // Throws `Cannot find package '@office-open/pptx'` when the backend is
+  // missing from the install; the registry rewrites that into an install hint.
   const backend = (await import(
     /* @vite-ignore */ OFFICE_OPEN_PPTX
   )) as unknown as OfficeOpenBackend;
@@ -161,21 +166,22 @@ export async function createOfficeOpenPptxRenderer(): Promise<PptxRenderer> {
       });
       const raw = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
 
-      // One zip, opened once: the chart repairs and the generic finalization
+      // One zip, opened once: the chart packaging and the generic finalization
       // both need it, and a round-trip between them would cost a full
       // re-compress for nothing. This mirrors the pptxgenjs path, which also
       // applies its backend repairs and then calls `finalizePackage` on the
       // same open zip.
       //
-      // The splice has to happen even when finalization is skipped — a chart
-      // without its workbook is a broken chart, not an undeterministic one —
+      // The packaging has to happen even when finalization is skipped — a
+      // chart without its workbook is a broken chart, not an undeterministic
+      // one —
       // and it has to happen *before* finalization, because
       // `canonicalizeChartIds` renumbers chart parts and rewrites the
       // `Microsoft_Excel_Worksheet{N}.xlsx` references through the same map.
       if (charts.length === 0 && options?.deterministic === false) return raw;
 
       const zip = await readPackage(Buffer.from(raw));
-      await spliceChartParts(zip, charts);
+      await packageChartParts(zip, charts);
 
       if (options?.deterministic === false) {
         return new Uint8Array(await writePackage(zip));
@@ -200,7 +206,7 @@ export async function createOfficeOpenPptxRenderer(): Promise<PptxRenderer> {
 export async function buildPresentationOptions(
   ir: PptxIR,
   charts: PptxIrChartElement[] = []
-): Promise<Record<string, unknown>> {
+): Promise<PresentationOptions> {
   // Drawing ids restart at 2 on each slide — 1 is the slide's own group — so
   // they depend on position in the deck and nothing else.
   let nextDrawingId = 2;
@@ -211,11 +217,11 @@ export async function buildPresentationOptions(
     charts,
   };
 
-  const presentation: Record<string, unknown> = {
+  const presentation: PresentationOptions = {
     size: { width: ir.size.widthEmu, height: ir.size.heightEmu },
     slides: ir.slides.map((slide) => {
       nextDrawingId = 2;
-      const out: Record<string, unknown> = {
+      const out: SlideOptions = {
         children: slide.elements.map((element) => slideChild(element, ctx)),
       };
       if (slide.background) {
@@ -225,7 +231,9 @@ export async function buildPresentationOptions(
       if (slide.hidden) out.hidden = true;
       if (slide.transition) {
         out.transition = {
-          type: slide.transition.type,
+          type: slide.transition.type as NonNullable<
+            Exclude<SlideOptions['transition'], string>
+          >['type'],
           ...(slide.transition.speed ? { speed: slide.transition.speed } : {}),
         };
       }
@@ -264,7 +272,7 @@ export async function buildPresentationOptions(
  * scheme is not what draws the deck — it is what PowerPoint offers when
  * someone edits it, and what newly inserted content picks up.
  */
-function themeOptions(ir: PptxIR): Record<string, unknown> | undefined {
+function themeOptions(ir: PptxIR): ThemeOptions | undefined {
   const { headingFont, bodyFont, palette, name } = ir.theme;
   const colorScheme = colorSchemeOptions(palette);
   if (!headingFont && !bodyFont && !colorScheme) return undefined;
@@ -309,14 +317,16 @@ const SCHEME_SLOTS: ReadonlyArray<readonly [string, string]> = [
 
 function colorSchemeOptions(
   palette: Readonly<Record<string, string>>
-): Record<string, string> | undefined {
+): ColorScheme | undefined {
   const scheme: Record<string, string> = {};
   for (const [slot, key] of SCHEME_SLOTS) {
     const value = palette[key];
     if (value) scheme[slot] = value;
   }
-  return Object.keys(scheme).length > 0 ? scheme : undefined;
+  return Object.keys(scheme).length > 0 ? (scheme as ColorScheme) : undefined;
 }
+
+type ColorScheme = NonNullable<ThemeOptions['colorScheme']>;
 
 /**
  * Read the bytes for every resource.

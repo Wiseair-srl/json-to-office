@@ -237,6 +237,44 @@ interface Shape {
    * backends cannot compare equal.
    */
   theme: ThemePartSummary;
+  /**
+   * Where each numbered paragraph's list starts: its level and that level's
+   * `w:start`. Office-open 0.14 stopped writing a `w:start` it was not given,
+   * and every list counted from 0 in Word and LibreOffice while this compared
+   * equal on text alone.
+   */
+  listStarts: string[];
+}
+
+/** `ilvl:start` for every numbered paragraph in `xml`, in order. */
+function listStarts(numbering: string, xml: string): string[] {
+  const abstract = new Map<string, Map<string, string | undefined>>();
+  for (const [, id, body] of numbering.matchAll(
+    /<w:abstractNum\b[^>]*\bw:abstractNumId="(\d+)"[^>]*>([\s\S]*?)<\/w:abstractNum>/g
+  )) {
+    const levels = new Map<string, string | undefined>();
+    for (const [, ilvl, level] of body.matchAll(
+      /<w:lvl\b[^>]*\bw:ilvl="(\d+)"[^>]*>([\s\S]*?)<\/w:lvl>/g
+    )) {
+      levels.set(ilvl, /<w:start w:val="(\d+)"/.exec(level)?.[1]);
+    }
+    abstract.set(id, levels);
+  }
+  const nums = new Map<string, string | undefined>();
+  for (const [, numId, body] of numbering.matchAll(
+    /<w:num\b[^>]*\bw:numId="(\d+)"[^>]*>([\s\S]*?)<\/w:num>/g
+  )) {
+    nums.set(numId, /<w:abstractNumId w:val="(\d+)"/.exec(body)?.[1]);
+  }
+  return [...xml.matchAll(/<w:numPr>([\s\S]*?)<\/w:numPr>/g)].flatMap(
+    ([, numPr]) => {
+      const numId = /<w:numId w:val="(\d+)"/.exec(numPr)?.[1];
+      if (!numId || numId === '0') return [];
+      const ilvl = /<w:ilvl w:val="(\d+)"/.exec(numPr)?.[1] ?? '0';
+      const start = abstract.get(nums.get(numId) ?? '')?.get(ilvl);
+      return [`${ilvl}:${start ?? 'none'}`];
+    }
+  );
 }
 
 /**
@@ -356,6 +394,7 @@ async function shapeOf(
         : `${type} ${attribute('linePitch')} ${attribute('charSpace') ?? 0}`;
     }),
     theme: summarizeThemePart(await read('word/theme/theme1.xml')),
+    listStarts: listStarts(await read('word/numbering.xml'), body),
   };
 }
 

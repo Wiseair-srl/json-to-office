@@ -8,9 +8,9 @@ open-source projects listed below; their license terms are reproduced verbatim.
 ## Core rendering engines
 
 - **docx** 9.8.1 — MIT — https://github.com/dolanmiu/docx
-- **@office-open/core** 0.11.0 — MIT — https://github.com/DemoMacro/office-open
-- **@office-open/docx** 0.11.0 — MIT — https://github.com/DemoMacro/office-open
-- **@office-open/pptx** 0.11.0 — MIT — https://github.com/DemoMacro/office-open
+- **@office-open/core** 0.14.6 — MIT — https://github.com/DemoMacro/office-open
+- **@office-open/docx** 0.14.6 — MIT — https://github.com/DemoMacro/office-open
+- **@office-open/pptx** 0.14.6 — MIT — https://github.com/DemoMacro/office-open
 - **pptxgenjs** 4.0.1 — MIT — https://github.com/gitbrent/PptxGenJS
 
 LibreOffice (Mozilla Public License 2.0) is invoked as a separate process in the
@@ -1548,7 +1548,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### @noble/hashes 2.2.0
+### @noble/hashes 2.4.0
 
 License: MIT · Author: Paul Miller
 
@@ -1576,7 +1576,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ```
 
-### @office-open/core 0.11.0
+### @office-open/core 0.14.6
 
 License: MIT · Author: Demo Macro
 
@@ -1604,7 +1604,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### @office-open/docx 0.11.0
+### @office-open/docx 0.14.6
 
 License: MIT · Author: Demo Macro
 
@@ -1632,7 +1632,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### @office-open/pptx 0.11.0
+### @office-open/pptx 0.14.6
 
 License: MIT · Author: Demo Macro
 
@@ -1660,7 +1660,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### @office-open/xml 0.11.0
+### @office-open/xml 0.14.6
 
 License: MIT · Author: Demo Macro
 
