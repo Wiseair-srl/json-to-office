@@ -1,14 +1,14 @@
 /**
- * A table of contents in a table cell, which the backend drops and this
+ * A table of contents in a table cell, which the backend used to drop and this
  * adapter puts back.
  *
- * `@office-open/docx` 0.11.0 writes a table cell's paragraphs and tables and
- * nothing else: `stringifyCellChild` answers any other child with an empty
- * string. The first test pins that against the real package — if it starts
- * writing a table of contents in a cell, it fails, and the splice can go. The
- * rest pin what the splice promises: the bytes the backend writes for the same
- * table of contents in the body, or a failed render rather than marker text
- * left in the document.
+ * `@office-open/docx` 0.11.0 wrote a table cell's paragraphs and tables and
+ * nothing else: `stringifyCellChild` answered any other child with an empty
+ * string. 0.14 writes one in a cell as it does in the body, which the first
+ * test pins against the real package: the splice below is now redundant. The
+ * rest pin what the splice promises while it stays: the bytes the backend
+ * writes for the same table of contents in the body, or a failed render rather
+ * than marker text left in the document.
  */
 
 import AdmZip from 'adm-zip';
@@ -20,13 +20,8 @@ import type { CellToc } from '../emit';
 const CONTENT_CONTROL = /<w:sdt>[\s\S]*?<\/w:sdt>/g;
 
 describe('a table of contents in a table cell', () => {
-  it('is still dropped by the backend', async () => {
-    const { generateDocument } = (await import('@office-open/docx')) as {
-      generateDocument: (
-        options: Record<string, unknown>,
-        packer?: { type?: string }
-      ) => Promise<Uint8Array>;
-    };
+  it('is written by the backend in a cell as in the body', async () => {
+    const { generateDocument } = await import('@office-open/docx');
     const toc = { alias: 'Contents', headingStyleRange: '1-3' };
     const bytes = await generateDocument(
       {
@@ -43,9 +38,12 @@ describe('a table of contents in a table cell', () => {
     );
     const xml = new AdmZip(Buffer.from(bytes)).readAsText('word/document.xml');
 
-    // The one in the body is written; the one in the cell is not.
-    expect(xml.match(CONTENT_CONTROL)).toHaveLength(1);
-    expect(xml).toMatch(/<\/w:sdt><w:tbl>/);
+    // Both are written, byte for byte the same.
+    const [inBody, inCell, ...more] = xml.match(CONTENT_CONTROL) ?? [];
+    expect(more).toEqual([]);
+    expect(inCell).toBe(inBody);
+    // And the second is inside the cell.
+    expect(xml).toMatch(/<w:tc\b(?:(?!<\/w:tc>)[\s\S])*<w:sdt>/);
   });
 
   it('comes out as the backend writes it in the body', async () => {

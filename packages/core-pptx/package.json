@@ -36,7 +36,7 @@
     "@json-to-office/quality": "workspace:^",
     "@json-to-office/shared": "workspace:^",
     "@json-to-office/shared-pptx": "workspace:^",
-    "@office-open/pptx": "0.11.0",
+    "@office-open/pptx": "0.14.6",
     "@resvg/resvg-js": "2.6.2",
     "@sinclair/typebox": "0.34.38",
     "jszip": "3.10.1",
@@ -45,7 +45,7 @@
     "probe-image-size": "7.2.3"
   },
   "devDependencies": {
-    "@office-open/core": "0.11.0",
+    "@office-open/core": "0.14.6",
     "@types/node": "22.20.2",
     "@types/pako": "1.0.7",
     "@types/probe-image-size": "7.2.4",
