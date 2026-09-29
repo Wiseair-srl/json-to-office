@@ -93,8 +93,8 @@ importers:
         specifier: workspace:^
         version: link:../shared-docx
       '@office-open/docx':
-        specifier: 0.11.0
-        version: 0.11.0
+        specifier: 0.14.6
+        version: 0.14.6
       '@resvg/resvg-js':
         specifier: 2.6.2
         version: 2.6.2
@@ -115,8 +115,8 @@ importers:
         version: 7.2.3
     devDependencies:
       '@office-open/core':
-        specifier: 0.11.0
-        version: 0.11.0
+        specifier: 0.14.6
+        version: 0.14.6
       '@types/adm-zip':
         specifier: 0.5.7
         version: 0.5.7
@@ -148,8 +148,8 @@ importers:
         specifier: workspace:^
         version: link:../shared-pptx
       '@office-open/pptx':
-        specifier: 0.11.0
-        version: 0.11.0
+        specifier: 0.14.6
+        version: 0.14.6
       '@resvg/resvg-js':
         specifier: 2.6.2
         version: 2.6.2
@@ -170,8 +170,8 @@ importers:
         version: 7.2.3
     devDependencies:
       '@office-open/core':
-        specifier: 0.11.0
-        version: 0.11.0
+        specifier: 0.14.6
+        version: 0.14.6
       '@types/node':
         specifier: 22.20.2
         version: 22.20.2
@@ -2066,8 +2066,8 @@ packages:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
-  '@noble/hashes@2.2.0':
-    resolution: {integrity: sha512-IYqDGiTXab6FniAgnSdZwgWbomxpy9FtYvLKs7wCUs2a8RkITG+DFGO1DM9cr+E3/RgADRpFjrKVaJ1z6sjtEg==}
+  '@noble/hashes@2.4.0':
+    resolution: {integrity: sha512-X5XaVWZIBCT7HHZGm5I7ZQXDwLG+bGXuSrMQAW+7Zvl87h1kmc1ZB1VSRJcpUfoUrGQp4Fkoxm5kZ+Ms+aW+eA==}
     engines: {node: '>= 20.19.0'}
 
   '@nodelib/fs.scandir@2.1.5':
@@ -2082,17 +2082,17 @@ packages:
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
 
-  '@office-open/core@0.11.0':
-    resolution: {integrity: sha512-Tr8ltzQJnVrf5qSsQXocRdwluo/RI5he7siMxZWBvGBpYkF71u1vT1zxfmZ0jSkJQt9hvLTsf4CD+n1VZMzd1w==}
+  '@office-open/core@0.14.6':
+    resolution: {integrity: sha512-2nYvbuNO6QXt/srix5a/VtbLsbm6ZjzsrWRFGpdU+ls8ywFiYX/bvtrSc7N5GhRDMvCDYuqTS8z+KQ3Jtvy/Qg==}
 
-  '@office-open/docx@0.11.0':
-    resolution: {integrity: sha512-wFtYqGYpg1Gc4RQoC90KSeYZuWF3sBESQ3aFbrDkcTRkKUL5jCqnw7pRY3xHo8x0NEr5KTN3Yz17A51/OashVw==}
+  '@office-open/docx@0.14.6':
+    resolution: {integrity: sha512-GJ9mdkdf9eOP3r1rZ4mNoJ6CVcXECkyPn5bQenHKfL30bF89jap4aC2Sg4vX+ohUcX5/Oin0lIall1ogN978Hg==}
 
-  '@office-open/pptx@0.11.0':
-    resolution: {integrity: sha512-9599vqkpUzXe2NjiZXYOIYWe0ys90PGYtHtpZmDVYwkL+a70U4+ThXYRJK8n1K8FE/wD0B3CQPTXAU6xGUJEcQ==}
+  '@office-open/pptx@0.14.6':
+    resolution: {integrity: sha512-spU6sSbabrbANl+OKYCw3EPi4oL1vlXGvpt/RdU/fT40EEa2SI3akGE3TFloPfksi/gWwPbFYLOOl6WYpZFfsA==}
 
-  '@office-open/xml@0.11.0':
-    resolution: {integrity: sha512-r6/I4ZSM0JGurVbA25ups42xFbZhIV4wDy1jtjS9j93Z2WIekUKkquc/REwE/PCnkC8wuQ7AlRuJzHo4hhE6XQ==}
+  '@office-open/xml@0.14.6':
+    resolution: {integrity: sha512-pGRBuwyS2piyofaTZbCfDszRL5Yma7g2fqBIxGV7R7Qoxzb3Jx8ToklS5iGKmrtBHuDxRMX12vRhuml0fgP5JA==}
 
   '@opentelemetry/api@1.9.0':
     resolution: {integrity: sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg==}
@@ -7520,7 +7520,7 @@ snapshots:
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
 
-  '@noble/hashes@2.2.0': {}
+  '@noble/hashes@2.4.0': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
@@ -7534,23 +7534,23 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.20.1
 
-  '@office-open/core@0.11.0':
+  '@office-open/core@0.14.6':
     dependencies:
-      '@noble/hashes': 2.2.0
-      '@office-open/xml': 0.11.0
+      '@noble/hashes': 2.4.0
+      '@office-open/xml': 0.14.6
       fflate: 0.8.3
 
-  '@office-open/docx@0.11.0':
+  '@office-open/docx@0.14.6':
     dependencies:
-      '@office-open/core': 0.11.0
-      '@office-open/xml': 0.11.0
+      '@office-open/core': 0.14.6
+      '@office-open/xml': 0.14.6
 
-  '@office-open/pptx@0.11.0':
+  '@office-open/pptx@0.14.6':
     dependencies:
-      '@office-open/core': 0.11.0
-      '@office-open/xml': 0.11.0
+      '@office-open/core': 0.14.6
+      '@office-open/xml': 0.14.6
 
-  '@office-open/xml@0.11.0': {}
+  '@office-open/xml@0.14.6': {}
 
   '@opentelemetry/api@1.9.0': {}
 

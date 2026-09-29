@@ -271,8 +271,9 @@ describe('chart parts are schema-ordered', () => {
 
   it('writes one c:marker even when the author styled it', async () => {
     // The backend writes a marker as soon as `lineDataSymbol` is authored, and
-    // the colour splice used to add a second. Two siblings is a repair prompt
-    // in PowerPoint and nothing at all in LibreOffice.
+    // the colour splice once added a second; the colour now merges into the
+    // one marker. Two siblings is a repair prompt in PowerPoint and nothing at
+    // all in LibreOffice.
     const [xml] = await chartParts(
       deck({ type: 'line', lineDataSymbol: 'circle', lineDataSymbolSize: 8 })
     );

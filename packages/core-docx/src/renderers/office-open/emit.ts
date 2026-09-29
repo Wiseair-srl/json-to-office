@@ -44,10 +44,66 @@ import type {
   DocxIrTableOfContents,
   DocxIrTableRow,
 } from '../../ir/types';
+import type {
+  DocumentOptions,
+  BorderOptions,
+  BordersOptions,
+  BreakClear,
+  BreakOptions,
+  ChartOptions,
+  Floating,
+  FrameOptions,
+  GroupChildMediaData,
+  GroupOptions,
+  LevelsOptions,
+  MediaDataTransformation,
+  ParagraphChild,
+  ParagraphOptions,
+  ParagraphRunOptions,
+  ParagraphStylePropertiesOptions,
+  PictureOptions,
+  RunOptions,
+  RunStylePropertiesOptions,
+  SectionChild,
+  SectionOptions,
+  ShadingProperties,
+  ShapeOptions,
+  TableCellOptions,
+  TableOfContentsOptions,
+  TableOptions,
+  TableRowOptions,
+} from '@office-open/docx';
+import { chartLook, withSeriesLook } from '@json-to-office/shared/rendering';
 import { emuToPixels, pixelsToEmu } from '../../ir/units';
+import { buildChartWorkbook } from '../../utils/chartWorkbook';
 import { seriesLook } from './chartLook';
+import { chartInput } from './chartParts';
 
-type Opts = Record<string, unknown>;
+/*
+ * The emitter is typed against the backend's own option types, so a renamed or
+ * moved option fails the build instead of reaching the backend as a key it
+ * skips. The IR speaks OOXML's vocabulary with plain strings where the backend
+ * spells each value as a union; the aliases below are where the two meet.
+ */
+type UnderlineType = NonNullable<
+  NonNullable<RunStylePropertiesOptions['underline']>['type']
+>;
+type HighlightColor = NonNullable<RunStylePropertiesOptions['highlight']>;
+type Alignment = NonNullable<ParagraphStylePropertiesOptions['alignment']>;
+type BorderStyle = BorderOptions['style'];
+type WrapType = NonNullable<Floating['wrap']>['type'];
+type RunBreak = number | BreakOptions;
+type ShapeFill = NonNullable<ShapeOptions['fill']>;
+type ShapeOutline = NonNullable<ShapeOptions['outline']>;
+type ShapeGeometry = Exclude<ShapeOptions['geometry'], object | undefined>;
+type TableWidth = NonNullable<TableOptions['width']>;
+type CellMargins = NonNullable<TableOptions['margins']>;
+type PageBorders = NonNullable<
+  NonNullable<SectionOptions['properties']>['pageBorders']
+>;
+type AnyBorders = BordersOptions &
+  NonNullable<TableOptions['borders']> &
+  NonNullable<TableCellOptions['borders']>;
 
 /**
  * One prepared image per placement size.
@@ -64,10 +120,10 @@ type Opts = Record<string, unknown>;
  */
 export interface PreparedImage {
   /** `png`, `jpg`, `svg`, … — the backend's media type tag. */
-  type: string;
+  type: PictureOptions['type'];
   data: Buffer;
   /** The raster Word draws when it cannot draw the vector. */
-  fallback?: { type: string; data: Buffer };
+  fallback?: { type: RasterType; data: Buffer };
   /**
    * The media part name these bytes are stored under.
    *
@@ -81,6 +137,9 @@ export interface PreparedImage {
   fileName: string;
   fallbackFileName?: string;
 }
+
+/** The picture types the backend takes for a raster, as opposed to `svg`. */
+export type RasterType = Exclude<PictureOptions['type'], 'svg'>;
 
 export type ImageMediaFactory = (placement: {
   widthEmu: number;
@@ -105,10 +164,8 @@ export interface EmitContext {
   /**
    * Charts, in the order they were emitted.
    *
-   * The backend numbers `word/charts/chartN.xml` by the order it stringifies
-   * chart runs, which is document order — the same order this array fills. The
-   * post-generation splice reads it to match each part with the data the
-   * backend dropped.
+   * A chart's place here names its workbook. The post-generation pass reads
+   * it to match each emitted part with its IR node — see `chartParts.ts`.
    */
   charts?: DocxIrChartRun[];
   /**
@@ -133,7 +190,7 @@ export interface CellToc {
   start: string;
   end: string;
   alias: string;
-  options: Opts;
+  options: TableOfContentsOptions;
 }
 
 /** A context for content that holds no drawings, and for tests. */
@@ -154,7 +211,7 @@ export function emptyContext(): EmitContext {
  * so there is no per-instruction table to keep — which is the one place this
  * adapter is plainly better off than the docx.js one.
  */
-function simpleField(instruction: string, cachedText?: string): Opts {
+function simpleField(instruction: string, cachedText?: string): ParagraphChild {
   return {
     simpleField: {
       instruction,
@@ -205,9 +262,9 @@ function twips(value: number): number {
  */
 export function runProperties(
   formatting: DocxIrRunFormatting | undefined
-): Opts {
+): RunStylePropertiesOptions {
   if (!formatting) return {};
-  const out: Opts = {};
+  const out: RunStylePropertiesOptions = {};
   if (formatting.fontFamily) out.font = formatting.fontFamily;
   if (formatting.sizeHalfPoints !== undefined) {
     // The backend states run size in points and doubles it on the way out,
@@ -228,7 +285,7 @@ export function runProperties(
   }
   if (formatting.underline) {
     out.underline = {
-      type: formatting.underline.type,
+      type: formatting.underline.type as UnderlineType,
       ...(formatting.underline.color
         ? { color: formatting.underline.color.hex }
         : {}),
@@ -238,33 +295,36 @@ export function runProperties(
   if (formatting.doubleStrike !== undefined) {
     out.doubleStrike = formatting.doubleStrike;
   }
-  if (formatting.superScript) out.superScript = true;
-  if (formatting.subScript) out.subScript = true;
+  // One property here, two flags in the IR: `w:vertAlign` takes either.
+  if (formatting.superScript) out.verticalAlign = 'superscript';
+  if (formatting.subScript) out.verticalAlign = 'subscript';
   if (formatting.smallCaps !== undefined) out.smallCaps = formatting.smallCaps;
   if (formatting.allCaps !== undefined) out.allCaps = formatting.allCaps;
-  if (formatting.highlight !== undefined) out.highlight = formatting.highlight;
+  if (formatting.highlight !== undefined) {
+    out.highlight = formatting.highlight as HighlightColor;
+  }
   if (formatting.shading) out.shading = shading(formatting.shading);
   if (formatting.scalePercent !== undefined)
     out.scale = formatting.scalePercent;
-  if (formatting.characterSpacingTwentieths !== undefined) {
-    const stated = formatting.characterSpacingTwentieths;
-    const twentieths = twips(stated);
-    // docx.js tests the value before it floors it, so tracking under one
-    // twentieth still writes `w:val="0"`, a zero that overrides a style's
-    // own. The backend drops a zero, but it floors a length in points itself,
-    // and `0pt` is a zero it keeps.
-    out.characterSpacing =
-      twentieths === 0 && stated !== 0 ? '0pt' : twentieths;
+  // docx.js tests the value before it floors it, so tracking under one
+  // twentieth still writes `w:val="0"`, a zero that overrides a style's own,
+  // while tracking stated as zero writes nothing. The backend writes whatever
+  // number it is given, zero included, so a stated zero is left out here.
+  const stated = formatting.characterSpacingTwentieths;
+  if (stated !== undefined && stated !== 0) {
+    out.characterSpacing = twips(stated);
   }
   if (formatting.language) out.language = { value: formatting.language };
   if (formatting.noProof !== undefined) out.noProof = formatting.noProof;
   return out;
 }
 
-function shading(value: DocxIrShading): Opts {
+function shading(value: DocxIrShading): ShadingProperties {
   return {
     fill: value.fill.hex,
-    ...(value.pattern ? { type: value.pattern } : {}),
+    ...(value.pattern
+      ? { type: value.pattern as NonNullable<ShadingProperties['type']> }
+      : {}),
     ...(value.color ? { color: value.color.hex } : {}),
   };
 }
@@ -279,14 +339,14 @@ function shading(value: DocxIrShading): Opts {
 export function inlineChildren(
   children: readonly DocxIrInline[],
   ctx: EmitContext = emptyContext()
-): Opts[] {
-  const out: Opts[] = [];
+): ParagraphChild[] {
+  const out: ParagraphChild[] = [];
   let pendingBreaks = 0;
-  let pendingClear: string | undefined;
+  let pendingClear: BreakClear | undefined;
 
-  const breakOption = (): Opts => {
+  const breakOption = (): { break?: RunBreak } => {
     if (pendingBreaks === 0) return {};
-    const value: Opts = {
+    const value = {
       break: pendingClear
         ? { count: pendingBreaks, clear: pendingClear }
         : pendingBreaks,
@@ -300,7 +360,9 @@ export function inlineChildren(
     switch (child.kind) {
       case 'lineBreak':
         pendingBreaks += 1;
-        if (child.clear && child.clear !== 'none') pendingClear = child.clear;
+        if (child.clear && child.clear !== 'none') {
+          pendingClear = child.clear as BreakClear;
+        }
         break;
 
       case 'text':
@@ -389,8 +451,9 @@ export function inlineChildren(
         break;
 
       case 'chart':
-        ctx.charts?.push(child);
-        out.push({ chart: chartOptions(child, ctx) });
+        out.push({
+          chart: chartOptions(child, ctx, ctx.charts?.push(child) ?? 1),
+        });
         break;
 
       case 'noteReference':
@@ -415,8 +478,11 @@ export function inlineChildren(
  * The backend has a real wrapper element, so the id/author/date sit on the
  * range itself rather than being copied onto every run inside it.
  */
-function revisionRuns(range: DocxIrRevisionRange, pending: Opts): Opts[] {
-  const runs: Opts[] = [];
+function revisionRuns(
+  range: DocxIrRevisionRange,
+  pending: { break?: RunBreak }
+): ParagraphChild[] {
+  const runs: RunOptions[] = [];
   let breaks = typeof pending.break === 'number' ? pending.break : 0;
 
   for (const child of range.children) {
@@ -445,21 +511,21 @@ function revisionRuns(range: DocxIrRevisionRange, pending: Opts): Opts[] {
   ];
 }
 
-/** OOXML names its wrap types; the backend numbers them, as docx.js does. */
-const WRAP_TYPE: Readonly<Record<string, number>> = {
-  none: 0,
-  square: 1,
-  tight: 2,
-  topAndBottom: 3,
-};
-
-/** An IR anchor as the backend's floating options. */
-export function floatingOptions(floating: DocxIrFloating): Opts {
-  const position = (axis: DocxIrFloating['horizontal']): Opts => ({
-    ...(axis?.relativeTo ? { relative: axis.relativeTo } : {}),
-    ...(axis?.align !== undefined ? { align: axis.align } : {}),
-    ...(axis?.offsetEmu !== undefined ? { offset: axis.offsetEmu } : {}),
-  });
+/**
+ * An IR anchor as the backend's floating options.
+ *
+ * `Floating` requires both positions; the IR states only those the document
+ * sets, and the backend writes its default for a missing one, so the object is
+ * built as the IR has it and asserted whole.
+ */
+export function floatingOptions(floating: DocxIrFloating): Floating {
+  type Position = Floating['horizontalPosition'] & Floating['verticalPosition'];
+  const position = (axis: DocxIrFloating['horizontal']): Position =>
+    ({
+      ...(axis?.relativeTo ? { relative: axis.relativeTo } : {}),
+      ...(axis?.align !== undefined ? { align: axis.align } : {}),
+      ...(axis?.offsetEmu !== undefined ? { offset: axis.offsetEmu } : {}),
+    }) as Position;
 
   return {
     ...(floating.horizontal
@@ -471,8 +537,15 @@ export function floatingOptions(floating: DocxIrFloating): Opts {
     ...(floating.wrap
       ? {
           wrap: {
-            type: WRAP_TYPE[floating.wrap.type],
-            ...(floating.wrap.side ? { side: floating.wrap.side } : {}),
+            // Named, as OOXML names them; 0.11 took docx.js's numbers.
+            type: floating.wrap.type as WrapType,
+            ...(floating.wrap.side
+              ? {
+                  side: floating.wrap.side as NonNullable<
+                    NonNullable<Floating['wrap']>['side']
+                  >,
+                }
+              : {}),
           },
         }
       : {}),
@@ -507,7 +580,7 @@ export function floatingOptions(floating: DocxIrFloating): Opts {
       ? { layoutInCell: floating.layoutInCell }
       : {}),
     zIndex: floating.zIndex,
-  };
+  } as Floating;
 }
 
 /** Media for one resource at one placement size, or a clear failure. */
@@ -524,21 +597,34 @@ function imageMedia(
 }
 
 /** An inline or anchored picture: one `pic:pic` inside its own drawing. */
-function pictureOptions(image: DocxIrImageRun, ctx: EmitContext): Opts {
+function pictureOptions(
+  image: DocxIrImageRun,
+  ctx: EmitContext
+): PictureOptions {
   const media = imageMedia(ctx, image.resourceId, image);
+  // No `fileName`: at run level the backend allocates one, and stating our own
+  // would only fight it.
+  const source =
+    media.type === 'svg'
+      ? {
+          type: 'svg' as const,
+          data: media.data,
+          // The SVG slot always carries a raster: `prepareImages` falls back
+          // to the vector bytes when none could be made.
+          fallback: media.fallback ?? {
+            type: 'png' as const,
+            data: media.data,
+          },
+        }
+      : { type: media.type, data: media.data };
   return {
-    type: media.type,
-    data: media.data,
-    // No `fileName`: at run level the backend allocates one, and stating our
-    // own would only fight it.
-    ...(media.fallback ? { fallback: media.fallback } : {}),
+    ...source,
     // Raw numbers are EMUs in @office-open/docx. Passing pixels here makes a
     // normal image only a few hundred EMUs wide, effectively a dot.
     transformation: { width: image.widthEmu, height: image.heightEmu },
     // The id is stated rather than left to the backend's process-global
-    // counter. `name` stays empty, which is what it was before and what the
-    // backend falls back to.
-    altText: { id: String(ctx.nextDrawingId()) },
+    // counter. `name` stays empty, which is what the backend falls back to.
+    altText: { id: String(ctx.nextDrawingId()), name: '' },
     ...(image.floating ? { floating: floatingOptions(image.floating) } : {}),
     // No `description` or `title`: no DOCX this pipeline has produced carries
     // `wp:docPr` alt text, and the compiler warns so the gap is visible rather
@@ -558,55 +644,86 @@ function pictureOptions(image: DocxIrImageRun, ctx: EmitContext): Opts {
 function drawingGroupOptions(
   group: DocxIrDrawingGroupRun,
   ctx: EmitContext
-): Opts {
+): GroupOptions {
   // Allocated before the children so ids run in document order.
   const id = ctx.nextDrawingId();
   return {
     altText: {
       id: String(id),
+      name: '',
       ...(group.altText ? { description: group.altText } : {}),
     },
     transformation: { width: group.widthEmu, height: group.heightEmu },
-    childOffset: { x: 0, y: 0 },
-    childExtent: { cx: group.canvasWidthEmu, cy: group.canvasHeightEmu },
+    childOffsetX: 0,
+    childOffsetY: 0,
+    childExtentWidth: group.canvasWidthEmu,
+    childExtentHeight: group.canvasHeightEmu,
     children: group.children.map((child) => groupChild(child, ctx)),
     ...(group.floating ? { floating: floatingOptions(group.floating) } : {}),
   };
 }
 
 /**
- * A chart run, in the vocabulary the backend actually reads.
+ * A chart run, with its look, references and workbook as backend options.
  *
- * Only the fields `@office-open/docx` forwards are set, each series with the
- * marker, smoothing and sign handling docx.js draws (`chartLook.ts`). Everything
- * else the IR node carries — series colours, axis titles, the workbook behind
- * "Edit Data", the rest of that look — is spliced into the emitted part
- * afterwards, because the backend's chart run drops those options rather than
- * emitting them. See `chartParts.ts`.
+ * `@office-open/docx` hands a chart run's options to the part whole: the look
+ * docx.js draws (`chartLook.ts`), stated in the backend's vocabulary by the
+ * shared `chartLook`, the cell references behind every cached value, and the
+ * workbook "Edit Data" opens, which the backend embeds with its relationship
+ * and content type. Only a scatter chart's style is left to write into the
+ * emitted part afterwards — see `chartParts.ts`.
  *
  * A shared category axis means the categories are the first series' labels; the
  * compiler has already refused a document whose series disagree about them.
+ *
+ * `ordinal` is the chart's place among the document's charts, from one. It
+ * names the workbook, which has to be unique per chart: the backend embeds one
+ * file per name and points each chart at the name it was given, so two charts
+ * given one name would share the first one's numbers. The backend's own
+ * `chartN` cannot serve, since it numbers header and footer charts in another
+ * order.
  */
-function chartOptions(chart: DocxIrChartRun, ctx: EmitContext): Opts {
+function chartOptions(
+  chart: DocxIrChartRun,
+  ctx: EmitContext,
+  ordinal: number
+): ChartOptions {
   // Stated, never left to the backend. `@office-open/docx` numbers an unnamed
   // `wp:docPr` from `_docPropsIdGen`, a module-level generator that never
   // resets, so the same document rendered twice in one process came out with
   // different ids — the identical hazard the adapter already handles for every
   // other drawing, and the reason this one is allocated per render.
   const id = ctx.nextDrawingId();
+  const input = chartInput(chart);
+  const look = chartLook(input);
   return {
     type: chart.chartType,
     categories: chart.series[0]?.labels ?? [],
-    series: chart.series.map((entry, index) => ({
-      name: entry.name ?? `Series ${index + 1}`,
-      values: entry.values,
-      ...seriesLook(chart.chartType),
-    })),
-    ...(chart.title && chart.showTitle !== false ? { title: chart.title } : {}),
+    series: chart.series.map((entry, index) =>
+      withSeriesLook(
+        {
+          name: entry.name ?? `Series ${index + 1}`,
+          values: entry.values,
+          ...seriesLook(chart.chartType),
+        },
+        look.series[index]
+      )
+    ),
+    ...look.chart,
     ...(chart.showLegend !== undefined ? { showLegend: chart.showLegend } : {}),
+    externalData: {
+      ...look.chart.externalData,
+      fileName: `chart${ordinal}.xlsx`,
+      // A scatter chart's column A holds the x values its `c:xVal` caches.
+      data: buildChartWorkbook(
+        chart.series,
+        input.scatterXValues ? { categoryValues: input.scatterXValues } : {}
+      ),
+    },
     transformation: { width: chart.widthEmu, height: chart.heightEmu },
     altText: {
       id: String(id),
+      name: '',
       ...(chart.altText ? { description: chart.altText } : {}),
     },
     ...(chart.floating ? { floating: floatingOptions(chart.floating) } : {}),
@@ -614,13 +731,19 @@ function chartOptions(chart: DocxIrChartRun, ctx: EmitContext): Opts {
 }
 
 /** One child of a group: a `wps:wsp` shape or a `pic:pic` picture. */
-function groupChild(child: DocxIrDrawingGroupChild, ctx: EmitContext): Opts {
+function groupChild(
+  child: DocxIrDrawingGroupChild,
+  ctx: EmitContext
+): GroupChildMediaData {
   return child.kind === 'shape'
     ? groupShape(child, ctx)
     : groupPicture(child, ctx);
 }
 
-function groupShape(shape: DocxIrDrawingShape, ctx: EmitContext): Opts {
+function groupShape(
+  shape: DocxIrDrawingShape,
+  ctx: EmitContext
+): GroupChildMediaData {
   // Every child carries a `cNvPr` id of its own. They only have to be unique
   // within the drawing, but drawing them from the document-wide counter is
   // both simpler and strictly stronger — and an id repeated inside a group is
@@ -637,7 +760,7 @@ function groupShape(shape: DocxIrDrawingShape, ctx: EmitContext): Opts {
         // to hold text, and it changes how the object behaves on selection.
         ...(shape.isTextBox ? { textBox: '1' } : {}),
       },
-      presetGeometry: { preset: shape.geometry },
+      geometry: shape.geometry as ShapeGeometry,
       ...(shape.fill ? { fill: drawingFill(shape.fill) } : {}),
       ...(shape.outline ? { outline: drawingOutline(shape.outline) } : {}),
       children: (shape.text?.paragraphs ?? []).map((child) =>
@@ -648,7 +771,10 @@ function groupShape(shape: DocxIrDrawingShape, ctx: EmitContext): Opts {
   };
 }
 
-function groupPicture(picture: DocxIrDrawingPicture, ctx: EmitContext): Opts {
+function groupPicture(
+  picture: DocxIrDrawingPicture,
+  ctx: EmitContext
+): GroupChildMediaData {
   const id = ctx.nextDrawingId();
   const media = imageMedia(ctx, picture.resourceId, {
     widthEmu: picture.frame.widthEmu,
@@ -673,7 +799,7 @@ function groupPicture(picture: DocxIrDrawingPicture, ctx: EmitContext): Opts {
       ...(picture.altText ? { description: picture.altText } : {}),
     },
     ...(picture.crop ? { sourceRectangle: sourceRectangle(picture.crop) } : {}),
-  };
+  } as GroupChildMediaData;
 }
 
 /**
@@ -684,11 +810,9 @@ function groupPicture(picture: DocxIrDrawingPicture, ctx: EmitContext): Opts {
  * converts the latter and passes the former straight through — so the pixel
  * mirrors have to be filled in here.
  */
-function childTransformation(frame: DocxIrDrawingFrame): Opts {
-  const flip = {
-    ...(frame.flipHorizontal ? { horizontal: true } : {}),
-    ...(frame.flipVertical ? { vertical: true } : {}),
-  };
+function childTransformation(
+  frame: DocxIrDrawingFrame
+): MediaDataTransformation {
   return {
     offset: {
       emus: { x: frame.xEmu, y: frame.yEmu },
@@ -706,16 +830,16 @@ function childTransformation(frame: DocxIrDrawingFrame): Opts {
     ...(frame.rotationDegrees !== undefined
       ? { rotation: frame.rotationDegrees }
       : {}),
-    ...(Object.keys(flip).length > 0 ? { flip } : {}),
+    ...(frame.flipHorizontal ? { flipHorizontal: true } : {}),
+    ...(frame.flipVertical ? { flipVertical: true } : {}),
   };
 }
 
-function drawingFill(fill: NonNullable<DocxIrDrawingShape['fill']>): Opts {
+function drawingFill(fill: NonNullable<DocxIrDrawingShape['fill']>): ShapeFill {
   if (fill.kind === 'none') return { type: 'none' };
   return {
     type: 'solid',
     color: {
-      type: 'rgb',
       value: fill.color.hex,
       // Transparency becomes an alpha transform on the colour. DrawingML
       // states *opacity*, so the value is the complement of what the author
@@ -738,22 +862,22 @@ function drawingFill(fill: NonNullable<DocxIrDrawingShape['fill']>): Opts {
  */
 function drawingOutline(
   outline: NonNullable<DocxIrDrawingShape['outline']>
-): Opts {
+): ShapeOutline {
   return {
     ...(outline.widthEmu !== undefined ? { width: outline.widthEmu } : {}),
     ...(outline.dash ? { dash: outline.dash } : {}),
     ...(outline.color
       ? { type: 'solidFill', color: { value: outline.color.hex } }
       : {}),
-  };
+  } as ShapeOutline;
 }
 
-/** OOXML's vertical anchors, which the IR names in full. */
-const BODY_ANCHOR: Readonly<Record<string, string>> = {
-  top: 't',
-  middle: 'ctr',
-  bottom: 'b',
-};
+/** The backend's vertical anchors, which name the middle `center`. */
+const BODY_ANCHOR = {
+  top: 'top',
+  middle: 'center',
+  bottom: 'bottom',
+} as const;
 
 /**
  * `wps:bodyPr`, for anything that holds text.
@@ -765,7 +889,7 @@ const BODY_ANCHOR: Readonly<Record<string, string>> = {
 function bodyProperties(text: {
   anchor?: 'top' | 'middle' | 'bottom';
   insetsEmu?: { top?: number; bottom?: number; left?: number; right?: number };
-}): Opts {
+}): NonNullable<ShapeOptions['bodyProperties']> {
   const insets = text.insetsEmu;
   return {
     ...(text.anchor ? { anchor: BODY_ANCHOR[text.anchor] } : {}),
@@ -785,7 +909,7 @@ function bodyProperties(text: {
  */
 function sourceRectangle(
   crop: NonNullable<DocxIrDrawingPicture['crop']>
-): Opts {
+): NonNullable<PictureOptions['sourceRectangle']> {
   const thousandths = (fraction: number): number =>
     Math.round(fraction * 100000);
   return {
@@ -797,11 +921,11 @@ function sourceRectangle(
 }
 
 /** A native text box: a `wps:wsp` shape holding paragraphs. */
-function shapeOptions(shape: DocxIrShapeRun, ctx: EmitContext): Opts {
+function shapeOptions(shape: DocxIrShapeRun, ctx: EmitContext): ShapeOptions {
   // Allocated before the children, so ids run in document order.
   const id = String(ctx.nextDrawingId());
   return {
-    altText: { id },
+    altText: { id, name: '' },
     children: shape.children.map((child) => paragraph(child, ctx)),
     // Raw transformation numbers are EMUs in @office-open/docx, while the IR
     // deliberately stores native shape dimensions in pixels.
@@ -813,7 +937,7 @@ function shapeOptions(shape: DocxIrShapeRun, ctx: EmitContext): Opts {
       ? {
           fill: {
             type: 'solid',
-            color: { type: 'rgb', value: shape.fill.hex },
+            color: { value: shape.fill.hex },
           },
         }
       : {}),
@@ -831,13 +955,13 @@ function shapeOptions(shape: DocxIrShapeRun, ctx: EmitContext): Opts {
 
 export function paragraphProperties(
   formatting: DocxIrParagraphFormatting | undefined
-): Opts {
-  const out: Opts = {};
+): ParagraphStylePropertiesOptions {
+  const out: ParagraphStylePropertiesOptions = {};
   if (!formatting) return out;
 
   if (formatting.alignment) out.alignment = alignment(formatting.alignment);
   if (formatting.spacing) {
-    const spacing: Opts = {};
+    const spacing: NonNullable<ParagraphStylePropertiesOptions['spacing']> = {};
     if (formatting.spacing.beforeTwips !== undefined) {
       spacing.before = formatting.spacing.beforeTwips;
     }
@@ -855,7 +979,7 @@ export function paragraphProperties(
     out.spacing = spacing;
   }
   if (formatting.indent) {
-    const indent: Opts = {};
+    const indent: NonNullable<ParagraphStylePropertiesOptions['indent']> = {};
     if (formatting.indent.leftTwips !== undefined) {
       indent.left = twips(formatting.indent.leftTwips);
     }
@@ -871,10 +995,13 @@ export function paragraphProperties(
     out.indent = indent;
   }
   if (formatting.tabStops) {
+    type TabStop = NonNullable<
+      ParagraphStylePropertiesOptions['tabStops']
+    >[number];
     out.tabStops = formatting.tabStops.map((stop) => ({
-      type: stop.type,
+      type: stop.type as TabStop['type'],
       position: stop.positionTwips,
-      ...(stop.leader ? { leader: stop.leader } : {}),
+      ...(stop.leader ? { leader: stop.leader as TabStop['leader'] } : {}),
     }));
   }
   if (formatting.keepNext !== undefined) out.keepNext = formatting.keepNext;
@@ -898,14 +1025,14 @@ export function paragraphProperties(
 }
 
 /** `justified` is the only alignment the two vocabularies spell differently. */
-function alignment(value: string): string {
-  return value === 'justified' ? 'both' : value;
+function alignment(value: string): Alignment {
+  return (value === 'justified' ? 'both' : value) as Alignment;
 }
 
 export function paragraph(
   block: DocxIrParagraph,
   ctx: EmitContext = emptyContext()
-): Opts {
+): ParagraphOptions {
   return {
     children: inlineChildren(block.children, ctx),
     // A paragraph with no style named is one that deliberately has none — a
@@ -936,34 +1063,42 @@ export function paragraph(
  * alignment otherwise. OOXML cannot mix them, and the backend takes the choice
  * as a discriminant.
  */
-function frameOptions(frame: DocxIrFrame): Opts {
-  const base: Opts = {
+function frameOptions(frame: DocxIrFrame): FrameOptions {
+  type Anchor = NonNullable<FrameOptions['anchor']>['horizontal'];
+  const base = {
     width: frame.widthTwips,
     height: frame.heightTwips,
     anchor: {
-      horizontal: frame.anchorHorizontal,
-      vertical: frame.anchorVertical,
+      horizontal: frame.anchorHorizontal as Anchor,
+      vertical: frame.anchorVertical as Anchor,
     },
-    ...(frame.wrap ? { wrap: frame.wrap } : {}),
+    ...(frame.wrap ? { wrap: frame.wrap as FrameOptions['wrap'] } : {}),
     ...(frame.anchorLock !== undefined ? { anchorLock: frame.anchorLock } : {}),
-    ...(frame.rule ? { rule: frame.rule } : {}),
+    ...(frame.rule ? { rule: frame.rule as FrameOptions['rule'] } : {}),
   };
 
-  return frame.xTwips !== undefined || frame.yTwips !== undefined
-    ? {
-        type: 'absolute',
-        position: { x: frame.xTwips ?? 0, y: frame.yTwips ?? 0 },
-        ...base,
-      }
-    : {
-        type: 'alignment',
-        alignment: { x: frame.xAlign, y: frame.yAlign },
-        ...base,
-      };
+  if (frame.xTwips !== undefined || frame.yTwips !== undefined) {
+    return {
+      type: 'absolute',
+      position: { x: frame.xTwips ?? 0, y: frame.yTwips ?? 0 },
+      ...base,
+    };
+  }
+  type Aligned = Extract<FrameOptions, { type: 'alignment' }>['alignment'];
+  return {
+    type: 'alignment',
+    alignment: {
+      x: frame.xAlign as Aligned['x'],
+      y: frame.yAlign as Aligned['y'],
+    },
+    ...base,
+  };
 }
 
 /** `w:ins` / `w:del` on a paragraph mark or a row. */
-function revisionMark(revision: DocxIrParagraphMarkRevision): Opts {
+function revisionMark(
+  revision: DocxIrParagraphMarkRevision
+): Pick<ParagraphRunOptions, 'insertion' | 'deletion'> {
   const attributes = {
     id: revision.id,
     author: revision.author,
@@ -978,7 +1113,7 @@ function revisionMark(revision: DocxIrParagraphMarkRevision): Opts {
 export function block(
   value: DocxIrBlock,
   ctx: EmitContext = emptyContext()
-): Opts {
+): SectionChild {
   switch (value.kind) {
     case 'paragraph':
       return { paragraph: paragraph(value, ctx) };
@@ -1007,7 +1142,7 @@ export function block(
  * that never refreshes still shows the entries, which is the whole point of
  * caching them.
  */
-function tocEntry(entry: { text: string; level: number }): Opts {
+function tocEntry(entry: { text: string; level: number }): SectionChild {
   return {
     paragraph: {
       style: `TOC${entry.level}`,
@@ -1016,7 +1151,9 @@ function tocEntry(entry: { text: string; level: number }): Opts {
   };
 }
 
-function tableOfContents(value: DocxIrTableOfContents): Opts {
+function tableOfContents(
+  value: DocxIrTableOfContents
+): TableOfContentsOptions & { alias: string } {
   return {
     alias: value.alias ?? 'Table of Contents',
     ...(value.hyperlink !== undefined ? { hyperlink: value.hyperlink } : {}),
@@ -1027,6 +1164,7 @@ function tableOfContents(value: DocxIrTableOfContents): Opts {
       : {}),
     ...(value.styleLevels?.length
       ? {
+          // `StyleLevel` is a class the backend only reads the two fields of.
           stylesWithLevels: value.styleLevels.map((style) => ({
             styleName: style.styleName,
             level: style.level,
@@ -1056,7 +1194,7 @@ function tableOfContents(value: DocxIrTableOfContents): Opts {
  * Tables
  * ------------------------------------------------------------------ */
 
-export function table(value: DocxIrTable, ctx: EmitContext): Opts {
+export function table(value: DocxIrTable, ctx: EmitContext): TableOptions {
   return {
     rows: value.rows.map((row) => tableRow(row, ctx)),
     width: {
@@ -1071,26 +1209,33 @@ export function table(value: DocxIrTable, ctx: EmitContext): Opts {
             : value.width.value,
       type:
         value.width.kind === 'twips'
-          ? 'dxa'
+          ? 'twips'
           : value.width.kind === 'percent'
-            ? 'pct'
+            ? 'percent'
             : 'auto',
     },
-    layout: value.layout,
+    layout: value.layout as TableOptions['layout'],
     // An empty grid is a table with nothing to say about its columns, which is
     // not the same as one whose columns are all zero wide. The compiler hands
     // over every grid in twips; floored for the same reason as the width.
     ...(value.columnGrid.values.length > 0
       ? { columnWidths: value.columnGrid.values.map(twips) }
       : {}),
-    ...(value.alignment ? { alignment: alignment(value.alignment) } : {}),
+    ...(value.alignment
+      ? {
+          alignment: alignment(value.alignment) as TableOptions['alignment'],
+        }
+      : {}),
     ...(value.borders ? { borders: borders(value.borders) } : {}),
     ...(value.cellMargins ? { margins: cellMargins(value.cellMargins) } : {}),
     ...(value.floating ? { float: tableFloat(value.floating) } : {}),
   };
 }
 
-function tableFloat(floating: DocxIrTableFloating): Opts {
+function tableFloat(
+  floating: DocxIrTableFloating
+): NonNullable<TableOptions['float']> {
+  type Float = NonNullable<TableOptions['float']>;
   return {
     ...(floating.horizontalAnchor
       ? { horizontalAnchor: floating.horizontalAnchor }
@@ -1131,17 +1276,19 @@ function tableFloat(floating: DocxIrTableFloating): Opts {
       ? { leftFromText: twips(floating.leftFromTextTwips) }
       : {}),
     ...(floating.overlap ? { overlap: floating.overlap } : {}),
-  };
+  } as Float;
 }
 
-function tableRow(row: DocxIrTableRow, ctx: EmitContext): Opts {
+function tableRow(row: DocxIrTableRow, ctx: EmitContext): TableRowOptions {
   return {
     cells: row.cells.map((cell) => tableCell(cell, ctx)),
     ...(row.heightTwips !== undefined
       ? {
           height: {
             value: twips(row.heightTwips),
-            rule: row.heightRule ?? 'atLeast',
+            rule: (row.heightRule ?? 'atLeast') as NonNullable<
+              TableRowOptions['height']
+            >['rule'],
           },
         }
       : {}),
@@ -1164,22 +1311,32 @@ function tableRow(row: DocxIrTableRow, ctx: EmitContext): Opts {
  * top border (#468). The same empty paragraph is appended here, so every cell
  * ends as it does on docx.js.
  */
-function tableCell(cell: DocxIrTableCell, ctx: EmitContext): Opts {
+function tableCell(cell: DocxIrTableCell, ctx: EmitContext): TableCellOptions {
   const children = cellChildren(cell, ctx);
   if (cell.children[cell.children.length - 1]?.kind !== 'paragraph')
     children.push({ paragraph: { children: [] } });
   return {
     children,
     ...(cell.widthTwips !== undefined
-      ? { width: { size: twips(cell.widthTwips), type: 'dxa' } }
+      ? { width: { size: twips(cell.widthTwips), type: 'twips' } }
       : {}),
-    ...(cell.verticalAlign ? { verticalAlign: cell.verticalAlign } : {}),
+    ...(cell.verticalAlign
+      ? {
+          verticalAlign:
+            cell.verticalAlign as TableCellOptions['verticalAlign'],
+        }
+      : {}),
     ...(cell.shading ? { shading: shading(cell.shading) } : {}),
     ...(cell.margins ? { margins: cellMargins(cell.margins) } : {}),
     ...(cell.borders ? { borders: borders(cell.borders) } : {}),
     ...(cell.columnSpan !== undefined ? { columnSpan: cell.columnSpan } : {}),
     ...(cell.rowSpan !== undefined ? { verticalMerge: cell.rowSpan } : {}),
-    ...(cell.textDirection ? { textDirection: cell.textDirection } : {}),
+    ...(cell.textDirection
+      ? {
+          textDirection:
+            cell.textDirection as TableCellOptions['textDirection'],
+        }
+      : {}),
   };
 }
 
@@ -1201,8 +1358,8 @@ function tableCell(cell: DocxIrTableCell, ctx: EmitContext): Opts {
  * `tableCell` closes every cell by its last IR block, which the end marker
  * does not change.
  */
-function cellChildren(cell: DocxIrTableCell, ctx: EmitContext): Opts[] {
-  const children: Opts[] = [];
+function cellChildren(cell: DocxIrTableCell, ctx: EmitContext): SectionChild[] {
+  const children: SectionChild[] = [];
   for (const child of cell.children) {
     if (child.kind !== 'toc') {
       children.push(block(child, ctx));
@@ -1213,13 +1370,13 @@ function cellChildren(cell: DocxIrTableCell, ctx: EmitContext): Opts[] {
     const toc: CellToc = {
       start: cellTocMarker(index, 'start'),
       end: cellTocMarker(index, 'end'),
-      alias: String(alias),
+      alias,
       options,
     };
     ctx.cellTocs.push(toc);
     children.push(
       markerParagraph(toc.start),
-      ...((entries as Opts[] | undefined) ?? []),
+      ...(entries ?? []),
       markerParagraph(toc.end)
     );
   }
@@ -1237,7 +1394,7 @@ function cellTocMarker(index: number, edge: 'start' | 'end'): string {
   return `\u{E000}jto-cell-toc-${index}-${edge}\u{E000}`;
 }
 
-function markerParagraph(text: string): Opts {
+function markerParagraph(text: string): SectionChild {
   return { paragraph: { children: [{ text }] } };
 }
 
@@ -1247,10 +1404,10 @@ function cellMargins(margins: {
   bottomTwips?: number;
   leftTwips?: number;
   rightTwips?: number;
-}): Opts {
-  const side = (value: number | undefined): Opts | undefined =>
-    value === undefined ? undefined : { size: twips(value), type: 'dxa' };
-  const out: Opts = {};
+}): CellMargins {
+  const side = (value: number | undefined): TableWidth | undefined =>
+    value === undefined ? undefined : { size: twips(value), type: 'twips' };
+  const out: CellMargins = {};
   for (const [name, value] of [
     ['top', margins.topTwips],
     ['bottom', margins.bottomTwips],
@@ -1263,9 +1420,9 @@ function cellMargins(margins: {
   return out;
 }
 
-function border(value: DocxIrBorder): Opts {
+function border(value: DocxIrBorder): BorderOptions {
   return {
-    style: value.style,
+    style: value.style as BorderStyle,
     ...(value.sizeEighthPoints !== undefined
       ? { size: value.sizeEighthPoints }
       : {}),
@@ -1274,8 +1431,13 @@ function border(value: DocxIrBorder): Opts {
   };
 }
 
-function borders(value: DocxIrBorders): Opts {
-  const out: Opts = {};
+/**
+ * Every side the IR states. The one shape serves paragraphs (which have
+ * `between`), tables (which have the inside rules) and page borders; each
+ * backend type allows only its own sides, and the IR never states another.
+ */
+function borders(value: DocxIrBorders): AnyBorders {
+  const out: AnyBorders = {};
   for (const side of [
     'top',
     'bottom',
@@ -1299,68 +1461,80 @@ export function section(
   value: DocxIrSection,
   ctx: EmitContext,
   closesDocument = false
-): Opts {
+): SectionOptions {
   const { page, columns } = value.properties;
+  type Properties = NonNullable<SectionOptions['properties']>;
   return {
     properties: {
-      ...(value.properties.type ? { type: value.properties.type } : {}),
+      ...(value.properties.type
+        ? { type: value.properties.type as Properties['type'] }
+        : {}),
       ...(value.properties.titlePage !== undefined
         ? { titlePage: value.properties.titlePage }
         : {}),
-      page: {
-        // Orientation is implied by the width/height pair, which is how this
-        // pipeline has always expressed it; stating it as well changes `w:pgSz`.
-        size: {
-          width: twips(page.widthTwips),
-          height: twips(page.heightTwips),
-          ...(page.code !== undefined ? { code: page.code } : {}),
-        },
-        margin: {
-          top: twips(page.margins.topTwips),
-          right: twips(page.margins.rightTwips),
-          bottom: twips(page.margins.bottomTwips),
-          left: twips(page.margins.leftTwips),
-          ...(page.margins.headerTwips !== undefined
-            ? { header: twips(page.margins.headerTwips) }
-            : {}),
-          ...(page.margins.footerTwips !== undefined
-            ? { footer: twips(page.margins.footerTwips) }
-            : {}),
-          ...(page.margins.gutterTwips !== undefined
-            ? { gutter: twips(page.margins.gutterTwips) }
-            : {}),
-        },
-        ...(value.properties.pageNumbers
-          ? {
-              pageNumbers: {
-                ...(value.properties.pageNumbers.start !== undefined
-                  ? { start: value.properties.pageNumbers.start }
-                  : {}),
-                ...(value.properties.pageNumbers.formatType
-                  ? { formatType: value.properties.pageNumbers.formatType }
-                  : {}),
-              },
-            }
+      // Orientation is implied by the width/height pair, which is how this
+      // pipeline has always expressed it; stating it as well changes `w:pgSz`.
+      pageSize: {
+        width: twips(page.widthTwips),
+        height: twips(page.heightTwips),
+        ...(page.code !== undefined ? { code: page.code } : {}),
+      },
+      pageMargin: {
+        top: twips(page.margins.topTwips),
+        right: twips(page.margins.rightTwips),
+        bottom: twips(page.margins.bottomTwips),
+        left: twips(page.margins.leftTwips),
+        ...(page.margins.headerTwips !== undefined
+          ? { header: twips(page.margins.headerTwips) }
           : {}),
-        ...(value.properties.borders
-          ? {
-              borders: {
-                ...(value.properties.borders.display
-                  ? { display: value.properties.borders.display }
-                  : {}),
-                ...(value.properties.borders.offsetFrom
-                  ? { offsetFrom: value.properties.borders.offsetFrom }
-                  : {}),
-                ...(value.properties.borders.borders
-                  ? borders(value.properties.borders.borders)
-                  : {}),
-              },
-            }
+        ...(page.margins.footerTwips !== undefined
+          ? { footer: twips(page.margins.footerTwips) }
+          : {}),
+        ...(page.margins.gutterTwips !== undefined
+          ? { gutter: twips(page.margins.gutterTwips) }
           : {}),
       },
+      ...(value.properties.pageNumbers
+        ? {
+            pageNumberType: {
+              ...(value.properties.pageNumbers.start !== undefined
+                ? { start: value.properties.pageNumbers.start }
+                : {}),
+              ...(value.properties.pageNumbers.formatType
+                ? {
+                    format: value.properties.pageNumbers
+                      .formatType as NonNullable<
+                      Properties['pageNumberType']
+                    >['format'],
+                  }
+                : {}),
+            },
+          }
+        : {}),
+      ...(value.properties.borders
+        ? {
+            pageBorders: {
+              ...(value.properties.borders.display
+                ? {
+                    display: value.properties.borders
+                      .display as PageBorders['display'],
+                  }
+                : {}),
+              ...(value.properties.borders.offsetFrom
+                ? {
+                    offsetFrom: value.properties.borders
+                      .offsetFrom as PageBorders['offsetFrom'],
+                  }
+                : {}),
+              ...(value.properties.borders.borders
+                ? borders(value.properties.borders.borders)
+                : {}),
+            },
+          }
+        : {}),
       ...(columns
         ? {
-            column: {
+            columns: {
               count: columns.count,
               ...(columns.spaceTwips !== undefined
                 ? { space: twips(columns.spaceTwips) }
@@ -1404,8 +1578,8 @@ function headerFooterSet(
     even?: DocxIrHeaderFooter;
   },
   ctx: EmitContext
-): Opts {
-  const out: Opts = {};
+): NonNullable<SectionOptions['headers']> {
+  const out: NonNullable<SectionOptions['headers']> = {};
   for (const slot of ['default', 'first', 'even'] as const) {
     const part = set[slot];
     if (part) out[slot] = part.children.map((child) => block(child, ctx));
@@ -1440,7 +1614,7 @@ function sectionChildren(
   value: DocxIrSection,
   ctx: EmitContext,
   closesDocument = false
-): Opts[] {
+): SectionChild[] {
   const blocks = value.children.map((child) => block(child, ctx));
   const last = value.children[value.children.length - 1];
   const bookmark = value.bookmark;
@@ -1454,6 +1628,16 @@ function sectionChildren(
         spacing: { before: 0, after: 0, line: 20, lineRule: 'exact' },
       },
     });
+  // A section that ends the body on a contents field needs a paragraph of its
+  // own after it. The backend puts a section's properties into its last
+  // paragraph or contents field, and in the field's case that is the last
+  // entry, inside the content control, where no reader looks for them. A bare
+  // paragraph takes them instead: the bytes a section break has always been.
+  // Not the one-point paragraph above, whose own properties would move them.
+  // A closing bookmark already ends such a section on a paragraph and a
+  // bookmark end, so the properties get a paragraph of their own there.
+  if (!closesDocument && !bookmark?.closes && last?.kind === 'toc')
+    blocks.push({ paragraph: { children: [] } });
   if (!bookmark) return blocks;
 
   return [
@@ -1469,20 +1653,26 @@ function sectionChildren(
  * Numbering
  * ------------------------------------------------------------------ */
 
-export function numberingConfig(numbering: DocxIrNumbering): Opts {
+export function numberingConfig(numbering: DocxIrNumbering): NumberingConfig {
   return {
     reference: numbering.reference,
-    levels: numbering.levels.map((level) => ({
-      level: level.level,
-      format: level.format,
-      text: level.text,
-      ...(level.alignment ? { alignment: alignment(level.alignment) } : {}),
-      ...(level.suffix ? { suffix: level.suffix } : {}),
-      ...(level.start !== undefined ? { start: level.start } : {}),
-      ...(level.paragraphStyleId
-        ? { paragraphStyle: level.paragraphStyleId }
-        : {}),
-      style: {
+    levels: numbering.levels.map(
+      (level): LevelsOptions => ({
+        level: level.level,
+        format: level.format as LevelsOptions['format'],
+        text: level.text,
+        ...(level.alignment ? { alignment: alignment(level.alignment) } : {}),
+        ...(level.suffix
+          ? { suffix: level.suffix as LevelsOptions['suffix'] }
+          : {}),
+        // Always stated. docx.js writes `w:start w:val="1"` for a level that
+        // names none, and so did this backend until 0.14, which writes no
+        // `w:start` at all when it is not given one; Word and LibreOffice then
+        // count every such list from 0.
+        start: level.start ?? 1,
+        ...(level.paragraphStyleId
+          ? { paragraphStyle: level.paragraphStyleId }
+          : {}),
         ...(level.indent
           ? {
               paragraph: {
@@ -1498,9 +1688,14 @@ export function numberingConfig(numbering: DocxIrNumbering): Opts {
             }
           : {}),
         ...(level.run ? { run: runProperties(level.run) } : {}),
-      },
-    })),
+      })
+    ),
   };
 }
+
+/** One abstract numbering, as `NumberingOptions.abstractNumberings` holds it. */
+export type NumberingConfig = NonNullable<
+  DocumentOptions['numbering']
+>['abstractNumberings'][number];
 
 export { emuToPixels };
