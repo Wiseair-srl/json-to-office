@@ -33,7 +33,6 @@ import type {
   DocxIrNote,
 } from '../../ir/types';
 import { finishChartParts } from './chartParts';
-import { spliceCellTocs } from './cellTocs';
 import { spliceTheme } from './themePart';
 import {
   rasterizeSvgFallbacks,
@@ -50,7 +49,6 @@ import {
   emuToPixels,
   numberingConfig,
   section,
-  type CellToc,
   type EmitContext,
   type ImageMediaFactory,
   type PreparedImage,
@@ -145,7 +143,7 @@ const OFFICE_OPEN_CAPABILITIES: ReadonlySet<DocxFeature> = new Set([
 /** The two entry points this adapter calls, typed as the package types them. */
 type OfficeOpenBackend = Pick<
   typeof import('@office-open/docx'),
-  'generateDocument' | 'stringifyTableOfContents'
+  'generateDocument'
 >;
 
 export async function createOfficeOpenDocxRenderer(): Promise<DocxRenderer> {
@@ -160,15 +158,10 @@ export async function createOfficeOpenDocxRenderer(): Promise<DocxRenderer> {
     installedBackendVersion()
   );
 
-  for (const name of [
-    'generateDocument',
-    'stringifyTableOfContents',
-  ] as const) {
-    if (typeof backend[name] !== 'function') {
-      throw new Error(
-        `${OFFICE_OPEN_DOCX} does not export ${name}(); the installed version is not compatible with this adapter.`
-      );
-    }
+  if (typeof backend.generateDocument !== 'function') {
+    throw new Error(
+      `${OFFICE_OPEN_DOCX} does not export generateDocument(); the installed version is not compatible with this adapter.`
+    );
   }
 
   return {
@@ -177,12 +170,10 @@ export async function createOfficeOpenDocxRenderer(): Promise<DocxRenderer> {
     capabilities: OFFICE_OPEN_CAPABILITIES,
     async render(ir: DocxIR, options?: DocxRenderOptions): Promise<Uint8Array> {
       const charts: DocxIrChartRun[] = [];
-      const cellTocs: CellToc[] = [];
       const document = await buildDocumentOptions(
         ir,
         charts,
-        options?.svgRasterFallback,
-        cellTocs
+        options?.svgRasterFallback
       );
       const bytes = await backend.generateDocument(document, {
         type: 'uint8array',
@@ -192,20 +183,16 @@ export async function createOfficeOpenDocxRenderer(): Promise<DocxRenderer> {
       );
 
       // The backend writes every chart option but a scatter chart's style,
-      // which is finished here — see `chartParts.ts`. A table of contents in
-      // a table cell it drops outright, so its entries went in between
-      // markers for the field to be put around them here — see
-      // `cellTocs.ts`. And it always writes Office's theme and takes no
-      // option for another, so the document's is spliced in — see
-      // `themePart.ts`. The compiler always sets `ir.theme`, so every render
-      // now takes this pass. That is deliberate and costs nothing:
-      // `canonicalizeDocxBuffer` re-zips anyway. Do not narrow the condition
-      // back.
-      if (ir.theme || charts.length > 0 || cellTocs.length > 0) {
+      // which is finished here — see `chartParts.ts`. And it always writes
+      // Office's theme and takes no option for another, so the document's is
+      // spliced in — see `themePart.ts`. The compiler always sets `ir.theme`,
+      // so every render now takes this pass. That is deliberate and costs
+      // nothing: `canonicalizeDocxBuffer` re-zips anyway. Do not narrow the
+      // condition back.
+      if (ir.theme || charts.length > 0) {
         const zip = new AdmZip(raw);
         if (ir.theme) spliceTheme(zip, ir.theme);
         finishChartParts(zip, charts);
-        spliceCellTocs(zip, cellTocs, backend.stringifyTableOfContents);
         raw = zip.toBuffer();
       }
 
@@ -237,8 +224,7 @@ export async function createOfficeOpenDocxRenderer(): Promise<DocxRenderer> {
 export async function buildDocumentOptions(
   ir: DocxIR,
   charts: DocxIrChartRun[] = [],
-  svgRasterFallback?: boolean,
-  cellTocs: CellToc[] = []
+  svgRasterFallback?: boolean
 ): Promise<DocumentOptions> {
   // One counter for the whole document. `wp:docPr` ids only have to be unique
   // within their part, and numbering across every part is both simpler and
@@ -248,7 +234,6 @@ export async function buildDocumentOptions(
     pictures: await prepareImages(ir, svgRasterFallback),
     nextDrawingId: () => nextDrawingId++,
     charts,
-    cellTocs,
   };
 
   return {
