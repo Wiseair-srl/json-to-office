@@ -4,9 +4,9 @@
 '@json-to-office/shared-docx': minor
 ---
 
-Bump the `docx` rendering backend from 9.7.1 to 9.8.0. The pin stays exact in
+Bump the `docx` rendering backend from 9.7.1 to 9.8.1. The pin stays exact in
 `pnpm.overrides` and in every peer/dependency declaration, so consumers of
-`@json-to-office/json-to-docx` install `docx@9.8.0`.
+`@json-to-office/json-to-docx` install `docx@9.8.1`.
 
 Package-level consequences, verified part by part against the full corpus, the
 gallery templates and the examples (the `office-open` backend is unchanged):
@@ -23,6 +23,10 @@ gallery templates and the examples (the `office-open` backend is unchanged):
   wrap that keeps its side and its wrap polygon.
 - Drawing ids (`wp:docPr`) are unique across the whole package, headers and
   footers included, and the same on every build.
+
+The last step, 9.8.1, adds math under `docx/math`, which nothing here uses,
+and drops the `WORKAROUND2`–`4` exports, which nothing here imported: every
+package is byte-identical to what 9.8.0 writes.
 
 docx now depends on nanoid 6, whose `engines` field reads Node
 `^22 || ^24 || >=26`: on Node 23 or 25 the install prints an engines warning.

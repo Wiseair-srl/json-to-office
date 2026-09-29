@@ -7,7 +7,7 @@ open-source projects listed below; their license terms are reproduced verbatim.
 
 ## Core rendering engines
 
-- **docx** 9.8.0 — MIT — https://github.com/dolanmiu/docx
+- **docx** 9.8.1 — MIT — https://github.com/dolanmiu/docx
 - **@office-open/core** 0.11.0 — MIT — https://github.com/DemoMacro/office-open
 - **@office-open/docx** 0.11.0 — MIT — https://github.com/DemoMacro/office-open
 - **@office-open/pptx** 0.11.0 — MIT — https://github.com/DemoMacro/office-open
@@ -33,7 +33,7 @@ Source: https://www.libreoffice.org/about-us/source-code/
 | ISC | 30 |
 | LGPL-3.0-or-later | 1 |
 | MIT AND ISC | 1 |
-| MIT | 424 |
+| MIT | 428 |
 | MPL-2.0 | 4 |
 | OFL-1.1 | 1 |
 | Python-2.0 | 1 |
@@ -439,7 +439,7 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### @babel/runtime 7.28.6, 7.29.2
+### @babel/runtime 7.29.2
 
 License: MIT · Author: The Babel Team
 
@@ -1548,6 +1548,34 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
+### @noble/hashes 2.2.0
+
+License: MIT · Author: Paul Miller
+
+```
+The MIT License (MIT)
+
+Copyright (c) 2022 Paul Miller (https://paulmillr.com)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the “Software”), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+```
+
 ### @office-open/core 0.11.0
 
 License: MIT · Author: Demo Macro
@@ -1605,6 +1633,34 @@ SOFTWARE.
 ```
 
 ### @office-open/pptx 0.11.0
+
+License: MIT · Author: Demo Macro
+
+```
+MIT License
+
+Copyright (c) 2026 Demo Macro
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+### @office-open/xml 0.11.0
 
 License: MIT · Author: Demo Macro
 
@@ -2235,6 +2291,34 @@ SOFTWARE.
 ```
 
 ### @radix-ui/react-menubar 1.1.16
+
+License: MIT
+
+```
+MIT License
+
+Copyright (c) 2022 WorkOS
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+### @radix-ui/react-popover 1.1.15
 
 License: MIT
 
@@ -3820,7 +3904,7 @@ MIT License
     SOFTWARE
 ```
 
-### @types/node 18.19.130, 20.11.0, 26.6.3
+### @types/node 18.19.130, 22.20.2, 26.6.3
 
 License: MIT
 
@@ -6548,7 +6632,7 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### docx 9.8.0
+### docx 9.8.1
 
 License: MIT · Author: Dolan Miu
 
@@ -7368,6 +7452,34 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The complete list of contributors can be found at:
 - https://github.com/garycourt/uri-js/graphs/contributors
+```
+
+### fflate 0.8.3
+
+License: MIT · Author: Arjun Barrett
+
+```
+MIT License
+
+Copyright (c) 2026 Arjun Barrett
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 ```
 
 ### finalhandler 2.1.1
@@ -16521,7 +16633,7 @@ If the Work includes a "NOTICE" text file as part of its distribution, then any 
 END OF TERMS AND CONDITIONS
 ```
 
-### undici-types 5.26.5, 8.9.0
+### undici-types 5.26.5, 6.21.0, 8.9.0
 
 License: MIT
 
