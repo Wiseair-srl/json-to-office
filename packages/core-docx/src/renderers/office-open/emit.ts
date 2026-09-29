@@ -1304,16 +1304,15 @@ function tableRow(row: DocxIrTableRow, ctx: EmitContext): TableRowOptions {
  * Word ends every cell on a paragraph, whose mark is the cell's end mark, and
  * its notes on ECMA-376 (MS-OI29500, §17.4.65 `tc`) ask for a `w:p` as the
  * last block of a `w:tc`. docx.js appends `<w:p/>` to any cell whose last
- * child is not a paragraph. The backend appends one only when the last child
- * is neither a paragraph nor a table, so a text box whose content ends on a
- * table became a cell ending on `</w:tbl>`. Word tolerates that; LibreOffice
- * set the cover's floating band in the flow under the subtitle, without its
- * top border (#468). The same empty paragraph is appended here, so every cell
- * ends as it does on docx.js.
+ * child is not a paragraph. The backend appends one to a cell that ends on a
+ * table — 0.11 did not, and LibreOffice set a text box whose content ended on
+ * one in the flow, without its top border (#468) — but not to one that ends
+ * on a table of contents, which it takes for a paragraph. That one case gets
+ * the empty paragraph here, so every cell ends as it does on docx.js.
  */
 function tableCell(cell: DocxIrTableCell, ctx: EmitContext): TableCellOptions {
   const children = cellChildren(cell, ctx);
-  if (cell.children[cell.children.length - 1]?.kind !== 'paragraph')
+  if (cell.children[cell.children.length - 1]?.kind === 'toc')
     children.push({ paragraph: { children: [] } });
   return {
     children,

@@ -8,6 +8,7 @@
  * real defect first.
  */
 
+import AdmZip from 'adm-zip';
 import { describe, expect, it } from 'vitest';
 import {
   block,
@@ -329,31 +330,36 @@ describe('tables', () => {
     });
   });
 
-  it('closes a cell on an empty paragraph unless it ends on one, as docx.js does', () => {
-    // The backend takes a nested table as a cell's last block, and a cell
-    // ending on one is what LibreOffice misread in the cover band (#468).
+  it('ends every cell on a paragraph, as docx.js does', async () => {
+    // A cell ending on a nested table is what LibreOffice misread in the
+    // cover band (#468). The backend closes that one itself since 0.14; a
+    // cell ending on a table of contents it does not, so the emitter does.
     const paragraph = (text: string) => ({
       kind: 'paragraph' as const,
       id: text,
       path: text,
       children: [{ kind: 'text' as const, text }],
     });
-    const cells = [[paragraph('a')], [paragraph('b'), table], []].map(
-      (children) => ({ children })
+    const toc = { kind: 'toc' as const, id: 'c', path: 'c' };
+    const cells = [
+      [paragraph('a')],
+      [paragraph('b'), table],
+      [],
+      [paragraph('c'), toc],
+    ].map((children) => ({ children }));
+    const emitted = block({ ...table, rows: [{ cells }] }, emptyContext());
+    const { generateDocument } = await import('@office-open/docx');
+    const bytes = await generateDocument(
+      { sections: [{ children: [emitted] }] },
+      { type: 'uint8array' }
     );
-    const emitted = block({ ...table, rows: [{ cells }] }).table as {
-      rows: Array<{ cells: Array<{ children: unknown[] }> }>;
-    };
-    const [flat, nested, empty] = emitted.rows[0].cells.map(
-      (cell) => cell.children
+    const xml = new AdmZip(Buffer.from(bytes)).readAsText('word/document.xml');
+    // The outer row's four cells: each closes on a paragraph.
+    const endings = [...xml.matchAll(/(<\/w:\w+>|<w:p\/>)<\/w:tc>/g)].map(
+      ([, last]) => last
     );
-
-    const closing = { paragraph: { children: [] } };
-    expect(flat).toHaveLength(1);
-    expect(nested).toHaveLength(3);
-    expect(nested[1]).toHaveProperty('table');
-    expect(nested[2]).toEqual(closing);
-    expect(empty).toEqual([closing]);
+    expect(endings.length).toBeGreaterThanOrEqual(4);
+    for (const last of endings) expect(['</w:p>', '<w:p/>']).toContain(last);
   });
 
   it('spells every stated cell border side and leaves the table bare', () => {
