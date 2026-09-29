@@ -11,7 +11,7 @@ open-source projects listed below; their license terms are reproduced verbatim.
 - **@office-open/core** 0.11.0 — MIT — https://github.com/DemoMacro/office-open
 - **@office-open/docx** 0.11.0 — MIT — https://github.com/DemoMacro/office-open
 - **@office-open/pptx** 0.11.0 — MIT — https://github.com/DemoMacro/office-open
-- **pptxgenjs** 3.12.0 — MIT — https://github.com/gitbrent/PptxGenJS
+- **pptxgenjs** 4.0.1 — MIT — https://github.com/gitbrent/PptxGenJS
 
 LibreOffice (Mozilla Public License 2.0) is invoked as a separate process in the
 Docker image for rendering and PDF export; it is not linked into this software.
@@ -3904,7 +3904,7 @@ MIT License
     SOFTWARE
 ```
 
-### @types/node 18.19.130, 22.20.2, 26.6.3
+### @types/node 22.20.2, 26.6.3
 
 License: MIT
 
@@ -13461,7 +13461,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### pptxgenjs 3.12.0
+### pptxgenjs 4.0.1
 
 License: MIT · Author: Brent Ely
 
@@ -16633,11 +16633,33 @@ If the Work includes a "NOTICE" text file as part of its distribution, then any 
 END OF TERMS AND CONDITIONS
 ```
 
-### undici-types 5.26.5, 6.21.0, 8.9.0
+### undici-types 6.21.0, 8.9.0
 
 License: MIT
 
-_No license file found in the published package._
+```
+MIT License
+
+Copyright (c) Matteo Collina and Undici contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
 
 ### unified 11.0.5
 
