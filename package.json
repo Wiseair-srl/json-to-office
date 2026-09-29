@@ -98,7 +98,7 @@
   "packageManager": "pnpm@9.15.9",
   "pnpm": {
     "overrides": {
-      "docx": "9.8.0",
+      "docx": "9.8.1",
       "typescript": "5.3.3",
       "eslint": "8.56.0",
       "prettier": "3.2.4",
