@@ -4,10 +4,10 @@
  * The docx `chart` component spells every series as labels and values, the
  * vocabulary it shares with the pptx component. A scatter chart has no
  * categories, though: each point needs an x. The label is that x when it reads
- * as a number; one that does not is placed at its position, 1, 2, 3… in order —
- * which is what readers already do with office-open's scatter parts, whose x
- * values are written as text. The compiler warns about such a chart once, so
- * both renderers say the same thing about it.
+ * as a number; one that does not is placed at its position, 1, 2, 3… in order,
+ * which is what Word and LibreOffice do with an x value written as text. Both
+ * renderers write the x values as numbers. The compiler warns about such a
+ * chart once, so both renderers say the same thing about it.
  */
 
 /** A decimal number, optionally signed and in exponent form, and nothing else. */
