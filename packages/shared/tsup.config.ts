@@ -12,6 +12,7 @@ export default defineConfig({
     'src/fonts/node.ts',
     'src/images/node.ts',
     'src/rendering/index.ts',
+    'src/rendering/node.ts',
   ],
   format: ['esm'],
   dts: {
