@@ -580,13 +580,22 @@ describe('both DOCX backends over the corpus', () => {
       (await shapeOf(docxjs.buffer)).drawingExtents
     );
 
+    // Each picture is embedded once, as the bytes it was given: the backend
+    // keeps a drawing's extent on the drawing. 0.11 kept it on the shared
+    // media entry, so the adapter used to mark each size's copy apart.
     const zip = await JSZip.loadAsync(officeOpen.buffer);
+    const media: Buffer[] = [];
     for (const [path, entry] of Object.entries(zip.files)) {
       if (entry.dir || !path.startsWith('word/media/')) continue;
       const bytes = await entry.async('nodebuffer');
       expect(readImageDimensions(bytes, path).width).toBeGreaterThan(0);
-      // The marker keeps the picture decodable, not just its header readable.
       expect(imageIntegrityDefect(bytes), path).toBeUndefined();
+      expect(bytes.includes('json-to-office:'), path).toBe(false);
+      media.push(bytes);
+    }
+    for (const base64 of [PNG_4X2, JPEG_8X4, GIF_4X2, BMP_4X2]) {
+      const bytes = Buffer.from(base64.split(',')[1] ?? base64, 'base64');
+      expect(media.filter((part) => part.equals(bytes))).toHaveLength(1);
     }
   }, 60_000);
 
@@ -668,30 +677,6 @@ describe('both DOCX backends over the corpus', () => {
     expect(text(officeHeader)).toEqual(text(docxHeader));
     // And the cell still ends on a paragraph, as docx.js ends it.
     expect(officeBody + officeHeader).not.toMatch(/<\/w:sdt><\/w:tc>/);
-  }, 60_000);
-
-  // Marking a second placement used to append the marker after a PNG with no
-  // intact IEND: one more defect in a file Word already cannot draw. Loading
-  // refuses such bytes, so reaching the marker with them is a pipeline bug.
-  it('refuses to mark a PNG that has no IEND', async () => {
-    const compiled = await compileDocumentToIr({
-      name: 'docx',
-      props: { theme: 'minimal' },
-      children: [
-        { name: 'image', props: { base64: PNG_4X2, width: 80 } },
-        { name: 'image', props: { base64: PNG_4X2, width: 120 } },
-      ],
-    } as never);
-    const [resource] = compiled.ir.resources;
-    const truncated = resource.bytes.subarray(0, resource.bytes.length - 12);
-    const ir = {
-      ...compiled.ir,
-      resources: [
-        { ...resource, bytes: truncated, byteLength: truncated.length },
-      ],
-    };
-
-    await expect(officeOpen.render(ir)).rejects.toThrow(/no intact IEND/);
   }, 60_000);
 });
 
