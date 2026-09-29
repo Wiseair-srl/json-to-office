@@ -204,7 +204,9 @@ describe('chart lowering', () => {
       warnings
     );
     const placed = warnings.filter((warning) =>
-      /scatter chart whose labels are not all numbers/.test(warning.message)
+      /scatter chart whose labels are not all finite numbers/.test(
+        warning.message
+      )
     );
     expect(placed).toHaveLength(1);
     expect(placed[0].component).toBe('chart');
