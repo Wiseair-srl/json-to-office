@@ -10,7 +10,7 @@ Part of the [json-to-office](https://github.com/Wiseair-srl/json-to-office) mono
 ## Install
 
 ```bash
-npm install @json-to-office/json-to-pptx pptxgenjs
+npm install @json-to-office/json-to-pptx
 ```
 
 ## Usage
@@ -83,7 +83,7 @@ writeFileSync('deck.pptx', buffer);
 - **JSON blocks** — Define reusable slide compositions in the document itself, with typed slots, theme bindings, frames and row/column distribution.
 - **Schema validation** — TypeBox schemas as both TypeScript types and runtime validators.
 - **Native charts** — 8 PowerPoint chart types rendered natively (no image export needed).
-- **Peer dependency** — Uses [pptxgenjs](https://github.com/gitbrent/PptxGenJS) as the rendering backend. You control the version.
+- **Rendering backend included** — [pptxgenjs](https://github.com/gitbrent/PptxGenJS) draws the deck. It is a pinned dependency of `@json-to-office/core-pptx`, so there is nothing else to install.
 
 ## License
 
