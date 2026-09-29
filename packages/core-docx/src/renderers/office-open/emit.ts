@@ -168,29 +168,6 @@ export interface EmitContext {
    * it to match each emitted part with its IR node — see `chartParts.ts`.
    */
   charts?: DocxIrChartRun[];
-  /**
-   * Tables of contents inside table cells, in the order they were emitted.
-   *
-   * Required rather than optional like `charts`: a cell's table of contents
-   * goes out as marker paragraphs that only the post-generation splice takes
-   * out again, so a context that does not collect them would ship the markers.
-   * See `cellChildren` and `cellTocs.ts`.
-   */
-  cellTocs: CellToc[];
-}
-
-/**
- * A table of contents in a table cell, as the emitter hands it over.
- *
- * `start` and `end` are the text of the two marker paragraphs its entries
- * stand between in the cell. `alias` and `options` are what the backend's
- * `stringifyTableOfContents` takes to write the field around those entries.
- */
-export interface CellToc {
-  start: string;
-  end: string;
-  alias: string;
-  options: TableOfContentsOptions;
 }
 
 /** A context for content that holds no drawings, and for tests. */
@@ -200,7 +177,6 @@ export function emptyContext(): EmitContext {
     pictures: new Map(),
     nextDrawingId: () => next++,
     charts: [],
-    cellTocs: [],
   };
 }
 
@@ -1342,59 +1318,13 @@ function tableCell(cell: DocxIrTableCell, ctx: EmitContext): TableCellOptions {
 /**
  * A cell's blocks, as the backend takes them.
  *
- * The backend writes a cell's paragraphs and tables and answers any other
- * child with an empty string, so a table of contents in a cell — a text box
- * rendered as a table holds its content in one — vanished on this renderer
- * without a word, where docx.js writes it. It cannot go in as it does in the
- * body, where the backend writes the content control and the field around the
- * entries itself: the field opens in the first entry and closes in the last,
- * and a paragraph here has no way to state a bare `w:fldChar`. So the entries
- * go in as the paragraphs they are, between two marker paragraphs, and
- * `cellTocs.ts` replaces the three with the backend's own table of contents
- * once the package exists — the same bytes it writes for one in the body.
- *
- * A cell that ends on one still ends on a paragraph after it, as on docx.js:
- * `tableCell` closes every cell by its last IR block, which the end marker
- * does not change.
+ * A table of contents among them goes in as it does in the body: the backend
+ * writes the same content control and field around its entries in a cell as
+ * there. Before 0.14 it answered any cell child but a paragraph or a table
+ * with an empty string, and a contents field in a text box vanished.
  */
 function cellChildren(cell: DocxIrTableCell, ctx: EmitContext): SectionChild[] {
-  const children: SectionChild[] = [];
-  for (const child of cell.children) {
-    if (child.kind !== 'toc') {
-      children.push(block(child, ctx));
-      continue;
-    }
-    const { alias, entries, ...options } = tableOfContents(child);
-    const index = ctx.cellTocs.length;
-    const toc: CellToc = {
-      start: cellTocMarker(index, 'start'),
-      end: cellTocMarker(index, 'end'),
-      alias,
-      options,
-    };
-    ctx.cellTocs.push(toc);
-    children.push(
-      markerParagraph(toc.start),
-      ...(entries ?? []),
-      markerParagraph(toc.end)
-    );
-  }
-  return children;
-}
-
-/**
- * The text of a marker paragraph around a table of contents in a cell.
- *
- * Private-use delimiters keep it out of anything an author writes, and it
- * never reaches the package: the splice replaces both marker paragraphs, and
- * fails the render rather than ship one it could not find.
- */
-function cellTocMarker(index: number, edge: 'start' | 'end'): string {
-  return `\u{E000}jto-cell-toc-${index}-${edge}\u{E000}`;
-}
-
-function markerParagraph(text: string): SectionChild {
-  return { paragraph: { children: [{ text }] } };
+  return cell.children.map((child) => block(child, ctx));
 }
 
 /** Cell margins, stated in twips, which the backend only believes if told. */
