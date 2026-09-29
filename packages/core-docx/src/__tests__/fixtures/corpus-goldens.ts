@@ -616,4 +616,6 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
     '798c6fd1753e27f598d7b99fa697dbc9d3f04b6146d4d6485cfecec4fbf9a9a9',
   'drawings/native-visual-placed':
     'b8c8bbff6c99459faab005c6dc333e668ddefd6068f4594bedd3c924d183a5ad',
+  'headings/toc-in-text-box':
+    'efc579e4b7442e0ad4cf9bd34922af0fd105013ca0933d996303134d02f7f0cb',
 };

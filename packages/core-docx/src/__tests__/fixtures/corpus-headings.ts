@@ -668,6 +668,26 @@ export const CASES: CorpusCase[] = [
       heading('After The Columns', { level: 2 }),
     ]),
   },
+  {
+    // A table of contents inside a text-box, which renders as a one-cell
+    // table. `@office-open/docx` wrote nothing for a contents field in a cell
+    // before 0.14, and still leaves a cell that ends on one without its closing
+    // paragraph. The text-box comes last, for the reason the case two above
+    // gives.
+    name: 'headings/toc-in-text-box',
+    document: doc([
+      heading('Top Level', { level: 1 }),
+      heading('Second Level', { level: 2 }),
+      {
+        name: 'text-box',
+        props: { width: 320, height: 160 },
+        children: [
+          para('In this document'),
+          toc({ title: 'Contents', depth: { from: 1, to: 2 } }),
+        ],
+      },
+    ]),
+  },
 
   // --------------------------------------------------------------------------
   // Page-number fields
