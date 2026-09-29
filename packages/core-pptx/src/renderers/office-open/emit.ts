@@ -395,12 +395,18 @@ function paragraphProperties(
   return opts;
 }
 
+const BULLET_FONT = 'Arial';
+
 /**
  * A bullet in the backend's vocabulary.
  *
  * The discriminants are the backend's own — `char`, `autoNum`, `none` — and it
  * writes nothing at all for a value it does not recognise, so a near-miss here
  * is a silent loss rather than a type error.
+ *
+ * A marker is set in Arial, the face PowerPoint gives a bullet it adds. The
+ * backend wrote it unasked until 0.14, which writes no `a:buFont` unless given
+ * one and so leaves the marker in the text's own face.
  */
 function bulletOption(
   bullet: NonNullable<PptxIrTextBodyStyle['bullet']>
@@ -409,6 +415,7 @@ function bulletOption(
   if (bullet.type === 'number') {
     return {
       type: 'autoNum',
+      font: BULLET_FONT,
       ...(bullet.style
         ? {
             format: bullet.style as Extract<
@@ -420,7 +427,7 @@ function bulletOption(
       ...(bullet.startAt !== undefined ? { startAt: bullet.startAt } : {}),
     };
   }
-  return { type: 'char', char: bullet.style ?? '•' };
+  return { type: 'char', char: bullet.style ?? '•', font: BULLET_FONT };
 }
 
 /* ------------------------------------------------------------------ *
