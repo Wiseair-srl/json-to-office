@@ -14,6 +14,10 @@
  */
 
 import { readFile } from 'node:fs/promises';
+import {
+  assertBackendVersion,
+  installedPackageVersion,
+} from '@json-to-office/shared/rendering/node';
 import type {
   PresentationOptions,
   SlideOptions,
@@ -46,6 +50,32 @@ export const OFFICE_OPEN_PPTX_RENDERER_ID: PptxRendererId = 'office-open';
  * Its types are imported by name alone (`import type`), which erases.
  */
 const OFFICE_OPEN_PPTX = '@office-open/pptx';
+
+/**
+ * The `@office-open/pptx` release this adapter is built and verified against, and the
+ * exact version `package.json` pins (a test holds the two together).
+ *
+ * The adapter hands the backend its options as data, typed against this
+ * release: another one can rename or restructure them with nothing failing
+ * until a document comes out with content missing. So a different version
+ * installed — an override, a hoisted copy — refuses the renderer by name
+ * instead (`RENDERER_BACKEND_VERSION_MISMATCH`).
+ */
+export const OFFICE_OPEN_VERSION = '0.14.6';
+
+/** The version of `@office-open/pptx` this module resolves, or nothing if unreadable. */
+function installedBackendVersion(): string | undefined {
+  let resolved: string | undefined;
+  try {
+    // Resolved here, as this module's dependency; a test transform may not
+    // provide `import.meta.resolve`, and the helper then searches from
+    // `import.meta.url` itself.
+    resolved = import.meta.resolve?.(OFFICE_OPEN_PPTX);
+  } catch {
+    resolved = undefined;
+  }
+  return installedPackageVersion(OFFICE_OPEN_PPTX, import.meta.url, resolved);
+}
 
 /**
  * This adapter uses an explicit allowlist: a new `PptxFeature` stays
@@ -147,6 +177,11 @@ export async function createOfficeOpenPptxRenderer(): Promise<PptxRenderer> {
   const backend = (await import(
     /* @vite-ignore */ OFFICE_OPEN_PPTX
   )) as unknown as OfficeOpenBackend;
+  assertBackendVersion(
+    OFFICE_OPEN_PPTX,
+    OFFICE_OPEN_VERSION,
+    installedBackendVersion()
+  );
 
   if (typeof backend.generatePresentation !== 'function') {
     throw new Error(
