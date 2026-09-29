@@ -1,5 +1,61 @@
 # @json-to-office/core-pptx
 
+## 7.3.0
+
+### Minor Changes
+
+- 9c3724d: The `office-open` renderers now run on `@office-open/docx` and
+  `@office-open/pptx` 0.14.6 (from 0.11.0), pinned exactly. 0.14 renamed most of
+  the option vocabulary; both adapters are migrated and typed against the
+  backends' own option types, so a renamed option fails the build instead of
+  dropping content.
+
+  What changes in the files:
+
+  - A native chart in a Word header or footer now opens in Word and draws in
+    LibreOffice; with 0.11 the header pointed at no chart part (#485).
+  - On `office-open` pptx, a shape's outline takes its authored colour (it was
+    dropped), and struck-through text is written as `sngStrike` (the invalid
+    `single` made PowerPoint hang).
+  - An image a .docx draws at several sizes is one media part, not a marked
+    copy per size.
+  - Everything else moves only in spelling: `off` for a false on/off value, no
+    empty `docProps/custom.xml`, part, relationship and namespace order, chart
+    booleans written `val="1"`, Office's own defaults no longer repeated in pptx
+    masters, slides and view properties. Pages draw as before in Word,
+    PowerPoint and LibreOffice. `docxjs` and `pptxgenjs` output does not change.
+
+  Charts are now built from options (`chartLook` in
+  `@json-to-office/shared/rendering`, replacing `spliceChartXml`) rather than
+  spliced into the emitted part, and on docx the backend embeds the chart
+  workbook itself.
+
+  Each `office-open` renderer refuses to load when another `@office-open`
+  version is installed, with an error named `RendererBackendVersionError` that
+  names both versions: the options are data, and a different version can drop
+  content without an error.
+
+- 7ead848: Bump the `pptxgenjs` rendering backend from 3.12.0 to 4.0.1, pinned exactly
+  in `@json-to-office/core-pptx` like every other backend.
+
+  `@json-to-office/json-to-pptx` no longer declares `pptxgenjs` as a peer
+  dependency. It never imported it: `@json-to-office/core-pptx` depends on it
+  directly and no public type names it, so a consumer's own `pptxgenjs` was
+  never the one that drew the deck. It can be uninstalled.
+
+  Every deck the default renderer writes is byte-identical to what 3.12.0
+  wrote, across the corpus, the gallery templates and the examples. One fix
+  comes with the bump: an inline SVG that cannot be rasterized now always gets
+  the red-X preview. pptxgenjs 4 writes that preview from a promise it does not
+  await, so the part could hold the SVG's own text instead; json-to-office now
+  writes it, on every failure path, whether or not the package is finalized.
+
+### Patch Changes
+
+- Updated dependencies [73bf6ea]
+- Updated dependencies [9c3724d]
+  - @json-to-office/shared@7.3.0
+
 ## 7.1.0
 
 ### Minor Changes
