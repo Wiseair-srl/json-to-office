@@ -10,8 +10,8 @@
  * LibreOffice <= 7.x, Google Slides, Office < 2016 — draws a red X.
  *
  * This pass rasterizes each SVG part and overwrites its paired PNG. It is a
- * best-effort repair: any failure leaves the placeholder in place and reports
- * a warning, because a broken preview still beats a package that failed to
+ * best-effort repair: any failure writes the placeholder and reports a
+ * warning, because a broken preview still beats a package that failed to
  * build.
  */
 import path from 'node:path';
@@ -40,6 +40,21 @@ const SVG_BLIP = /<asvg:svgBlip\b[^>]*r:embed="([^"]+)"/g;
 const BLIP = /<a:blip\b[^>]*r:embed="([^"]+)"/g;
 const EXTENT = /<a:ext\s+cx="(\d+)"\s+cy="(\d+)"/;
 const RELATIONSHIP = /<Relationship\b([^>]*)>/g;
+
+/**
+ * The preview a failed repair leaves: PptxGenJS 3's hardcoded Node fallback
+ * (`IMG_BROKEN`, a 100x119 red-X PNG), byte for byte.
+ *
+ * Written here rather than left to PptxGenJS. Version 4 still means to write
+ * it, but does so from a promise nothing awaits (step 5 of
+ * `encodeSlideMediaRels`): until `node:fs` has loaded, the preview part keeps
+ * the SVG's own text instead. What a failed repair left behind then depended
+ * on timing, and so did the package.
+ */
+export const SVG_PREVIEW_PLACEHOLDER = Buffer.from(
+  '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',
+  'base64'
+);
 
 interface WorkItem {
   svgPart: string;
@@ -156,8 +171,8 @@ function resolveFitTo(
 /**
  * Replace the broken-image placeholders PptxGenJS writes for inline SVG
  * pictures with real rasterizations of those SVGs. Never throws: a missing
- * native binding or an SVG resvg rejects degrades to a warning and leaves the
- * package as generated.
+ * native binding or an SVG resvg rejects degrades to a warning and
+ * `SVG_PREVIEW_PLACEHOLDER` in that preview.
  *
  * @returns whether any part of the zip was rewritten.
  */
@@ -179,6 +194,15 @@ export async function repairSvgRasterFallbacks(
 
   if (pending.size === 0) return false;
 
+  let changed = false;
+  // Only over a preview that is really there: a dangling relationship target
+  // would otherwise have this pass author a brand new media part.
+  const keepPlaceholder = (pngPart: string): void => {
+    if (!zip.file(pngPart)) return;
+    zip.file(pngPart, SVG_PREVIEW_PLACEHOLDER);
+    changed = true;
+  };
+
   let Resvg: ResvgModule['Resvg'];
   try {
     ({ Resvg } = await loadResvg());
@@ -189,16 +213,14 @@ export async function repairSvgRasterFallbacks(
       `Could not load the SVG rasterizer, so inline SVG images keep PowerPoint's broken-image fallback: ${String(error)}`,
       { component: 'image' }
     );
-    return false;
+    for (const pngPart of pending.keys()) keepPlaceholder(pngPart);
+    return changed;
   }
 
   const rendered = new Map<string, Buffer>();
-  let changed = false;
 
   for (const [pngPart, item] of pending) {
     try {
-      // Repair only a preview that is really there: a dangling relationship
-      // target would otherwise have this pass author a brand new media part.
       if (!zip.file(pngPart)) {
         throw new Error(`missing preview part ${pngPart}`);
       }
@@ -226,6 +248,7 @@ export async function repairSvgRasterFallbacks(
         `Could not rasterize ${item.svgPart}, so it keeps PowerPoint's broken-image fallback: ${String(error)}`,
         { component: 'image' }
       );
+      keepPlaceholder(pngPart);
     }
   }
 

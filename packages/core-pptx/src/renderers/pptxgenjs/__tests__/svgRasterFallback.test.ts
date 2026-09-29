@@ -1,8 +1,11 @@
 import JSZip from 'jszip';
 import probe from 'probe-image-size';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { generateBufferWithWarnings } from '../../../core/generator';
-import { repairSvgRasterFallbacks } from '../svgRasterFallback';
+import {
+  repairSvgRasterFallbacks,
+  SVG_PREVIEW_PLACEHOLDER,
+} from '../svgRasterFallback';
 import type {
   PipelineWarning,
   PresentationComponentDefinition,
@@ -143,6 +146,55 @@ describe('inline SVG raster fallbacks', () => {
     );
     expect(png).toHaveLength(1);
     expect(png[0].data.length).toBe(PLACEHOLDER_BYTES);
+    expect(png[0].data.equals(SVG_PREVIEW_PLACEHOLDER)).toBe(true);
+  });
+
+  it('writes the placeholder on a build that skips finalization', async () => {
+    // PptxGenJS 4 writes its own placeholder from a promise nothing awaits,
+    // so the part can hold the SVG's text instead. A build that skips
+    // finalization returns the backend's buffer when this pass changed
+    // nothing, so the placeholder has to count as a change.
+    const { buffer } = await generateBufferWithWarnings(
+      deck([
+        {
+          svg: '<svg xmlns="http://www.w3.org/2000/svg"><unclosed',
+          x: 1,
+          y: 1,
+          w: 2,
+          h: 2,
+        },
+      ]),
+      { deterministic: false }
+    );
+    const { png } = await mediaOf(buffer);
+
+    expect(png).toHaveLength(1);
+    expect(png[0].data.equals(SVG_PREVIEW_PLACEHOLDER)).toBe(true);
+  });
+
+  it('writes the placeholder over the raw SVG a raced preview part keeps', async () => {
+    const { buffer } = await generateBufferWithWarnings(
+      deck([{ svg: SVG, x: 1, y: 1, w: 2, h: 2 }])
+    );
+    const zip = await JSZip.loadAsync(buffer);
+    // What the preview holds when PptxGenJS 4's placeholder write loses the
+    // race: the picture's own markup, plus an SVG resvg cannot parse.
+    const svgParts = Object.keys(zip.files).filter((name) =>
+      name.endsWith('.svg')
+    );
+    expect(svgParts).toHaveLength(1);
+    zip.file('ppt/media/image-1-1.png', '<svg><unclosed');
+    zip.file(svgParts[0], '<svg><unclosed');
+
+    const warnings: PipelineWarning[] = [];
+    expect(await repairSvgRasterFallbacks(zip, warnings)).toBe(true);
+    expect(warnings.map((entry) => entry.code)).toEqual([
+      'IMAGE_SVG_RASTER_FAILED',
+    ]);
+    const preview = await zip
+      .file('ppt/media/image-1-1.png')!
+      .async('nodebuffer');
+    expect(preview.equals(SVG_PREVIEW_PLACEHOLDER)).toBe(true);
   });
 
   it('leaves a deck without inline SVG untouched', async () => {
@@ -215,5 +267,45 @@ describe('inline SVG raster fallbacks', () => {
     const second = await generateBufferWithWarnings(document);
 
     expect(first.buffer.equals(second.buffer)).toBe(true);
+  });
+});
+
+describe('inline SVG raster fallbacks without the rasterizer', () => {
+  afterEach(() => {
+    vi.doUnmock('@resvg/resvg-js');
+    vi.resetModules();
+  });
+
+  it('writes the placeholder into every preview when resvg cannot load', async () => {
+    const { buffer } = await generateBufferWithWarnings(
+      deck([
+        { svg: SVG, x: 1, y: 1, w: 2, h: 2 },
+        { svg: SVG, x: 4, y: 1, w: 3, h: 3 },
+      ])
+    );
+    const zip = await JSZip.loadAsync(buffer);
+    // Stand in for the SVG PptxGenJS 4 can leave in a preview.
+    for (const part of ['image-1-1.png', 'image-1-3.png']) {
+      expect(zip.file(`ppt/media/${part}`)).not.toBeNull();
+      zip.file(`ppt/media/${part}`, SVG);
+    }
+
+    vi.resetModules();
+    vi.doMock('@resvg/resvg-js', () => {
+      throw new Error('native binding missing');
+    });
+    const { repairSvgRasterFallbacks: repair } = await import(
+      '../svgRasterFallback'
+    );
+
+    const warnings: PipelineWarning[] = [];
+    expect(await repair(zip, warnings)).toBe(true);
+    expect(warnings.map((entry) => entry.code)).toEqual([
+      'IMAGE_SVG_RASTER_FAILED',
+    ]);
+    for (const part of ['image-1-1.png', 'image-1-3.png']) {
+      const preview = await zip.file(`ppt/media/${part}`)!.async('nodebuffer');
+      expect(preview.equals(SVG_PREVIEW_PLACEHOLDER)).toBe(true);
+    }
   });
 });
