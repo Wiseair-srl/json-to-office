@@ -35,8 +35,39 @@ import type {
   PptxIrTextRun,
   PptxIrTransform,
 } from '../../ir/types';
+import type {
+  BackgroundOptions,
+  CellBorderOptions,
+  ChartOptions,
+  EffectListOptions,
+  FillOptions,
+  GroupOptions,
+  OutlineOptions,
+  ParagraphDescriptorOptions,
+  PictureOptions,
+  ShapeOptions,
+  SlideChild,
+  TableCellOptions,
+  TableOptions,
+  TableRowOptions,
+  TextBodyOptions,
+  TextHyperlinkOptions,
+  TextParagraphPropertiesOptions,
+  TextRunOptions,
+} from '@office-open/pptx';
+import { chartLook, withSeriesLook } from '@json-to-office/shared/rendering';
+import { chartInput } from './chartParts';
 
-type Opts = Record<string, unknown>;
+/*
+ * Typed against the backend's own option types, so a renamed or moved option
+ * fails the build instead of reaching the backend as a key it skips. The IR
+ * carries OOXML's names as plain strings where the backend spells a union.
+ */
+type ShapeProperties = NonNullable<ShapeOptions['properties']>;
+type Geometry = Exclude<ShapeProperties['geometry'], object | undefined>;
+type SolidColor = Extract<FillOptions, { type: 'solid' }>['color'];
+type PatternFill = Extract<FillOptions, { type: 'pattern' }>;
+type Bullet = NonNullable<TextParagraphPropertiesOptions['bullet']>;
 
 export type ResourceLookup = ReadonlyMap<string, PptxIrResource>;
 
@@ -56,10 +87,9 @@ export interface OfficeOpenEmitContext {
   /**
    * Charts, in the order they were emitted.
    *
-   * The post-generation splice reads this to give each chart part the cell
-   * references and series colours the backend leaves out. Matched to parts by
-   * content rather than by this order — see `chart-parts` in
-   * `@json-to-office/shared/rendering`.
+   * The post-generation pass reads this to package each chart part's
+   * workbook. Matched to parts by content rather than by this order — see
+   * `chart-parts` in `@json-to-office/shared/rendering`.
    */
   charts?: PptxIrChartElement[];
 }
@@ -69,11 +99,18 @@ export interface OfficeOpenEmitContext {
  * ------------------------------------------------------------------ */
 
 /** Geometry: a bare `prst` name, which is what the backend interpolates. */
-function geometryName(geometry: PptxIrGeometry): string {
-  return typeof geometry === 'string' ? geometry : geometry.custom;
+function geometryName(geometry: PptxIrGeometry): Geometry {
+  return (
+    typeof geometry === 'string' ? geometry : geometry.custom
+  ) as Geometry;
 }
 
-function frame(transform: PptxIrTransform): Opts {
+function frame(transform: PptxIrTransform): {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+} {
   return {
     x: transform.xEmu,
     y: transform.yEmu,
@@ -88,10 +125,9 @@ function frame(transform: PptxIrTransform): Opts {
  * `FillOptions` accepts a bare hex string for the common opaque case; anything
  * with transparency needs the object form with an `alpha` transform.
  */
-function color(value: PptxIrColor): unknown {
+function color(value: PptxIrColor): SolidColor {
   if (value.transparency === undefined) return value.hex;
   return {
-    type: 'srgb',
     value: value.hex,
     transforms: { alpha: 100 - value.transparency },
   };
@@ -149,7 +185,10 @@ const PATTERN_NAMES: Readonly<Record<string, string>> = {
   wave: 'wave',
 };
 
-export function fill(value: PptxIrFill, ctx: OfficeOpenEmitContext): unknown {
+export function fill(
+  value: PptxIrFill,
+  ctx: OfficeOpenEmitContext
+): FillOptions {
   switch (value.kind) {
     case 'none':
       return { type: 'none' };
@@ -167,9 +206,14 @@ export function fill(value: PptxIrFill, ctx: OfficeOpenEmitContext): unknown {
     case 'pattern':
       return {
         type: 'pattern',
-        pattern: PATTERN_NAMES[value.preset] ?? value.preset,
-        foregroundColor: color(value.foreground),
-        backgroundColor: color(value.background),
+        pattern: (PATTERN_NAMES[value.preset] ??
+          value.preset) as PatternFill['pattern'],
+        foregroundColor: color(
+          value.foreground
+        ) as PatternFill['foregroundColor'],
+        backgroundColor: color(
+          value.background
+        ) as PatternFill['backgroundColor'],
       };
     case 'image': {
       const bytes = ctx.resourceBytes.get(value.resourceId);
@@ -179,32 +223,39 @@ export function fill(value: PptxIrFill, ctx: OfficeOpenEmitContext): unknown {
           `image fill references unresolved resource "${value.resourceId}"`
         );
       }
-      return { type: 'blip', data: bytes, imageType: pictureType(resource) };
+      return {
+        type: 'blip',
+        data: bytes,
+        imageType: pictureType(resource),
+      } as FillOptions;
     }
     default:
       return assertNever(value, 'PptxIrFill');
   }
 }
 
-function outline(line: PptxIrLine): Opts {
-  const opts: Opts = {};
-  if (line.color) opts.fill = { type: 'solid', color: color(line.color) };
+/**
+ * A line, or nothing: an empty `OutlineOptions` writes an empty `a:ln`, which
+ * states "the default line" where the IR said nothing at all.
+ */
+function outline(line: PptxIrLine): OutlineOptions | undefined {
+  const opts: OutlineOptions = {};
+  if (line.color) opts.color = color(line.color);
   // Outline width is EMU; the IR keeps stroke width in points.
   if (line.widthPoints !== undefined) {
     opts.width = Math.round(line.widthPoints * 12700);
   }
-  if (line.dash) opts.dash = line.dash;
-  return opts;
+  if (line.dash) opts.dash = line.dash as OutlineOptions['dash'];
+  return Object.keys(opts).length > 0 ? opts : undefined;
 }
 
-function effects(shadow: PptxIrShadow): Opts {
+function effects(shadow: PptxIrShadow): EffectListOptions {
   return {
     outerShadow: {
       blurRadius: Math.round(shadow.blurPoints * 12700),
       distance: Math.round(shadow.offsetPoints * 12700),
       direction: shadow.angleDegrees,
       color: {
-        type: 'srgb',
         value: shadow.color.hex,
         transforms: { alpha: Math.round(shadow.opacity * 100) },
       },
@@ -212,7 +263,7 @@ function effects(shadow: PptxIrShadow): Opts {
   };
 }
 
-function hyperlink(link: PptxIrHyperlink): Opts {
+function hyperlink(link: PptxIrHyperlink): TextHyperlinkOptions {
   return link.kind === 'external'
     ? { url: link.url, ...(link.tooltip ? { tooltip: link.tooltip } : {}) }
     : {
@@ -225,28 +276,33 @@ function hyperlink(link: PptxIrHyperlink): Opts {
  * Text
  * ------------------------------------------------------------------ */
 
-const ALIGNMENT: Readonly<Record<string, string>> = {
+type Alignment = NonNullable<TextParagraphPropertiesOptions['alignment']>;
+const ALIGNMENT: Readonly<Record<string, Alignment>> = {
   left: 'left',
   center: 'center',
   right: 'right',
   justify: 'justify',
 };
 
-const ANCHOR: Readonly<Record<string, string>> = {
-  top: 't',
-  middle: 'ctr',
-  bottom: 'b',
-};
+/** The backend's vertical anchors, which name the middle `center`. */
+const ANCHOR = {
+  top: 'top',
+  middle: 'center',
+  bottom: 'bottom',
+} as const;
 
-function runProperties(run: PptxIrTextRun): Opts {
-  const opts: Opts = {
+function runProperties(run: PptxIrTextRun): TextRunOptions {
+  const opts: TextRunOptions = {
     size: run.fontSize,
     font: run.fontFamily,
     fill: { type: 'solid', color: color(run.color) },
   };
   if (run.bold !== undefined) opts.bold = run.bold;
   if (run.italic !== undefined) opts.italic = run.italic;
-  if (run.strike) opts.strike = 'single';
+  // `sngStrike`, spelled as the backend names it. The `single` this used to
+  // pass is no `ST_TextStrikeType` value, and PowerPoint hung opening a deck
+  // that carried one.
+  if (run.strike) opts.strike = 'singleStrike';
   if (run.underline) opts.underline = 'single';
   if (run.superscript) opts.baseline = 30;
   if (run.subscript) opts.baseline = -25;
@@ -265,9 +321,9 @@ function runProperties(run: PptxIrTextRun): Opts {
 export function textBody(
   runs: readonly PptxIrTextRun[],
   style: PptxIrTextBodyStyle | undefined
-): Opts {
-  const paragraphs: Opts[] = [];
-  let current: Opts[] = [];
+): TextBodyOptions {
+  const paragraphs: ParagraphDescriptorOptions[] = [];
+  let current: TextRunOptions[] = [];
 
   const flush = () => {
     paragraphs.push({
@@ -283,9 +339,9 @@ export function textBody(
   }
   if (current.length > 0 || paragraphs.length === 0) flush();
 
-  const body: Opts = { paragraphs };
+  const body: TextBodyOptions = { paragraphs };
   if (style) {
-    body.anchor = ANCHOR[style.verticalAlign] ?? 't';
+    body.anchor = ANCHOR[style.verticalAlign] ?? 'top';
     if (style.autoFit) body.autoFit = 'shape';
     if (style.insetPoints !== undefined) {
       body.margins = insetMargins(style.insetPoints);
@@ -302,7 +358,9 @@ export function textBody(
  * the sides here rather than positionally is what keeps the two adapters
  * agreeing on which edge a value belongs to.
  */
-function insetMargins(inset: number | [number, number, number, number]): Opts {
+function insetMargins(
+  inset: number | [number, number, number, number]
+): NonNullable<TextBodyOptions['margins']> {
   const toEmu = (points: number) => Math.round(points * 12700);
   if (typeof inset === 'number') {
     const value = toEmu(inset);
@@ -317,8 +375,10 @@ function insetMargins(inset: number | [number, number, number, number]): Opts {
   };
 }
 
-function paragraphProperties(style: PptxIrTextBodyStyle): Opts {
-  const opts: Opts = {};
+function paragraphProperties(
+  style: PptxIrTextBodyStyle
+): TextParagraphPropertiesOptions {
+  const opts: TextParagraphPropertiesOptions = {};
   if (style.align) opts.alignment = ALIGNMENT[style.align] ?? style.align;
   if (style.lineSpacingMultiple !== undefined) {
     opts.lineSpacingPercent = style.lineSpacingMultiple * 100;
@@ -344,12 +404,19 @@ function paragraphProperties(style: PptxIrTextBodyStyle): Opts {
  */
 function bulletOption(
   bullet: NonNullable<PptxIrTextBodyStyle['bullet']>
-): Opts {
+): Bullet {
   if (bullet.type === 'none') return { type: 'none' };
   if (bullet.type === 'number') {
     return {
       type: 'autoNum',
-      ...(bullet.style ? { format: bullet.style } : {}),
+      ...(bullet.style
+        ? {
+            format: bullet.style as Extract<
+              Bullet,
+              { type: 'autoNum' }
+            >['format'],
+          }
+        : {}),
       ...(bullet.startAt !== undefined ? { startAt: bullet.startAt } : {}),
     };
   }
@@ -363,23 +430,27 @@ function bulletOption(
 function textBoxChild(
   element: PptxIrTextBoxElement,
   ctx: OfficeOpenEmitContext
-): Opts {
+): SlideChild {
   // A shape cannot carry a link here, so a body-level link is pushed onto the
   // runs it covers — which is what the link means anyway.
   const runs = element.hyperlink
     ? element.runs.map((run) => ({ ...run, hyperlink: element.hyperlink }))
     : element.runs;
 
-  const shape: Opts = {
+  const line = element.line ? outline(element.line) : undefined;
+  const shape: ShapeOptions = {
     id: ctx.nextId(),
     ...frame(element.transform),
-    geometry: 'rect',
+    // A shape's fill, geometry, line and effects are its `p:spPr`, which the
+    // backend takes as one `properties` object.
+    properties: {
+      geometry: 'rect',
+      fill: element.fill ? fill(element.fill, ctx) : { type: 'none' },
+      ...(line ? { outline: line } : {}),
+      ...(element.shadow ? { effects: effects(element.shadow) } : {}),
+    },
     textBody: textBody(runs, element.style),
   };
-  if (element.fill) shape.fill = fill(element.fill, ctx);
-  else shape.fill = { type: 'none' };
-  if (element.line) shape.outline = outline(element.line);
-  if (element.shadow) shape.effects = effects(element.shadow);
   if (element.transform.rotationDegrees !== undefined) {
     shape.rotation = element.transform.rotationDegrees;
   }
@@ -390,15 +461,18 @@ function textBoxChild(
 function shapeChild(
   element: PptxIrShapeElement,
   ctx: OfficeOpenEmitContext
-): Opts {
-  const shape: Opts = {
+): SlideChild {
+  const line = element.line ? outline(element.line) : undefined;
+  const shape: ShapeOptions = {
     id: ctx.nextId(),
     ...frame(element.transform),
-    geometry: geometryName(element.geometry),
+    properties: {
+      geometry: geometryName(element.geometry),
+      ...(element.fill ? { fill: fill(element.fill, ctx) } : {}),
+      ...(line ? { outline: line } : {}),
+      ...(element.shadow ? { effects: effects(element.shadow) } : {}),
+    },
   };
-  if (element.fill) shape.fill = fill(element.fill, ctx);
-  if (element.line) shape.outline = outline(element.line);
-  if (element.shadow) shape.effects = effects(element.shadow);
   if (element.transform.rotationDegrees !== undefined) {
     shape.rotation = element.transform.rotationDegrees;
   }
@@ -411,7 +485,7 @@ function shapeChild(
 }
 
 /** Media type → the backend's picture `type` discriminator. */
-function pictureType(resource: PptxIrResource): string {
+function pictureType(resource: PptxIrResource): PictureOptions['type'] {
   switch (resource.mediaType) {
     case 'image/jpeg':
       return 'jpg';
@@ -436,7 +510,7 @@ function pictureType(resource: PptxIrResource): string {
 function pictureChild(
   element: PptxIrImageElement,
   ctx: OfficeOpenEmitContext
-): Opts {
+): SlideChild {
   const resource = ctx.resources.get(element.resourceId);
   const bytes = ctx.resourceBytes.get(element.resourceId);
   if (!resource || !bytes) {
@@ -444,7 +518,7 @@ function pictureChild(
       `image ${element.path} references unresolved resource "${element.resourceId}"`
     );
   }
-  const picture: Opts = {
+  const picture: PictureOptions = {
     id: ctx.nextId(),
     ...frame(element.transform),
     data: bytes,
@@ -477,7 +551,7 @@ function pictureChild(
 function tableChild(
   element: PptxIrTableElement,
   ctx: OfficeOpenEmitContext
-): Opts {
+): SlideChild {
   const columnCount = Math.max(
     ...element.rows.map((row) => row.cells.length),
     1
@@ -488,7 +562,7 @@ function tableChild(
       : evenColumns(element, columnCount);
 
   const rows = element.rows.map((row, rowIndex) => {
-    const out: Opts = {
+    const out: TableRowOptions = {
       cells: row.cells.map((cell) => tableCell(cell, element)),
     };
     const height = element.rowHeightsEmu[rowIndex];
@@ -496,24 +570,23 @@ function tableChild(
     return out;
   });
 
-  return {
-    table: {
-      id: ctx.nextId(),
-      ...frame(element.transform),
-      columnWidths,
-      rows,
-    },
+  const table: TableOptions = {
+    id: ctx.nextId(),
+    ...frame(element.transform),
+    columnWidths,
+    rows,
   };
+  return { table };
 }
 
 function tableCell(
   cell: PptxIrTableElement['rows'][number]['cells'][number],
   element: PptxIrTableElement
-): Opts {
+): TableCellOptions {
   const formatting = cell.formatting;
   const defaults = element.defaults;
 
-  const runProps: Opts = {
+  const runProps: TextRunOptions = {
     size: formatting?.fontSize ?? defaults.fontSize,
     font: formatting?.fontFamily ?? defaults.fontFamily,
   };
@@ -524,14 +597,14 @@ function tableCell(
   if (formatting?.italic !== undefined) runProps.italic = formatting.italic;
 
   const align = formatting?.align ?? defaults.align;
-  const paragraph: Opts = {
+  const paragraph: ParagraphDescriptorOptions = {
     children: [{ text: cell.text, ...runProps }],
   };
   if (align) {
     paragraph.properties = { alignment: ALIGNMENT[align] ?? align };
   }
 
-  const out: Opts = {
+  const out: TableCellOptions = {
     children: [paragraph],
     verticalAlign: ANCHOR[formatting?.verticalAlign ?? defaults.verticalAlign],
   };
@@ -554,7 +627,7 @@ function tableCell(
 }
 
 /** OOXML dash names for the IR's border vocabulary. `none` draws nothing. */
-const BORDER_DASH: Record<string, string | undefined> = {
+const BORDER_DASH: Record<string, CellBorderOptions['dashStyle']> = {
   solid: 'solid',
   dash: 'dash',
   dot: 'sysDot',
@@ -570,10 +643,10 @@ const BORDER_DASH: Record<string, string | undefined> = {
 function cellBorders(
   cell: PptxIrTableElement['rows'][number]['cells'][number],
   element: PptxIrTableElement
-): Opts | undefined {
+): TableCellOptions['borders'] {
   if (cell.borders) {
     const [top, right, bottom, left] = cell.borders;
-    const out: Opts = {};
+    const out: NonNullable<TableCellOptions['borders']> = {};
     if (top.type !== 'none') out.top = borderLine(top);
     if (right.type !== 'none') out.right = borderLine(right);
     if (bottom.type !== 'none') out.bottom = borderLine(bottom);
@@ -587,7 +660,7 @@ function cellBorders(
   return { top: line, right: line, bottom: line, left: line };
 }
 
-function borderLine(border: PptxIrTableBorder): Opts {
+function borderLine(border: PptxIrTableBorder): CellBorderOptions {
   const dashStyle = BORDER_DASH[border.type];
   return {
     // Points → EMU: a bare number is EMU to this backend, and a border stated
@@ -595,7 +668,9 @@ function borderLine(border: PptxIrTableBorder): Opts {
     ...(border.widthPoints !== undefined
       ? { width: Math.round(border.widthPoints * 12700) }
       : {}),
-    ...(border.color ? { color: color(border.color) } : {}),
+    ...(border.color
+      ? { color: color(border.color) as CellBorderOptions['color'] }
+      : {}),
     ...(dashStyle ? { dashStyle } : {}),
   };
 }
@@ -612,15 +687,14 @@ function evenColumns(
 function groupChild(
   element: PptxIrGroupElement,
   ctx: OfficeOpenEmitContext
-): Opts {
-  const group: Opts = {
+): SlideChild {
+  const group: GroupOptions = {
     id: ctx.nextId(),
     ...frame(element.transform),
-    childOffset: { x: element.transform.xEmu, y: element.transform.yEmu },
-    childExtents: {
-      width: element.transform.widthEmu,
-      height: element.transform.heightEmu,
-    },
+    childOffsetX: element.transform.xEmu,
+    childOffsetY: element.transform.yEmu,
+    childExtentWidth: element.transform.widthEmu,
+    childExtentHeight: element.transform.heightEmu,
     children: element.children.map((child) => slideChild(child, ctx)),
   };
   if (element.transform.rotationDegrees !== undefined) {
@@ -630,26 +704,19 @@ function groupChild(
 }
 
 /**
- * A chart, in the vocabulary `@office-open/pptx` actually reads.
+ * A chart, with its look and references as backend options.
  *
- * Unlike its docx sibling this backend hands the whole options object to
- * `chartSpaceDesc`, so the title and the legend position survive. Passing them
- * here rather than splicing them is the cheaper half of the same job.
- *
- * `axes` is the exception, and is deliberately *not* passed. Supplying it
- * replaces the backend's default axis pair wholesale rather than adding to it,
- * and `AxisOptions` requires an `id` and a `crossAxisId` this adapter has no
- * way to allocate that the plot area would agree with. Passing a partial one
- * emitted literal `<undefined>` elements and six `val="undefined"` attributes,
- * dropping `c:catAx`, `c:axPos`, `c:scaling` and `c:crosses` with them —
- * tolerated by LibreOffice, a repair prompt in PowerPoint. Axis titles are
- * spliced into the backend's own valid axes instead, which is the path the
- * docx side already takes.
+ * `@office-open/pptx` hands the whole options object to `chartSpaceDesc`: the
+ * type, data and labels given here, and the look the shared `chartLook` states
+ * from `chartInput` — the cell references behind every cached value, the
+ * colours, the axes with their titles and scale, the grouping and gaps, the
+ * fonts, and `c:externalData`. The workbook that reference names is packaged
+ * afterwards, since this backend embeds none — see `chartParts.ts`.
  */
 function chartChild(
   element: PptxIrChartElement,
   ctx: OfficeOpenEmitContext
-): Opts {
+): ChartOptions {
   const { options, transform } = element;
   const series = element.series;
   const dataLabels = dataLabelOptions(options);
@@ -666,6 +733,7 @@ function chartChild(
     );
   }
 
+  const look = chartLook(chartInput(element));
   return {
     // Stated, never left to the backend: `_nextChartId` in
     // `@office-open/pptx` is module-level and never resets, so an unnamed
@@ -673,26 +741,26 @@ function chartChild(
     id: ctx.nextId(),
     ...chartTypeOptions(element),
     categories: series[0]?.labels ?? [],
-    series: series.map((entry, index) => ({
-      name: entry.name ?? `Series ${index + 1}`,
-      values: entry.values ?? [],
-      // Every series, not just the first: PowerPoint labels each one, and a
-      // chart that labelled only its first series would be a different chart.
-      ...(dataLabels ? { dataLabels } : {}),
-      ...(options.lineSmooth !== undefined
-        ? { smooth: options.lineSmooth }
-        : {}),
-      ...(marker ? { marker } : {}),
-    })),
-    ...(options.title && options.showTitle !== false
-      ? { title: options.title }
-      : {}),
+    series: series.map((entry, index) =>
+      withSeriesLook(
+        {
+          name: entry.name ?? `Series ${index + 1}`,
+          values: entry.values ?? [],
+          // Every series, not just the first: PowerPoint labels each one, and
+          // a chart that labelled only its first series would be a different
+          // chart.
+          ...(dataLabels ? { dataLabels } : {}),
+          ...(options.lineSmooth !== undefined
+            ? { smooth: options.lineSmooth }
+            : {}),
+          ...(marker ? { marker } : {}),
+        },
+        look.series[index]
+      )
+    ),
+    ...look.chart,
     ...(options.showLegend !== undefined
       ? { showLegend: options.showLegend }
-      : {}),
-    ...chartFamilyOptions(options),
-    ...(options.legendPosition
-      ? { legendPosition: options.legendPosition }
       : {}),
     x: transform.xEmu,
     y: transform.yEmu,
@@ -702,27 +770,24 @@ function chartChild(
   };
 }
 
-/**
- * Per-family tuning that `ChartSpaceOptions` carries directly.
- *
- * Bar gap and overlap, and the pie/doughnut geometry. Each is only forwarded
- * when authored — the backend has its own defaults and writing a value it did
- * not ask for is how a chart drifts from the one that was designed.
- */
-function chartFamilyOptions(options: PptxIrChartOptions): Opts {
-  return {
-    ...(options.barGapWidthPercent !== undefined
-      ? { gapWidth: options.barGapWidthPercent }
-      : {}),
-    ...(options.barOverlapPercent !== undefined
-      ? { overlap: options.barOverlapPercent }
-      : {}),
-    ...(options.holeSize !== undefined ? { holeSize: options.holeSize } : {}),
-    ...(options.firstSliceAngle !== undefined
-      ? { firstSliceAngle: options.firstSliceAngle }
-      : {}),
-  };
-}
+type ChartSeries = ChartOptions['series'][number];
+type DataLabels = NonNullable<ChartSeries['dataLabels']>;
+type Marker = NonNullable<ChartSeries['marker']>;
+
+/** OOXML's data label positions, which the backend names in full. */
+const DATA_LABEL_POSITIONS: Readonly<
+  Record<string, NonNullable<DataLabels['position']>>
+> = {
+  bestFit: 'bestFit',
+  b: 'bottom',
+  ctr: 'center',
+  inBase: 'insideBase',
+  inEnd: 'insideEnd',
+  l: 'left',
+  outEnd: 'outsideEnd',
+  r: 'right',
+  t: 'top',
+};
 
 /**
  * The data labels a series carries, or nothing if none were authored.
@@ -739,7 +804,7 @@ function chartFamilyOptions(options: PptxIrChartOptions): Opts {
  * the author has asked for labels at all. A chart that said nothing about them
  * gets no `c:dLbls`, and keeps the backend's own defaults.
  */
-function dataLabelOptions(options: PptxIrChartOptions): Opts | undefined {
+function dataLabelOptions(options: PptxIrChartOptions): DataLabels | undefined {
   const authored =
     options.showValue !== undefined ||
     options.showPercent !== undefined ||
@@ -756,7 +821,11 @@ function dataLabelOptions(options: PptxIrChartOptions): Opts | undefined {
     showBubbleSize: false,
     showLegendKey: false,
     ...(options.dataLabelPosition
-      ? { position: options.dataLabelPosition }
+      ? {
+          position:
+            DATA_LABEL_POSITIONS[options.dataLabelPosition] ??
+            (options.dataLabelPosition as DataLabels['position']),
+        }
       : {}),
   };
 }
@@ -764,13 +833,14 @@ function dataLabelOptions(options: PptxIrChartOptions): Opts | undefined {
 /**
  * The marker a line series draws at each point, or nothing if unstyled.
  *
- * `lineSize` is deliberately absent: `ChartSeriesCommon` has no line-width
- * field at all, so the series line's width is spliced into `c:ser/c:spPr/a:ln`
- * afterwards.
+ * `lineSize` is deliberately absent: it is the series line's width, which the
+ * shared look puts on the series' own `c:spPr/a:ln`.
  */
-function markerOptions(options: PptxIrChartOptions): Opts | undefined {
-  const marker: Opts = {
-    ...(options.lineDataSymbol ? { symbol: options.lineDataSymbol } : {}),
+function markerOptions(options: PptxIrChartOptions): Marker | undefined {
+  const marker: Marker = {
+    ...(options.lineDataSymbol
+      ? { symbol: options.lineDataSymbol as Marker['symbol'] }
+      : {}),
     ...(options.lineDataSymbolSize !== undefined
       ? { size: options.lineDataSymbolSize }
       : {}),
@@ -788,7 +858,9 @@ function markerOptions(options: PptxIrChartOptions): Opts | undefined {
  * Reading `barDirection` here is what keeps a deck's columns from coming out on
  * their side.
  */
-function chartTypeOptions(element: PptxIrChartElement): Opts {
+function chartTypeOptions(
+  element: PptxIrChartElement
+): Pick<ChartOptions, 'type' | 'threeD'> {
   const horizontal = element.options.barDirection === 'bar';
   switch (element.chartType) {
     case 'bar':
@@ -796,14 +868,14 @@ function chartTypeOptions(element: PptxIrChartElement): Opts {
     case 'bar3D':
       return { type: horizontal ? 'bar' : 'column', threeD: true };
     default:
-      return { type: element.chartType };
+      return { type: element.chartType as ChartOptions['type'] };
   }
 }
 
 export function slideChild(
   element: PptxIrElement,
   ctx: OfficeOpenEmitContext
-): Opts {
+): SlideChild {
   switch (element.kind) {
     case 'textBox':
       return textBoxChild(element, ctx);
@@ -826,7 +898,7 @@ export function slideChild(
 export function background(
   value: PptxIrBackground,
   ctx: OfficeOpenEmitContext
-): Opts {
+): BackgroundOptions {
   if (value.kind === 'solid') {
     return { fill: { type: 'solid', color: color(value.color) } };
   }

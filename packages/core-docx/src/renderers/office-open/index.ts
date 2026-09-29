@@ -2,8 +2,9 @@
  * The experimental `@office-open/docx` renderer.
  *
  * Selecting it is explicit and opt-in; `docxjs` stays the default. The backend
- * is an optional peer dependency, resolved at call time so a missing package
- * surfaces as an install hint rather than a module-resolution failure.
+ * is a dependency of this package, loaded at call time: only a document that
+ * selects this renderer pays for loading it, and a broken install surfaces as
+ * an install hint rather than a module-resolution failure.
  *
  * The capability set below is deliberately narrow. A feature is listed only
  * when it has been proven against the real package, never from its README, and
@@ -13,6 +14,12 @@
  */
 
 import AdmZip from 'adm-zip';
+import type {
+  CommentOptions,
+  DocumentOptions,
+  FootnoteOptions,
+  ParagraphOptions,
+} from '@office-open/docx';
 import type { DocxFeature } from '../../ir/features';
 import type {
   DocxIR,
@@ -21,8 +28,8 @@ import type {
   DocxIrInline,
   DocxIrNote,
 } from '../../ir/types';
-import { spliceChartParts } from './chartParts';
-import { spliceCellTocs, type StringifyTableOfContents } from './cellTocs';
+import { finishChartParts } from './chartParts';
+import { spliceCellTocs } from './cellTocs';
 import { spliceTheme } from './themePart';
 import {
   rasterizeSvgFallbacks,
@@ -42,14 +49,16 @@ import {
   type CellToc,
   type EmitContext,
   type ImageMediaFactory,
+  type PreparedImage,
 } from './emit';
 import { emitStyles } from './styles';
 
 export const OFFICE_OPEN_DOCX_RENDERER_ID: DocxRendererId = 'office-open';
 
 /**
- * Module specifier held in a variable so TypeScript does not resolve the
- * optional dependency at build time and the failure lands at selection time.
+ * Module specifier held in a variable so neither TypeScript nor a bundler
+ * resolves the backend statically, and a missing one fails at selection time.
+ * Its types are imported by name alone (`import type`), which erases.
  */
 const OFFICE_OPEN_DOCX = '@office-open/docx';
 
@@ -103,17 +112,15 @@ const OFFICE_OPEN_CAPABILITIES: ReadonlySet<DocxFeature> = new Set([
   'custom-properties',
 ]);
 
-interface OfficeOpenBackend {
-  generateDocument: (
-    options: Record<string, unknown>,
-    packerOptions?: { type?: string }
-  ) => Promise<Uint8Array>;
-  stringifyTableOfContents: StringifyTableOfContents;
-}
+/** The two entry points this adapter calls, typed as the package types them. */
+type OfficeOpenBackend = Pick<
+  typeof import('@office-open/docx'),
+  'generateDocument' | 'stringifyTableOfContents'
+>;
 
 export async function createOfficeOpenDocxRenderer(): Promise<DocxRenderer> {
-  // Throws `Cannot find package '@office-open/docx'` when the optional
-  // dependency is absent; the registry rewrites that into an install hint.
+  // Throws `Cannot find package '@office-open/docx'` when the backend is
+  // missing from the install; the registry rewrites that into an install hint.
   const backend = (await import(
     /* @vite-ignore */ OFFICE_OPEN_DOCX
   )) as unknown as OfficeOpenBackend;
@@ -149,21 +156,20 @@ export async function createOfficeOpenDocxRenderer(): Promise<DocxRenderer> {
         bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes)
       );
 
-      // The backend writes a chart's cached values and nothing that sources
-      // them: no workbook, no series colours, no axis titles. Splicing those
-      // in is what separates a chart that draws from one a recipient can
-      // actually edit — see `chartParts.ts`. A table of contents in a table
-      // cell it drops outright, so its entries went in between markers for
-      // the field to be put around them here — see `cellTocs.ts`. And it
-      // always writes Office's theme and takes no option for another, so the
-      // document's is spliced in — see `themePart.ts`. The compiler always
-      // sets `ir.theme`, so every render now takes this pass. That is
-      // deliberate and costs nothing: `canonicalizeDocxBuffer` re-zips
-      // anyway. Do not narrow the condition back.
+      // The backend writes every chart option but a scatter chart's style,
+      // which is finished here — see `chartParts.ts`. A table of contents in
+      // a table cell it drops outright, so its entries went in between
+      // markers for the field to be put around them here — see
+      // `cellTocs.ts`. And it always writes Office's theme and takes no
+      // option for another, so the document's is spliced in — see
+      // `themePart.ts`. The compiler always sets `ir.theme`, so every render
+      // now takes this pass. That is deliberate and costs nothing:
+      // `canonicalizeDocxBuffer` re-zips anyway. Do not narrow the condition
+      // back.
       if (ir.theme || charts.length > 0 || cellTocs.length > 0) {
         const zip = new AdmZip(raw);
         if (ir.theme) spliceTheme(zip, ir.theme);
-        spliceChartParts(zip, charts);
+        finishChartParts(zip, charts);
         spliceCellTocs(zip, cellTocs, backend.stringifyTableOfContents);
         raw = zip.toBuffer();
       }
@@ -198,7 +204,7 @@ export async function buildDocumentOptions(
   charts: DocxIrChartRun[] = [],
   svgRasterFallback?: boolean,
   cellTocs: CellToc[] = []
-): Promise<Record<string, unknown>> {
+): Promise<DocumentOptions> {
   // One counter for the whole document. `wp:docPr` ids only have to be unique
   // within their part, and numbering across every part is both simpler and
   // strictly stronger — see `EmitContext`.
@@ -216,12 +222,16 @@ export async function buildDocumentOptions(
       section(value, ctx, index === ir.sections.length - 1)
     ),
     ...coreProperties(ir),
-    features: {
+    settings: {
       updateFields: ir.settings.updateFields,
       ...(ir.settings.trackRevisions ? { trackRevisions: true } : {}),
     },
     ...(ir.numbering.length > 0
-      ? { numbering: { config: ir.numbering.map(numberingConfig) } }
+      ? {
+          numbering: {
+            abstractNumberings: ir.numbering.map(numberingConfig),
+          },
+        }
       : {}),
     ...(ir.footnotes.length > 0
       ? { footnotes: noteBodies(ir.footnotes, ctx) }
@@ -231,8 +241,8 @@ export async function buildDocumentOptions(
       : {}),
     ...(ir.comments.length > 0
       ? {
-          comments: {
-            children: ir.comments.map((comment) => ({
+          comments: ir.comments.map(
+            (comment): CommentOptions => ({
               id: comment.id,
               author: comment.author,
               ...(comment.initials ? { initials: comment.initials } : {}),
@@ -240,8 +250,8 @@ export async function buildDocumentOptions(
               children: comment.children.map((child) =>
                 paragraphOf(child, ctx)
               ),
-            })),
-          },
+            })
+          ),
         }
       : {}),
   };
@@ -253,32 +263,25 @@ export async function buildDocumentOptions(
  * Anything else in one is a compiler bug rather than an author error: the
  * pipeline only ever puts paragraphs in a note or a comment.
  */
-function paragraphOf(
-  value: DocxIrBlock,
-  ctx: EmitContext
-): Record<string, unknown> {
+function paragraphOf(value: DocxIrBlock, ctx: EmitContext): ParagraphOptions {
   const emitted = block(value, ctx);
-  const asParagraph = emitted.paragraph as Record<string, unknown> | undefined;
-  if (!asParagraph) {
+  if (!('paragraph' in emitted) || typeof emitted.paragraph === 'string') {
     throw new Error(
       `the office-open renderer expected a paragraph, not a "${value.kind}"`
     );
   }
-  return asParagraph;
+  return emitted.paragraph;
 }
 
-/** Note bodies keyed by id, which is how the backend takes them. */
+/** Note bodies with their ids, which is how the backend takes them. */
 function noteBodies(
   notes: readonly DocxIrNote[],
   ctx: EmitContext
-): Record<string, { children: Record<string, unknown>[] }> {
-  const bodies: Record<string, { children: Record<string, unknown>[] }> = {};
-  for (const note of notes) {
-    bodies[String(note.id)] = {
-      children: note.children.map((child) => paragraphOf(child, ctx)),
-    };
-  }
-  return bodies;
+): FootnoteOptions[] {
+  return notes.map((note) => ({
+    id: note.id,
+    children: note.children.map((child) => paragraphOf(child, ctx)),
+  }));
 }
 
 /**
@@ -314,7 +317,8 @@ async function prepareImages(
   const resources = new Map<string, ImageMediaFactory>();
   for (const resource of ir.resources) {
     if (resource.kind !== 'image') continue;
-    const type = resource.mediaType;
+    // The IR's media types are the backend's picture types, `svg` included.
+    const type = resource.mediaType as PreparedImage['type'];
     const data = Buffer.from(resource.bytes);
     const placementData = new Map<string, Buffer>();
     [...(placements.get(resource.id) ?? [])].forEach((size, index) => {
@@ -570,7 +574,18 @@ function collectImagePlacements(ir: DocxIR): Map<string, Set<string>> {
   return placements;
 }
 
-function coreProperties(ir: DocxIR): Record<string, unknown> {
+function coreProperties(
+  ir: DocxIR
+): Pick<
+  DocumentOptions,
+  | 'title'
+  | 'subject'
+  | 'description'
+  | 'creator'
+  | 'lastModifiedBy'
+  | 'keywords'
+  | 'customProperties'
+> {
   const { metadata } = ir;
   return {
     ...(metadata.title ? { title: metadata.title } : {}),

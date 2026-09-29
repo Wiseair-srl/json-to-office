@@ -9,7 +9,10 @@
  * parsers emit and the older `CallExpression` + `Import` callee shape.
  *
  * Specifier regexes are anchored to whole path segments so `docx` does not also
- * catch `docx-templates`, matching what the static patterns already do.
+ * catch `docx-templates`, matching what the static patterns already do. The
+ * static `docx` patterns are anchored at the start (`/docx`) as well: the
+ * unanchored `docx` matched the last segment of `@office-open/docx` too, which
+ * the office-open adapter imports its types from.
  */
 const restrictedPattern = (group, message) => ({ group, message });
 const restrictedDynamic = (specifier, message) => [
@@ -39,7 +42,7 @@ const pptxgenjsDynamic = restrictedDynamic(
   String.raw`/^pptxgenjs(\/|$)/`,
   PPTXGENJS_ONLY
 );
-const docxImport = restrictedPattern(['docx', 'docx/*'], DOCXJS_ONLY);
+const docxImport = restrictedPattern(['/docx', '/docx/*'], DOCXJS_ONLY);
 const docxDynamic = restrictedDynamic(String.raw`/^docx(\/|$)/`, DOCXJS_ONLY);
 const officeOpenImport = restrictedPattern(['@office-open/*'], OFFICE_OPEN_ONLY);
 const officeOpenDynamic = restrictedDynamic(

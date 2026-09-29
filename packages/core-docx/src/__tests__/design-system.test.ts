@@ -159,7 +159,8 @@ describe('DOCX theme foundation', () => {
         ([run]) => run.includes('Explicit')
       )?.[0];
       expect(explicit).toContain('<w:caps w:val="false"/>');
-      expect(explicit).toMatch(/<w:smallCaps w:val="(?:false|0)"\/>/);
+      // `false`, `0` and `off` are the same ST_OnOff; 0.14 spells it `off`.
+      expect(explicit).toMatch(/<w:smallCaps w:val="(?:false|0|off)"\/>/);
       // CT_RPr is an ordered sequence: w:caps, then w:smallCaps, then the rest.
       const runProperties = /<w:rPr\b[^>]*>[\s\S]*?<\/w:rPr>/.exec(
         explicit ?? ''

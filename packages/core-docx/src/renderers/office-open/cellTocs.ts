@@ -15,11 +15,8 @@ import type AdmZip from 'adm-zip';
 import type { CellToc } from './emit';
 
 /** The backend's writer for a table of contents: an `sdt` around the field. */
-export type StringifyTableOfContents = (
-  alias?: string,
-  options?: Record<string, unknown>,
-  entriesXml?: string
-) => string;
+export type StringifyTableOfContents =
+  typeof import('@office-open/docx').stringifyTableOfContents;
 
 /** The parts a table can stand in, and so a cell. */
 const TABLE_PARTS = /^word\/(?:document|header\d+|footer\d+)\.xml$/;

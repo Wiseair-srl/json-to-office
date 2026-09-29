@@ -1,20 +1,14 @@
 /**
- * Packaging a native chart's missing half, for PPTX.
+ * A native chart's look, references and workbook, for PPTX.
  *
- * The repairs themselves are format-neutral and live in `chart-parts` in
- * `@json-to-office/shared/rendering`; a `c:chartSpace` is DrawingML and the
- * docx sibling of this file makes the same edits. What differs is how much is
- * missing. `@office-open/pptx` hands its whole options object to
- * `chartSpaceDesc`, so the chart title and the legend position survive the trip
- * — verified against the package — where the docx sibling loses both. Every
- * other repair is needed on this side too: the cell references, the series
- * colours, the axis titles, the bar grouping and `c:externalData`. The shared
- * splice guards each on what the XML actually lacks, so the same function does
- * both jobs without writing anything twice.
- *
- * What is genuinely pptx's own is the packaging. The backend writes
- * `ppt/charts/chartN.xml` and nothing else: no rels part, no workbook, no
- * content-type override for one. Two conventions have to be matched exactly:
+ * The look and the cell references are format-neutral and are stated as
+ * backend options by `chartLook` in `@json-to-office/shared/rendering`, from
+ * `chartInput` here; the docx sibling of this file does the same. What is
+ * genuinely pptx's own is the packaging. `@office-open/pptx` writes
+ * `ppt/charts/chartN.xml` with the `c:externalData` it is asked for, and
+ * nothing behind it: no rels part, no workbook, no content-type default for
+ * one — asked for the workbook bytes, it writes a relationship id that
+ * resolves to nothing. Two conventions have to be matched exactly:
  *
  * - The workbook is `ppt/embeddings/Microsoft_Excel_Worksheet{N}.xlsx`, which
  *   is what pptxgenjs writes, so a deck's two backends produce packages of the
@@ -31,8 +25,8 @@ import {
   CHART_WORKBOOK_CONTENT_TYPE,
   chartWorkbookParts,
   chartWorkbookRelsXml,
+  finishChartXml,
   matchChartParts,
-  spliceChartXml,
   type ChartAxisEdits,
   type ChartPartInput,
   type ChartTextStyle,
@@ -49,19 +43,17 @@ const workbookName = (ordinal: number): string =>
   `Microsoft_Excel_Worksheet${ordinal}.xlsx`;
 
 /**
- * One chart element, in the shared splice's vocabulary.
- *
- * The pptx IR carries a far richer options bag than the splice needs — four
- * label fonts, per-family tuning, axis bounds — and all of it reaches the
- * backend through the emitter. Only the handful the backend drops is projected
- * here.
+ * One chart element, in the shared look's vocabulary: everything of its
+ * options but the type, the data and the data-label flags, which the emitter
+ * passes itself.
  *
  * A series missing `labels` or `values` cannot occur: the compiler warns
  * `CHART_INVALID_SERIES` and drops the whole chart before it reaches the IR.
  * The empty fallbacks keep this total rather than relying on that from a
  * distance.
  */
-function spliceInput(element: PptxIrChartElement): ChartPartInput {
+export function chartInput(element: PptxIrChartElement): ChartPartInput {
+  const { options } = element;
   return {
     chartType: element.chartType,
     series: element.series.map((series) => ({
@@ -70,16 +62,30 @@ function spliceInput(element: PptxIrChartElement): ChartPartInput {
       values: series.values ?? [],
     })),
     colors: element.options.colors,
+    ...(options.title && options.showTitle !== false
+      ? { title: options.title }
+      : {}),
+    ...(options.legendPosition
+      ? { legendPosition: options.legendPosition }
+      : {}),
     ...(element.options.barGrouping
       ? { barGrouping: element.options.barGrouping }
       : {}),
-    // Spliced rather than emitted: see `chartChild`, which cannot pass `axes`
-    // without also inventing the axis ids the plot area references.
+    // Per-family tuning, each only when authored: the backend has its own
+    // defaults, and writing a value it did not ask for is how a chart drifts
+    // from the one that was designed.
+    ...(options.barGapWidthPercent !== undefined
+      ? { gapWidth: options.barGapWidthPercent }
+      : {}),
+    ...(options.barOverlapPercent !== undefined
+      ? { overlap: options.barOverlapPercent }
+      : {}),
+    ...(options.holeSize !== undefined ? { holeSize: options.holeSize } : {}),
+    ...(options.firstSliceAngle !== undefined
+      ? { firstSliceAngle: options.firstSliceAngle }
+      : {}),
     categoryAxis: axisEdits(element.options.categoryAxis),
     valueAxis: axisEdits(element.options.valueAxis),
-    // Three the backend has nowhere to put: `ChartSeriesCommon` has no line
-    // width, no data-element outline, and `c:radarStyle` is written from a
-    // literal rather than an option.
     ...(element.options.lineSize !== undefined
       ? { lineWidthPoints: element.options.lineSize }
       : {}),
@@ -94,8 +100,6 @@ function spliceInput(element: PptxIrChartElement): ChartPartInput {
     ...(element.options.radarStyle
       ? { radarStyle: element.options.radarStyle }
       : {}),
-    // Fonts: `c:txPr` and `a:defRPr` on four different elements, none of which
-    // the backend exposes an option for.
     ...(textStyle(element.options.titleFont)
       ? { titleFont: textStyle(element.options.titleFont) }
       : {}),
@@ -122,7 +126,7 @@ function textStyle(
   return Object.keys(style).length > 0 ? style : undefined;
 }
 
-/** One authored axis, in the shared splice's vocabulary. */
+/** One authored axis, in the shared look's vocabulary. */
 function axisEdits(
   axis: PptxIrChartAxis | PptxIrChartValueAxis
 ): ChartAxisEdits {
@@ -222,22 +226,22 @@ async function workbookBytes(chart: ChartPartInput): Promise<Uint8Array> {
 }
 
 /**
- * Give every chart in the package the cell references, colours and workbook the
- * backend leaves out.
+ * Give every chart in the package the workbook its `c:externalData` names,
+ * and finish what no option says.
  *
  * Parts are matched to IR elements by content rather than by position: the
- * emitter fills its array while *building* the backend's options object and the
- * backend numbers its parts while *stringifying* that object, and the two walks
- * need not agree. Pairing by position is what handed docx charts another
+ * emitter fills its array while *building* the backend's options object and
+ * the backend numbers its parts while *stringifying* that object, and the two
+ * walks need not agree. Pairing by position is what handed docx charts another
  * chart's workbook.
  */
-export async function spliceChartParts(
+export async function packageChartParts(
   zip: JSZip,
   charts: readonly PptxIrChartElement[]
 ): Promise<void> {
   if (charts.length === 0) return;
 
-  const inputs = charts.map(spliceInput);
+  const inputs = charts.map(chartInput);
   const parts: Array<readonly [number, string]> = [];
   for (const path of Object.keys(zip.files)) {
     const match = path.match(/^ppt\/charts\/chart(\d+)\.xml$/);
@@ -249,13 +253,17 @@ export async function spliceChartParts(
   for (const { ordinal, xml, chart } of matchChartParts(parts, inputs)) {
     const workbook = workbookName(ordinal);
 
-    zip.file(`ppt/charts/chart${ordinal}.xml`, spliceChartXml(xml, chart), {
-      createFolders: false,
-    });
+    const finished = finishChartXml(xml, chart);
+    if (finished !== xml) {
+      zip.file(`ppt/charts/chart${ordinal}.xml`, finished, {
+        createFolders: false,
+      });
+    }
     zip.file(`ppt/embeddings/${workbook}`, await workbookBytes(chart), {
       binary: true,
       createFolders: false,
     });
+    // `rId1`: the relationship id `chartLook` puts on `c:externalData`.
     zip.file(
       `ppt/charts/_rels/chart${ordinal}.xml.rels`,
       chartWorkbookRelsXml(workbook),

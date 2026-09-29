@@ -1,12 +1,11 @@
 /**
  * The option bags, where the two backends disagree about units or spelling.
  *
- * `emit.ts` builds plain objects rather than the backend's declared types on
- * purpose — typing them would put an optional peer dependency into this
- * package's published `.d.ts` and break every consumer without it. The cost is
- * no compile-time check that a field is named and scaled the way the backend
- * reads it, so the places where the two libraries differ are pinned here
- * instead. Each of these was a real defect first.
+ * `emit.ts` is typed against `@office-open/docx`'s own option types, so a
+ * field the backend does not have fails the build. Types cannot say how a
+ * value is scaled or which of two legal spellings a reader needs, so the
+ * places where the two libraries differ are pinned here. Each of these was a
+ * real defect first.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -160,7 +159,7 @@ describe('inline children', () => {
           type: 'png',
           data: PNG_BYTES,
           transformation: { width: 100, height: 100 },
-          altText: { id: '1' },
+          altText: { id: '1', name: '' },
         },
       },
     ]);
@@ -313,10 +312,10 @@ describe('tables', () => {
 
     expect(cell).toMatchObject({
       margins: {
-        top: { size: 60, type: 'dxa' },
-        left: { size: 120, type: 'dxa' },
+        top: { size: 60, type: 'twips' },
+        left: { size: 120, type: 'twips' },
       },
-      width: { size: 2400, type: 'dxa' },
+      width: { size: 2400, type: 'twips' },
       // The IR's vertical merge is already the backend's vocabulary.
       verticalMerge: 'restart',
     });
@@ -324,7 +323,7 @@ describe('tables', () => {
 
   it('names the width unit the backend expects', () => {
     expect(block(table).table).toMatchObject({
-      width: { size: 100, type: 'pct' },
+      width: { size: 100, type: 'percent' },
       layout: 'fixed',
       columnWidths: [2400],
     });
@@ -560,10 +559,46 @@ describe('sections', () => {
     expect(last).not.toHaveProperty('paragraph.spacing');
     expect(end).toEqual({ bookmarkEnd: { id: 7 } });
   });
+
+  it('gives the properties of a section ending on a contents field a paragraph of their own', () => {
+    // The backend puts a section's properties into its last paragraph or
+    // contents field, and in a field's case that is its last entry, inside
+    // the content control. A bare paragraph after the field takes them.
+    const toc: DocxIrBlock = { kind: 'toc', id: 'c', path: 'c' } as DocxIrBlock;
+    const plain = (closesDocument: boolean) =>
+      section(
+        {
+          id: 's',
+          path: 's',
+          children: [paragraph, toc],
+          properties: {
+            page: {
+              widthTwips: 11906,
+              heightTwips: 16838,
+              orientation: 'portrait',
+              margins: {
+                topTwips: 1440,
+                bottomTwips: 1440,
+                leftTwips: 1440,
+                rightTwips: 1440,
+              },
+            },
+          },
+        },
+        emptyContext(),
+        closesDocument
+      ).children;
+    expect(plain(false).slice(-2)).toEqual([
+      expect.objectContaining({ toc: expect.anything() }),
+      { paragraph: { children: [] } },
+    ]);
+    // The document's last section keeps its properties on the body.
+    expect(plain(true).at(-1)).toHaveProperty('toc');
+  });
 });
 
 describe('floating placement', () => {
-  it('numbers the wrap type', () => {
+  it('names the wrap type, as OOXML does', () => {
     expect(
       floatingOptions({
         zIndex: 1,
@@ -571,7 +606,7 @@ describe('floating placement', () => {
         horizontal: { relativeTo: 'column', offsetEmu: 100 },
       })
     ).toMatchObject({
-      wrap: { type: 3 },
+      wrap: { type: 'topAndBottom' },
       horizontalPosition: { relative: 'column', offset: 100 },
       zIndex: 1,
     });
@@ -601,11 +636,26 @@ describe('numbering', () => {
           level: 0,
           format: 'decimal',
           text: '%1.',
+          start: 1,
           paragraphStyle: 'Heading1',
-          style: { paragraph: { indent: { left: 720, hanging: 360 } } },
+          paragraph: { indent: { left: 720, hanging: 360 } },
         },
       ],
     });
+  });
+
+  it('states where a level starts even when the IR does not', () => {
+    // docx.js writes `w:start w:val="1"` for a level that names none. This
+    // backend stopped writing any `w:start` in 0.14 unless given one, and Word
+    // and LibreOffice then counted every list from 0.
+    const config = numberingConfig({
+      reference: 'ref',
+      levels: [
+        { level: 0, format: 'decimal', text: '%1.' },
+        { level: 1, format: 'lowerLetter', text: '%2)', start: 3 },
+      ],
+    });
+    expect(config.levels.map((level) => level.start)).toEqual([1, 3]);
   });
 });
 
@@ -645,14 +695,15 @@ describe('lengths in twips', () => {
     expect(runProperties({ characterSpacingTwentieths: -9.456 })).toMatchObject(
       { characterSpacing: -10 }
     );
-    // docx.js writes the zero a fraction floors to. The backend drops a zero
-    // stated as a number and keeps one stated in points.
+    // docx.js writes the zero a fraction floors to, and nothing for tracking
+    // stated as zero. The backend writes any number it is given, zero too, so
+    // a stated zero is left out rather than overriding the style's tracking.
     expect(runProperties({ characterSpacingTwentieths: 0.5 })).toMatchObject({
-      characterSpacing: '0pt',
-    });
-    expect(runProperties({ characterSpacingTwentieths: 0 })).toMatchObject({
       characterSpacing: 0,
     });
+    expect(runProperties({ characterSpacingTwentieths: 0 })).not.toHaveProperty(
+      'characterSpacing'
+    );
   });
 
   it('floors indents as docx.js does', () => {
@@ -681,9 +732,7 @@ describe('lengths in twips', () => {
         ],
       })
     ).toMatchObject({
-      levels: [
-        { style: { paragraph: { indent: { left: 720, hanging: 360 } } } },
-      ],
+      levels: [{ paragraph: { indent: { left: 720, hanging: 360 } } }],
     });
   });
 
@@ -715,9 +764,9 @@ describe('lengths in twips', () => {
     };
 
     expect(block(table).table).toMatchObject({
-      width: { size: 1902, type: 'dxa' },
+      width: { size: 1902, type: 'twips' },
       columnWidths: [1902],
-      margins: { top: { size: 0, type: 'dxa' } },
+      margins: { top: { size: 0, type: 'twips' } },
       float: {
         absoluteHorizontalPosition: -1,
         absoluteVerticalPosition: 100,
@@ -731,8 +780,8 @@ describe('lengths in twips', () => {
           height: { value: 283 },
           cells: [
             {
-              width: { size: 1902, type: 'dxa' },
-              margins: { left: { size: 112, type: 'dxa' } },
+              width: { size: 1902, type: 'twips' },
+              margins: { left: { size: 112, type: 'twips' } },
             },
           ],
         },
@@ -775,19 +824,17 @@ describe('lengths in twips', () => {
     );
 
     expect(emitted.properties).toMatchObject({
-      page: {
-        size: { width: 11906, height: 16838 },
-        margin: {
-          top: 1440,
-          bottom: 1440,
-          left: 1080,
-          right: 1080,
-          header: 708,
-          footer: 708,
-          gutter: 0,
-        },
+      pageSize: { width: 11906, height: 16838 },
+      pageMargin: {
+        top: 1440,
+        bottom: 1440,
+        left: 1080,
+        right: 1080,
+        header: 708,
+        footer: 708,
+        gutter: 0,
       },
-      column: {
+      columns: {
         space: 708,
         children: [{ width: 4500, space: 708 }, { width: 4500 }],
       },

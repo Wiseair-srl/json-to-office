@@ -14,15 +14,15 @@
  * So office-open writes the look docx.js writes, and a chart draws the same on
  * either renderer; `__tests__/chart-cross-backend.test.ts` holds the two to
  * it, element by element. The look lives here, in one place, in two halves:
- * what the backend passes through (`seriesLook`, per series — it hands each
- * series object to the part whole) and what is spliced into the part
- * afterwards (`plotLook`), since the backend drops every chart-level option
- * but eight.
+ * what each series object states on its own (`seriesLook`) and the rest, in
+ * the shared look's vocabulary (`plotLook`), which `chartLook` in
+ * `@json-to-office/shared/rendering` turns into backend options.
  *
  * The tints are theme references, as Word writes them, not colours: the
  * gridlines follow the document theme's Text 1 on both renderers.
  */
 
+import type { ChartOptions } from '@office-open/docx';
 import type {
   ChartAxisEdits,
   ChartColor,
@@ -76,6 +76,12 @@ const LINE_SERIES: Pick<
 /** Round markers, size 5, on every line, radar and scatter series. */
 const MARKER = { symbol: 'circle', size: 5 } as const;
 
+/** The fields of a series the look sets on its own. */
+export type SeriesLookFields = Pick<
+  ChartOptions['series'][number],
+  'marker' | 'smooth' | 'invertIfNegative'
+>;
+
 /**
  * What each series object carries to the backend, which passes it through
  * whole: the marker, a line that is not smoothed, and bars that keep their
@@ -84,9 +90,7 @@ const MARKER = { symbol: 'circle', size: 5 } as const;
  * `c:smooth` has to be stated: with none, Word and LibreOffice both draw a
  * line chart's series as a curve through its points.
  */
-export function seriesLook(
-  chartType: DocxIrChartType
-): Record<string, unknown> {
+export function seriesLook(chartType: DocxIrChartType): SeriesLookFields {
   switch (chartType) {
     case 'line':
     case 'scatter':
@@ -172,7 +176,7 @@ function axesLook(
 }
 
 /**
- * Everything of the look the splice writes, for one chart.
+ * Everything of the look but the series' own fields, for one chart.
  *
  * Axis edits come back whole, for `chartParts.ts` to merge its axis titles
  * into.

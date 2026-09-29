@@ -1,27 +1,22 @@
 /**
- * What the backend leaves out of a chart, and this pass puts back.
+ * A chart's look, references and workbook, asked of the backend as options.
  *
- * `@office-open/docx` 0.11.0 forwards eight fields of `ChartSpaceOptions` from
- * a chart run — type, title, series, categories, showLegend, style, threeD,
- * view3D — and drops the rest on the floor. Verified against the package, not
- * its types: `externalData` never reaches the XML, `axes` never reaches the
- * XML, and every `<c:f>` comes out empty, so the chart has cached values and no
- * source for them. There is also nowhere on `ChartSeriesCommon` or
- * `DataPointOptions` to put a series colour.
- *
- * The consequences in Word are concrete: "Edit Data" fails, axis titles are
+ * `@office-open/docx` 0.14 hands a chart run's `ChartSpaceOptions` to the part
+ * whole and embeds the workbook `externalData` carries, with its relationship
+ * and content type; 0.11 forwarded eight fields and wrote no workbook, which
+ * is what the splice these tests used to pin put back. The consequences of any
+ * of it going missing are concrete in Word: "Edit Data" fails, axis titles are
  * absent, and every series draws in Word's default palette rather than the
- * document theme. So this pass splices the missing parts into the emitted
- * package — the same technique the pptx pptxgenjs adapter already uses for
- * gradient and pattern fills, for the same reason.
+ * document theme.
  *
- * These tests pin the seam against the *real* backend output. If the package
- * starts emitting any of it, a test here fails and the splice for it goes away.
+ * These tests render through the emitter and the *real* backend, then the one
+ * post-generation pass left (`finishChartParts`).
  */
 
 import AdmZip from 'adm-zip';
 import { describe, expect, it } from 'vitest';
-import { spliceChartParts } from '../chartParts';
+import { finishChartParts } from '../chartParts';
+import { block, emptyContext } from '../emit';
 import type { DocxIrChartRun } from '../../../ir/types';
 
 const chart: DocxIrChartRun = {
@@ -45,78 +40,64 @@ const chart: DocxIrChartRun = {
   },
 };
 
-/** A package shaped exactly as the backend emits one, for one bar chart. */
-async function renderedPackage(): Promise<Buffer> {
-  const { generateDocument } = (await import('@office-open/docx')) as {
-    generateDocument: (
-      options: Record<string, unknown>,
-      packer?: { type?: string }
-    ) => Promise<Uint8Array>;
-  };
+/** A package holding `runs`, emitted and finished as the renderer does. */
+async function rendered(...runs: DocxIrChartRun[]): Promise<AdmZip> {
+  const { generateDocument } = await import('@office-open/docx');
+  const ctx = emptyContext();
+  const children = runs.map((run, index) =>
+    block(
+      { kind: 'paragraph', id: `p${index}`, path: 'p', children: [run] },
+      ctx
+    )
+  );
   const bytes = await generateDocument(
-    {
-      sections: [
-        {
-          children: [
-            {
-              paragraph: {
-                children: [
-                  {
-                    chart: {
-                      type: 'bar',
-                      title: chart.title,
-                      categories: chart.series[0].labels,
-                      series: chart.series.map((entry) => ({
-                        name: entry.name,
-                        values: entry.values,
-                      })),
-                      transformation: {
-                        width: chart.widthEmu,
-                        height: chart.heightEmu,
-                      },
-                    },
-                  },
-                ],
-              },
-            },
-          ],
-        },
-      ],
-    },
+    { sections: [{ children }] },
     { type: 'uint8array' }
   );
-  return Buffer.from(bytes);
-}
-
-async function spliced(): Promise<AdmZip> {
-  const zip = new AdmZip(await renderedPackage());
-  spliceChartParts(zip, [chart]);
+  const zip = new AdmZip(Buffer.from(bytes));
+  finishChartParts(zip, ctx.charts ?? []);
   return new AdmZip(zip.toBuffer());
 }
+
+const spliced = (): Promise<AdmZip> => rendered(chart);
 
 const read = (zip: AdmZip, path: string): string =>
   zip.getEntry(path)!.getData().toString('utf8');
 
-describe('chart part splicing', () => {
-  it('confirms the backend still leaves the gaps this pass fills', async () => {
-    const before = read(
-      new AdmZip(await renderedPackage()),
-      'word/charts/chart1.xml'
-    );
-    expect(before).toContain('<c:f/>');
-    expect(before).toContain('<c:spPr/>');
-    expect(before).not.toContain('externalData');
-  });
-
-  it('adds the workbook, its relationship and its content type', async () => {
+describe('native charts as backend options', () => {
+  it('embeds the workbook, its relationship and its content type', async () => {
     const zip = await spliced();
     expect(zip.getEntry('word/embeddings/chart1.xlsx')).toBeTruthy();
 
     const rels = read(zip, 'word/charts/_rels/chart1.xml.rels');
     expect(rels).toContain('relationships/package');
+    expect(rels).toContain('Id="rId1"');
     expect(rels).toContain('../embeddings/chart1.xlsx');
 
-    expect(read(zip, '[Content_Types].xml')).toContain('spreadsheetml.sheet"');
+    expect(read(zip, '[Content_Types].xml')).toContain(
+      '<Default Extension="xlsx" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"/>'
+    );
+  });
+
+  it('names each workbook for its own chart', async () => {
+    // The backend embeds one file per name and points each chart at the name
+    // it was given: two charts sharing one would share the first's numbers.
+    const second: DocxIrChartRun = {
+      ...chart,
+      series: [{ name: 'Other', labels: ['Q1', 'Q2'], values: [1, 2] }],
+    };
+    const zip = await rendered(chart, second);
+    for (const ordinal of [1, 2]) {
+      expect(read(zip, `word/charts/_rels/chart${ordinal}.xml.rels`)).toContain(
+        `../embeddings/chart${ordinal}.xlsx`
+      );
+    }
+    const sheet = (name: string) =>
+      new AdmZip(zip.getEntry(`word/embeddings/${name}`)!.getData()).readAsText(
+        'xl/worksheets/sheet1.xml'
+      );
+    expect(sheet('chart1.xlsx')).toContain('Revenue');
+    expect(sheet('chart2.xlsx')).toContain('Other');
   });
 
   it('points the chart at the workbook so "Edit Data" resolves', async () => {
@@ -130,9 +111,9 @@ describe('chart part splicing', () => {
     );
   });
 
-  it('fills every empty formula with the cell range it caches', async () => {
+  it('names the cells behind every cached value', async () => {
     const xml = read(await spliced(), 'word/charts/chart1.xml');
-    expect(xml).not.toContain('<c:f/>');
+    expect(xml).not.toMatch(/<c:f><\/c:f>|<c:f\/>/);
     // Series 1: name in B1, categories in A2:A3, values in B2:B3.
     expect(xml).toContain('<c:f>Sheet1!$B$1</c:f>');
     expect(xml).toContain('<c:f>Sheet1!$A$2:$A$3</c:f>');
@@ -153,41 +134,46 @@ describe('chart part splicing', () => {
       '<c:spPr><a:solidFill><a:srgbClr val="C00000"/></a:solidFill>' +
         '<a:ln><a:noFill/></a:ln></c:spPr>'
     );
-    // The chartSpace and legend keep their own non-empty spPr untouched.
-    expect(xml).toContain('<c:spPr><a:noFill/>');
+    // The chart area and legend are stated unfilled, as Office leaves them.
+    expect(xml).toContain(
+      '<c:spPr><a:noFill/><a:ln><a:noFill/></a:ln><a:effectLst/></c:spPr>'
+    );
   });
 
   it('strokes a line series rather than filling it', async () => {
     // A `a:solidFill` on a line series is accepted and drawn nowhere: the line
     // keeps the reader's default colour. Caught by looking at a LibreOffice
     // render, which drew a blue line under an `accent` palette.
-    const zip = new AdmZip(await renderedPackage());
-    spliceChartParts(zip, [
-      { ...chart, chartType: 'line', colors: ['00AA00'] },
-    ]);
-    const xml = read(new AdmZip(zip.toBuffer()), 'word/charts/chart1.xml');
+    const xml = read(
+      await rendered({ ...chart, chartType: 'line', colors: ['00AA00'] }),
+      'word/charts/chart1.xml'
+    );
     // 2.25pt with round caps and joins, as Word draws a line series.
     expect(xml).toContain(
       '<c:spPr><a:ln w="28575" cap="rnd"><a:solidFill><a:srgbClr val="00AA00"/>' +
         '</a:solidFill><a:round/></a:ln></c:spPr>'
     );
-    expect(xml).toContain('<c:marker>');
+    // The marker keeps its symbol and size under the colour.
+    expect(xml).toContain(
+      '<c:marker><c:symbol val="circle"/><c:size val="5"/><c:spPr>'
+    );
   });
 
   it('cycles a palette shorter than the series list', async () => {
-    const zip = new AdmZip(await renderedPackage());
-    spliceChartParts(zip, [{ ...chart, colors: ['00FF00'] }]);
-    const xml = read(new AdmZip(zip.toBuffer()), 'word/charts/chart1.xml');
+    const xml = read(
+      await rendered({ ...chart, colors: ['00FF00'] }),
+      'word/charts/chart1.xml'
+    );
     expect(xml.match(/<a:srgbClr val="00FF00"\/>/g)).toHaveLength(2);
   });
 
   it('leaves series unpainted when the theme yields no palette', async () => {
-    const zip = new AdmZip(await renderedPackage());
-    spliceChartParts(zip, [{ ...chart, colors: [] }]);
-    const xml = read(new AdmZip(zip.toBuffer()), 'word/charts/chart1.xml');
+    const xml = read(
+      await rendered({ ...chart, colors: [] }),
+      'word/charts/chart1.xml'
+    );
     // No fill, so the reader's palette; the outline is still stated absent.
     expect(xml).toContain('<c:spPr><a:ln><a:noFill/></a:ln></c:spPr>');
-    // The only colour left is the theme text colour on the chart's text.
     const series = xml.match(/<c:ser>[\s\S]*?<\/c:ser>/g) ?? [];
     expect(series.length).toBeGreaterThan(0);
     for (const entry of series) expect(entry).not.toContain('srgbClr');
@@ -248,11 +234,14 @@ describe('chart part splicing', () => {
   });
 
   it('omits an axis title that was never authored', async () => {
-    const zip = new AdmZip(await renderedPackage());
-    spliceChartParts(zip, [
-      { ...chart, categoryAxisTitle: undefined, valueAxisTitle: undefined },
-    ]);
-    const xml = read(new AdmZip(zip.toBuffer()), 'word/charts/chart1.xml');
+    const xml = read(
+      await rendered({
+        ...chart,
+        categoryAxisTitle: undefined,
+        valueAxisTitle: undefined,
+      }),
+      'word/charts/chart1.xml'
+    );
     const catAx = xml.slice(
       xml.indexOf('<c:catAx>'),
       xml.indexOf('</c:catAx>')
@@ -261,19 +250,34 @@ describe('chart part splicing', () => {
   });
 
   it('moves the legend where the author asked', async () => {
-    // `legendPosition` is not one of the eight fields the backend forwards, so
-    // every legend came out at the default `b` whatever the prop said.
-    const zip = new AdmZip(await renderedPackage());
-    spliceChartParts(zip, [{ ...chart, legendPosition: 'r' }]);
-    const xml = read(new AdmZip(zip.toBuffer()), 'word/charts/chart1.xml');
+    const xml = read(
+      await rendered({ ...chart, legendPosition: 'r' }),
+      'word/charts/chart1.xml'
+    );
     expect(xml).toContain('<c:legendPos val="r"/>');
     expect(xml).not.toContain('<c:legendPos val="b"/>');
   });
 
   it('escapes an axis title rather than letting it break the part', async () => {
-    const zip = new AdmZip(await renderedPackage());
-    spliceChartParts(zip, [{ ...chart, categoryAxisTitle: 'A & <B>' }]);
-    const xml = read(new AdmZip(zip.toBuffer()), 'word/charts/chart1.xml');
+    const xml = read(
+      await rendered({ ...chart, categoryAxisTitle: 'A & <B>' }),
+      'word/charts/chart1.xml'
+    );
     expect(xml).toContain('A &amp; &lt;B&gt;');
+  });
+
+  it("draws a scatter chart's markers, which no option can ask for", async () => {
+    // `chartSpaceDesc` writes `line` from a literal; `finishChartParts` is
+    // what turns it into Word's `lineMarker`.
+    const xml = read(
+      await rendered({
+        ...chart,
+        chartType: 'scatter',
+        series: [{ name: 'S', labels: ['1', '2.5'], values: [3, 4] }],
+      }),
+      'word/charts/chart1.xml'
+    );
+    expect(xml).toContain('<c:scatterStyle val="lineMarker"/>');
+    expect(xml).not.toContain('<c:scatterStyle val="line"/>');
   });
 });

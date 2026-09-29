@@ -36,7 +36,7 @@
     "@json-to-office/quality": "workspace:^",
     "@json-to-office/shared": "workspace:^",
     "@json-to-office/shared-docx": "workspace:^",
-    "@office-open/docx": "0.11.0",
+    "@office-open/docx": "0.14.6",
     "@resvg/resvg-js": "2.6.2",
     "@sinclair/typebox": "0.34.38",
     "adm-zip": "0.5.16",
@@ -47,7 +47,7 @@
     "docx": "9.8.1"
   },
   "devDependencies": {
-    "@office-open/core": "0.11.0",
+    "@office-open/core": "0.14.6",
     "@types/adm-zip": "0.5.7",
     "@types/node": "22.20.2",
     "@types/probe-image-size": "7.2.4",

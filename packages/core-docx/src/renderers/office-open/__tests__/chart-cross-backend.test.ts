@@ -313,10 +313,10 @@ async function chartsOf(document: unknown, renderer: Renderer) {
     zip.getEntry(name)!.getData().toString('utf8');
 
   // Where each chart part is drawn, and at what size. `drawn` keeps every
-  // chart drawing's extent, including one whose reference does not resolve:
-  // `@office-open/docx` 0.11 fills in chart relationship ids in
-  // `word/document.xml` only, so a header or footer chart on office-open
-  // keeps an `r:id="{chart:…}"` placeholder with no relationship behind it.
+  // chart drawing's extent, including one whose reference does not resolve,
+  // which `unresolved` names: `@office-open/docx` 0.11 filled in chart
+  // relationship ids in `word/document.xml` only, so a header or footer chart
+  // kept an `r:id="{chart:…}"` placeholder with no relationship behind it.
   const extents = new Map<string, string>();
   const drawn: string[] = [];
   const unresolved: string[] = [];
@@ -380,6 +380,7 @@ describe('native charts on both DOCX renderers', () => {
 
       expect(docxjs.charts.length).toBeGreaterThan(0);
       expect(docxjs.unresolved).toEqual([]);
+      expect(officeOpen.unresolved).toEqual([]);
       expect(docxjs.charts.map((c) => c.signature).sort()).toEqual(
         officeOpen.charts.map((c) => c.signature).sort()
       );
@@ -394,7 +395,7 @@ describe('native charts on both DOCX renderers', () => {
         expect(chart.plot, part).toBeDefined();
         expect(extent, part).toBeDefined();
         expect(chart.workbook, part).toBe(true);
-        if (twinExtent !== undefined) expect(extent, part).toBe(twinExtent);
+        expect(extent, part).toBe(twinExtent);
         expect(chart, `${part} against office-open ${twinPart}`).toEqual(
           expected
         );

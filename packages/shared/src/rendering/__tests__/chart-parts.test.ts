@@ -11,10 +11,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   chartInputSignature,
+  chartLook,
   chartPartSignature,
   chartWorkbookParts,
+  finishChartXml,
   matchChartParts,
-  spliceChartXml,
+  withSeriesLook,
   type ChartPartInput,
 } from '../chart-parts';
 
@@ -98,18 +100,11 @@ describe('chart part signatures', () => {
 
 describe('chart text defaults', () => {
   const font = { fontFamily: 'Calibri', fontSize: 10, color: '333333' };
-  const defRPr =
-    '<a:defRPr sz="1000"><a:solidFill><a:srgbClr val="333333"/></a:solidFill>' +
-    '<a:latin typeface="Calibri"/></a:defRPr>';
-  const txPr =
-    '<c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr/></a:pPr>' +
-    '<a:endParaRPr lang="en-US"/></a:p></c:txPr>';
-  const chartSpace = (afterChart: string, axisTitle = '') =>
-    `<c:chartSpace><c:chart><c:plotArea><c:catAx><c:axId val="1"/>` +
-    `<c:axPos val="b"/>${axisTitle}<c:crossAx val="2"/></c:catAx>` +
-    `</c:plotArea><c:legend>${txPr}</c:legend></c:chart>${afterChart}` +
-    `<c:externalData r:id="rId1"><c:autoUpdate val="0"/></c:externalData>` +
-    `</c:chartSpace>`;
+  const run = {
+    size: 10,
+    fill: { type: 'solid', color: { value: '333333' } },
+    font: { latin: 'Calibri' },
+  };
   const input = (extra: Partial<ChartPartInput> = {}): ChartPartInput => ({
     chartType: 'bar',
     colors: [],
@@ -117,81 +112,60 @@ describe('chart text defaults', () => {
     ...extra,
   });
 
-  it('fills the chart-wide default the backend left empty, and only it', () => {
-    const xml = spliceChartXml(
-      chartSpace(`<c:spPr><a:noFill/></c:spPr>${txPr}`),
-      input({ textFont: font })
-    );
-    const tail = xml.slice(xml.lastIndexOf('</c:chart>'));
-    expect(tail).toContain(defRPr);
-    expect(tail.match(/<c:txPr>/g)).toHaveLength(1);
-    // The legend's own txPr is left to inherit it.
-    const legend = xml.slice(
-      xml.indexOf('<c:legend>'),
-      xml.indexOf('</c:legend>')
-    );
-    expect(legend).toContain('<a:defRPr/>');
+  it('states the chart-wide default every other piece of text inherits', () => {
+    const { chart } = chartLook(input({ textFont: font }));
+    expect(chart.textProperties).toEqual({
+      paragraphs: [
+        {
+          properties: { defaultRunProperties: run },
+          endParagraphProperties: { lang: 'en-US' },
+        },
+      ],
+    });
+    // The legend's own default is left empty, to inherit it.
+    expect(
+      chart.legendTextProperties.paragraphs[0].properties?.defaultRunProperties
+    ).toEqual({});
   });
 
-  it('writes a missing chart-wide default between spPr and externalData', () => {
-    const xml = spliceChartXml(
-      chartSpace('<c:spPr><a:noFill/></c:spPr>'),
-      input({ textFont: font })
-    );
-    expect(xml).toContain(
-      `</c:spPr><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr>${defRPr}`
-    );
-    expect(xml.indexOf('<c:externalData')).toBeGreaterThan(
-      xml.lastIndexOf('</c:txPr>')
-    );
-  });
-
-  it('styles an axis title the backend already wrote, keeping its text', () => {
-    const existing =
-      '<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>Q</a:t>' +
-      '</a:r></a:p></c:rich></c:tx><c:overlay val="0"/></c:title>';
-    const xml = spliceChartXml(
-      chartSpace('', existing),
+  it('puts an axis title font on the paragraph default and the run', () => {
+    const { chart } = chartLook(
       input({ categoryAxis: { title: 'Q', titleFont: font } })
     );
-    expect(xml.match(/<c:title>/g)).toHaveLength(1);
-    expect(xml).toContain(`<a:p><a:pPr>${defRPr}</a:pPr><a:r><a:t>Q</a:t>`);
+    expect(chart.axes?.[0].title).toEqual({
+      text: {
+        paragraphs: [
+          {
+            properties: { defaultRunProperties: run },
+            children: [{ text: 'Q', ...run }],
+            endParagraphProperties: false,
+          },
+        ],
+      },
+      overlay: false,
+    });
+  });
+
+  it("styles the chart title's paragraph, not its run", () => {
+    const { chart } = chartLook(
+      input({ title: 'Revenue', titleFont: { bold: true } })
+    );
+    expect(chart.title?.text.paragraphs[0]).toEqual({
+      properties: { defaultRunProperties: { bold: true } },
+      children: ['Revenue'],
+      endParagraphProperties: false,
+    });
   });
 });
 
 /**
  * The plot look a backend leaves to the reader: axis position, ticks and line,
  * gridlines in a theme tint, bar gaps, a pie's first slice, a doughnut's hole,
- * markers, a scatter chart's x values, an untitled chart's title. Each edit is
- * opt-in — pptx sets none of them, and its parts must not move — and each goes
- * into the slot its CT_* sequence gives it.
+ * markers, a scatter chart's x values, an untitled chart's title. Each is
+ * opt-in — pptx sets none of them unless authored — and each is spelled in the
+ * backend's vocabulary.
  */
 describe('plot look', () => {
-  const series = (values: string) =>
-    `<c:ser><c:idx val="0"/><c:order val="0"/><c:tx><c:strRef><c:f/>` +
-    `<c:strCache><c:ptCount val="1"/><c:pt idx="0"><c:v>S</c:v></c:pt>` +
-    `</c:strCache></c:strRef></c:tx><c:spPr/>${values}</c:ser>`;
-  const categories =
-    `<c:cat><c:strRef><c:f/><c:strCache><c:ptCount val="2"/>` +
-    `<c:pt idx="0"><c:v>a</c:v></c:pt><c:pt idx="1"><c:v>b</c:v></c:pt>` +
-    `</c:strCache></c:strRef></c:cat><c:val><c:numRef><c:f/><c:numCache>` +
-    `<c:formatCode>General</c:formatCode><c:ptCount val="2"/>` +
-    `<c:pt idx="0"><c:v>1</c:v></c:pt><c:pt idx="1"><c:v>2</c:v></c:pt>` +
-    `</c:numCache></c:numRef></c:val>`;
-  const axis = (tag: string, id: number, cross: number, pos: string) =>
-    `<c:${tag}><c:axId val="${id}"/><c:scaling><c:orientation val="minMax"/>` +
-    `</c:scaling><c:delete val="0"/><c:axPos val="${pos}"/>` +
-    `<c:crossAx val="${cross}"/><c:crosses val="autoZero"/></c:${tag}>`;
-  const part = (group: string, axes = true, title = true) =>
-    `<c:chartSpace><c:chart>` +
-    (title ? '<c:title><c:overlay val="0"/></c:title>' : '') +
-    `<c:autoTitleDeleted val="0"/><c:plotArea><c:layout/>${group}` +
-    (axes ? axis('catAx', 10, 20, 'b') + axis('valAx', 20, 10, 'l') : '') +
-    `</c:plotArea><c:plotVisOnly/></c:chart></c:chartSpace>`;
-  const bar = part(
-    `<c:barChart><c:barDir val="bar"/><c:grouping val="clustered"/>` +
-      `${series(categories)}<c:axId val="10"/><c:axId val="20"/></c:barChart>`
-  );
   const input = (
     chartType: string,
     extra: Partial<ChartPartInput> = {}
@@ -201,37 +175,59 @@ describe('plot look', () => {
     series: [{ name: 'S', labels: ['a', 'b'], values: [1, 2] }],
     ...extra,
   });
-  const between = (xml: string, open: string, close: string) =>
-    xml.slice(xml.indexOf(open), xml.indexOf(close) + close.length);
   const tint = { scheme: 'tx1', lumMod: 15000, lumOff: 85000 };
-  const tintFill =
-    '<a:solidFill><a:schemeClr val="tx1"><a:lumMod val="15000"/>' +
-    '<a:lumOff val="85000"/></a:schemeClr></a:solidFill>';
+  const tintColor = { value: 'tx1', transforms: { lumMod: 15, lumOff: 85 } };
 
-  it('writes nothing new when no look is asked for', () => {
-    // What the pptx side relies on: none of these edits is a default.
-    const xml = spliceChartXml(bar, input('bar'));
-    for (const tag of [
-      'majorTickMark',
-      'minorTickMark',
-      'tickLblPos',
-      'crossBetween',
-      'gapWidth',
-      'overlap',
-      'majorGridlines',
-    ]) {
-      expect(xml, tag).not.toContain(`<c:${tag}`);
+  it('asks for nothing new when no look is asked for', () => {
+    const { chart, series } = chartLook(input('bar'));
+    const [category, value] = chart.axes ?? [];
+    for (const axis of [category, value]) {
+      for (const key of [
+        'majorTickMark',
+        'minorTickMark',
+        'tickLabelPosition',
+        'crossBetween',
+        'majorGridlines',
+        'shapeProperties',
+      ]) {
+        expect(axis, key).not.toHaveProperty(key);
+      }
     }
-    expect(xml).toContain('<c:autoTitleDeleted val="0"/>');
-    expect(xml).toContain('<c:axPos val="b"/>');
-    expect(between(xml, '<c:plotArea>', '</c:plotArea>')).not.toMatch(
-      /<\/c:valAx><c:spPr>/
-    );
+    expect(chart).not.toHaveProperty('gapWidth');
+    expect(chart).not.toHaveProperty('overlap');
+    expect(chart).not.toHaveProperty('plotAreaShapeProperties');
+    expect(chart.autoTitleDeleted).toBe(false);
+    expect(category.position).toBe('bottom');
+    expect(value.numberFormat).toEqual({
+      formatCode: 'General',
+      sourceLinked: true,
+    });
+    expect(series[0].shapeProperties).toEqual({
+      fill: { type: 'solid', color: { value: '112233' } },
+    });
   });
 
-  it('places an axis, its gridlines, ticks and line in schema order', () => {
-    const xml = spliceChartXml(
-      bar,
+  it("states Office's blanks, which the backend writes only when asked", () => {
+    const { chart } = chartLook(input('bar'));
+    expect(chart).toMatchObject({
+      date1904: false,
+      lang: 'en-US',
+      roundedCorners: false,
+      varyColors: false,
+      legendPosition: 'bottom',
+      legendLayout: true,
+      legendOverlay: false,
+      shapeProperties: {
+        fill: { type: 'none' },
+        outline: { type: 'noFill' },
+        effects: {},
+      },
+      externalData: { relationshipId: 'rId1', autoUpdate: false },
+    });
+  });
+
+  it("spells an axis, its gridlines, ticks and line in the backend's vocabulary", () => {
+    const { chart } = chartLook(
       input('bar', {
         categoryAxis: {
           position: 'l',
@@ -246,92 +242,121 @@ describe('plot look', () => {
           majorTickMark: 'none',
           lineVisible: false,
           crossBetween: 'between',
+          min: 0,
+          max: 10,
+          majorUnit: 5,
+          numberFormat: '#,##0',
         },
       })
     );
-    expect(between(xml, '<c:catAx>', '</c:catAx>')).toBe(
-      '<c:catAx><c:axId val="10"/><c:scaling><c:orientation val="minMax"/>' +
-        '</c:scaling><c:delete val="0"/><c:axPos val="l"/>' +
-        '<c:majorTickMark val="none"/><c:minorTickMark val="none"/>' +
-        `<c:tickLblPos val="nextTo"/><c:spPr><a:ln w="9525">${tintFill}</a:ln>` +
-        '</c:spPr><c:crossAx val="20"/><c:crosses val="autoZero"/></c:catAx>'
-    );
-    expect(between(xml, '<c:valAx>', '</c:valAx>')).toBe(
-      '<c:valAx><c:axId val="20"/><c:scaling><c:orientation val="minMax"/>' +
-        '</c:scaling><c:delete val="0"/><c:axPos val="b"/>' +
-        `<c:majorGridlines><c:spPr><a:ln w="9525">${tintFill}</a:ln></c:spPr>` +
-        '</c:majorGridlines><c:majorTickMark val="none"/>' +
-        '<c:spPr><a:ln><a:noFill/></a:ln></c:spPr><c:crossAx val="10"/>' +
-        '<c:crosses val="autoZero"/><c:crossBetween val="between"/></c:valAx>'
-    );
+    expect(chart.axes).toEqual([
+      {
+        kind: 'category',
+        scaling: { orientation: 'ascending' },
+        delete: false,
+        position: 'left',
+        majorTickMark: 'none',
+        minorTickMark: 'none',
+        tickLabelPosition: 'nextTo',
+        shapeProperties: {
+          outline: { width: 9525, type: 'solidFill', color: tintColor },
+        },
+        crosses: 'zero',
+        auto: true,
+        labelOffset: 100,
+        noMultiLevelLabel: false,
+      },
+      {
+        kind: 'value',
+        scaling: { orientation: 'ascending', max: 10, min: 0 },
+        delete: false,
+        position: 'bottom',
+        majorGridlines: {
+          shapeProperties: {
+            outline: { width: 9525, type: 'solidFill', color: tintColor },
+          },
+        },
+        numberFormat: { formatCode: '#,##0', sourceLinked: false },
+        majorTickMark: 'none',
+        shapeProperties: { outline: { type: 'noFill' } },
+        crosses: 'zero',
+        crossBetween: 'between',
+        majorUnit: 5,
+      },
+    ]);
   });
 
   it('never gives a category axis a crossBetween, which CT_CatAx lacks', () => {
-    const xml = spliceChartXml(
-      bar,
-      input('bar', { categoryAxis: { crossBetween: 'between' } })
+    const { chart } = chartLook(
+      input('bar', { categoryAxis: { crossBetween: 'midCat' } })
     );
-    expect(xml).not.toContain('crossBetween');
+    expect(chart.axes?.[0]).not.toHaveProperty('crossBetween');
   });
 
-  it('puts bar gaps after the series and before the axis ids', () => {
-    const xml = spliceChartXml(
-      bar,
+  it('refuses a vocabulary word it has no backend spelling for', () => {
+    expect(() => chartLook(input('bar', { legendPosition: 'middle' }))).toThrow(
+      /legend position "middle"/
+    );
+  });
+
+  it('asks for bar gaps and borderless bars', () => {
+    const { chart, series } = chartLook(
       input('bar', { gapWidth: 182, overlap: 0, dataBorder: 'none' })
     );
-    expect(xml).toContain(
-      '</c:ser><c:gapWidth val="182"/><c:overlap val="0"/><c:axId val="10"/>'
-    );
-    expect(xml).toContain(
-      '<c:spPr><a:solidFill><a:srgbClr val="112233"/></a:solidFill>' +
-        '<a:ln><a:noFill/></a:ln></c:spPr>'
-    );
+    expect(chart).toMatchObject({ gapWidth: 182, overlap: 0 });
+    expect(series[0].shapeProperties).toEqual({
+      fill: { type: 'solid', color: { value: '112233' } },
+      outline: { type: 'noFill' },
+    });
   });
 
-  it('leaves the stacked overlap to the gaps already written', () => {
-    const xml = spliceChartXml(
-      bar,
-      input('bar', { overlap: -27, barGrouping: 'stacked' })
-    );
-    expect(xml.match(/<c:overlap /g)).toHaveLength(1);
-    expect(xml).toContain('<c:overlap val="-27"/>');
+  it('overlaps a stack fully unless an overlap was authored', () => {
+    expect(
+      chartLook(input('bar', { overlap: -27, barGrouping: 'stacked' })).chart
+    ).toMatchObject({ grouping: 'stacked', overlap: -27 });
+    expect(
+      chartLook(input('bar', { barGrouping: 'percentStacked' })).chart
+    ).toMatchObject({ grouping: 'percentStacked', overlap: 100 });
+    // A stacked area has no overlap to state.
+    expect(
+      chartLook(input('area', { barGrouping: 'stacked' })).chart
+    ).not.toHaveProperty('overlap');
   });
 
   it("gives a doughnut's slices borders in a theme colour, its first angle and its hole", () => {
-    const doughnut = part(
-      `<c:doughnutChart><c:varyColors val="1"/>${series(categories)}` +
-        `</c:doughnutChart>`,
-      false
-    );
-    const xml = spliceChartXml(
-      doughnut,
+    const { chart, series } = chartLook(
       input('doughnut', {
+        colors: ['112233', '445566'],
         dataBorder: { widthPoints: 1.5, color: { scheme: 'lt1' } },
         firstSliceAngle: 0,
         holeSize: 50,
       })
     );
-    expect(xml).toContain(
-      '<c:dPt><c:idx val="0"/><c:bubble3D val="0"/><c:spPr><a:solidFill>' +
-        '<a:srgbClr val="112233"/></a:solidFill><a:ln w="19050"><a:solidFill>' +
-        '<a:schemeClr val="lt1"/></a:solidFill></a:ln></c:spPr></c:dPt>'
+    expect(chart).toMatchObject({
+      varyColors: true,
+      firstSliceAngle: 0,
+      holeSize: 50,
+    });
+    expect(chart).not.toHaveProperty('axes');
+    expect(series[0].dataPoints).toEqual(
+      ['112233', '445566'].map((hex, index) => ({
+        index,
+        bubble3D: false,
+        shapeProperties: {
+          fill: { type: 'solid', color: { value: hex } },
+          outline: {
+            width: 19050,
+            type: 'solidFill',
+            color: { value: 'lt1' },
+          },
+        },
+      }))
     );
-    expect(xml).toContain(
-      '</c:ser><c:firstSliceAng val="0"/><c:holeSize val="50"/>' +
-        '</c:doughnutChart>'
-    );
+    expect(series[0]).not.toHaveProperty('shapeProperties');
   });
 
   it('strokes a line series with a cap and join, and outlines its markers', () => {
-    const line = part(
-      `<c:lineChart><c:grouping val="standard"/>` +
-        series(
-          `<c:marker><c:symbol val="circle"/><c:size val="5"/></c:marker>${categories}`
-        ) +
-        `<c:axId val="10"/><c:axId val="20"/></c:lineChart>`
-    );
-    const xml = spliceChartXml(
-      line,
+    const { chart, series } = chartLook(
       input('line', {
         lineWidthPoints: 2.25,
         lineCap: 'rnd',
@@ -340,43 +365,87 @@ describe('plot look', () => {
         lineMarkers: true,
       })
     );
-    const fill = '<a:solidFill><a:srgbClr val="112233"/></a:solidFill>';
-    expect(xml).toContain(
-      `<c:spPr><a:ln w="28575" cap="rnd">${fill}<a:round/></a:ln></c:spPr>` +
-        `<c:marker><c:symbol val="circle"/><c:size val="5"/>` +
-        `<c:spPr>${fill}<a:ln w="9525">${fill}</a:ln></c:spPr></c:marker>`
+    const color = { value: '112233' };
+    expect(series[0].shapeProperties).toEqual({
+      outline: {
+        width: 28575,
+        cap: 'round',
+        type: 'solidFill',
+        color,
+        join: 'round',
+      },
+    });
+    expect(series[0].marker).toEqual({
+      shapeProperties: {
+        fill: { type: 'solid', color },
+        outline: { width: 9525, type: 'solidFill', color },
+      },
+    });
+    expect(chart.markers).toBe(true);
+    // The series' own symbol and size survive the colour.
+    expect(
+      withSeriesLook(
+        { name: 'S', values: [1], marker: { symbol: 'circle', size: 5 } },
+        series[0]
+      ).marker
+    ).toEqual({ symbol: 'circle', size: 5, ...series[0].marker });
+  });
+
+  it('styles the labels a series has, and adds none to one without', () => {
+    const { series } = chartLook(
+      input('bar', { dataLabelFont: { fontSize: 9 } })
     );
-    expect(xml).toContain('</c:ser><c:marker val="1"/><c:axId val="10"/>');
+    const labelled = withSeriesLook(
+      { name: 'S', values: [1], dataLabels: { showVal: true } },
+      series[0]
+    );
+    expect(labelled.dataLabels).toMatchObject({
+      showVal: true,
+      textProperties: {
+        paragraphs: [{ properties: { defaultRunProperties: { size: 9 } } }],
+      },
+    });
+    const bare = withSeriesLook({ name: 'S', values: [1] }, series[0]);
+    expect(bare).not.toHaveProperty('dataLabels');
+  });
+
+  it('names the cells behind every cached value, and none for an empty series', () => {
+    const { chart, series } = chartLook(
+      input('bar', {
+        series: [
+          { name: 'A', labels: ['a', 'b', 'c'], values: [1, 2, 3] },
+          { name: 'B', labels: ['a', 'b', 'c'], values: [4, 5] },
+          { name: 'C', labels: ['a', 'b', 'c'], values: [] },
+        ],
+      })
+    );
+    expect(chart.categoryFormula).toBe('Sheet1!$A$2:$A$4');
+    expect(series.map((s) => [s.nameFormula, s.valueFormula])).toEqual([
+      ['Sheet1!$B$1', 'Sheet1!$B$2:$B$4'],
+      // A short series claims only the cells it has.
+      ['Sheet1!$C$1', 'Sheet1!$C$2:$C$3'],
+      [undefined, undefined],
+    ]);
   });
 
   it("writes a scatter chart's x values as numbers, and its workbook's column A", () => {
-    const scatter = part(
-      `<c:scatterChart><c:scatterStyle val="line"/>` +
-        series(
-          `<c:xVal><c:strRef><c:f/><c:strCache><c:ptCount val="2"/>` +
-            `<c:pt idx="0"><c:v>1</c:v></c:pt><c:pt idx="1"><c:v>2.5</c:v></c:pt>` +
-            `</c:strCache></c:strRef></c:xVal><c:yVal><c:numRef><c:f/>` +
-            `<c:numCache><c:formatCode>General</c:formatCode><c:ptCount val="2"/>` +
-            `<c:pt idx="0"><c:v>1</c:v></c:pt><c:pt idx="1"><c:v>2</c:v></c:pt>` +
-            `</c:numCache></c:numRef></c:yVal>`
-        ) +
-        `<c:axId val="10"/><c:axId val="20"/></c:scatterChart>`
-    );
     const series1 = [{ name: 'S', labels: ['1', '2.5'], values: [1, 2] }];
-    const xml = spliceChartXml(scatter, {
+    const scatter: ChartPartInput = {
       chartType: 'scatter',
       colors: [],
       series: series1,
       scatterStyle: 'lineMarker',
       scatterXValues: [1, 2.5],
+    };
+    const { chart } = chartLook(scatter);
+    expect(chart).toMatchObject({
+      numericCategories: true,
+      categories: ['1', '2.5'],
+      categoryFormula: 'Sheet1!$A$2:$A$3',
+      categoryFormatCode: 'General',
     });
-    expect(xml).toContain('<c:scatterStyle val="lineMarker"/>');
-    expect(xml).toContain(
-      '<c:xVal><c:numRef><c:f>Sheet1!$A$2:$A$3</c:f><c:numCache>' +
-        '<c:formatCode>General</c:formatCode><c:ptCount val="2"/>' +
-        '<c:pt idx="0"><c:v>1</c:v></c:pt><c:pt idx="1"><c:v>2.5</c:v></c:pt>' +
-        '</c:numCache></c:numRef></c:xVal>'
-    );
+    // Both axes are value axes, X first.
+    expect(chart.axes?.map((axis) => axis.kind)).toEqual(['value', 'value']);
 
     const sheet = (options?: { categoryValues: number[] }) =>
       chartWorkbookParts(series1, options).find(
@@ -388,28 +457,62 @@ describe('plot look', () => {
     expect(sheet()).toContain(
       '<c r="A3" t="inlineStr"><is><t>2.5</t></is></c>'
     );
+    // And the part caches those numbers, which is what it is matched by.
+    expect(chartInputSignature(scatter)).toBe(
+      ['S', '1', '2.5', '1', '2'].join('\u0001')
+    );
   });
 
   it('keeps an untitled chart untitled, and states an unfilled plot area', () => {
-    const xml = spliceChartXml(
-      part(
-        `<c:barChart><c:barDir val="col"/>${series(categories)}` +
-          `<c:axId val="10"/><c:axId val="20"/></c:barChart>`,
-        true,
-        false
-      ),
+    const { chart } = chartLook(
       input('column', { autoTitleDeleted: true, plotAreaUnfilled: true })
     );
-    expect(xml).toContain('<c:chart><c:autoTitleDeleted val="1"/>');
-    expect(xml).toContain(
-      '</c:valAx><c:spPr><a:noFill/><a:ln><a:noFill/></a:ln></c:spPr>' +
-        '</c:plotArea>'
+    expect(chart.autoTitleDeleted).toBe(true);
+    expect(chart).not.toHaveProperty('title');
+    expect(chart.plotAreaShapeProperties).toEqual({
+      fill: { type: 'none' },
+      outline: { type: 'noFill' },
+    });
+  });
+});
+
+/**
+ * The one thing no option carries. A splice that cannot find what it edits
+ * fails the render: a changed spelling upstream must not turn it into a
+ * silent no-op.
+ */
+describe('finishing a chart part', () => {
+  const scatter: ChartPartInput = {
+    chartType: 'scatter',
+    colors: [],
+    series: [],
+    scatterStyle: 'lineMarker',
+  };
+  const part = (style: string) =>
+    `<c:chartSpace><c:scatterChart><c:scatterStyle val="${style}"/>` +
+    `</c:scatterChart></c:chartSpace>`;
+
+  it("sets a scatter chart's style over the backend's literal", () => {
+    expect(finishChartXml(part('line'), scatter)).toBe(part('lineMarker'));
+  });
+
+  it('leaves a style already written alone', () => {
+    expect(finishChartXml(part('lineMarker'), scatter)).toBe(
+      part('lineMarker')
     );
-    // Once is enough: a second pass finds the plot area's own spPr.
-    const again = spliceChartXml(
-      xml,
-      input('column', { plotAreaUnfilled: true })
-    );
-    expect(again.match(/<\/c:valAx><c:spPr>/g)).toHaveLength(1);
+  });
+
+  it('fails rather than miss the literal it replaces', () => {
+    expect(() =>
+      finishChartXml('<c:chartSpace><c:scatterChart/></c:chartSpace>', scatter)
+    ).toThrow(/scatterStyle/);
+  });
+
+  it('touches nothing else', () => {
+    const bar = '<c:chartSpace><c:barChart/></c:chartSpace>';
+    expect(finishChartXml(bar, { ...scatter, chartType: 'bar' })).toBe(bar);
+    expect(
+      finishChartXml(part('line'), { ...scatter, scatterStyle: undefined })
+    ).toBe(part('line'));
   });
 });
