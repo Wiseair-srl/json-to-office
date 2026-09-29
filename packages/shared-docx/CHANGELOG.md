@@ -1,5 +1,80 @@
 # @json-to-office/shared-docx
 
+## 7.3.0
+
+### Minor Changes
+
+- 05da692: Bump the `docx` rendering backend from 9.7.1 to 9.8.1. The pin stays exact in
+  `pnpm.overrides` and in every peer/dependency declaration, so consumers of
+  `@json-to-office/json-to-docx` install `docx@9.8.1`.
+
+  Package-level consequences, verified part by part against the full corpus, the
+  gallery templates and the examples (the `office-open` backend is unchanged):
+
+  - Every document carries docx's stock `word/theme/theme1.xml`, and a document
+    with no comments no longer carries an empty `word/comments.xml`.
+    Relationship ids shift around both.
+  - `styles.xml` no longer repeats docx's own `Title` and `Heading1`–`6` ahead of
+    the theme's under the same ids, and `Normal` is marked as the default
+    paragraph style.
+  - Schema fixes upstream: `w:tentative` and the level `w:pStyle` position in
+    numbering, percentage table widths in fiftieths, `w:shd w:val="clear"`,
+    `w:tblOverlap` outside `w:tblpPr`, `off` for a false row flag, and a tight
+    wrap that keeps its side and its wrap polygon.
+  - Drawing ids (`wp:docPr`) are unique across the whole package, headers and
+    footers included, and the same on every build.
+
+  The last step, 9.8.1, adds math under `docx/math`, which nothing here uses,
+  and drops the `WORKAROUND2`–`4` exports, which nothing here imported: every
+  package is byte-identical to what 9.8.0 writes.
+
+  docx now depends on nanoid 6, whose `engines` field reads Node
+  `^22 || ^24 || >=26`: on Node 23 or 25 the install prints an engines warning.
+  LibreOffice renders every gallery template unchanged; the two contract examples'
+  signature tables sit 1pt higher.
+
+- 866b3bb: The default `docxjs` renderer draws a natively rendered `visual`
+  (`renderMode: "native"`): the canvas becomes one Word drawing group of real
+  shapes, text boxes and pictures, as it already did on `office-open`. A native
+  visual no longer needs `"renderer": "office-open"`, and the schema offers both
+  visual shapes under either renderer.
+
+  It uses `docx/shapes`, which docx 9.8.0 added and the exact pin already
+  guarantees. The entry is imported only when a document holds a native visual,
+  so every other document renders exactly as before and loads nothing more.
+
+  Where docx.js writes something that cannot be stated through its options, the
+  package is repaired after packing: group-child ids are deterministic, rotations
+  are whole units, a group without alt text carries no description, and a text
+  box keeps Word's text-box flag. A child placed past its canvas grows the
+  drawing's frame rather than spilling outside it, and a line width or text inset
+  past Word's 1584pt maximum is clamped rather than refused.
+
+- 73bf6ea: The docx `chart` component draws on the default docx.js renderer (docx 9.8
+  `ChartRun`), with an embedded workbook and the theme's palette and fonts;
+  `renderer: "office-open"` is no longer needed. Both renderers now refuse a
+  multi-series pie, negative pie/doughnut values, empty series, non-numeric
+  values and a chart with no room, and warn on scatter labels that are not
+  numbers and on axis titles for pies. Embedded workbooks in a .docx are
+  normalized for byte-identical output.
+
+  `office-open` charts now draw in the same Word Insert Chart look as docx.js:
+  light gridlines and axis lines in a tint of the theme's Text 1, no tick marks,
+  Word's bar gaps, straight 2.25pt lines with round markers, slice borders in
+  Background 1 and a doughnut with a hole. This also fixes four office-open
+  defects: line charts drawn as curves, a doughnut with no hole, scatter x values
+  plotted at 1, 2, 3… (they are now numbers, in the chart and its workbook), and
+  an untitled chart given a title from its series' name. The shared chart splice
+  takes the matching opt-in edits (axis position, ticks and line, theme-colour
+  gridlines, bar gaps, pie angle, hole size, marker outline, numeric scatter x),
+  which pptx does not use, so pptx output does not change.
+
+### Patch Changes
+
+- Updated dependencies [73bf6ea]
+- Updated dependencies [9c3724d]
+  - @json-to-office/shared@7.3.0
+
 ## 7.2.0
 
 ### Minor Changes

@@ -1,5 +1,59 @@
 # @json-to-office/shared
 
+## 7.3.0
+
+### Minor Changes
+
+- 73bf6ea: The docx `chart` component draws on the default docx.js renderer (docx 9.8
+  `ChartRun`), with an embedded workbook and the theme's palette and fonts;
+  `renderer: "office-open"` is no longer needed. Both renderers now refuse a
+  multi-series pie, negative pie/doughnut values, empty series, non-numeric
+  values and a chart with no room, and warn on scatter labels that are not
+  numbers and on axis titles for pies. Embedded workbooks in a .docx are
+  normalized for byte-identical output.
+
+  `office-open` charts now draw in the same Word Insert Chart look as docx.js:
+  light gridlines and axis lines in a tint of the theme's Text 1, no tick marks,
+  Word's bar gaps, straight 2.25pt lines with round markers, slice borders in
+  Background 1 and a doughnut with a hole. This also fixes four office-open
+  defects: line charts drawn as curves, a doughnut with no hole, scatter x values
+  plotted at 1, 2, 3… (they are now numbers, in the chart and its workbook), and
+  an untitled chart given a title from its series' name. The shared chart splice
+  takes the matching opt-in edits (axis position, ticks and line, theme-colour
+  gridlines, bar gaps, pie angle, hole size, marker outline, numeric scatter x),
+  which pptx does not use, so pptx output does not change.
+
+- 9c3724d: The `office-open` renderers now run on `@office-open/docx` and
+  `@office-open/pptx` 0.14.6 (from 0.11.0), pinned exactly. 0.14 renamed most of
+  the option vocabulary; both adapters are migrated and typed against the
+  backends' own option types, so a renamed option fails the build instead of
+  dropping content.
+
+  What changes in the files:
+
+  - A native chart in a Word header or footer now opens in Word and draws in
+    LibreOffice; with 0.11 the header pointed at no chart part (#485).
+  - On `office-open` pptx, a shape's outline takes its authored colour (it was
+    dropped), and struck-through text is written as `sngStrike` (the invalid
+    `single` made PowerPoint hang).
+  - An image a .docx draws at several sizes is one media part, not a marked
+    copy per size.
+  - Everything else moves only in spelling: `off` for a false on/off value, no
+    empty `docProps/custom.xml`, part, relationship and namespace order, chart
+    booleans written `val="1"`, Office's own defaults no longer repeated in pptx
+    masters, slides and view properties. Pages draw as before in Word,
+    PowerPoint and LibreOffice. `docxjs` and `pptxgenjs` output does not change.
+
+  Charts are now built from options (`chartLook` in
+  `@json-to-office/shared/rendering`, replacing `spliceChartXml`) rather than
+  spliced into the emitted part, and on docx the backend embeds the chart
+  workbook itself.
+
+  Each `office-open` renderer refuses to load when another `@office-open`
+  version is installed, with an error named `RendererBackendVersionError` that
+  names both versions: the options are data, and a different version can drop
+  content without an error.
+
 ## 7.0.1
 
 ### Patch Changes

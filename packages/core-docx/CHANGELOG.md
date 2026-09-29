@@ -1,5 +1,132 @@
 # @json-to-office/core-docx
 
+## 7.3.0
+
+### Minor Changes
+
+- 05da692: Bump the `docx` rendering backend from 9.7.1 to 9.8.1. The pin stays exact in
+  `pnpm.overrides` and in every peer/dependency declaration, so consumers of
+  `@json-to-office/json-to-docx` install `docx@9.8.1`.
+
+  Package-level consequences, verified part by part against the full corpus, the
+  gallery templates and the examples (the `office-open` backend is unchanged):
+
+  - Every document carries docx's stock `word/theme/theme1.xml`, and a document
+    with no comments no longer carries an empty `word/comments.xml`.
+    Relationship ids shift around both.
+  - `styles.xml` no longer repeats docx's own `Title` and `Heading1`–`6` ahead of
+    the theme's under the same ids, and `Normal` is marked as the default
+    paragraph style.
+  - Schema fixes upstream: `w:tentative` and the level `w:pStyle` position in
+    numbering, percentage table widths in fiftieths, `w:shd w:val="clear"`,
+    `w:tblOverlap` outside `w:tblpPr`, `off` for a false row flag, and a tight
+    wrap that keeps its side and its wrap polygon.
+  - Drawing ids (`wp:docPr`) are unique across the whole package, headers and
+    footers included, and the same on every build.
+
+  The last step, 9.8.1, adds math under `docx/math`, which nothing here uses,
+  and drops the `WORKAROUND2`–`4` exports, which nothing here imported: every
+  package is byte-identical to what 9.8.0 writes.
+
+  docx now depends on nanoid 6, whose `engines` field reads Node
+  `^22 || ^24 || >=26`: on Node 23 or 25 the install prints an engines warning.
+  LibreOffice renders every gallery template unchanged; the two contract examples'
+  signature tables sit 1pt higher.
+
+- 866b3bb: The default `docxjs` renderer draws a natively rendered `visual`
+  (`renderMode: "native"`): the canvas becomes one Word drawing group of real
+  shapes, text boxes and pictures, as it already did on `office-open`. A native
+  visual no longer needs `"renderer": "office-open"`, and the schema offers both
+  visual shapes under either renderer.
+
+  It uses `docx/shapes`, which docx 9.8.0 added and the exact pin already
+  guarantees. The entry is imported only when a document holds a native visual,
+  so every other document renders exactly as before and loads nothing more.
+
+  Where docx.js writes something that cannot be stated through its options, the
+  package is repaired after packing: group-child ids are deterministic, rotations
+  are whole units, a group without alt text carries no description, and a text
+  box keeps Word's text-box flag. A child placed past its canvas grows the
+  drawing's frame rather than spilling outside it, and a line width or text inset
+  past Word's 1584pt maximum is clamped rather than refused.
+
+- 85c1886: `theme1.xml` now carries the jto theme's name, ten scheme colours and
+  heading/body fonts on both renderers, so the Theme Colors row of Word's colour
+  menus and (Headings) and (Body) in its font menu offer the document's palette
+  and fonts. Word does not list the scheme by name: its Design > Colors and
+  Design > Fonts galleries hold only Office's built-in schemes and any saved on
+  the machine. Pages do not change, except a native chart's lines: on both
+  renderers, as in Word's own charts, its gridlines and axis lines take a tint of
+  Text 1 and a pie or doughnut's slice borders take Background 1.
+- 73bf6ea: The docx `chart` component draws on the default docx.js renderer (docx 9.8
+  `ChartRun`), with an embedded workbook and the theme's palette and fonts;
+  `renderer: "office-open"` is no longer needed. Both renderers now refuse a
+  multi-series pie, negative pie/doughnut values, empty series, non-numeric
+  values and a chart with no room, and warn on scatter labels that are not
+  numbers and on axis titles for pies. Embedded workbooks in a .docx are
+  normalized for byte-identical output.
+
+  `office-open` charts now draw in the same Word Insert Chart look as docx.js:
+  light gridlines and axis lines in a tint of the theme's Text 1, no tick marks,
+  Word's bar gaps, straight 2.25pt lines with round markers, slice borders in
+  Background 1 and a doughnut with a hole. This also fixes four office-open
+  defects: line charts drawn as curves, a doughnut with no hole, scatter x values
+  plotted at 1, 2, 3… (they are now numbers, in the chart and its workbook), and
+  an untitled chart given a title from its series' name. The shared chart splice
+  takes the matching opt-in edits (axis position, ticks and line, theme-colour
+  gridlines, bar gaps, pie angle, hole size, marker outline, numeric scatter x),
+  which pptx does not use, so pptx output does not change.
+
+- 9c3724d: The `office-open` renderers now run on `@office-open/docx` and
+  `@office-open/pptx` 0.14.6 (from 0.11.0), pinned exactly. 0.14 renamed most of
+  the option vocabulary; both adapters are migrated and typed against the
+  backends' own option types, so a renamed option fails the build instead of
+  dropping content.
+
+  What changes in the files:
+
+  - A native chart in a Word header or footer now opens in Word and draws in
+    LibreOffice; with 0.11 the header pointed at no chart part (#485).
+  - On `office-open` pptx, a shape's outline takes its authored colour (it was
+    dropped), and struck-through text is written as `sngStrike` (the invalid
+    `single` made PowerPoint hang).
+  - An image a .docx draws at several sizes is one media part, not a marked
+    copy per size.
+  - Everything else moves only in spelling: `off` for a false on/off value, no
+    empty `docProps/custom.xml`, part, relationship and namespace order, chart
+    booleans written `val="1"`, Office's own defaults no longer repeated in pptx
+    masters, slides and view properties. Pages draw as before in Word,
+    PowerPoint and LibreOffice. `docxjs` and `pptxgenjs` output does not change.
+
+  Charts are now built from options (`chartLook` in
+  `@json-to-office/shared/rendering`, replacing `spliceChartXml`) rather than
+  spliced into the emitted part, and on docx the backend embeds the chart
+  workbook itself.
+
+  Each `office-open` renderer refuses to load when another `@office-open`
+  version is installed, with an error named `RendererBackendVersionError` that
+  names both versions: the options are data, and a different version can drop
+  content without an error.
+
+- b5d8a14: A `text-box` rendered as a shape draws both a fill and a border when it is given
+  both. On docx 9.7.1 the two came out in an order Word rejects, so the border
+  was dropped with a warning; docx 9.8.0 writes them in schema order, and the
+  warning is gone.
+
+### Patch Changes
+
+- 36920ba: A hyperlink after an image in the same part no longer ships a dangling
+  relationship id, which Word reports as a damaged file. Package finalization now
+  renames relationship ids by attribute, so the empty attributes docx.js writes
+  on every drawing can no longer put a reference and its relationship out of
+  step.
+- Updated dependencies [05da692]
+- Updated dependencies [866b3bb]
+- Updated dependencies [73bf6ea]
+- Updated dependencies [9c3724d]
+  - @json-to-office/shared-docx@7.3.0
+  - @json-to-office/shared@7.3.0
+
 ## 7.2.0
 
 ### Minor Changes
