@@ -370,6 +370,39 @@ describe('native charts on both DOCX renderers', () => {
     expect(CASES.map((c) => c.name)).toHaveLength(13);
   });
 
+  it.each(['docxjs', 'office-open'] as const)(
+    'rejects an out-of-range scatter label on %s',
+    async (renderer) => {
+      const document = {
+        name: 'docx',
+        children: [
+          {
+            name: 'section',
+            children: [
+              {
+                name: 'chart',
+                props: {
+                  type: 'scatter',
+                  data: [
+                    {
+                      name: 'Series',
+                      labels: ['1e999', '4'],
+                      values: [42, 43],
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      };
+
+      await expect(chartsOf(document, renderer)).rejects.toThrow(
+        /Chart series "Series" at sections\[0\]\.children\[0\] has an x label "1e999" outside the finite number range/
+      );
+    }
+  );
+
   it.each(CASES.map((c) => [c.name, c] as const))(
     'draws the same charts for %s',
     async (_name, testCase) => {

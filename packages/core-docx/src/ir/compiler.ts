@@ -124,7 +124,7 @@ import {
   type PlaceholderResolution,
 } from './inline';
 import type { DocxFeature } from './features';
-import { isNumericLabel } from './chartValues';
+import { isNumericLabel, isOutOfRangeNumericLabel } from './chartValues';
 import {
   DOCX_IR_SCHEMA_VERSION,
   type DocxIR,
@@ -4091,6 +4091,17 @@ function compileChart(
 
   // A scatter point's x is its label read as a number; a label that is not one
   // is placed at its position instead — see `chartValues.ts`.
+  if (props.type === 'scatter') {
+    for (const [index, entry] of series.entries()) {
+      const at = entry.labels.findIndex(isOutOfRangeNumericLabel);
+      if (at !== -1) {
+        throw new Error(
+          `Chart series "${entry.name ?? `series ${index}`}" at ${path} has an ` +
+            `x label ${JSON.stringify(entry.labels[at])} outside the finite number range.`
+        );
+      }
+    }
+  }
   if (
     props.type === 'scatter' &&
     series.some((entry) => entry.labels.some((label) => !isNumericLabel(label)))
@@ -4098,9 +4109,8 @@ function compileChart(
     warnOnce(
       ctx,
       'chart',
-      `Chart at ${path} is a scatter chart whose labels are not all numbers; ` +
-        "each label is its point's x, so these points are placed at 1, 2, 3… " +
-        'in order.'
+      `Chart at ${path} is a scatter chart whose labels are not all finite numbers; ` +
+        'labels that do not read as finite numbers use their 1-based positions for x.'
     );
   }
   if (
