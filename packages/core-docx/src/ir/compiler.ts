@@ -133,6 +133,7 @@ import {
   type DocxIrBorder,
   type DocxIrBorderStyle,
   type DocxIrBorders,
+  type DocxIrCellMargins,
   type DocxIrIndent,
   type DocxIrColor,
   type DocxIrComment,
@@ -4926,6 +4927,24 @@ interface RowRevision {
   date?: string;
 }
 
+/**
+ * The margins of a cell no layer pads: Word's Normal Table, stated.
+ *
+ * A body table takes the theme's `cellDefaults`, but a table in a header or
+ * footer is not resolved against `componentDefaults`, so its cells asked for no
+ * padding and wrote no `w:tcMar`, leaving them to the document's default table
+ * style. Until docx 9.9.0 the package defined none and Word used its own
+ * Normal Table, 108 twips left and right; 9.9.0 writes a `TableNormal` that
+ * says the same (dolanmiu/docx#3594). Stating the values keeps such a cell
+ * where it was whatever a package's default table style says.
+ */
+const NORMAL_TABLE_CELL_MARGINS: DocxIrCellMargins = {
+  topTwips: 0,
+  bottomTwips: 0,
+  leftTwips: 108,
+  rightTwips: 108,
+};
+
 function compileTableCell(
   cell: ResolvedCell<unknown, unknown>,
   columnTwips: number,
@@ -4936,15 +4955,16 @@ function compileTableCell(
   rowRevision?: RowRevision,
   markRevision?: DocxIrParagraphMarkRevision
 ): DocxIrTableCell {
-  const margins =
-    !cell.missing && cell.padding
+  const margins = cell.missing
+    ? undefined
+    : cell.padding
       ? {
           topTwips: pointsToTwips(cell.padding.top),
           bottomTwips: pointsToTwips(cell.padding.bottom),
           leftTwips: pointsToTwips(cell.padding.left),
           rightTwips: pointsToTwips(cell.padding.right),
         }
-      : undefined;
+      : NORMAL_TABLE_CELL_MARGINS;
   // What the cell holds is set against its column less its padding.
   const scope: ComponentScope = {
     ...partScope,

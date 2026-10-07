@@ -81,4 +81,57 @@ describe('header/footer paragraph spacing', () => {
     expect(footerXml).toMatch(/w:line="360"/);
     expect(footerXml).toMatch(/w:lineRule="exact"/);
   });
+
+  // A footer table is not resolved against the theme's componentDefaults, so
+  // no layer pads its cells. They state Word's Normal Table margins rather
+  // than leave them to the package's default table style, which docx 9.9.0
+  // started writing (dolanmiu/docx#3594).
+  it.each(['docxjs', 'office-open'] as const)(
+    'states the margins of an unpadded footer table cell (%s)',
+    async (renderer) => {
+      const buf = await generateBufferFromJson(
+        {
+          name: 'docx',
+          props: { theme: 'minimal' },
+          children: [
+            {
+              name: 'section',
+              props: {
+                footer: [
+                  {
+                    name: 'table',
+                    props: {
+                      columns: [
+                        { cells: [{ content: 'Left' }] },
+                        { cells: [{ content: 'Right' }] },
+                      ],
+                    },
+                  },
+                ],
+              },
+              children: [{ name: 'paragraph', props: { text: 'Body' } }],
+            },
+          ],
+        } as any,
+        { renderer }
+      );
+
+      const footerXml = await readParts(buf, /word\/footer\d+\.xml/);
+      const cells = [...footerXml.matchAll(/<w:tc>[\s\S]*?<\/w:tc>/g)];
+      expect(cells).toHaveLength(2);
+      for (const [cell] of cells) {
+        const margins = cell.match(/<w:tcMar>([\s\S]*?)<\/w:tcMar>/)?.[1];
+        expect(margins).toBeDefined();
+        for (const [side, width] of [
+          ['top', '0'],
+          ['left', '108'],
+          ['bottom', '0'],
+          ['right', '108'],
+        ])
+          expect(margins).toMatch(
+            new RegExp(`<w:${side} (?=[^>]*w:w="${width}")[^>]*/>`)
+          );
+      }
+    }
+  );
 });
