@@ -12,19 +12,31 @@
  * between blocks, never had the paragraph at all.
  *
  * Both backends now end the body with a one-point exact paragraph after a
- * final text frame. An earlier section needs none: its section properties
- * close it in a paragraph of their own.
+ * final text frame.
+ *
+ * An earlier section ending on a frame needs one too. docx 9.9.0 writes a
+ * section's properties into its last paragraph (dolanmiu/docx#3714), and in a
+ * framed one LibreOffice draws the frame at the top left of the page and moves
+ * every page after it: 101 paragraphs across five gallery templates. On
+ * docx.js every such section gets the one-point paragraph, which takes the
+ * bookmark end and the properties. `office-open` puts a closing bookmark end
+ * between the frame and the properties, so it needs the paragraph only where
+ * no bookmark closes.
  */
 
 import { describe, expect, it } from 'vitest';
 import { execFile } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import JSZip from 'jszip';
 import { generateBufferViaIr } from '../core/generateFromIr';
 import type { DocxRendererId } from '../renderers/types';
+import { CORPUS } from './fixtures/corpus';
+import { PNG_4X2 } from './fixtures/corpus-blocks';
 import {
   findLibreOffice,
   hasPdftotext,
@@ -140,14 +152,130 @@ describe.each(RENDERERS)('a body that ends on text frames (%s)', (renderer) => {
     );
   });
 
-  it('adds nothing to an earlier section, which its properties close', async () => {
+  it("keeps an earlier section's properties out of its last frame", async () => {
     const xml = await documentXml(
       await generate(report([backCover, closing]), renderer)
     );
-    expect(after(xml, 'Charlie')).not.toMatch(ONE_POINT_PARAGRAPH);
+    expect(framedSectionProperties(xml)).toBe(0);
     expect(after(xml, 'Closing section')).not.toMatch(ONE_POINT_PARAGRAPH);
+    // docx.js closes the section in a one-point paragraph holding the bookmark
+    // end and the properties; office-open in the paragraph after the bookmark
+    // end, as it closes any bookmarked section.
+    expect(after(xml, 'Charlie')).toMatch(
+      renderer === 'docxjs'
+        ? /^<w:p><w:pPr><w:spacing w:after="0" w:before="0" w:line="20" w:lineRule="exact"\/><w:sectPr>/
+        : /^<w:bookmarkEnd w:id="\d+"\/><w:p><w:pPr><w:sectPr>/
+    );
+  });
+
+  it('closes an unbookmarked run of frames in a one-point paragraph', async () => {
+    // Blocks outside any section are a layout section with no bookmark.
+    const xml = await documentXml(
+      await generate(
+        report([
+          frame('Alpha', 922, 1440),
+          frame('Charlie', 4046, 14500),
+          closing,
+        ]),
+        renderer
+      )
+    );
+    expect(framedSectionProperties(xml)).toBe(0);
+    expect(after(xml, 'Charlie')).toMatch(
+      /^<w:p><w:pPr><w:spacing w:after="0" w:before="0" w:line="20" w:lineRule="exact"\/><w:sectPr>/
+    );
   });
 });
+
+/** Paragraphs whose properties hold both a frame and section properties. */
+function framedSectionProperties(xml: string): number {
+  return [...xml.matchAll(/<w:pPr>([\s\S]*?)<\/w:pPr>/g)].filter(
+    ([, properties]) =>
+      properties.includes('<w:framePr') && properties.includes('<w:sectPr')
+  ).length;
+}
+
+const TEMPLATES_DIR = fileURLToPath(
+  new URL('../../../jto/src/client/public/templates/', import.meta.url)
+);
+
+/** A `highcharts` needs an export server, which no test here has: an image. */
+function chartsAsImages(node: unknown): unknown {
+  if (Array.isArray(node)) return node.map(chartsAsImages);
+  if (typeof node !== 'object' || node === null) return node;
+  if ((node as { name?: unknown }).name === 'highcharts')
+    return { name: 'image', props: { base64: PNG_4X2, width: 320 } };
+  return Object.fromEntries(
+    Object.entries(node).map(([key, value]) => [key, chartsAsImages(value)])
+  );
+}
+
+/**
+ * Gallery templates that end sections on frames, or on blocks next to them.
+ * `vermilion-annual-report` held 13 of the 101; the other four annual reports
+ * hold the rest and take half a minute each to generate, so they are checked
+ * with the release proof rather than on every run.
+ */
+const TEMPLATES = [
+  'client-report-blocks',
+  'technical-report-blocks',
+  'vermilion-annual-report',
+];
+
+describe.each(RENDERERS)(
+  'no section properties in a framed paragraph (%s)',
+  (renderer) => {
+    it.each(TEMPLATES)(
+      'in the %s template',
+      async (name) => {
+        const document = chartsAsImages(
+          JSON.parse(
+            readFileSync(join(TEMPLATES_DIR, `${name}.docx.json`), 'utf8')
+          )
+        );
+        const { buffer } = await generateBufferViaIr(document as never, {
+          renderer,
+          baseDir: TEMPLATES_DIR,
+          // A `visual` that falls back to a picture is rasterized by a service.
+          services: {
+            pptx: {
+              render: async () => ({
+                base64DataUri: PNG_4X2,
+                width: 4,
+                height: 2,
+              }),
+            },
+          },
+        });
+        expect(framedSectionProperties(await documentXml(buffer))).toBe(0);
+      },
+      120_000
+    );
+
+    it('in the corpus', async () => {
+      let checked = 0;
+      for (const testCase of CORPUS) {
+        let buffer: Buffer;
+        try {
+          buffer = await generate(testCase.document, renderer);
+        } catch (error) {
+          // office-open refuses, by name, what it cannot express.
+          if (
+            (error as { code?: string }).code === 'UNSUPPORTED_RENDERER_FEATURE'
+          )
+            continue;
+          throw error;
+        }
+        expect(
+          framedSectionProperties(await documentXml(buffer)),
+          testCase.name
+        ).toBe(0);
+        checked++;
+      }
+      expect(checked).toBeGreaterThan(250);
+    }, 600_000);
+  }
+);
 
 const soffice = await findLibreOffice();
 const pdftotext = await hasPdftotext();

@@ -189,9 +189,7 @@ export function buildDocument(
   return new Document({
     styles: emitStyles(ir.styles),
     ...(ir.theme ? { theme: themeOptions(ir.theme) } : {}),
-    sections: ir.sections.map((section, index) =>
-      sectionOptions(section, resources, index === ir.sections.length - 1)
-    ),
+    sections: ir.sections.map((section) => sectionOptions(section, resources)),
     ...coreProperties(ir),
     features: {
       updateFields: ir.settings.updateFields,
@@ -495,8 +493,7 @@ function collectImagePlacements(ir: DocxIR): {
 
 function sectionOptions(
   section: DocxIrSection,
-  resources: EmitResources,
-  closesDocument = false
+  resources: EmitResources
 ): ISectionOptions {
   const { page, columns } = section.properties;
   const options: Record<string, unknown> = {
@@ -553,7 +550,7 @@ function sectionOptions(
           }
         : {}),
     },
-    children: sectionChildren(section, resources, closesDocument),
+    children: sectionChildren(section, resources),
   };
 
   const headers = chromeSlots(section.headers, Header, resources);
@@ -607,22 +604,25 @@ function partChildren(
  * full line, and a section whose last page was already full pushed that line
  * onto an empty page carrying nothing but the running head.
  *
- * The document's last section gets that paragraph after a text frame too,
- * bookmark or not. When the body ends on consecutive framed paragraphs in a
- * section with its own header or footer, LibreOffice drops the frame of the
- * one before last and sets its text at the top of the page: the back cover of
- * the modern annual report lost its "Follow Us" label that way once the
- * bookmark end moved into the last frame. An earlier section never ends the
- * body, since its section properties close it in a paragraph of their own.
+ * A section that ends on a text frame gets that paragraph after it too,
+ * bookmark or not, and the bookmark end goes in it. When the body ends on
+ * consecutive framed paragraphs in a section with its own header or footer,
+ * LibreOffice drops the frame of the one before last and sets its text at the
+ * top of the page: the back cover of the modern annual report lost its
+ * "Follow Us" label that way once the bookmark end moved into the last frame.
+ * An earlier section needs it as much since docx 9.9.0, which writes a
+ * section's properties into its last paragraph (dolanmiu/docx#3714) rather
+ * than a paragraph of their own: in a framed one, LibreOffice draws the frame
+ * at the top left of the page and moves the pages after it. docx.js already
+ * adds a paragraph of its own after a table or a contents field.
  */
 function sectionChildren(
   section: DocxIrSection,
-  resources: EmitResources,
-  closesDocument = false
+  resources: EmitResources
 ): (Paragraph | Table | TableOfContents)[] {
   const blocks = section.children.map((block) => emitBlock(block, resources));
   const bookmark = section.bookmark;
-  const endsInFrame = closesDocument && lastBlockIsFrame(section);
+  const endsInFrame = lastBlockIsFrame(section);
   if (!bookmark && !endsInFrame) return blocks;
 
   const out: (Paragraph | Table | TableOfContents)[] = [...blocks];
