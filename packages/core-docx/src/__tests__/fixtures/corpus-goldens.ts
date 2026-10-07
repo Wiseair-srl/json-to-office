@@ -149,7 +149,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'structure/header-image':
     '307147977d280052d239ebcdb826ff71166a87d638101a7b35735bd52c65afac',
   'structure/footer-table':
-    'e3d569e5d1cb284c67ac2abf819edb3ef1bdc08321c4c3c6c043b2ed59efba92',
+    '4ab0dbe594ba492a9fdd739828b7a758067e8ab9896811d9ff3490ad32ec14ba',
   'structure/columns-count':
     '02481175f3eb3c6724c5fcc9c45394034a8610db53f9cf28255c511f4e1a5df4',
   'structure/columns-single':
