@@ -483,16 +483,17 @@ A native Word table of contents built from headings (and optionally custom style
 
 ### Cached entries
 
-The field is also written with its entries already filled in. Word refreshes it on open regardless, but readers that do not — headless LibreOffice, and therefore the PDF export path — would otherwise show nothing but the TOC title.
+The field is also written with its entries already filled in, so readers that never refresh fields — headless LibreOffice, and therefore the PDF export path — show the contents rather than nothing but the TOC title.
 
-The cached entries are collected before rendering: headings inside the `depth` range, plus paragraphs whose `themeStyle` this TOC maps through `styles`, restricted to the TOC's own section when it is section-scoped. Headings in headers and footers never appear (they render as nothing there), and disabled subtrees are pruned.
+On the default renderer (`docxjs`) the entries are the headings inside the `depth` range, plus paragraphs whose `themeStyle` this TOC maps through `styles`, restricted to the TOC's own section when it is section-scoped, each linked to its heading and followed by the page it starts on. The pages are laid out at generation time with `docx/layout`, which follows Word's rules and font metrics, so the numbers are Word's as near as that layout knows. A heading numbered with `numbering: true` keeps its number in the entry. Headings in headers and footers, and in shape-mode text boxes, never appear.
 
-Two things the cached copy deliberately does not have, and Word supplies on refresh:
+- **Laid out to the end**: the page numbers are written and Word opens the document without asking to update fields.
+- **Laid out with a guess** — a frame, a floating table, a font the layout has no measurements for, such as Helvetica: the numbers are written from the best guess, and Word still asks to update fields on open, which corrects them.
+- **Not laid out** — the layout failed: the entries are written without page numbers, Word asks to update fields, and generation reports `W_DOCX_PAGE_NUMBERS_UNAVAILABLE`.
 
-- **No page numbers.** Nothing in generation paginates, so any number would be invented.
-- **No entry hyperlinks.**
+Only a document with a TOC is laid out; nothing else pays for it. Every entry takes its level's `TOC{level}` style, a mapped style's entries included, as Word does on refresh.
 
-One divergence worth knowing: when a TOC declares `styles`, `docx` styles _every_ cached entry at a mapped level with that mapped style rather than `TOC{level}`. Word restores the `TOC{level}` styles the moment it refreshes the field.
+On the `office-open` renderer the entries are the cached copy jto collects before rendering, the same headings without page numbers or entry hyperlinks; Word supplies both on refresh. A TOC in a header or footer is written that way on both renderers.
 
 ## `columns`
 

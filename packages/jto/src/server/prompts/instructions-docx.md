@@ -28,7 +28,7 @@ A DOCX document is an array of component objects. Use `Report` as the root conta
 - **TextBox** — bordered/shaded text block. Props: `text`, `background`, `border`
 - **Header** — page header. Props: `text`, `alignment`
 - **Footer** — page footer. Props: `text`, `alignment`, `pageNumber`
-- **TableOfContents** — auto TOC. Props: `maxLevel`
+- **TableOfContents** — auto TOC, written with its entries and page numbers (laid out at generation on the default renderer). Props: `maxLevel`
 
 ## Design Patterns
 

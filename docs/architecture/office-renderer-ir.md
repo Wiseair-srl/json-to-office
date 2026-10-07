@@ -531,7 +531,9 @@ rather than losing content:
 until docx 9.8.0 added `docx/shapes` and `docx/charts`. The adapter maps both
 and imports each entry at render time rather than with the package, so a
 consumer on an older docx still loads jto and gets a named error only from a
-document that needs one (#478).
+document that needs one (#478). docx 9.9.0's `docx/layout` is loaded the same
+way, by a document with a contents field, and a docx without it renders the
+field without page numbers and a warning rather than fail.
 
 ### Native charts
 
@@ -1078,6 +1080,10 @@ previous implementation finds what a feature checklist does not.
 | The default renderer draws a native `visual` (#478): four `drawings/*` corpus cases were added, recorded on docx.js, and no existing golden moved.                                                                                                                                                                                           | docx 9.8.0's `docx/shapes` gives docx.js a drawing group, so `drawing-groups` joined its capability set and `renderMode: "native"` no longer needs `"renderer": "office-open"`. `docx/shapes` is imported, and the post-pack repair (`drawingGroupRepair.ts`) runs, only when the IR holds a group, so no other package can change: a dump of every corpus case, gallery template and example moved 0 of 296 docx.js and 0 of 291 office-open packages, and `examples/native-visual.docx.json` now renders on docx.js too. The new cases keep every child inside its canvas, so the cross-backend comparison holds their text, counts and extents to office-open's.                                                                                                                                                                                                                                                              |
 | Every document's `word/theme/theme1.xml` carries its jto theme instead of Office's: the theme's name, ten scheme colours and heading/body fonts (every corpus golden moved, all 299 cases, `theme1.xml` only).                                                                                                                               | Word's colour menus (Theme Colors) and font menu offered Office's palette in a jto document: blue, orange and Calibri from `office-open`'s Office theme, and on `docxjs`, which wrote no theme part before 9.8.0, Word's own default (Aptos in current Word). The slots are the twin deck's (#258): dk1, lt1, dk2 and lt2 hold `text`, `background`, `textSecondary` and `backgroundSecondary`; accent1–6 hold `primary`, `secondary`, `accent` and `accent4`–`accent6`; the major and minor fonts are the heading and body families. hlink and folHlink keep Office's: jto has no link colour. Only a native chart draws from it, on both backends, as Word's own charts do, so no page moves but a chart's gridlines and axis lines, now a tint of the jto Text 1; the proof, and `office-open`'s unused styles naming it, follow below the table.                                                                             |
 | `@office-open/docx` 0.11.0 → 0.14.6: every `office-open` package moved (all 308), in seventeen classes of package change; `docxjs` and the goldens did not (one case added, `headings/toc-in-text-box`). A chart in a header or footer opens in Word and draws in LibreOffice (#485), and an image drawn at several sizes is one media part. | 0.14 renamed most of the option vocabulary, and the adapter hands the backend its options as data: on the raw bump 92 of the 308 documents failed to render and 216 lost lists, margins or chart colours with no error. The adapter is migrated and typed against the backend's option types, a chart's look is stated as options, and the workarounds 0.14 made redundant are gone: the chart splice (but for a scatter chart's style), the cell-TOC splice and the per-size image markers. Three 0.14 regressions are held off in the adapter, so they move nothing. The classes, the parts each touches and the proof follow the table.                                                                                                                                                                                                                                                                                       |
+| docx 9.8.1 → 9.9.0: every corpus golden moved (all 300 cases), in four classes of package change; `office-open` did not move.                                                                                                                                                                                                                | The release writes a default table style, puts a section's properties into its last paragraph, writes a cell's width from the grid and declares `wpc` on comments. The classes, the parts each touches, the proof that nothing else moved and the LibreOffice comparison follow the table.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| A section that ends on a text frame closes in a one-point exact paragraph on `docxjs`, every section rather than the document's last only, and on `office-open` wherever no bookmark closes between the frame and the section's properties (five gallery annual reports moved; no corpus case ends an earlier section on a frame).           | docx 9.9.0 writes a section's properties into its last paragraph (dolanmiu/docx#3714), and in a framed one LibreOffice draws the frame at the top left of the page and moves every page after it: 101 paragraphs across `modern-annual-report-2` and `-3`, `standard-annual-report`, `tech-report` and `vermilion-annual-report`. docx.js already gives a section ending on a table or a contents field a paragraph of its own; it reuses a paragraph. `office-open` puts the properties in a paragraph of their own after a closing bookmark, and into the frame otherwise.                                                                                                                                                                                                                                                                                                                                                     |
+| A table cell no layer pads states Word's Normal Table margins, 0 above and below and 108 twips either side, on both backends (`structure/footer-table` moved, 8 cells, `word/header1.xml` and `word/footer1.xml` only).                                                                                                                      | A table in a header or footer is not resolved against `componentDefaults`, so its cells asked for no padding and wrote no `w:tcMar`, which left them to the package's default table style. Until 9.9.0 there was none and Word used its own Normal Table; 9.9.0 writes a `TableNormal` saying the same (dolanmiu/docx#3594). Stated, the margins no longer depend on it. LibreOffice renders the case as before.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| A table of contents on `docxjs` carries the page each entry's heading starts on, laid out at render time with `docx/layout`, and a document laid out to the end without a guess no longer asks Word to update its fields (13 goldens moved: every corpus case with a contents field).                                                        | Page numbers were left for Word to fill on refresh, so LibreOffice, the PDF path and every other reader that does not refresh showed entries without them. docx 9.9.0 lays the pages out as Word does. What is filled, where the layout stops and the guard follow the table.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 
 | A `statistic` renders its `unit`, `size`, `trend` and `trendValue`, under two styles the document now defines. | All four props were declared, accepted by the schema and read by nothing: `{ "number": "99", "unit": "%" }` rendered `99`, and the shipped `docx-report` starter lost its percent sign with no diagnostic anywhere in the pipeline. The two paragraphs also named `StatisticNumber` and `StatisticDescription`, which no theme and no generator ever defined — an undefined `w:pStyle` resolves to Normal in silence, so the component purpose-built for KPIs set at body size and weight. The styles are appended only to documents that contain a statistic, so nothing else moved. `format` stays unimplemented and now warns (`W_STATISTIC_FORMAT_IGNORED`) rather than vanishing. |
 | A body paragraph or list item directly under a table gets 120 twips above it. | OOXML gives a table no space-after — the property does not exist — so the block below one drew hard against its bottom rule. A heading was already spaced by its own style and is left alone; only styles that contribute nothing of their own are topped up. |
@@ -1497,6 +1503,106 @@ revisions, comments, notes, images drawn at several sizes and the five annual
 reports, 175 pages — render pixel for pixel and text for text as before;
 `chart/in-header-and-footer`, which Word would not open, opens with its charts
 drawn, and so does `headings/toc-in-text-box`.
+
+Every `docxjs` package moved with docx 9.8.1 → 9.9.0, and the move was
+checked part by part: the 300 corpus cases and the eight gallery templates
+were dumped under 9.8.1 and under 9.9.0 with the frame rule above. On
+`office-open` nothing moved (293 corpus cases and the templates, which it
+writes without docx). Each difference falls in one of four classes, and
+normalising those leaves nothing; leaving out any one of them leaves residue.
+With the number of packages each touches:
+
+- `word/styles.xml` gains a `TableNormal` table style, `w:default`, with
+  `w:tblInd` 0 and `w:tblCellMar` 0 / 108 / 0 / 108 (300;
+  dolanmiu/docx#3594).
+- A section's `w:sectPr` is written into its last paragraph's `w:pPr` instead
+  of a bare paragraph after it: one paragraph fewer per section break (317
+  paragraphs in 88 packages; dolanmiu/docx#3714). docx.js keeps a paragraph of
+  its own after a table, a contents field or nothing.
+- A cell that states no width gets a `w:tcW` from the table's column widths
+  (453 cells in 74 packages: `document.xml` in 73, headers and footers in 8).
+- `word/comments.xml` declares `xmlns:wpc` (14, every commented package).
+
+On the templates the same four classes and the frame rule's one-point
+paragraphs (101, in five) leave nothing either. In LibreOffice 26.2 the 151
+corpus cases whose `document.xml` moved render as before, word box for word
+box within 0.5pt, but `blocks/report-chrome-consulting` and
+`blocks/report-chrome-fallback`, whose page-2 body sits 8pt lower. That
+page opens a section after a next-page break, on a paragraph with space
+before it (the section number's 600 twips); the page break now comes from the
+previous section's last paragraph rather than an empty one after it, and
+LibreOffice keeps 8pt more of that space at the top of the page. Nothing
+else on the page moves relative to it. The gallery templates, in the same way:
+`modern-annual-report-1`, `-2` and `-3`, `standard-annual-report`,
+`tech-report` and `vermilion-annual-report` render as before, 132 pages and
+15,168 words; `client-report-blocks` moves its page-2 body 7 to 8pt down in
+the same place, and `technical-report-blocks` its page-2 body 8pt down and
+its page-4 section 1pt up, where a continuous break's empty paragraph went.
+Without the frame rule the five annual reports lost frames and moved whole
+pages.
+
+A `docxjs` table of contents takes its page numbers from `docx/layout`
+(`renderers/docxjs/pageNumbers.ts`). Only a document with a contents field in
+its body loads the module, 1.7 MB, and is laid out; every other document is
+built as before. The adapter gives docx.js an estimator,
+`estimatePageNumbersWith({ guess: true })`, and stops handing it the IR's
+cached entries: docx.js fills each field from the headings itself, honouring
+`\o`, `\t`, `\b`, `\n` and `\p`, with a `_Toc` bookmark on each heading and
+a hyperlinked `PAGEREF` per entry, which is what the estimator fills; cached
+entries have no `PAGEREF` to fill. Around the estimator the adapter edits the
+body docx.js has formatted, before it is laid out and written:
+
+- The `_Toc` bookmarks are named and numbered per document, `_Toc1` with
+  `w:id` 3000001 on. docx.js takes both from a counter shared by the process,
+  so a second render had other names, and the first id it gave, 1, was the
+  first section's own bookmark's.
+- A heading numbered by its list gets its number back in front of its entry,
+  from the cached entry (`1.1. Purpose`, not `Purpose`), where the two line
+  up.
+- Entries lose the dot-leader tab docx.js pins on them, so they take their
+  `TOCn` style's, as the cached entries did; a tab separator is written as
+  `w:tab` rather than a tab character in `w:t`.
+- The field ends in its last entry, as the cached entries did, rather than in
+  a paragraph of its own that cost a line under every contents field. A field
+  with one entry or none keeps that paragraph, as the cached one had it.
+
+When the layout reaches the end of the document without guessing, the
+adapter takes `w:updateFields` out of the settings, so Word shows the numbers
+without asking; after a guess it stays on and Word corrects them. When the
+layout throws, the field is written with its entries and no numbers,
+`w:updateFields` stays on and the render warns
+`W_DOCX_PAGE_NUMBERS_UNAVAILABLE`. docx 9.9.0 throws on any document with an
+empty header or footer (`elements.filter is not a function`, in reading the
+part); `structure/section-empty` and `structure/header-footer-empty` with a
+contents field added are the tests (`renderers/docxjs/__tests__/page-numbers.test.ts`).
+A field in a header, footer, note or comment, which docx.js does not fill,
+keeps the cached entries without numbers. `office-open` is unchanged. A heading
+in a shape-mode `text-box` (`wps:txbx`) is no longer listed: docx.js lists
+none from a text box, as its source says Word does (not checked in Word here),
+where the cached entries listed one. No corpus case puts a heading in one.
+
+The 13 corpus cases with a contents field and `technical-report-blocks` moved
+in `document.xml`, `settings.xml` and, in the template, its five footers;
+normalising the `_Toc` bookmarks (64), the `PAGEREF` fields (99), the
+`w:updateFields` taken out (13), the cached `NUMPAGES` count (5 footers) and a
+`SEQ` result docx.js moves into the field's separate run (1) leaves the
+entries, which are the same, in the same order, in 26 of 28 fields. In
+`headings/toc-style-mapping` the entries a `\t` style mapping lists take their
+level's `TOCn` style, as Word does, where docx.js gave the cached ones the
+mapped style. Thirteen of the 14 documents are laid out without a guess;
+`technical-report-blocks` guesses at its cover ("a paragraph kept with the next
+before a table that text flows around") and keeps `w:updateFields`. In
+LibreOffice 26.2 all 14 have the pages they had, and every word is where it
+was, plus the numbers, but in `toc-style-mapping` (the restyled entries) and
+`theme/toc-entry-styles` (a leader shortened by its number). Of the 99
+numbered entries 96 name the page LibreOffice sets the heading on; the three
+others are one heading, `headings/toc-numbering-style-legacy`'s "Chapter
+Two", listed in three fields: the layout keeps it on page 1 and LibreOffice
+moves it to page 2. It is kept with the next paragraph and, with #3714, holds
+a continuous section's properties; what Word does there is for the Word check.
+The layout measures Calibri, Arial, Times, Cambria and Carlito from its width
+tables and guesses other faces, Helvetica and Consolas among them, as the
+nearest; feeding it the faces jto stages is not done.
 
 ## Post-emit rewrite inventory
 
