@@ -763,14 +763,42 @@ Object.defineProperty(ThemedTableOfContents.prototype, 'getTabStopsForLevel', {
   value: (): [] => [],
 });
 
+/** Whether contents fields are being written outside the body. */
+let outsideBody = false;
+
+/**
+ * Emits a header's or footer's blocks, whose contents fields keep the IR's
+ * cached entries: docx.js fills only the body's from the headings.
+ */
+export function emitOutsideBody<T>(emit: () => T): T {
+  const was = outsideBody;
+  outsideBody = true;
+  try {
+    return emit();
+  } finally {
+    outsideBody = was;
+  }
+}
+
 /**
  * The TOC field.
  *
  * A top-level block, not a paragraph child: wrapping it in a paragraph makes
  * Word draw an empty structured-document-tag above the entries.
+ *
+ * In the body the IR's cached entries are not handed over. Since 9.9.0
+ * docx.js fills the field from the headings once the body is written,
+ * honouring `\o`, `\t`, `\b`, `\n` and `\p`, with a `_Toc` bookmark on each
+ * heading and a `PAGEREF` per entry — which is what the page-number estimator
+ * fills (`pageNumbers.ts`). Cached entries carry no `PAGEREF`, so they would
+ * stay without numbers; the estimator's wrapper also takes off the tab stops
+ * docx.js gives each entry, so the entry takes its `TOCn` style's. A field in
+ * a header or footer, which docx.js does not fill, keeps the cached entries.
  */
 function emitToc(block: DocxIrTableOfContents): TableOfContents {
-  return new ThemedTableOfContents(block.alias ?? 'Table of Contents', {
+  const cached = outsideBody && block.cachedEntries?.length;
+  const Field = cached ? ThemedTableOfContents : TableOfContents;
+  return new Field(block.alias ?? 'Table of Contents', {
     ...(block.hyperlink !== undefined ? { hyperlink: block.hyperlink } : {}),
     ...(block.headingRange
       ? {
@@ -791,9 +819,9 @@ function emitToc(block: DocxIrTableOfContents): TableOfContents {
     ...(block.entrySeparator !== undefined
       ? { entryAndPageNumberSeparator: block.entrySeparator }
       : {}),
-    ...(block.cachedEntries?.length
+    ...(cached
       ? {
-          cachedEntries: block.cachedEntries.map((entry) => ({
+          cachedEntries: block.cachedEntries!.map((entry) => ({
             title: entry.text,
             level: entry.level,
           })),

@@ -1,7 +1,8 @@
 /**
  * A TOC field carries cached entries so readers that never refresh fields —
  * headless LibreOffice, and therefore our PDF path — show real content instead
- * of just the TOC title.
+ * of just the TOC title. On docxjs the entries are docx.js's own, filled from
+ * the headings, with the page each is on (docx 9.9.0).
  */
 import { describe, it, expect } from 'vitest';
 import JSZip from 'jszip';
@@ -23,11 +24,16 @@ async function documentXml(children: unknown[]): Promise<string> {
  * The field body: everything between the `separate` and `end` field chars.
  *
  * This is where a reader that does not refresh fields takes its content from,
- * so it is the region the entries have to land in.
+ * so it is the region the entries have to land in. Each entry holds a
+ * `PAGEREF` field of its own, so the TOC field's end is the last one in the
+ * contents block.
  */
 function cachedFieldBody(xml: string): string {
   const separate = xml.indexOf('<w:fldChar w:fldCharType="separate"/>');
-  const end = xml.indexOf('<w:fldChar w:fldCharType="end"/>', separate);
+  const end = xml.lastIndexOf(
+    '<w:fldChar w:fldCharType="end"/>',
+    xml.indexOf('</w:sdt>', separate)
+  );
   expect(separate, 'no separate field char').toBeGreaterThan(-1);
   expect(end, 'no end field char').toBeGreaterThan(separate);
   return xml.slice(separate, end);
@@ -135,11 +141,11 @@ describe('TOC cached entries', () => {
     expect(body).toContain('Callout heading');
     expect(body).not.toContain('Ordinary body text');
 
-    // docx picks a cached entry's paragraph style by looking up its *level* in
-    // stylesWithLevels, so once a TOC maps a style to level 2 every level-2
-    // entry takes that style name rather than TOC2. Word restores TOC2 on
-    // refresh; asserted here so the divergence is recorded, not discovered.
-    expect(tocBlock(xml)).toContain('<w:pStyle w:val="callout Title"/>');
+    // docx.js fills the field from the headings (docx 9.9.0) and gives every
+    // entry its level's TOCn style, as Word does on refresh: the cached
+    // entries took the mapped style's name instead.
+    expect(tocBlock(xml)).toContain('<w:pStyle w:val="TOC2"/>');
+    expect(tocBlock(xml)).not.toContain('<w:pStyle w:val="callout Title"/>');
   });
 
   it('matches a style mapping written as the Word display name', async () => {
@@ -214,14 +220,16 @@ describe('TOC cached entries', () => {
     expect(cachedFieldBody(xml)).not.toContain('No headings here.');
   });
 
-  it('omits page numbers — nothing in generation paginates', async () => {
+  it("writes each entry's page, as docx/layout works it out", async () => {
     const xml = await documentXml([
       toc,
       { name: 'heading', props: { text: 'Getting Started', level: 1 } },
     ]);
 
-    // A cached page number would be a fabricated one; Word fills real ones in.
-    expect(cachedFieldBody(xml)).not.toContain('PAGEREF');
+    // The page is laid out at render time (`renderers/docxjs/pageNumbers.ts`).
+    expect(cachedFieldBody(xml)).toMatch(
+      /PAGEREF _Toc1 \\h<\/w:instrText><w:fldChar w:fldCharType="separate"\/><w:t xml:space="preserve">1<\/w:t>/
+    );
   });
 });
 
