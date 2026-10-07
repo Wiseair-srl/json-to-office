@@ -1533,11 +1533,15 @@ function headerFooterSet(
  * content wraps, LibreOffice ran the section on to one more page, carrying
  * nothing (#468).
  *
- * And the document's last section ends in one after a text frame. When the
- * body ends on consecutive framed paragraphs in a section with its own header
- * or footer, LibreOffice drops the frame of the one before last and sets its
- * text at the top of the page. An earlier section never ends the body, since
- * its section properties close it in a paragraph of their own.
+ * And a section ends in one after a text frame wherever that frame would
+ * otherwise be its last paragraph. When the body ends on consecutive framed
+ * paragraphs in a section with its own header or footer, LibreOffice drops the
+ * frame of the one before last and sets its text at the top of the page. An
+ * earlier section's properties go into its last paragraph, and in a framed
+ * one LibreOffice draws the frame at the top left of the page and moves the
+ * pages after it. A closing bookmark spares an earlier section that: the
+ * backend gives the properties a paragraph of their own after the bookmark
+ * end.
  */
 function sectionChildren(
   value: DocxIrSection,
@@ -1549,7 +1553,9 @@ function sectionChildren(
   const bookmark = value.bookmark;
   if (
     (bookmark?.closes && last?.kind !== 'paragraph') ||
-    (closesDocument && last?.kind === 'paragraph' && last.frame !== undefined)
+    (last?.kind === 'paragraph' &&
+      last.frame !== undefined &&
+      (closesDocument || !bookmark?.closes))
   )
     blocks.push({
       paragraph: {
