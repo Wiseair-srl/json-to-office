@@ -339,6 +339,35 @@ function styleRuns(
   );
 }
 
+/**
+ * A body without what docx.js adds to a contents field it fills itself.
+ *
+ * Since docx 9.9.0 the default backend fills each contents field from the
+ * headings, with a `_Toc` bookmark on each heading it lists and a hyperlinked
+ * `PAGEREF` per entry holding the page `docx/layout` worked out
+ * (`renderers/docxjs/pageNumbers.ts`), after the entry's separator;
+ * `office-open` writes the cached entries, which carry none of them. Taking
+ * those out leaves the entries' text and every other element to compare.
+ */
+function withoutPageReferences(body: string): string {
+  const ids = [
+    ...body.matchAll(/<w:bookmarkStart w:name="_Toc\d+" w:id="(\d+)"\/>/g),
+  ].map(([, id]) => id);
+  let out = body.replace(
+    /<w:bookmarkStart w:name="_Toc\d+" w:id="\d+"\/>/g,
+    ''
+  );
+  for (const id of ids) out = out.replace(`<w:bookmarkEnd w:id="${id}"/>`, '');
+  return out.replace(/<w:sdt>[\s\S]*?<\/w:sdt>/g, (sdt) =>
+    sdt
+      .replace(/<w:hyperlink [^>]*>|<\/w:hyperlink>/g, '')
+      .replace(
+        /(?:<w:r><w:t [^>]*>[^<]*<\/w:t><\/w:r>)?<w:r><w:fldChar w:fldCharType="begin"\/><w:instrText [^>]*>PAGEREF [^<]*<\/w:instrText><w:fldChar w:fldCharType="separate"\/>(?:<w:t [^>]*>[^<]*<\/w:t>)?<w:fldChar w:fldCharType="end"\/><\/w:r>/g,
+        ''
+      )
+  );
+}
+
 async function shapeOf(
   buffer: Buffer,
   styleIds: readonly string[] = []
@@ -348,7 +377,9 @@ async function shapeOf(
     (await zip.file(name)?.async('string')) ?? '';
 
   const document = await read('word/document.xml');
-  const body = document.slice(document.indexOf('<w:body>'));
+  const body = withoutPageReferences(
+    document.slice(document.indexOf('<w:body>'))
+  );
   const count = (tag: string): number =>
     (body.match(new RegExp(`<${tag}[ />]`, 'g')) ?? []).length;
   const drawingExtents = [...body.matchAll(/<wp:extent\b([^>]*)\/?>/g)].map(

@@ -1,9 +1,9 @@
 /**
- * A `docx` subpath entry — `docx/charts`, `docx/shapes` — loaded when a
- * render first asks for it.
+ * A `docx` subpath entry — `docx/charts`, `docx/shapes`, `docx/layout` — loaded
+ * when a render first asks for it.
  *
  * Dynamic rather than static on purpose. `docx` is a peer dependency and those
- * entries exist from 9.8.0 on: a static import would make the whole package
+ * entries exist from 9.8.0 on (`docx/layout` from 9.9.0): a static import would make the whole package
  * fail to load (`ERR_PACKAGE_PATH_NOT_EXPORTED`) for a consumer on an older
  * docx, including one that never draws a chart or a drawing group. tsup keeps
  * `import('docx/…')` external (`external: ['docx']`), so nothing is inlined
@@ -34,7 +34,8 @@ export interface DocxSubpath<T> {
 export function docxSubpath<T>(
   specifier: `docx/${string}`,
   component: string,
-  importer: () => Promise<T>
+  importer: () => Promise<T>,
+  since = '9.8.0'
 ): DocxSubpath<T> {
   let module: T | undefined;
   let failure: { reason: unknown } | undefined;
@@ -61,7 +62,7 @@ export function docxSubpath<T>(
         const detail =
           reason instanceof Error ? reason.message : String(reason);
         throw new Error(
-          `The docx \`${component}\` component needs docx 9.8.0 or later: ` +
+          `The docx \`${component}\` component needs docx ${since} or later: ` +
             `the \`${specifier}\` entry could not be loaded (${detail})`
         );
       }

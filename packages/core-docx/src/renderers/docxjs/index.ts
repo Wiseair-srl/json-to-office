@@ -25,9 +25,11 @@ import {
   type ILevelsOptions,
   type ISectionOptions,
   type IThemeOptions,
+  type PageNumberEstimator,
 } from 'docx';
 import { emitStyles } from './styles';
 import { loadDocxCharts } from './charts';
+import { createPageNumberEstimator, needsPageNumbers } from './pageNumbers';
 import {
   rasterizeSvgFallbacks,
   type SvgFallbackJob,
@@ -53,6 +55,7 @@ import type { DocxRenderOptions, DocxRenderer, DocxRendererId } from '../types';
 import {
   ALIGNMENT,
   emitBlock,
+  emitOutsideBody,
   floatingOptions,
   runOptions,
   type EmitResources,
@@ -153,7 +156,12 @@ export function createDocxJsRenderer(): DocxRenderer {
           ),
         });
       }
-      const document = buildDocument(ir, resources);
+      // Only a document with a contents field loads `docx/layout` and is laid
+      // out; every other one is built exactly as before (`pageNumbers.ts`).
+      const pageNumbers = needsPageNumbers(ir)
+        ? await createPageNumberEstimator(ir)
+        : undefined;
+      const document = buildDocument(ir, resources, pageNumbers);
       const packed = (await Packer.toBuffer(document)) as Buffer;
       const fixed = fixFloatingImageIdsInBuffer(packed);
       const repaired = markers
@@ -180,13 +188,17 @@ export function createDocxJsRenderer(): DocxRenderer {
  *
  * Exported for tests: asserting on the object graph is far cheaper, and far
  * more legible, than unzipping a package. An IR with charts needs
- * `await loadDocxCharts()` first; `render()` does it.
+ * `await loadDocxCharts()` first; `render()` does it. `pageNumbers` is the
+ * estimator a document with a contents field is laid out with
+ * (`createPageNumberEstimator`); without it no field is filled.
  */
 export function buildDocument(
   ir: DocxIR,
-  resources: EmitResources = new Map()
+  resources: EmitResources = new Map(),
+  pageNumbers?: PageNumberEstimator
 ): Document {
   return new Document({
+    ...(pageNumbers ? { pageNumbers } : {}),
     styles: emitStyles(ir.styles),
     ...(ir.theme ? { theme: themeOptions(ir.theme) } : {}),
     sections: ir.sections.map((section) => sectionOptions(section, resources)),
@@ -215,8 +227,8 @@ export function buildDocument(
               author: comment.author,
               ...(comment.initials ? { initials: comment.initials } : {}),
               date: new Date(comment.date),
-              children: comment.children.map((block) =>
-                emitBlock(block, resources)
+              children: emitOutsideBody(() =>
+                comment.children.map((block) => emitBlock(block, resources))
               ),
               ...(comment.parentId !== undefined
                 ? { parentId: comment.parentId }
@@ -261,8 +273,8 @@ function noteBodies(
   const bodies: Record<string, { children: Paragraph[] }> = {};
   for (const note of notes) {
     bodies[String(note.id)] = {
-      children: note.children.map(
-        (block) => emitBlock(block, resources) as Paragraph
+      children: emitOutsideBody(() =>
+        note.children.map((block) => emitBlock(block, resources) as Paragraph)
       ),
     };
   }
@@ -578,7 +590,9 @@ function chromeSlots(
   for (const slot of ['default', 'first', 'even'] as const) {
     const part = set[slot];
     if (part) {
-      out[slot] = new Part({ children: partChildren(part, resources) });
+      out[slot] = new Part({
+        children: emitOutsideBody(() => partChildren(part, resources)),
+      });
     }
   }
   return Object.keys(out).length > 0 ? out : undefined;
