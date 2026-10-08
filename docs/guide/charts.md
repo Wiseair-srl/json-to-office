@@ -317,6 +317,29 @@ Sizes are written in chart pixels scaled by the width the image is placed at, so
 
 Every explicit author value wins, property by property: setting `title.style.fontSize` keeps the theme's family and colour on the title, and setting `chart.style.fontFamily` keeps the theme's sizes. The family itself has to exist where the export server runs — a local server draws with the fonts installed on your machine; for a registered non-safe family, the document's own font bytes are inlined as `@font-face` rules ahead of any `resources.css` you supply (data URIs; they travel only to the export server, which already receives every data point). Safe fonts are never inlined.
 
+## Theme chart options
+
+Palette and type reach a chart from the theme without the author asking. The rest of a chart's form — a transparent background, the legend on the left, bars without borders, pies with a given label format — would otherwise be repeated on every `highcharts` node, and a theme pinned to a customer could not change it. `componentDefaults.highcharts.options` in the theme carries that form, in both formats. It is the theme's `Highcharts.setOptions`: any Highcharts option, written beneath every chart's own options, key by key. Per series type, use `plotOptions.<type>`, as Highcharts itself does:
+
+```json
+{
+  "componentDefaults": {
+    "highcharts": {
+      "options": {
+        "chart": { "backgroundColor": "transparent" },
+        "legend": { "align": "left" },
+        "plotOptions": {
+          "bar": { "borderWidth": 0, "pointPadding": 0.06 },
+          "pie": { "dataLabels": { "format": "{point.percentage:.1f}%" } }
+        }
+      }
+    }
+  }
+}
+```
+
+The precedence is the one the palette and typography already follow, highest first: the chart's own options, the theme's `options`, then the theme's palette and type for whatever is still empty. An authored value always wins, at every level it is set. A document's `props.componentDefaults.highcharts` merges over the theme's block, as for any other component. What a theme puts in `options` is posted to the export server as it is; the library does not judge the content. A theme without the key posts exactly the request it posted before.
+
 ## Custom fonts in Highcharts output
 
 The `resources` prop is forwarded to the export server, which lets you inject `@font-face` CSS (plus JS or extra files) yourself — for a family that is neither installed on the server nor registered in the document, or to override what the theme injects:
@@ -341,4 +364,5 @@ The `resources` prop is forwarded to the export server, which lets you inject `@
 - [PPTX charts reference](/reference/pptx/charts) — every prop on `chart` and `highcharts`
 - [Render server](/guide/render-server) — deploy the combined export/rasterize service
 - [Themes & styling](/guide/themes) — how the chart palette follows the theme
+- [Theme schema](/reference/theme-schema#componentdefaults) — `componentDefaults.highcharts.options`
 - [DOCX components](/reference/docx/components) — the docx `highcharts` and `visual` components

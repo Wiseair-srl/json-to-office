@@ -26,6 +26,7 @@ import {
   type ChartTypography,
   type HighchartsServiceConfig,
   type RasterizeFontFace,
+  withChartPresets,
 } from '@json-to-office/shared';
 import type { PptxHighchartsProps } from '@json-to-office/shared-pptx';
 import type {
@@ -133,7 +134,11 @@ async function expandOne(
   const chart = await renderChart(
     withChartFontFaces(
       withThemeTypography(
-        withThemeColors(props, scope.theme, scope.warnings),
+        withThemeColors(
+          withThemePresets(props, scope.theme),
+          scope.theme,
+          scope.warnings
+        ),
         scope.theme,
         scope.slideWidth,
         scope.warnings
@@ -261,6 +266,22 @@ async function postChart(
  */
 function exportServerUrl(propsUrl?: string, servicesUrl?: string): string {
   return resolveServiceUrl(propsUrl, servicesUrl, DEFAULT_EXPORT_SERVER_URL);
+}
+
+/**
+ * The theme's `componentDefaults.highcharts.options` — its
+ * `Highcharts.setOptions` — written beneath the author's options, before the
+ * palette and the type, which fill only what is still empty after them. A
+ * theme without the key leaves the props as they are.
+ */
+function withThemePresets(
+  props: PptxHighchartsProps,
+  theme: PptxThemeConfig
+): PptxHighchartsProps {
+  const presets = theme?.componentDefaults?.highcharts;
+  if (!props.options || !presets) return props;
+  const options = withChartPresets(props.options, presets);
+  return options === props.options ? props : { ...props, options };
 }
 
 /**

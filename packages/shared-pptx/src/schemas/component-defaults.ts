@@ -5,6 +5,7 @@
  */
 
 import { Type, Static } from '@sinclair/typebox';
+import { HighchartsThemeDefaultsSchema } from '@json-to-office/shared';
 import { TextPropsSchema } from './components/text';
 import { PptxImagePropsSchema } from './components/image';
 import { ShapePropsSchema } from './components/shape';
@@ -17,8 +18,24 @@ export const TextComponentDefaultsSchema = Type.Partial(TextPropsSchema);
 export const ImageComponentDefaultsSchema = Type.Partial(PptxImagePropsSchema);
 export const ShapeComponentDefaultsSchema = Type.Partial(ShapePropsSchema);
 export const TableComponentDefaultsSchema = Type.Partial(PptxTablePropsSchema);
-export const HighchartsComponentDefaultsSchema = Type.Partial(
-  PptxHighchartsPropsSchema
+/**
+ * Placement defaults (`x`, `y`, `w`, `h`, `grid`, `scale`, `serverUrl`,
+ * `resources`) stay a partial of the props, as for every other component. The
+ * chart's `options` come from the shared schema instead: the equivalent of
+ * `Highcharts.setOptions`, written beneath each chart's own options when the
+ * chart is expanded, not by the tree resolver, and without the `chart.width`
+ * and `height` the component's own `options` demand.
+ */
+export const HighchartsComponentDefaultsSchema = Type.Composite(
+  [
+    Type.Partial(Type.Omit(PptxHighchartsPropsSchema, ['options'])),
+    HighchartsThemeDefaultsSchema,
+  ],
+  {
+    additionalProperties: false,
+    description:
+      'Highcharts defaults: slide placement and resources as partial props, and `options` written beneath every chart’s own, as `Highcharts.setOptions` would.',
+  }
 );
 export const ChartComponentDefaultsSchema = Type.Partial(PptxChartPropsSchema);
 

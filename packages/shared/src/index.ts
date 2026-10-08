@@ -180,6 +180,12 @@ export {
 export { DEFAULT_CHART_THEME_COLORS } from './theme/chart-palette';
 export * from './theme/design-system';
 export * from './theme/chart-typography';
+export * from './theme/chart-presets';
+// `componentDefaults.highcharts`, embedded by both theme schemas
+export {
+  HighchartsThemeDefaultsSchema,
+  type HighchartsThemeDefaults,
+} from './schemas/highcharts-defaults';
 export * from './blocks';
 export * from './blueprints';
 

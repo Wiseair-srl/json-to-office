@@ -187,9 +187,11 @@ async function compileDocumentScoped(
 
   // Charts and visuals become images before anything else reads the tree: they
   // are the only components that need a service, and past this point nothing
-  // does.
+  // does. They read the theme the document is rendered with — the context's,
+  // with `props.componentDefaults` merged over it — so a chart preset the
+  // document states reaches its charts as a table default reaches its tables.
   const desugared = await desugarExternals(context.document, {
-    theme: context.theme,
+    theme: prepared.model.document.theme,
     ...(options.services ? { services: options.services } : {}),
     ...(options.baseDir !== undefined ? { baseDir: options.baseDir } : {}),
     ...(visualFonts.length > 0 ? { visualFonts } : {}),

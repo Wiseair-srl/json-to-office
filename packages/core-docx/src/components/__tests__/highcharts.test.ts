@@ -1673,3 +1673,66 @@ describe('saying once where the chart data went', () => {
     ]);
   });
 });
+
+describe('theme chart options', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockFetch.mockResolvedValue({
+      ok: true,
+      text: vi.fn().mockResolvedValue('AA=='),
+    });
+  });
+  const request = () => JSON.parse(mockFetch.mock.calls[0][1].body);
+  const themed = (highcharts: Record<string, unknown>): ThemeConfig => ({
+    ...createMockTheme(),
+    name: 'presets',
+    componentDefaults: { highcharts } as ThemeConfig['componentDefaults'],
+  });
+  const bar = {
+    options: {
+      chart: { type: 'bar', width: 600, height: 400 },
+      legend: { align: 'right' },
+      series: [{ data: [1, 2, 3] }],
+    },
+  };
+
+  it("writes the theme's options beneath the chart's and leaves every authored value", async () => {
+    await renderChartToImageProps(
+      bar as never,
+      themed({
+        options: {
+          legend: { align: 'left', verticalAlign: 'top' },
+          yAxis: { visible: false, gridLineWidth: 0 },
+          plotOptions: { bar: { borderWidth: 0 } },
+        },
+      })
+    );
+    const { infile } = request();
+    expect(infile.legend.align).toBe('right');
+    expect(infile.legend.verticalAlign).toBe('top');
+    expect(infile.yAxis.visible).toBe(false);
+    expect(infile.yAxis.gridLineWidth).toBe(0);
+    expect(infile.plotOptions.bar.borderWidth).toBe(0);
+  });
+
+  it('posts any string a theme put in options as it is', async () => {
+    const text = 'whatever the theme wrote';
+    await renderChartToImageProps(
+      bar as never,
+      themed({ options: { tooltip: { formatter: text } } })
+    );
+    expect(request().infile.tooltip.formatter).toBe(text);
+  });
+
+  it('posts the same request as before for a theme without the key', async () => {
+    await renderChartToImageProps(bar as never, createMockTheme());
+    const before = request();
+    vi.clearAllMocks();
+    mockFetch.mockResolvedValue({
+      ok: true,
+      text: vi.fn().mockResolvedValue('AA=='),
+    });
+    await renderChartToImageProps(bar as never, themed({}));
+    expect(request()).toEqual(before);
+  });
+});

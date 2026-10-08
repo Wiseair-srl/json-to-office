@@ -46,6 +46,12 @@ export interface ThemeDescription extends ThemeSummary {
   /** The chrome recipes the theme carries, by name. */
   chrome?: string[];
   motif?: string;
+  /**
+   * True when the theme states `componentDefaults.highcharts.options`:
+   * Highcharts options written beneath every chart's own, as
+   * `Highcharts.setOptions` would.
+   */
+  chartOptions?: boolean;
 }
 
 type Rec = Record<string, unknown>;
@@ -103,6 +109,8 @@ export function describeTheme(
     fonts: { heading: family(fonts.heading), body: family(fonts.body) },
     palette: Object.fromEntries(Object.entries(palette).filter(isStringEntry)),
   };
+  const highcharts = asRecord(asRecord(theme.componentDefaults)?.highcharts);
+  if (asRecord(highcharts?.options)) description.chartOptions = true;
   if (!summary.extended) return description;
   const canvas = designCanvas(
     format,

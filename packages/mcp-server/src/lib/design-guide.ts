@@ -176,6 +176,11 @@ function renderTheme(theme: ThemeDescription): string {
       '  Plain theme: palette, fonts and styles only; no type roles, chrome recipes or motif.'
     );
   }
+  if (theme.chartOptions) {
+    lines.push(
+      '  Chart options: the theme writes Highcharts options beneath every chart (`componentDefaults.highcharts.options`).'
+    );
+  }
   return lines.join('\n');
 }
 
@@ -225,7 +230,7 @@ export function renderDesignGuide(
     '',
     '## Themes paint, profiles require',
     '',
-    'A theme is a visual system: its palette, type roles, spacing, chrome recipes and motif decide how every component looks, and a block or a chrome slot takes its look from the theme without being asked. A profile is the bar a document is judged by: which chrome must be present, which slots must be filled, how strictly sizes must keep to the theme’s scale. Selecting a theme never adds a requirement; selecting a profile never changes a colour. Pick the theme for the look, and the profile — or a blueprint, which names one — for the archetype.',
+    'A theme is a visual system: its palette, type roles, spacing, chrome recipes and motif decide how every component looks, and a block or a chrome slot takes its look from the theme without being asked. A profile is the bar a document is judged by: which chrome must be present, which slots must be filled, how strictly sizes must keep to the theme’s scale. Selecting a theme never adds a requirement; selecting a profile never changes a colour. Pick the theme for the look, and the profile — or a blueprint, which names one — for the archetype. A theme may also carry Highcharts options in `componentDefaults.highcharts.options`, its `Highcharts.setOptions`: they are written beneath every chart’s own options, with `plotOptions.<type>` for the per-type form, so a `highcharts` node states its data and its message and leaves the form to the theme.',
     '',
     '## Themes',
     '',

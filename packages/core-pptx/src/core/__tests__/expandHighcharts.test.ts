@@ -934,3 +934,77 @@ describe('saying once where the chart data went', () => {
     });
   });
 });
+
+describe('theme chart options', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetChartLimiters();
+    mockFetch.mockResolvedValue({
+      ok: true,
+      text: vi.fn().mockResolvedValue(FAKE_B64),
+    });
+  });
+  const themed = (highcharts: Record<string, unknown>): PptxThemeConfig => ({
+    ...themeWith({
+      primary: '#1D2130',
+      secondary: '#383F5D',
+      accent: '#586CC9',
+      background: '#FFFFFF',
+      text: '#1D2130',
+    }),
+    name: 'presets',
+    componentDefaults: { highcharts } as PptxThemeConfig['componentDefaults'],
+  });
+  const bar = {
+    options: {
+      chart: { type: 'bar', width: 600, height: 400 },
+      legend: { align: 'right' },
+      series: [{ data: [1, 2, 3] }],
+    },
+  };
+
+  it("writes the theme's options beneath the chart's and leaves every authored value", async () => {
+    await expand(
+      bar,
+      themed({
+        options: {
+          legend: { align: 'left', verticalAlign: 'top' },
+          yAxis: { visible: false, gridLineWidth: 0 },
+          plotOptions: { bar: { borderWidth: 0 } },
+        },
+      })
+    );
+    const { infile } = requestBody();
+    const legend = infile.legend as Record<string, unknown>;
+    expect(legend.align).toBe('right');
+    expect(legend.verticalAlign).toBe('top');
+    const yAxis = infile.yAxis as Record<string, unknown>;
+    expect(yAxis.visible).toBe(false);
+    expect(yAxis.gridLineWidth).toBe(0);
+    const plotOptions = infile.plotOptions as Record<
+      string,
+      Record<string, unknown>
+    >;
+    expect(plotOptions.bar.borderWidth).toBe(0);
+  });
+
+  it('posts any string a theme put in options as it is', async () => {
+    const text = 'whatever the theme wrote';
+    await expand(bar, themed({ options: { tooltip: { formatter: text } } }));
+    expect(
+      (requestBody().infile.tooltip as Record<string, unknown>).formatter
+    ).toBe(text);
+  });
+
+  it('posts the same request as before for a theme without the key', async () => {
+    await expand(bar, themed({}));
+    const withEmpty = requestBody();
+    vi.clearAllMocks();
+    mockFetch.mockResolvedValue({
+      ok: true,
+      text: vi.fn().mockResolvedValue(FAKE_B64),
+    });
+    await expand(bar, { ...themed({}), componentDefaults: undefined });
+    expect(requestBody()).toEqual(withEmpty);
+  });
+});

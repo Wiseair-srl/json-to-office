@@ -31,6 +31,7 @@ import {
   type ChartRenderCache,
   type HighchartsServiceConfig,
   type RasterizeFontFace,
+  withChartPresets,
 } from '@json-to-office/shared';
 
 // Re-export HighchartsProps for backward compatibility
@@ -185,6 +186,24 @@ function toChartColor(value: string, theme: ThemeConfig): string | undefined {
   } catch {
     return undefined;
   }
+}
+
+/**
+ * The theme's `componentDefaults.highcharts.options` — its
+ * `Highcharts.setOptions` — written beneath the author's options, before the
+ * palette and the type, which fill only what is still empty after them.
+ * `document.props.componentDefaults.highcharts` is already merged over the
+ * theme's here, as for every other component. A theme without the key leaves
+ * the props as they are.
+ */
+function withThemePresets(
+  config: HighchartsProps,
+  theme: ThemeConfig
+): HighchartsProps {
+  const presets = theme?.componentDefaults?.highcharts;
+  if (!presets) return config;
+  const options = withChartPresets(config.options, presets);
+  return options === config.options ? config : { ...config, options };
 }
 
 /**
@@ -353,7 +372,10 @@ export async function renderChartToImageProps(
   cache?: ChartCache
 ): Promise<Record<string, unknown>> {
   const config = withChartFontFaces(
-    withThemeTypography(withThemeColors(props, theme), theme),
+    withThemeTypography(
+      withThemeColors(withThemePresets(props, theme), theme),
+      theme
+    ),
     theme,
     chartFonts
   );

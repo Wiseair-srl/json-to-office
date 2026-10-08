@@ -152,3 +152,58 @@ describe('highcharts components', () => {
     expect(await mediaParts(buffer)).toHaveLength(1);
   }, 60_000);
 });
+
+describe('highcharts theme options end to end', () => {
+  function stubExportServer(): ReturnType<typeof vi.fn> {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      text: async () => PNG.replace('data:image/png;base64,', ''),
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+    return fetchMock;
+  }
+
+  const posted = (fetchMock: ReturnType<typeof vi.fn>) =>
+    JSON.parse(
+      (fetchMock.mock.calls[0] as [string, RequestInit])[1].body as string
+    ).infile;
+
+  it("merges the document's block over the theme's and posts it beneath the chart", async () => {
+    const fetchMock = stubExportServer();
+    const buffer = await generateBufferFromJson(
+      {
+        name: 'docx',
+        props: {
+          theme: 'minimal',
+          componentDefaults: {
+            highcharts: {
+              options: {
+                legend: { align: 'right' },
+                tooltip: { formatter: 'whatever the document wrote' },
+              },
+            },
+          },
+        },
+        children: [
+          {
+            name: 'highcharts',
+            props: {
+              options: {
+                chart: { width: 400, height: 300 },
+                series: [{ type: 'column', data: [1, 2, 3] }],
+              },
+            },
+          },
+        ],
+      } as never,
+      { validation: { enabled: false } }
+    );
+    vi.unstubAllGlobals();
+
+    expect(await mediaParts(buffer)).toHaveLength(1);
+    const infile = posted(fetchMock);
+    expect(infile.legend.align).toBe('right');
+    expect(infile.tooltip.formatter).toBe('whatever the document wrote');
+  }, 60_000);
+});
