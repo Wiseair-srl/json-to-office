@@ -179,7 +179,9 @@ Regular style properties = all the text-formatting fields from the font definiti
 
 ### `componentDefaults`
 
-Optional per-component prop defaults. Allowed keys: `heading`, `paragraph`, `image`, `statistic`, `table`, `section`, `columns`, `list`. Values are partial props objects for the matching component — see [DOCX components](/reference/docx/components). Document-level `props.componentDefaults` deep-merges on top; props on the component itself win over both.
+Optional per-component prop defaults. Allowed keys: `heading`, `paragraph`, `image`, `statistic`, `table`, `section`, `columns`, `list`, `highcharts`. Values are partial props objects for the matching component — see [DOCX components](/reference/docx/components). Document-level `props.componentDefaults` deep-merges on top; props on the component itself win over both.
+
+`highcharts` is the one key that is not a partial of the component's props. It has a single field, `options`: Highcharts options written beneath every chart's own, key by key, the theme's `Highcharts.setOptions`. The chart's own options win wherever they are set; the theme's palette and typography fill only what is still empty after them. Per series type, use `plotOptions.<type>` inside `options`, as Highcharts itself does. Any Highcharts option goes; the library does not judge the content. `document.props.componentDefaults.highcharts` merges over the theme's block as for every other component. See [Theme chart options](/guide/charts#theme-chart-options) for an example.
 
 ### Complete minimal example
 
@@ -297,6 +299,8 @@ A partial map — override any subset of: `title`, `subtitle`, `heading1`, `head
 ### `componentDefaults`
 
 Allowed keys: `text`, `image`, `shape`, `table`, `highcharts`, `chart` (extra keys are tolerated, as in the DOCX equivalent). See [PPTX components](/reference/pptx/components) and [PPTX charts](/reference/pptx/charts) for the props each accepts.
+
+`highcharts` takes the slide placement props and `resources` as partial defaults (`x`, `y`, `w`, `h`, `grid`, `scale`, `serverUrl`, `resources`) and the same `options` the [DOCX theme](#componentdefaults) documents, with the same precedence. The theme's `options` no longer have to state `chart.width` and `chart.height`.
 
 ### Example
 

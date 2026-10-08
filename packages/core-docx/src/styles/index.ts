@@ -21,6 +21,7 @@ export type {
   SectionComponentDefaults,
   ColumnsComponentDefaults,
   ListComponentDefaults,
+  HighchartsComponentDefaults,
 } from '@json-to-office/shared-docx';
 export {
   themes,

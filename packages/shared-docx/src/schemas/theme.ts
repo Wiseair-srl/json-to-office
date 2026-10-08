@@ -401,6 +401,7 @@ export {
   SectionComponentDefaultsSchema,
   ColumnsComponentDefaultsSchema,
   ListComponentDefaultsSchema,
+  HighchartsComponentDefaultsSchema,
   ComponentDefaultsSchema,
 } from './component-defaults';
 
@@ -508,6 +509,7 @@ export type {
   SectionComponentDefaults,
   ColumnsComponentDefaults,
   ListComponentDefaults,
+  HighchartsComponentDefaults,
   ComponentDefaults,
 } from './component-defaults';
 

@@ -101,11 +101,22 @@ export function resolveTableProps(
   return mergeWithDefaults(props, getTableDefaults(theme));
 }
 
+/**
+ * Only the placement defaults reach the props here. The theme's `options`
+ * are written beneath the chart's own when the chart is expanded
+ * (`expandHighcharts.ts`), by the same fill the palette and the typography
+ * use, so the chart's values always win.
+ */
 export function resolveHighchartsProps(
   props: PptxHighchartsProps,
   theme: PptxThemeConfig
 ): PptxHighchartsProps {
-  return mergeWithDefaults(props, getHighchartsDefaults(theme));
+  const placement = Object.fromEntries(
+    Object.entries(getHighchartsDefaults(theme)).filter(
+      ([key]) => key !== 'options'
+    )
+  ) as Partial<PptxHighchartsProps>;
+  return mergeWithDefaults(props, placement);
 }
 
 export function resolveChartProps(

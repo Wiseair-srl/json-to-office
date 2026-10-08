@@ -9,6 +9,7 @@
  */
 
 import { Type, Static } from '@sinclair/typebox';
+import { HighchartsThemeDefaultsSchema } from '@json-to-office/shared';
 import { HeadingPropsSchema } from './components/heading';
 import { ParagraphPropsSchema } from './components/paragraph';
 import { ImagePropsSchema } from './components/image';
@@ -75,6 +76,13 @@ export const ColumnsComponentDefaultsSchema = Type.Partial(ColumnsPropsSchema);
 export const ListComponentDefaultsSchema = Type.Partial(
   Type.Omit(ListPropsSchema, PER_INSTANCE_PROPS)
 );
+/**
+ * Not a partial of the component's props: the theme's `options` are the
+ * equivalent of `Highcharts.setOptions` and need no `chart.width` and
+ * `height`. Written beneath each chart's own options in
+ * `renderChartToImageProps`, not by the tree resolver.
+ */
+export const HighchartsComponentDefaultsSchema = HighchartsThemeDefaultsSchema;
 
 export const ComponentDefaultsSchema = Type.Object(
   {
@@ -86,6 +94,7 @@ export const ComponentDefaultsSchema = Type.Object(
     section: Type.Optional(SectionComponentDefaultsSchema),
     columns: Type.Optional(ColumnsComponentDefaultsSchema),
     list: Type.Optional(ListComponentDefaultsSchema),
+    highcharts: Type.Optional(HighchartsComponentDefaultsSchema),
   },
   { additionalProperties: true } // TODO: add a way to add strict custom component defaults when the plugin/registry paradigm will be implemented
 );
@@ -113,4 +122,7 @@ export type ColumnsComponentDefaults = Static<
   typeof ColumnsComponentDefaultsSchema
 >;
 export type ListComponentDefaults = Static<typeof ListComponentDefaultsSchema>;
+export type HighchartsComponentDefaults = Static<
+  typeof HighchartsComponentDefaultsSchema
+>;
 export type ComponentDefaults = Static<typeof ComponentDefaultsSchema>;

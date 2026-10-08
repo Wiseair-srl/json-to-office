@@ -137,6 +137,18 @@ function fill(authored: unknown, defaults: Options): unknown {
   return base;
 }
 
+/**
+ * `fill` for callers outside this module: the theme's chart presets
+ * (`chart-presets.ts`) are written beneath an author's options by the same
+ * rule as the typography, so the two cannot disagree on what "beneath" means.
+ */
+export function fillChartOptions<T extends Options>(
+  authored: T,
+  defaults: Options
+): T {
+  return fill(authored, defaults) as T;
+}
+
 /** Highcharts axes may be one object or an array of them. */
 function fillAxis(authored: unknown, defaults: Options): unknown {
   if (Array.isArray(authored)) {

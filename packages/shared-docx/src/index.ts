@@ -117,6 +117,7 @@ export type {
   SectionComponentDefaults,
   ColumnsComponentDefaults,
   ListComponentDefaults,
+  HighchartsComponentDefaults,
   HeadingDefinition,
 } from './schemas/theme';
 
