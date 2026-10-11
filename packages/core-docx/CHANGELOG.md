@@ -1,5 +1,22 @@
 # @json-to-office/core-docx
 
+## 7.5.1
+
+### Patch Changes
+
+- bc28e76: The default DOCX renderer (`docxjs`) now runs on docx 9.10.0 (from 9.9.0),
+  pinned exactly in `core-docx`, `json-to-docx` and `shared-docx`.
+
+  An external link with a fragment (`https://example.com/page#section`) is
+  written as Word writes one: the address in the link's relationship and the
+  fragment, up to 255 characters, as the hyperlink's `w:anchor`. Word no longer
+  drops part of a fragment that holds a second `#`. The link opens the same URL
+  in Word and LibreOffice. Nothing else in the files changes, and `office-open`
+  output does not change.
+
+- Updated dependencies [bc28e76]
+  - @json-to-office/shared-docx@7.5.1
+
 ## 7.5.0
 
 ### Minor Changes
