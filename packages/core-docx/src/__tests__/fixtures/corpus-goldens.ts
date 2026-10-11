@@ -315,7 +315,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'links/decorated-text':
     '0cfcdd39359f832214b5e1de908cfeefe84a9641d6318f6d637605d8b8517e9f',
   'links/query-and-fragment':
-    '41a0487ec9bb4e02ad80871def9d45797a6adfd94780feeef9dd07c87ddd1c86',
+    '9a177ec8761f195cfa989f1cdaa435d6ece15230a9c12e9684d41c99c34573aa',
   'links/internal-anchor':
     '546a0b6c60a015c3a7ac9f4e6cec8e493ccbe8833f8f0c1cd04d22213641a408',
   'links/mixed-internal-and-external':
