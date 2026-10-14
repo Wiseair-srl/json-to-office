@@ -21,3 +21,13 @@ export {
   toRasterizeFontFaces,
   fromRasterizeFontFaces,
 } from './rasterize-faces';
+// Face selection for the `embed` export mode: which resolved source fills
+// which of Word's four slots per family. Node-only because it speaks `Buffer`,
+// like the rasterizer encoders above.
+export { toEmbeddedFontFaces } from './embed-faces';
+export type {
+  EmbeddedFontFace,
+  EmbeddedFontSlot,
+  EmbeddedFontFamilyReport,
+  EmbeddedFontSelection,
+} from './embed-faces';

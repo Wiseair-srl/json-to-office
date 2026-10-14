@@ -115,8 +115,9 @@ export function resolveThemeContext(
     theme = applyThemeOverrides(theme, themeOverrides);
   }
 
-  // Export-mode pre-pass: substitute (default) rewrites non-safe families to
-  // safe equivalents; custom keeps refs as-is.
+  // Export-mode pre-pass: substitute rewrites non-safe families to safe
+  // equivalents; custom (the default) and embed keep refs as-is — embed adds
+  // the font files later, once they have resolved (`fontEmbedding.ts`).
   theme = resolveDocxDesignSystem(theme);
   const mode = applyExportMode({ doc: document, theme, fonts });
   for (const w of mode.warnings) {

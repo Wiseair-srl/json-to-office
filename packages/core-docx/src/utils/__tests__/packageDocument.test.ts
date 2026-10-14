@@ -209,3 +209,74 @@ describe('embedded Office packages', () => {
     ).toBe(true);
   });
 });
+
+describe('embedded font keys', () => {
+  const FONT_REL =
+    'http://schemas.openxmlformats.org/officeDocument/2006/relationships/font';
+  /** Stand-in font bytes: only the first 32 are ever obfuscated. */
+  const FONT = Buffer.from(
+    Array.from({ length: 48 }, (_, i) => (i * 37 + 11) & 0xff)
+  );
+
+  /** ECMA-376 obfuscation, as docx.js applies it: XOR with the key reversed. */
+  const obfuscate = (bytes: Buffer, guid: string): Buffer => {
+    const key = Buffer.from(guid.replace(/-/g, ''), 'hex').reverse();
+    const out = Buffer.from(bytes);
+    for (let i = 0; i < 32; i++) out[i] ^= key[i % 16];
+    return out;
+  };
+
+  /** A package embedding FONT under `guid`, the way docx.js lays it out. */
+  function withFont(guid: string): Buffer {
+    const zip = new AdmZip();
+    zip.addFile(
+      'word/fontTable.xml',
+      Buffer.from(
+        '<w:fonts><w:font w:name="Life Sans">' +
+          `<w:embedRegular r:id="rId1" w:fontKey="{${guid.toUpperCase()}}"/>` +
+          '</w:font></w:fonts>',
+        'utf8'
+      )
+    );
+    zip.addFile(
+      'word/_rels/fontTable.xml.rels',
+      Buffer.from(
+        `<Relationships xmlns="${RELS_NS}">` +
+          `<Relationship Id="rId1" Type="${FONT_REL}" Target="fonts/font1.odttf"/>` +
+          '</Relationships>',
+        'utf8'
+      )
+    );
+    zip.addFile('word/fonts/font1.odttf', obfuscate(FONT, guid));
+    return zip.toBuffer();
+  }
+
+  it('re-keys each face from its own bytes, so two random keys converge', () => {
+    const first = canonicalizeDocxBuffer(
+      withFont('0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0')
+    );
+    const second = canonicalizeDocxBuffer(
+      withFont('12345678-9abc-def0-1234-56789abcdef0')
+    );
+    expect(first.equals(second)).toBe(true);
+
+    const out = new AdmZip(first);
+    const key = /w:fontKey="\{([^}]+)\}"/.exec(
+      out.readAsText('word/fontTable.xml')
+    )?.[1];
+    expect(key).toMatch(/^[0-9A-F]{8}(-[0-9A-F]{4}){3}-[0-9A-F]{12}$/);
+    // The new key undoes the part it is paired with.
+    expect(
+      obfuscate(out.getEntry('word/fonts/font1.odttf')!.getData(), key!)
+    ).toEqual(FONT);
+  });
+
+  it('leaves a font table without embedded fonts as it is', () => {
+    const fontTable =
+      '<w:fonts><w:font w:name="Calibri"><w:family w:val="swiss"/></w:font></w:fonts>';
+    const out = new AdmZip(
+      canonicalizeDocxBuffer(pack({ 'word/fontTable.xml': fontTable }))
+    );
+    expect(out.readAsText('word/fontTable.xml')).toBe(fontTable);
+  });
+});

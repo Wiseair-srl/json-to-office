@@ -26,6 +26,24 @@ export interface ResolvedFont {
 }
 
 /**
+ * One family as the `embed` export mode writes it into a DOCX: the regular
+ * face, which docx.js requires, and up to three more — the four faces Word's
+ * font table addresses per family. Chosen from a `ResolvedFont`'s sources by
+ * `toEmbeddedFontFaces` (`@json-to-office/shared/fonts/node`).
+ *
+ * Declared here rather than beside that function: it is part of core-docx's
+ * public render options, and a type there must not pull the Node-only subpath,
+ * and the font tooling it re-exports, into every caller's type graph.
+ */
+export interface EmbeddedFontFace {
+  family: string;
+  regular: Buffer;
+  bold?: Buffer;
+  italic?: Buffer;
+  boldItalic?: Buffer;
+}
+
+/**
  * Runtime options passed through generator APIs and CLI.
  *
  * NOT serializable — `onResolved` carries a function and `extraEntries[].sources`
@@ -57,8 +75,16 @@ export interface FontRuntimeOpts {
    *   theme) to a SAFE_FONTS equivalent per `substitution`. Document
    *   renders identically on every machine at the cost of visual
    *   fidelity. Best for broadly-shared output.
+   *
+   * - `'embed'` — keep references as in `custom` and write the resolved
+   *   TTF/OTF bytes of every non-safe family into the file, so a reader
+   *   without the font installed still sees it. DOCX on the `docxjs`
+   *   renderer only: Word's font table has four slots per family
+   *   (regular, bold, italic, bold italic), so other weights stay
+   *   references, and a face whose licence forbids embedding is left out.
+   *   Elsewhere it falls back to `custom` with a warning.
    */
-  mode?: 'substitute' | 'custom';
+  mode?: 'substitute' | 'custom' | 'embed';
   /**
    * Family-name substitution map, applied when `mode === 'substitute'`.
    * Keys are the non-safe family names referenced by the doc; values are

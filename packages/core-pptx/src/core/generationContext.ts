@@ -113,7 +113,24 @@ export function resolveThemeContext(
     document.props.slideWidth,
     document.props.slideHeight
   );
-  const mode = applyExportMode({ doc: document, theme, fonts });
+  // `embed` is DOCX-only: pptxgenjs has no embedding API, and office-open's
+  // pptx writes the font list but no font parts. A deck asked to embed is
+  // built as in custom mode, and says so, rather than shipping a font list
+  // that points at nothing.
+  if (fonts?.mode === 'embed') {
+    warnings?.push({
+      code: 'FONT_EMBED_UNSUPPORTED_FORMAT',
+      message:
+        'Export mode "embed" applies to DOCX only; PPTX output does not ' +
+        'embed fonts, so references are kept as in custom mode.',
+      component: 'fontRegistry',
+    });
+  }
+  const mode = applyExportMode({
+    doc: document,
+    theme,
+    fonts: fonts?.mode === 'embed' ? { ...fonts, mode: 'custom' } : fonts,
+  });
   document = mode.doc;
   theme = mode.theme;
   for (const w of mode.warnings) {

@@ -52,6 +52,7 @@ import {
 } from '../../utils/packageDocument';
 import { fixFloatingImageIdsInBuffer } from '../../utils/fixFloatingImageIds';
 import type { DocxRenderOptions, DocxRenderer, DocxRendererId } from '../types';
+import type { EmbeddedFontFace } from '@json-to-office/shared';
 import {
   ALIGNMENT,
   emitBlock,
@@ -161,7 +162,12 @@ export function createDocxJsRenderer(): DocxRenderer {
       const pageNumbers = needsPageNumbers(ir)
         ? await createPageNumberEstimator(ir)
         : undefined;
-      const document = buildDocument(ir, resources, pageNumbers);
+      const document = buildDocument(
+        ir,
+        resources,
+        pageNumbers,
+        renderOptions?.embeddedFonts
+      );
       const packed = (await Packer.toBuffer(document)) as Buffer;
       const fixed = fixFloatingImageIdsInBuffer(packed);
       const repaired = markers
@@ -191,15 +197,26 @@ export function createDocxJsRenderer(): DocxRenderer {
  * `await loadDocxCharts()` first; `render()` does it. `pageNumbers` is the
  * estimator a document with a contents field is laid out with
  * (`createPageNumberEstimator`); without it no field is filled.
+ * `embeddedFonts` are the faces `embed` mode writes into the package.
  */
 export function buildDocument(
   ir: DocxIR,
   resources: EmitResources = new Map(),
-  pageNumbers?: PageNumberEstimator
+  pageNumbers?: PageNumberEstimator,
+  embeddedFonts?: readonly EmbeddedFontFace[]
 ): Document {
   return new Document({
     ...(pageNumbers ? { pageNumbers } : {}),
     styles: emitStyles(ir.styles),
+    // word/fonts/font<N>.odttf, their `w:embed*` entries in the font table and
+    // `w:embedTrueTypeFonts` in the settings, all from this one key. Passed
+    // only when a face embeds, so a document in any other mode is built from
+    // exactly the options it always was. `docx/layout` measures the text of an
+    // embedded family from these files, so a contents field's page numbers
+    // need nothing more.
+    ...(embeddedFonts && embeddedFonts.length > 0
+      ? { fonts: embeddedFonts.map(fontOptions) }
+      : {}),
     ...(ir.theme ? { theme: themeOptions(ir.theme) } : {}),
     sections: ir.sections.map((section) => sectionOptions(section, resources)),
     ...coreProperties(ir),
@@ -241,6 +258,23 @@ export function buildDocument(
         }
       : {}),
   });
+}
+
+/** One embedded family as docx.js takes it: the regular face is `data`. */
+function fontOptions(face: EmbeddedFontFace): {
+  name: string;
+  data: Buffer;
+  bold?: Buffer;
+  italic?: Buffer;
+  boldItalic?: Buffer;
+} {
+  return {
+    name: face.family,
+    data: face.regular,
+    ...(face.bold ? { bold: face.bold } : {}),
+    ...(face.italic ? { italic: face.italic } : {}),
+    ...(face.boldItalic ? { boldItalic: face.boldItalic } : {}),
+  };
 }
 
 /**

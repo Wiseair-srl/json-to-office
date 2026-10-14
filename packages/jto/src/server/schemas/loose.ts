@@ -12,11 +12,19 @@ import { Type } from '@sinclair/typebox';
 /**
  * Font options accepted over the wire. Caps prevent client-supplied
  * substitution maps from landing unbounded strings into the tree walker.
+ *
+ * `embed` is safe to take from an HTTP client: it selects which bytes go into
+ * the file, never supplies them — every face comes from the server's own
+ * resolver, the same one the preview stager reads.
  */
 const FontOptionsSchema = Type.Object(
   {
     mode: Type.Optional(
-      Type.Union([Type.Literal('substitute'), Type.Literal('custom')])
+      Type.Union([
+        Type.Literal('substitute'),
+        Type.Literal('custom'),
+        Type.Literal('embed'),
+      ])
     ),
     substitution: Type.Optional(
       Type.Record(

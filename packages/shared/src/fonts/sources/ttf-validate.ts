@@ -51,6 +51,21 @@ function readUsWeightClass(ttf: Buffer): number | null {
   return ttf.readUInt16BE(os2.off + 4);
 }
 
+/**
+ * `OS/2.fsType`, the font's embedding-licence bits, or null when the bytes
+ * have no readable OS/2 table (not an sfnt, truncated, or a font that simply
+ * ships none).
+ *
+ * Only the `embed` export mode asks: it is the one path that writes font
+ * bytes into a document a reader then opens, which is what the bits license.
+ */
+export function readFontFsType(ttf: Buffer): number | null {
+  const os2 = readTable(ttf, 'OS/2');
+  if (!os2) return null;
+  if (os2.off + 10 > ttf.length) return null;
+  return ttf.readUInt16BE(os2.off + 8);
+}
+
 export interface FontMetadataDiagnostic {
   code:
     | 'WEIGHT_CLASS_MISMATCH'
@@ -79,12 +94,14 @@ export function validateFontMetadata(
     });
   }
 
-  // OS/2.fsType (embedding-permission bits) deliberately NOT checked. Office
-  // output never embeds font bytes anymore — substitute mode rewrites to
-  // SAFE_FONTS, custom mode ships references as-is, and the LibreOffice
-  // preview stager only registers bytes transiently with the converter's
-  // child process. Permission warnings would be pure noise for every
-  // Google Fonts resolution.
+  // OS/2.fsType (embedding-permission bits) deliberately NOT checked here.
+  // This runs on every resolution, and most never embed: substitute mode
+  // rewrites to SAFE_FONTS, custom mode ships references as-is, and the
+  // LibreOffice preview stager only registers bytes transiently with the
+  // converter's child process. The `embed` export mode, the one path that
+  // writes the bytes into a document, reads the bits itself per face
+  // (`readFontFsType`, from `embed-faces.ts`), where a restriction decides
+  // something rather than adding a warning to every Google Fonts resolution.
 
   // The bytes must answer to the family they were resolved as, or nothing
   // downstream can find them: a run says `rFonts w:ascii="Inter"` and the

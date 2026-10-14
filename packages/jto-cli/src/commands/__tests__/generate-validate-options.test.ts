@@ -234,6 +234,28 @@ describe('generate command contract', () => {
     );
   });
 
+  it('hands --font-mode embed to the generator as fonts.mode', async () => {
+    const createGenerator = await runWithFlags('jto-font-mode-', [
+      '--font-mode',
+      'embed',
+    ]);
+
+    expect(createGenerator).toHaveBeenCalledWith(
+      [],
+      expect.objectContaining({
+        fonts: expect.objectContaining({ mode: 'embed' }),
+      })
+    );
+  });
+
+  it('refuses a --font-mode it does not know, naming the three it does', async () => {
+    await expect(
+      runWithFlags('jto-font-mode-bad-', ['--font-mode', 'nope'])
+    ).rejects.toThrow(
+      '--font-mode must be one of: custom, substitute, embed (got "nope")'
+    );
+  });
+
   // Control: theme forwarding predates the font-flag fix above. Kept so a
   // refactor of the option plumbing cannot drop it unnoticed.
   it('forwards --theme to the generator', async () => {

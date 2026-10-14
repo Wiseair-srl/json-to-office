@@ -166,7 +166,7 @@ This matters most for PPTX: there is no browser-based renderer for PowerPoint fi
 
 Two details worth knowing:
 
-- **Staged fonts.** Before invoking LibreOffice, the server registers your document's resolved fonts with the OS — Google Fonts fetched from the built-in catalog (and disk-cached), plus any fonts you registered via `--font` or `--fonts-dir`. This makes the PDF preview show the actual typefaces. It never changes the exported document's bytes; generated files never embed fonts.
+- **Staged fonts.** Before invoking LibreOffice, the server registers your document's resolved fonts with the OS — Google Fonts fetched from the built-in catalog (and disk-cached), plus any fonts you registered via `--font` or `--fonts-dir`. This makes the PDF preview show the actual typefaces. It never changes the exported document's bytes: a downloaded `.docx` carries font files only when you pick **Embed fonts in the file** in the export dialog (see [Embedding fonts](/guide/fonts#embedding-fonts)).
 - **Graceful absence.** LibreOffice is optional. Without it, the preview endpoints return a 503 and the playground falls back to the standard preview. Point the server at a specific binary with the `LIBREOFFICE_PATH` environment variable if it is not on your `PATH`.
 
 ## AI assistant

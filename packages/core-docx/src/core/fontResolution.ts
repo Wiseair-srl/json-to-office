@@ -1,18 +1,20 @@
 /**
- * Shared font-resolution helper used by BOTH entry paths into renderDocument:
+ * Font resolution for a DOCX render: validation, SAFE_FONTS awareness, Google
+ * Fonts materialization, and the `onResolved` side-channel consumed by the
+ * LibreOffice preview font stager.
  *
- * - generator.ts → generateDocumentWithCustomThemes (non-plugin)
- * - plugin/createDocumentGenerator.ts → generate (plugin-aware)
- *
- * Keeping it in one place ensures the two paths behave identically around
- * validation, SAFE_FONTS awareness, Google Fonts materialization, and the
- * `onResolved` side-channel consumed by the LibreOffice preview font stager.
+ * One call site, `compileDocumentScoped` in `generateFromIr.ts`, which both
+ * public entry paths — `generator.ts` and the plugin-aware
+ * `plugin/createDocumentGenerator.ts` — reach, so they cannot disagree about
+ * any of the above.
  *
  * Materialization has two triggers: an `onResolved` listener, or the
  * caller's `forceMaterialize` flag (set when the document contains a
  * `visual`, whose PNG is produced by an out-of-process LibreOffice that
- * needs real font files). Both entry paths return the resolved fonts so the
- * caller can forward them to the rasterizer.
+ * needs real font files, a `highcharts`, whose export server needs them
+ * likewise, or when `embed` mode will write them into the package). The
+ * resolved fonts are returned so the caller can forward them to whichever
+ * of those needs them.
  */
 
 import type {
@@ -47,6 +49,8 @@ export async function resolveDocumentFonts(
    * whose PNG is rendered by an out-of-process LibreOffice that needs the
    * actual font files — there is no listener on the plain CLI path, so
    * without this a visual-bearing build silently renders with fallbacks.
+   * `embed` mode sets it for the same reason: without it there would be
+   * nothing to embed.
    */
   forceMaterialize = false
 ): Promise<ResolvedFont[]> {
@@ -106,8 +110,9 @@ export async function resolveDocumentFonts(
   // Registry resolution (Google/URL/file fetches) runs when a consumer is
   // listening via onResolved — typically the LibreOffice preview stager —
   // or when the caller forces materialization because the document has a
-  // `visual` to rasterize. Office output never embeds bytes, so skipping
-  // fetches when neither applies keeps library callers off the network.
+  // `visual` to rasterize, a chart to draw, or fonts to embed. Office output
+  // carries the bytes only in `embed` mode, so skipping fetches when none of
+  // these applies keeps library callers off the network.
   if (!fonts?.onResolved && !forceMaterialize) return [];
 
   const registry = new FontRegistry({

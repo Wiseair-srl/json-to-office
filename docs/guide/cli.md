@@ -72,7 +72,7 @@ jto docx generate report.json --font Inter=./fonts/Inter-Regular.ttf
 jto docx generate report.json --fonts-dir ./fonts
 ```
 
-Google Fonts referenced in the document are fetched over HTTP only by the dev-server/LibreOffice preview pipeline — plain `generate` never fetches them, so offline or air-gapped CLI builds need no special flags. `--no-google-fonts` and `--font-cache-dir` are forwarded to font resolution, but since `generate` has nothing to fetch or cache, neither changes the file it writes. To fail hard instead of falling back when a font can't be resolved:
+Google Fonts referenced in the document are fetched over HTTP by the dev-server/LibreOffice preview pipeline, and by plain `generate` only when it needs the font files themselves: with `--font-mode embed` (below), or for a document with a `visual` or `highcharts`. Any other CLI build fetches nothing, so offline or air-gapped builds need no special flags; for those that do fetch, `--no-google-fonts` keeps them offline and `--font-cache-dir` caches what they fetch. To fail hard instead of falling back when a font can't be resolved:
 
 ```bash
 jto docx generate report.json --strict-fonts              # fail on unresolved fonts
@@ -85,7 +85,15 @@ jto docx generate report.json --font-mode substitute
 jto docx generate report.json --font-substitute "Futura=Century Gothic"
 ```
 
-The substitution target must be one of the safe fonts (`jto docx fonts list` prints them). More in [Fonts](/guide/fonts).
+The substitution target must be one of the safe fonts (`jto docx fonts list` prints them).
+
+Or, for a `.docx`, write the registered font files into the document so readers without them still see the typeface:
+
+```bash
+jto docx generate report.json --font Inter=./fonts/Inter-Regular.ttf --font-mode embed
+```
+
+Only the regular, bold, italic and bold italic faces of TTF/OTF fonts embed. More in [Fonts](/guide/fonts#embedding-fonts).
 
 ### Plugins and dry runs
 

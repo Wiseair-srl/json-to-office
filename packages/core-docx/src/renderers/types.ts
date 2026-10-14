@@ -10,7 +10,10 @@ import type {
   OfficeRenderer,
   RenderOptions,
 } from '@json-to-office/shared/rendering';
-import type { GenerationWarning } from '@json-to-office/shared';
+import type {
+  EmbeddedFontFace,
+  GenerationWarning,
+} from '@json-to-office/shared';
 import type { DocxFeature } from '../ir/features';
 import type { DocxIR } from '../ir/types';
 import {
@@ -45,6 +48,16 @@ export interface DocxRenderOptions extends RenderOptions {
    * can turn it off and get the render back.
    */
   svgRasterFallback?: boolean;
+  /**
+   * Font faces to write into the package (`embed` export mode), one entry per
+   * family with its regular face and up to three more.
+   *
+   * A render-time resource, not document semantics: which faces embed was
+   * decided for this render, against the renderer writing it, and the IR is
+   * the same whether or not anything does. An adapter that cannot embed
+   * ignores it — `office-open` does, and the pipeline never hands it any.
+   */
+  embeddedFonts?: readonly EmbeddedFontFace[];
 }
 
 export interface DocxRenderer

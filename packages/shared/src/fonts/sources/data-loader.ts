@@ -65,8 +65,9 @@ export function loadDataFontSource(input: DataSourceInput): ResolvedFontSource {
       'Decoded font buffer is not a recognized font (expected TTF/OTF/WOFF/WOFF2)'
     );
   }
-  // WOFF/WOFF2 flow through: Office output never embeds bytes, and the
-  // LibreOffice preview stager handles them via fontconfig.
+  // WOFF/WOFF2 flow through: the LibreOffice preview stager handles them via
+  // fontconfig, and the one path that writes bytes into Office output, the
+  // `embed` export mode, refuses them per face (`embed-faces.ts`).
   return {
     data,
     weight: input.weight ?? 400,

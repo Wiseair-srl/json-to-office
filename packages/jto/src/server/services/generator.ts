@@ -95,8 +95,8 @@ function documentFilenameBase(config: unknown): string | undefined {
  * Playground-only convenience: scan the document for font names that match
  * a POPULAR_GOOGLE_FONTS family and auto-build `fonts.extraEntries` so the
  * LibreOffice preview stager can materialise the bytes for PDF conversion.
- * The final .docx/.pptx does not embed them — substitution is the default
- * export mode.
+ * The final .docx/.pptx carries them only when the request asks for the
+ * `embed` export mode (DOCX); `custom`, the default, ships references.
  */
 export function collectReferencedNames(
   config: unknown,
@@ -421,8 +421,10 @@ export class GeneratorService {
         ? (callerFonts as { strict: boolean }).strict
         : undefined;
     const rawMode = callerFonts?.mode;
-    const fontMode: 'substitute' | 'custom' | undefined =
-      rawMode === 'substitute' || rawMode === 'custom' ? rawMode : undefined;
+    const fontMode: 'substitute' | 'custom' | 'embed' | undefined =
+      rawMode === 'substitute' || rawMode === 'custom' || rawMode === 'embed'
+        ? rawMode
+        : undefined;
     const rawSub = callerFonts?.substitution;
     const fontSubstitution =
       rawSub && typeof rawSub === 'object' && !Array.isArray(rawSub)
@@ -491,8 +493,8 @@ export class GeneratorService {
       options?.bypassCache === true ||
       extraEntries.length > 0 ||
       declaresRegistry;
-    // Include font runtime selectors in the cache key so substitute vs
-    // custom runs (same config+themes) don't collide on a single buffer
+    // Include font runtime selectors in the cache key so substitute, custom
+    // and embed runs (same config+themes) don't collide on a single buffer
     // slot. `extraEntries` already forces bypassCache, so only need
     // mode/substitution/strict in the key for the non-bypass path.
     const baseDir =

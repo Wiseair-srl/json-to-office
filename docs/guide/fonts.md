@@ -1,10 +1,6 @@
 # Fonts
 
-json-to-office **never embeds font bytes** into a generated `.docx` or `.pptx` — the output always relies on fonts installed on the reader's machine. This page explains why, which fonts are safe to use, and how the library handles everything else: substitution, strict validation, and registering custom typefaces for preview rendering.
-
-::: info Why no embedding?
-Correct font embedding in OOXML is a minefield: Word for Mac silently falls back for non-regular/bold/italic weights, `fsType` license bits can forbid embedding, WOFF/WOFF2 aren't spec-compliant inside OOXML, and Google Fonts metadata routinely needs byte-level patching before Word accepts it. Substitution to office-installed fonts sidesteps every one of those failure modes and keeps output predictable.
-:::
+By default a generated `.docx` or `.pptx` **references** its fonts by name and relies on the reader's machine to have them. This page covers which fonts are safe to use that way, and the three ways to handle everything else: keep the references (`custom`, the default), rewrite them to safe fonts (`substitute`), or — DOCX only, opt-in — write the font files into the document (`embed`). It also covers strict validation and registering custom typefaces.
 
 ## SAFE_FONTS
 
@@ -22,10 +18,11 @@ Matching is case-insensitive. Every other family is "non-safe" and goes through 
 
 Every referenced font family — collected from the document **and** the active theme — is checked against SAFE_FONTS before rendering. What happens to non-safe references depends on the mode, set via `options.fonts.mode` (library) or `--font-mode` (CLI):
 
-| Mode               | Behavior                                                                                                                                                                                                                                       |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `custom` (default) | References are kept as authored. Readers with the font installed see the intended typeface; everyone else gets the host's fallback. Emits a single `FONT_MODE_CUSTOM` warning when non-safe fonts are present and a `fonts` option was passed. |
-| `substitute`       | Every non-safe family in the document _and_ theme is rewritten to a SAFE_FONTS equivalent at generate time, so output renders identically everywhere. Emits a single `FONT_MODE_SUBSTITUTED` warning listing the swaps.                        |
+| Mode               | Behavior                                                                                                                                                                                                                                                                                                                                                                              |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `custom` (default) | References are kept as authored. Readers with the font installed see the intended typeface; everyone else gets the host's fallback. Emits a single `FONT_MODE_CUSTOM` warning when non-safe fonts are present and a `fonts` option was passed.                                                                                                                                        |
+| `substitute`       | Every non-safe family in the document _and_ theme is rewritten to a SAFE_FONTS equivalent at generate time, so output renders identically everywhere. Emits a single `FONT_MODE_SUBSTITUTED` warning listing the swaps.                                                                                                                                                               |
+| `embed`            | DOCX on the `docxjs` renderer only, opt-in. References are kept as in `custom`, and the resolved TTF/OTF files of every non-safe family are written into the document, so readers without the font installed still see it. Weights, formats and licences limit what embeds — see [Embedding fonts](#embedding-fonts). Emits a single `FONT_MODE_EMBED` warning listing what embedded. |
 
 ### The default substitution map
 
@@ -60,13 +57,54 @@ const buffer = await generateBufferFromJson(json, {
 });
 ```
 
+## Embedding fonts
+
+`embed` is opt-in: `options.fonts.mode: 'embed'` (library), `--font-mode embed` (CLI), `fonts.mode: "embed"` on the MCP server's `jto_generate`, or **Embed fonts in the file** in the playground's export dialog. The dev-server API honours `options.fonts.mode: "embed"` on `POST /api/docx/generate` too: what it embeds comes from the server's own font resolution, never from the request.
+
+```bash
+jto docx generate report.json --font-mode embed
+```
+
+```ts
+const buffer = await generateBufferFromJson(json, {
+  fonts: { mode: 'embed' },
+});
+```
+
+The bytes come from the same resolution as the rest of this page — the theme's and document's `fontRegistry`, `extraEntries`, Google Fonts — so a family has to be [registered](#registering-non-safe-fonts) to embed; an unregistered one stays a reference. Safe fonts never embed.
+
+**Where it works.** DOCX, on the default `docxjs` renderer. The `office-open` renderer does not embed yet: asked to, it keeps the references as in `custom` and says so with `FONT_EMBED_UNSUPPORTED_RENDERER`. PPTX does not embed fonts at all and falls back the same way, with `FONT_EMBED_UNSUPPORTED_FORMAT`.
+
+**Which faces.** Word's font table holds four faces per family — regular, bold, italic, bold italic — and a run chooses among them with nothing but its bold and italic toggles. Each slot takes the family's weight 400 (regular, italic) or 700 (bold, bold italic); when that weight is missing, the nearest one on the same side fills in — 500 for regular, 600 for bold — and the summary names the substitution. Any other weight (100–300, 800, 900, or a 500 beside a 400) is not embedded and gets a `FONT_EMBED_WEIGHT_DROPPED` warning. Its reference stays as authored: a run at that weight names its sub-family (`fontWeight: 300` on Inter writes `Inter Light`, see [`fontWeight` vs `bold`](#fontweight-vs-bold)), which the document does not carry, so a reader without the font sees a fallback there, exactly as in `custom`. A family without a regular face embeds nothing.
+
+::: warning Word for Mac
+Word for Mac silently substitutes a face it cannot address by family plus bold/italic — one of the reasons jto once stopped embedding. Keeping to the four slots is what avoids it, which is why other weights are left out rather than embedded. Check the document in Word for Mac before relying on a family whose regular or bold face came from a nearest weight.
+:::
+
+**Formats.** Only TrueType and OpenType files embed. A WOFF, WOFF2, EOT or Type 1 source is skipped with `FONT_EMBED_SKIPPED_FORMAT`; nothing is converted. Google Fonts resolve to TTF, so this concerns the files you register yourself.
+
+**Licences.** Each face's `OS/2.fsType` is read before it embeds:
+
+| `fsType` | Licence         | What happens                                                              |
+| -------- | --------------- | ------------------------------------------------------------------------- |
+| `0x0000` | Installable     | Embedded.                                                                 |
+| `0x0008` | Editable        | Embedded.                                                                 |
+| `0x0004` | Preview & print | Embedded, with `FONT_EMBED_READ_ONLY`: Word opens the document read-only. |
+| `0x0002` | Restricted      | Not embedded: `FONT_EMBED_SKIPPED_LICENSE`.                               |
+
+When a font sets several of these bits, the least restrictive applies, as the OpenType specification says. A face whose OS/2 table cannot be read counts as installable.
+
+**File size.** The whole font file is embedded, not a subset of the glyphs the document uses, so each face adds its full size, which for a large family runs to megabytes.
+
+**Reproducible builds.** OOXML stores an embedded font obfuscated with a key. With `deterministic` on — the default — the key is derived from the font's own bytes, so the same JSON and fonts build the same file; `--no-deterministic` keeps the random keys the renderer generates.
+
 ## Strict mode
 
 `options.fonts.strict: true` (library) or `--strict-fonts` (CLI) turns unresolved font references into hard failures instead of warnings: generation **throws** on any family that is neither in SAFE_FONTS nor backed by a registered entry.
 
-The check runs _after_ the export-mode pre-pass, which makes the two modes behave differently under strict:
+The check runs _after_ the export-mode pre-pass, which makes the modes behave differently under strict:
 
-- In `custom` mode, every non-safe reference survives to validation — strict throws.
+- In `custom` (and `embed`) mode, every non-safe reference survives to validation — strict throws.
 - In `substitute` mode, non-safe references have already been rewritten to safe fonts — strict only throws if something slipped past the rewrite (e.g. a custom substitution targeting another non-safe family).
 
 ::: warning
@@ -139,15 +177,17 @@ The same entry shape goes in the document itself, which is the portable option �
 
 A `fontRegistry` is a **declaration, not a reference**: the families named inside it (including a `google` source's `family`) are not treated as fonts the document uses, and `substitute` mode never rewrites them. Only actual `font.family` / `fontFace` / `theme.fonts.*` references count.
 
-::: warning Registration is for rendering fidelity, not embedding
-Registered font bytes are materialized (fetched, cached, pinned) only for the pipelines that need real font files on disk, and are registered with the OS before LibreOffice runs. There are two:
+::: warning Registration alone embeds nothing
+Registered font bytes are materialized (fetched, cached, pinned) only for the pipelines that need the real font files:
 
-- the **LibreOffice preview**, so the in-browser PDF preview shows the real typeface; and
-- **`visual` rasterization**, where an out-of-process LibreOffice renders the nested slide to a PNG.
+- the **LibreOffice preview**, which registers them with the OS so the in-browser PDF preview shows the real typeface;
+- **`visual` rasterization**, where an out-of-process LibreOffice renders the nested slide to a PNG;
+- **`highcharts`**, whose export server sets the chart in the document's faces; and
+- **`embed` mode**, which writes them into the `.docx`.
 
-The second one has a consequence worth knowing: a document containing a `visual` materializes its fonts — including Google Fonts network fetches — even on a plain CLI `jto docx generate`, with no preview involved, because the rasterizer cannot render text without the files. Documents with no `visual` never fetch.
+The last three have a consequence worth knowing: such a document materializes its fonts — including Google Fonts network fetches — even on a plain CLI `jto docx generate`, with no preview involved. A document with none of them, built in `custom` or `substitute` mode, never fetches.
 
-The downloaded `.docx`/`.pptx` bytes are unaffected either way: no embedding, ever.
+Outside `embed` mode the downloaded `.docx`/`.pptx` bytes are unaffected either way: registering a font never puts it in the file.
 :::
 
 ### From the playground
@@ -165,27 +205,34 @@ Uploaded and embedded fonts also render in the **fast in-browser preview**, whic
 
 All flags apply to `jto docx generate` and `jto pptx generate`; see the [CLI reference](/reference/cli) for the full command surface.
 
-| Flag                              | Description                                                                                                                                                                                                |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--font <name=path>`              | Register a font file (repeatable): `<family>=<path to .ttf/.otf>`.                                                                                                                                         |
-| `--fonts-dir <path>`              | Scan a directory for `.ttf`/`.otf` files and auto-register them by filename.                                                                                                                               |
-| `--font-mode <mode>`              | `custom` (default) or `substitute`.                                                                                                                                                                        |
-| `--font-substitute <family=safe>` | Map a non-safe family to a specific safe font (repeatable; used with `--font-mode substitute`).                                                                                                            |
-| `--strict-fonts`                  | Fail generation on unresolved font references.                                                                                                                                                             |
-| `--no-google-fonts`               | Sets `fonts.googleFonts.enabled: false`. Forwarded to font resolution, but has no effect on `generate` output because `generate` never fetches — fetching happens only in the dev-server preview pipeline. |
-| `--font-cache-dir <path>`         | Sets `fonts.googleFonts.cacheDir`. Forwarded the same way, and inert on `generate` output for the same reason.                                                                                             |
+| Flag                              | Description                                                                                                                                                                                                                                                              |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `--font <name=path>`              | Register a font file (repeatable): `<family>=<path to .ttf/.otf>`.                                                                                                                                                                                                       |
+| `--fonts-dir <path>`              | Scan a directory for `.ttf`/`.otf` files and auto-register them by filename.                                                                                                                                                                                             |
+| `--font-mode <mode>`              | `custom` (default), `substitute`, or `embed` (DOCX on the `docxjs` renderer; see [Embedding fonts](#embedding-fonts)).                                                                                                                                                   |
+| `--font-substitute <family=safe>` | Map a non-safe family to a specific safe font (repeatable; used with `--font-mode substitute`).                                                                                                                                                                          |
+| `--strict-fonts`                  | Fail generation on unresolved font references.                                                                                                                                                                                                                           |
+| `--no-google-fonts`               | Sets `fonts.googleFonts.enabled: false`. `generate` fetches only when it needs font files — in `embed` mode, or for a document with a `visual` or `highcharts` — so this keeps such a build offline, at the cost of those Google families; otherwise it changes nothing. |
+| `--font-cache-dir <path>`         | Sets `fonts.googleFonts.cacheDir`, the disk cache for those same fetches; inert when `generate` fetches nothing.                                                                                                                                                         |
 
 ## Warning codes
 
 Font handling surfaces structured warnings you can collect programmatically (via the `warnings` option) or read from CLI output:
 
-| Code                     | Meaning                                                                                                                                                                                                                                                                           |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `FONT_UNRESOLVED`        | A family is neither in SAFE_FONTS nor registered; output relies on host fallback. Becomes a thrown error under strict mode.                                                                                                                                                       |
-| `FONT_MODE_SUBSTITUTED`  | Substitute mode rewrote one or more families (the warning lists the swaps).                                                                                                                                                                                                       |
-| `FONT_MODE_CUSTOM`       | Custom mode kept non-safe references as authored.                                                                                                                                                                                                                                 |
-| `FONT_METADATA_DEFECT:*` | Non-fatal TTF metadata issues found by the registry validator: `WEIGHT_CLASS_MISMATCH`, `SUBFAMILY_MISMATCH`, `LEGACY_SUBFAMILY_MISMATCH`. `fsType` embedding-permission bits are intentionally _not_ checked — output never embeds fonts, so permission warnings would be noise. |
-| `FONT_OVERRIDE_LOCAL`    | A caller-supplied `extraEntries` entry took precedence over the Google Fonts auto-fetch for a referenced family. Emitted only by the dev-server (playground preview) pipeline — never by CLI `generate` or the library.                                                           |
+| Code                              | Meaning                                                                                                                                                                                                                                                                                                                          |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `FONT_UNRESOLVED`                 | A family is neither in SAFE_FONTS nor registered; output relies on host fallback. Becomes a thrown error under strict mode.                                                                                                                                                                                                      |
+| `FONT_MODE_SUBSTITUTED`           | Substitute mode rewrote one or more families (the warning lists the swaps).                                                                                                                                                                                                                                                      |
+| `FONT_MODE_CUSTOM`                | Custom mode kept non-safe references as authored.                                                                                                                                                                                                                                                                                |
+| `FONT_MODE_EMBED`                 | Embed mode's one summary: the families embedded and their faces, the faces filled from a nearest weight, and the non-safe families that embedded nothing.                                                                                                                                                                        |
+| `FONT_EMBED_SKIPPED_FORMAT`       | A face is not TTF or OTF (WOFF, WOFF2, EOT, Type 1) and was not embedded.                                                                                                                                                                                                                                                        |
+| `FONT_EMBED_SKIPPED_LICENSE`      | A face's `OS/2.fsType` restricts embedding; it was not embedded.                                                                                                                                                                                                                                                                 |
+| `FONT_EMBED_READ_ONLY`            | A face was embedded under a preview & print licence; Word opens the document read-only.                                                                                                                                                                                                                                          |
+| `FONT_EMBED_WEIGHT_DROPPED`       | A face fills none of Word's four slots per family, or another face already fills its slot; it stays a reference.                                                                                                                                                                                                                 |
+| `FONT_EMBED_UNSUPPORTED_RENDERER` | `embed` was asked of a DOCX renderer other than `docxjs`; references kept as in `custom`.                                                                                                                                                                                                                                        |
+| `FONT_EMBED_UNSUPPORTED_FORMAT`   | `embed` was asked of a PPTX; references kept as in `custom`.                                                                                                                                                                                                                                                                     |
+| `FONT_METADATA_DEFECT:*`          | Non-fatal TTF metadata issues found by the registry validator: `WEIGHT_CLASS_MISMATCH`, `SUBFAMILY_MISMATCH`, `LEGACY_SUBFAMILY_MISMATCH`. `fsType` embedding-permission bits are not checked here, on every resolution; `embed` mode reads them per face when it embeds (`FONT_EMBED_SKIPPED_LICENSE`, `FONT_EMBED_READ_ONLY`). |
+| `FONT_OVERRIDE_LOCAL`             | A caller-supplied `extraEntries` entry took precedence over the Google Fonts auto-fetch for a referenced family. Emitted only by the dev-server (playground preview) pipeline — never by CLI `generate` or the library.                                                                                                          |
 
 ## `fontWeight` vs `bold`
 

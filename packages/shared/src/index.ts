@@ -159,6 +159,7 @@ export {
   type UpstreamVariant,
   type ResolvedFont,
   type ResolvedFontSource,
+  type EmbeddedFontFace,
   type FontRuntimeOpts,
   type FontResolutionIssue,
   type FontIssueCode,

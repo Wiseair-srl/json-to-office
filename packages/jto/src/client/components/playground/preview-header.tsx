@@ -235,21 +235,26 @@ function PreviewHeader({
           });
         } else {
           download(`${name}${FORMAT_EXT}`, result.blob);
-          // Surface substitute swaps / custom-mode advisory so the user
-          // knows what happened to their non-safe fonts in the downloaded
-          // file. The in-page warnings panel reflects the last preview
-          // build, not this download.
+          // Surface substitute swaps / the custom-mode advisory / what embed
+          // mode wrote (or why it could not) so the user knows what happened
+          // to their non-safe fonts in the downloaded file. The in-page
+          // warnings panel reflects the last preview build, not this download.
           const fontModeWarning = result.warnings?.find(
             (w) =>
               w.context?.code === 'FONT_MODE_SUBSTITUTED' ||
-              w.context?.code === 'FONT_MODE_CUSTOM'
+              w.context?.code === 'FONT_MODE_CUSTOM' ||
+              w.context?.code === 'FONT_MODE_EMBED' ||
+              w.context?.code === 'FONT_EMBED_UNSUPPORTED_RENDERER'
           );
           if (fontModeWarning) {
             toast({
               title:
                 mode === 'substitute'
                   ? 'Fonts substituted'
-                  : 'Non-safe fonts kept',
+                  : mode === 'embed' &&
+                      fontModeWarning.context?.code === 'FONT_MODE_EMBED'
+                    ? 'Fonts embedded'
+                    : 'Non-safe fonts kept',
               description: fontModeWarning.message,
             });
           }

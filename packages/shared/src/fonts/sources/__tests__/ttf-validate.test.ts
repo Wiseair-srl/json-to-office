@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateFontMetadata } from '../ttf-validate';
+import { readFontFsType, validateFontMetadata } from '../ttf-validate';
 
 /** Build a TTF with both OS/2 and name tables — enough for validator probes. */
 function makeFont(opts: {
@@ -132,10 +132,11 @@ describe('validateFontMetadata', () => {
     );
   });
 
-  it('ignores fsType embedding-permission bits (we never embed bytes)', () => {
-    // Previously emitted FSTYPE_RESTRICTED/PREVIEW_PRINT/EDITABLE. Removed
-    // because substitute mode rewrites the tree and custom mode ships
-    // references as-is; neither path embeds font bytes in the Office output.
+  it('ignores fsType embedding-permission bits (embed mode reads them itself)', () => {
+    // Previously emitted FSTYPE_RESTRICTED/PREVIEW_PRINT/EDITABLE on every
+    // resolution. Only `embed` mode writes the bytes into a document, so it
+    // reads the bits per face through `readFontFsType`, where they decide
+    // something; here they would be noise for every Google Fonts resolution.
     for (const fsType of [0x0002, 0x0004, 0x0008, 0x0002 | 0x0004 | 0x0008]) {
       const font = makeFont({
         usWeightClass: 400,
@@ -241,5 +242,21 @@ describe('validateFontMetadata — family name', () => {
     const font = makeFont({ usWeightClass: 400, name2: 'Regular' });
     const diags = validateFontMetadata(font, 400, false, 'Anything');
     expect(diags.map((d) => d.code)).not.toContain('FAMILY_MISMATCH');
+  });
+});
+
+describe('readFontFsType', () => {
+  it('reads OS/2.fsType, combined bits included', () => {
+    for (const fsType of [0, 0x0002, 0x0004, 0x0008, 0x0100 | 0x0004]) {
+      const font = makeFont({ usWeightClass: 400, fsType });
+      expect(readFontFsType(font)).toBe(fsType);
+    }
+  });
+
+  it('answers null when there is no OS/2 table to read', () => {
+    expect(readFontFsType(Buffer.from('wOFF0000', 'ascii'))).toBeNull();
+    // An OS/2 table cut short before fsType.
+    const font = makeFont({ usWeightClass: 400, fsType: 0x0002 });
+    expect(readFontFsType(font.subarray(0, font.length - 2))).toBeNull();
   });
 });
