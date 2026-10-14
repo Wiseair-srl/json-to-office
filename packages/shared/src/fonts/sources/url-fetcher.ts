@@ -112,7 +112,9 @@ export async function fetchUrlFontSource(
     const raw = Buffer.from(ab);
     // Reject obvious non-font responses — e.g. jsDelivr 404 HTML, 200 OK
     // redirect pages, or aliased directory listings. Without this check the
-    // bytes would sail through to the embed step and corrupt the output.
+    // bytes would sail through to every consumer that trusts the format —
+    // the preview stager, the rasterizer, and `embed` mode, which writes
+    // them into the document.
     const format = detectFontFormat(raw);
     if (format === 'unknown' || raw.length < 512) {
       return {
@@ -121,8 +123,10 @@ export async function fetchUrlFontSource(
         ],
       };
     }
-    // WOFF/WOFF2 flow through: Office output never embeds bytes; the
-    // LibreOffice preview stager handles them via fontconfig.
+    // WOFF/WOFF2 flow through: the LibreOffice preview stager handles them
+    // via fontconfig, and `embed` mode refuses them per face
+    // (`embed-faces.ts`) rather than here, where it would cost every other
+    // consumer the face.
     // Metadata validation runs centrally in FontRegistry.materializeEntry.
     const buf = raw;
     opts.memoryCache?.set(key, buf);

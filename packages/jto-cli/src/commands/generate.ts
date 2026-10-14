@@ -44,7 +44,7 @@ interface GenerateOptions extends QualityCommandOptions {
   fontCacheDir?: string;
   font?: string[];
   fontsDir?: string;
-  fontMode?: 'substitute' | 'custom';
+  fontMode?: 'substitute' | 'custom' | 'embed';
   fontSubstitute?: string[];
   deterministic?: boolean;
   svgFallback?: boolean;
@@ -130,11 +130,11 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
     )
     .option(
       '--font-mode <mode>',
-      'How to handle non-safe fonts: custom or substitute',
+      'How to handle non-safe fonts: custom, substitute or embed (embed: docx only, docxjs renderer)',
       (value: string) => {
-        if (value !== 'substitute' && value !== 'custom') {
+        if (value !== 'substitute' && value !== 'custom' && value !== 'embed') {
           throw new Error(
-            `--font-mode must be one of: substitute, custom (got "${value}")`
+            `--font-mode must be one of: custom, substitute, embed (got "${value}")`
           );
         }
         return value;

@@ -15,12 +15,13 @@
 
 import { assertRendererSupports } from '@json-to-office/shared/rendering';
 import type { GenerationWarning, ServicesConfig } from '@json-to-office/shared';
-import type { FontRuntimeOpts } from '@json-to-office/shared';
+import type { EmbeddedFontFace, FontRuntimeOpts } from '@json-to-office/shared';
 import { resolveDocumentFonts } from './fontResolution';
 import {
   toChartFontFaces,
   toRasterizeFontFaces,
 } from '@json-to-office/shared/fonts/node';
+import { embedsFonts, selectEmbeddedFonts } from './fontEmbedding';
 import { collectVisualProps } from './prerasterizeVisuals';
 import { containsComponent } from './componentTransform';
 import { desugarExternals } from './desugarExternals';
@@ -112,6 +113,13 @@ export interface CompiledDocx {
   warnings: GenerationWarning[];
   required: ReturnType<typeof compileDocument>['required'];
   unsupported: UnsupportedComponent[];
+  /**
+   * The font faces `embed` mode writes into the package; empty in every other
+   * mode. Kept beside the IR rather than in it: they are a resource of this
+   * render, chosen for the renderer that will write it, not something the
+   * document says, and the IR stays the same in every mode.
+   */
+  embeddedFonts: EmbeddedFontFace[];
 }
 
 /**
@@ -157,7 +165,7 @@ async function compileDocumentScoped(
 
   // Fonts resolve for the LibreOffice preview stager's side-channel:
   // `resolveDocumentFonts` fires `fonts.onResolved` when a listener is
-  // registered. The package never embeds the bytes.
+  // registered. Only `embed` mode writes the bytes into the package.
   //
   // A `visual` is rasterized by an out-of-process LibreOffice that needs the
   // real font files, so a visual-bearing document forces materialisation even
@@ -167,15 +175,24 @@ async function compileDocumentScoped(
   // A `highcharts` is drawn by an export server's browser, which likewise
   // needs the bytes of any registered face to set the chart in the document's
   // type, so a chart-bearing document materialises for the same reason.
+  //
+  // `embed` materialises because the bytes are what it ships. Decided against
+  // the renderer this render will use — the same id `renderScoped` resolves —
+  // so a backend that cannot embed falls back to custom before anything is
+  // fetched for it.
   const hasVisual = collectVisualProps(context.document).length > 0;
   const hasHighcharts = containsComponent(context.document, 'highcharts');
+  const embedding = embedsFonts(options.fonts, options.renderer, warnings);
   const resolvedFonts = await resolveDocumentFonts(
     context.document,
     context.theme,
     options.fonts,
     warnings,
-    hasVisual || hasHighcharts
+    hasVisual || hasHighcharts || embedding
   );
+  const embeddedFonts = embedding
+    ? selectEmbeddedFonts(resolvedFonts, warnings)
+    : [];
   // Gated on the ENCODED faces, not on how many fonts resolved: a safe-only
   // font resolves to an entry with no sources, which encodes to nothing, and a
   // document with only safe fonts must send no `fonts` key at all so its
@@ -238,6 +255,7 @@ async function compileDocumentScoped(
     warnings: compiled.warnings,
     required: compiled.required,
     unsupported: compiled.unsupported,
+    embeddedFonts,
   };
 }
 
@@ -284,6 +302,9 @@ async function renderScoped(
       : {}),
     ...(options.svgRasterFallback !== undefined
       ? { svgRasterFallback: options.svgRasterFallback }
+      : {}),
+    ...(compiled.embeddedFonts.length > 0
+      ? { embeddedFonts: compiled.embeddedFonts }
       : {}),
     warnings: compiled.warnings,
   });

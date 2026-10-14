@@ -1,6 +1,7 @@
 export type {
   ResolvedFont,
   ResolvedFontSource,
+  EmbeddedFontFace,
   FontRuntimeOpts,
   FontSource,
   FontRegistryEntry,

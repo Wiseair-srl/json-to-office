@@ -31,8 +31,9 @@ export async function loadFileFontSource(
   }
   // No format rejection here: bytes flow to the LibreOffice preview
   // stager, which handles WOFF/WOFF2 natively via fontconfig on
-  // Linux/macOS. Office output never embeds these bytes — substitute/
-  // custom modes rely on recipient-side fonts.
+  // Linux/macOS. Substitute and custom modes rely on recipient-side fonts;
+  // `embed` mode, which writes the bytes into the document, refuses a
+  // WOFF/WOFF2 face itself (`embed-faces.ts`).
   return {
     data,
     weight: input.weight ?? 400,

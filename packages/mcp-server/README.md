@@ -199,7 +199,7 @@ The gate, not `jto://schema/{format}/document`. The two agree except on componen
 
 ### `jto_generate`
 
-**In** — `format` (required); document source; render options; `outputMode` (`path` | `base64`, default `path`); `filename` (relative to the output root, default `document.docx` / `presentation.pptx`); `fonts` `{strict, mode: "custom" | "substitute", substitution, baseDir, googleFonts: {enabled, fetchTimeoutMs}}`; `validation` `{allowUnknownFields}`.
+**In** — `format` (required); document source; render options; `outputMode` (`path` | `base64`, default `path`); `filename` (relative to the output root, default `document.docx` / `presentation.pptx`); `fonts` `{strict, mode: "custom" | "substitute" | "embed", substitution, baseDir, googleFonts: {enabled, fetchTimeoutMs}}` (`embed` is DOCX on the `docxjs` renderer only); `validation` `{allowUnknownFields}`.
 
 **Out** — `format`, `renderer` (when requested), `theme` (what the render actually settled on, absent when the document's own `props.theme` decided), `artifact`, `source`.
 

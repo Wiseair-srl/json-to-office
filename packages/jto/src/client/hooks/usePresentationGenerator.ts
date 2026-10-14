@@ -159,7 +159,7 @@ export function usePresentationGenerator() {
         /** Renderer id; undefined means the format's default backend. */
         renderer?: string;
         fonts?: {
-          mode?: 'substitute' | 'custom';
+          mode?: 'substitute' | 'custom' | 'embed';
           substitution?: Record<string, string>;
         };
         /** Profile and gate for the server-side quality analysis. */
@@ -203,7 +203,7 @@ export function usePresentationGenerator() {
             sourceName?: string;
             renderer?: string;
             fonts?: {
-              mode?: 'substitute' | 'custom';
+              mode?: 'substitute' | 'custom' | 'embed';
               substitution?: Record<string, string>;
               strict?: boolean;
             };

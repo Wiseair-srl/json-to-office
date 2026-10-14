@@ -187,6 +187,13 @@ describe('applyExportMode', () => {
     expect(out.doc).toBe(doc);
   });
 
+  it("mode 'embed' keeps refs and leaves the summary to the pipeline", () => {
+    const out = applyExportMode({ doc, theme, fonts: { mode: 'embed' } });
+    expect(out.doc).toBe(doc);
+    expect(out.theme).toBe(theme);
+    expect(out.warnings).toEqual([]);
+  });
+
   it("mode 'substitute' rewrites doc + theme and lists swaps", () => {
     const out = applyExportMode({
       doc,

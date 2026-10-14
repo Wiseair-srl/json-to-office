@@ -145,7 +145,7 @@ function warningDiagnostic(warning: GenerationWarning): Diagnostic {
 
 interface FontOptionsInput {
   strict?: boolean;
-  mode?: 'substitute' | 'custom';
+  mode?: 'substitute' | 'custom' | 'embed';
   substitution?: Record<string, string>;
   baseDir?: string;
   googleFonts?: {
@@ -189,9 +189,9 @@ const fontsSchema = {
     },
     mode: {
       type: 'string' as const,
-      enum: ['custom', 'substitute'],
+      enum: ['custom', 'substitute', 'embed'],
       description:
-        '`custom` (default) keeps font references as written; `substitute` rewrites every non-safe family to a widely installed equivalent so the file renders identically everywhere.',
+        '`custom` (default) keeps font references as written; `substitute` rewrites every non-safe family to a widely installed equivalent so the file renders identically everywhere. `embed` (DOCX on the `docxjs` renderer only) writes the resolved TTF/OTF bytes of non-safe families into the file so a reader without the font installed still sees it.',
     },
     substitution: {
       type: 'object' as const,

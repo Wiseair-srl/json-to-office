@@ -29,6 +29,7 @@ import {
 
 interface JsonSchema {
   type?: string;
+  description?: string;
   enum?: unknown[];
   properties?: Record<string, JsonSchema>;
   required?: string[];
@@ -182,6 +183,13 @@ describe('shared options', () => {
         ).not.toContain(alias);
       }
     }
+  });
+
+  it('offers the three font export modes, embed included', () => {
+    const generate = tools.find((tool) => tool.name === 'jto_generate');
+    const mode = generate?.inputSchema.properties?.fonts?.properties?.mode;
+    expect(mode?.enum).toEqual(['custom', 'substitute', 'embed']);
+    expect(mode?.description).toContain('`embed` (DOCX on the `docxjs`');
   });
 
   it('does not expose a caller-controlled font cache directory', () => {

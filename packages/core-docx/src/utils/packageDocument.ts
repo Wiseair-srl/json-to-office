@@ -1,4 +1,6 @@
 import AdmZip from 'adm-zip';
+import { createHash } from 'node:crypto';
+import { posix } from 'node:path';
 import { normalizeTextCase } from './normalizeTextCase';
 
 export interface DocumentPackageOptions {
@@ -141,6 +143,106 @@ function canonicalizeRelationshipIds(zip: AdmZip): void {
   }
 }
 
+/** The `w:embedRegular` / `Bold` / `Italic` / `BoldItalic` of a font-table entry. */
+const FONT_EMBED = /<w:embed(?:Regular|Bold|Italic|BoldItalic)\b[^>]*>/g;
+
+/**
+ * ECMA-376 font obfuscation: the first 32 bytes of the file XORed with the
+ * key's 16 bytes in reverse order, cycled. XOR is its own inverse, so the one
+ * function both hides a font and recovers it — the same transform docx.js
+ * applies (`obfuscate` in docx 9.10).
+ */
+function xorFontKey(bytes: Buffer, guid: string): Buffer {
+  const key = Buffer.from(guid.replace(/-/g, ''), 'hex').reverse();
+  const out = Buffer.from(bytes);
+  for (let i = 0; i < Math.min(32, out.length); i++) out[i] ^= key[i % 16];
+  return out;
+}
+
+/**
+ * Give every embedded font a key derived from its own bytes.
+ *
+ * docx.js mints a random GUID per face and gives `FontOptions` no way to pass
+ * one in, so a document that embeds fonts differed on every render — in the
+ * first 32 bytes of each `word/fonts/font<N>.odttf` and in each `w:fontKey`.
+ * Re-keying with the leading 16 bytes of the de-obfuscated file's SHA-256
+ * makes both a pure function of the font, which is all the key has to be: a
+ * reader only ever uses it to undo the XOR on the part it is paired with.
+ *
+ * A package without embedded fonts is returned untouched, without a part
+ * being rewritten, so every other document costs one lookup.
+ */
+function canonicalizeEmbeddedFontKeys(zip: AdmZip): void {
+  const table = zip.getEntry('word/fontTable.xml');
+  if (!table) return;
+  const xml = table.getData().toString('utf8');
+  const embeds = [...xml.matchAll(FONT_EMBED)].flatMap(([element]) => {
+    const id = /\br:id="([^"]+)"/.exec(element)?.[1];
+    const key = /\bw:fontKey="\{([0-9A-Fa-f-]{36})\}"/.exec(element)?.[1];
+    return id && key ? [{ id, key }] : [];
+  });
+  if (embeds.length === 0) return;
+
+  const rels =
+    zip.getEntry('word/_rels/fontTable.xml.rels')?.getData().toString('utf8') ??
+    '';
+  const targets = new Map<string, string>();
+  for (const [relationship] of rels.matchAll(/<Relationship\b[^>]*>/g)) {
+    const id = /\bId="([^"]+)"/.exec(relationship)?.[1];
+    const target = /\bTarget="([^"]+)"/.exec(relationship)?.[1];
+    if (id && target) targets.set(id, target);
+  }
+
+  // Collect, then write: the same two-phase rule as the passes above.
+  const rekey = new Map<string, string>();
+  const parts: Array<{ name: string; data: Buffer }> = [];
+  for (const { id, key } of embeds) {
+    const target = targets.get(id);
+    if (!target) continue;
+    const name = target.startsWith('/')
+      ? target.slice(1)
+      : posix.normalize(posix.join('word', target));
+    const part = zip.getEntry(name);
+    if (!part) continue;
+    const font = xorFontKey(part.getData(), key);
+    const hex = createHash('sha256')
+      .update(font)
+      .digest('hex')
+      .slice(0, 32)
+      .toUpperCase();
+    const fresh = [
+      hex.slice(0, 8),
+      hex.slice(8, 12),
+      hex.slice(12, 16),
+      hex.slice(16, 20),
+      hex.slice(20),
+    ].join('-');
+    rekey.set(key.toUpperCase(), fresh);
+    parts.push({ name, data: xorFontKey(font, fresh) });
+  }
+  if (rekey.size === 0) return;
+
+  for (const { name, data } of parts) {
+    const entry = zip.getEntry(name);
+    if (entry) zip.updateFile(entry, data);
+  }
+  const fontTable = zip.getEntry('word/fontTable.xml');
+  if (!fontTable) return;
+  zip.updateFile(
+    fontTable,
+    Buffer.from(
+      xml.replace(
+        /\bw:fontKey="\{([0-9A-Fa-f-]{36})\}"/g,
+        (whole, key: string) => {
+          const fresh = rekey.get(key.toUpperCase());
+          return fresh ? `w:fontKey="{${fresh}}"` : whole;
+        }
+      ),
+      'utf8'
+    )
+  );
+}
+
 /** The `docProps/core.xml` creation and modification timestamps. */
 const CORE_TIMESTAMP =
   /(<dcterms:(?:created|modified)\b[^>]*>)[^<]*(<\/dcterms:(?:created|modified)>)/g;
@@ -258,6 +360,7 @@ export function canonicalizeDocxBuffer(
   normalizeTextCase(zip);
   canonicalizeRelationshipIds(zip);
   canonicalizeEmbeddedPackages(zip, generatedAt);
+  canonicalizeEmbeddedFontKeys(zip);
 
   const isoTimestamp = generatedAt.toISOString();
   const coreProperties = zip.getEntry('docProps/core.xml');

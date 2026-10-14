@@ -8,14 +8,18 @@ import {
   DialogTitle,
 } from '../ui/dialog';
 import { Button } from '../ui/button';
+import { FORMAT } from '../../lib/env';
 
 /**
- * Two modes after embed removal:
- *   - `custom`    — ship font references as-is; recipient-side fonts.
- *                   Matches the preview (LibreOffice font staging).
+ * Three modes:
+ *   - `custom`     — ship font references as-is; recipient-side fonts.
+ *                    Matches the preview (LibreOffice font staging).
  *   - `substitute` — rewrite non-safe families to SAFE_FONTS equivalents.
+ *   - `embed`      — keep the references and write the font files into the
+ *                    document. DOCX only, so the option is offered only there;
+ *                    the server falls back to `custom` for anything else.
  */
-export type ExportFontMode = 'custom' | 'substitute';
+export type ExportFontMode = 'custom' | 'substitute' | 'embed';
 
 export function ExportModeDialog({
   open,
@@ -58,6 +62,15 @@ export function ExportModeDialog({
       title: 'Convert to safe fonts',
       desc: 'Rewrite non-safe families to Calibri / Georgia / Consolas so every recipient sees the same glyphs.',
     },
+    ...(FORMAT === 'docx'
+      ? [
+          {
+            value: 'embed' as const,
+            title: 'Embed fonts in the file',
+            desc: 'Recipients without the font installed still see it. Only the regular, bold and italic faces of TTF/OTF fonts embed, and the file grows by the size of each.',
+          },
+        ]
+      : []),
   ];
 
   return (

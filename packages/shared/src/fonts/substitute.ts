@@ -286,11 +286,18 @@ export interface ApplyExportModeResult<D, T> {
  *   `buildDefaultSubstitutionMap` for any non-safe reference not present
  *   in `fonts.substitution`. Emits one `FONT_MODE_SUBSTITUTED` warning
  *   listing every swap.
+ * - `'embed'` — no rewrite, and no warning here. Whether anything embeds is
+ *   only known once the fonts have resolved and the faces have been picked,
+ *   so the DOCX pipeline writes the one `FONT_MODE_EMBED` summary itself;
+ *   a pipeline that cannot embed falls back to `'custom'` before calling this.
  */
 export function applyExportMode<D, T>(
   input: ApplyExportModeInput<D, T>
 ): ApplyExportModeResult<D, T> {
   const mode = input.fonts?.mode ?? 'custom';
+  if (mode === 'embed') {
+    return { doc: input.doc, theme: input.theme, warnings: [] };
+  }
   if (mode === 'custom') {
     // Suppress the advisory entirely when callers never passed a `fonts`
     // option: they opted out of font-mode handling, so noisy per-run

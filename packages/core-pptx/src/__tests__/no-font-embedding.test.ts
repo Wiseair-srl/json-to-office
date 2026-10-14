@@ -1,12 +1,16 @@
 /**
  * Regression: the PPTX output must never contain font bytes. The
  * `fontEmbedding` utility has been removed; both `custom` and `substitute`
- * modes emit PPTX files with zero entries under `ppt/fonts/`. Also
+ * modes emit PPTX files with zero entries under `ppt/fonts/`, and `embed`,
+ * which only DOCX supports, falls back to `custom` with a warning. Also
  * exercises the two supported modes and the strict guard.
  */
 import { describe, it, expect } from 'vitest';
 import JSZip from 'jszip';
-import { generateBufferFromJson } from '../core/generator';
+import {
+  generateBufferFromJson,
+  generateBufferWithWarnings,
+} from '../core/generator';
 import type { PresentationComponentDefinition } from '../types';
 
 async function listZipEntries(buf: Buffer): Promise<string[]> {
@@ -79,6 +83,19 @@ describe('pptx output contains no font bytes', () => {
     expect(entries.filter((e) => e.startsWith('ppt/fonts/'))).toEqual([]);
     const xml = await readAllSlideXml(buf);
     expect(xml).toMatch(/\bInter\b/);
+  });
+
+  it('embed mode falls back to custom, with a warning, and embeds nothing', async () => {
+    const { buffer, warnings } = await generateBufferWithWarnings(
+      DOC_REFERENCING_INTER,
+      { fonts: { mode: 'embed' } }
+    );
+    const entries = await listZipEntries(buffer);
+    expect(entries.filter((e) => e.startsWith('ppt/fonts/'))).toEqual([]);
+    expect(await readAllSlideXml(buffer)).toMatch(/\bInter\b/);
+    const codes = warnings.map((w) => w.code);
+    expect(codes).toContain('FONT_EMBED_UNSUPPORTED_FORMAT');
+    expect(codes).toContain('FONT_MODE_CUSTOM');
   });
 
   it('strict mode throws on an unresolved non-safe reference in custom mode', async () => {

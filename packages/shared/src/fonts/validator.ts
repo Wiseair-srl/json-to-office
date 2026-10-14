@@ -15,11 +15,41 @@ import type { FontRegistryEntry } from '../schemas/font-catalog';
  * - `FONT_UNRESOLVED`         — family not in SAFE_FONTS and not registered.
  * - `FONT_MODE_SUBSTITUTED`   — non-safe families rewritten to safe equivalents.
  * - `FONT_MODE_CUSTOM`        — export mode "custom" — refs kept as-is.
+ * - `FONT_MODE_EMBED`         — export mode "embed" — the one summary: which
+ *                               families embedded which faces, which faces
+ *                               came from a nearest weight, which non-safe
+ *                               families embedded nothing.
+ *
+ * One per face, from embed-mode face selection (`embed-faces.ts`):
+ *
+ * - `FONT_EMBED_SKIPPED_FORMAT`  — not TTF/OTF; OOXML carries neither WOFF,
+ *                                  WOFF2, EOT nor Type 1, so it stays out.
+ * - `FONT_EMBED_SKIPPED_LICENSE` — `OS/2.fsType` says restricted licence
+ *                                  embedding; the face stays out.
+ * - `FONT_EMBED_READ_ONLY`       — embedded under preview & print, so Word
+ *                                  opens the document read-only.
+ * - `FONT_EMBED_WEIGHT_DROPPED`  — fills none of Word's four slots per family
+ *                                  (or another face already fills its slot);
+ *                                  left as a reference, as in "custom".
+ *
+ * And one per request that asked for "embed" where it cannot happen:
+ *
+ * - `FONT_EMBED_UNSUPPORTED_RENDERER` — DOCX on a renderer other than
+ *                                       `docxjs`; references kept as in
+ *                                       "custom".
+ * - `FONT_EMBED_UNSUPPORTED_FORMAT`   — PPTX; references kept as in "custom".
  */
 export type FontIssueCode =
   | 'FONT_UNRESOLVED'
   | 'FONT_MODE_SUBSTITUTED'
-  | 'FONT_MODE_CUSTOM';
+  | 'FONT_MODE_CUSTOM'
+  | 'FONT_MODE_EMBED'
+  | 'FONT_EMBED_SKIPPED_FORMAT'
+  | 'FONT_EMBED_SKIPPED_LICENSE'
+  | 'FONT_EMBED_READ_ONLY'
+  | 'FONT_EMBED_WEIGHT_DROPPED'
+  | 'FONT_EMBED_UNSUPPORTED_RENDERER'
+  | 'FONT_EMBED_UNSUPPORTED_FORMAT';
 
 export interface FontResolutionIssue {
   code: FontIssueCode;

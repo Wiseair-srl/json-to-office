@@ -90,4 +90,26 @@ describe('/api/docx/generate warnings', () => {
     expect(secondBody.cache.status).toBe('HIT');
     expect(secondBody.warnings).toEqual(firstBody.warnings);
   });
+
+  // `embed` passes the loose schema and reaches the core: the bytes it writes
+  // come from the server's own resolver, so a client may ask for it.
+  it('accepts fonts.mode "embed" and reports what it embedded', async () => {
+    const res = await post(app, '/generate', {
+      jsonDefinition: {
+        ...docWithUnknownFont,
+        props: { ...docWithUnknownFont.props, metadata: { title: 'embed' } },
+      },
+      options: { fonts: { mode: 'embed' } },
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as GenerateEnvelope;
+
+    const summary = body.warnings.filter(
+      (w) => w.context?.code === 'FONT_MODE_EMBED'
+    );
+    expect(summary).toHaveLength(1);
+    expect(summary[0].message).toContain(
+      `${UNKNOWN_FAMILY}: not embedded (unresolved)`
+    );
+  });
 });
