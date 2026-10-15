@@ -659,9 +659,10 @@ export const FontPickerDialog: React.FC<FontPickerDialogProps> = ({
         {!contextual && !isThemeActive && activeTab !== 'custom' && (
           <Alert>
             <AlertDescription>
-              Fonts are registered on themes. Open a <code>.theme.json</code>{' '}
-              file to apply a font — the buttons below are disabled until you
-              do.
+              Heading and body fonts are set on themes. Open a{' '}
+              <code>.theme.json</code> file to apply one — the buttons below are
+              disabled until you do. Font files are registered on the document (
+              <code>props.fontRegistry</code>), in the Custom tab.
             </AlertDescription>
           </Alert>
         )}
