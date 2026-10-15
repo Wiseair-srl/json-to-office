@@ -9,7 +9,14 @@
     "accent": "#B5452B",
     "text": "#3B3C38",
     "background": "#FFFFFF",
-    "border": "#D8D3C8"
+    "border": "#D8D3C8",
+    "textPrimary": "#3B3C38",
+    "textSecondary": "#5C5D57",
+    "textMuted": "#8A8B84",
+    "borderPrimary": "#D8D3C8",
+    "borderSecondary": "#ECE8DF",
+    "backgroundPrimary": "#FFFFFF",
+    "backgroundSecondary": "#F7F4EE"
   },
   "fonts": {
     "heading": { "family": "Tangerine", "size": 36 },
