@@ -532,6 +532,10 @@ export class GeneratorService {
           ...(fontMode && { mode: fontMode }),
           ...(fontSubstitution && { substitution: fontSubstitution }),
           ...(callerStrict !== undefined && { strict: callerStrict }),
+          // FontRegistry resolves `kind:'file'` sources against
+          // `fonts.baseDir` only; without it they fall back to the server's
+          // cwd, not the discovered document's directory.
+          ...(baseDir !== undefined && { baseDir }),
           onResolved: (resolved: ResolvedFont[]) => {
             resolvedFonts.push(...resolved);
           },

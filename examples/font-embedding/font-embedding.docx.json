@@ -1,0 +1,34 @@
+{
+  "name": "docx",
+  "props": {
+    "metadata": {
+      "title": "Font embedding repro",
+      "description": "Tangerine reached two ways: through the theme's heading font and through an explicit font.family on a paragraph. Export with fonts mode \"embed\" and open on a machine without Tangerine installed."
+    },
+    "theme": "tangerine"
+  },
+  "children": [
+    {
+      "name": "section",
+      "children": [
+        {
+          "name": "heading",
+          "props": { "text": "Heading from the theme", "level": 1 }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Body text stays in Calibri. The heading above takes Tangerine from theme.fonts.heading; the theme's fontRegistry points at the two TTF files next to this document."
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Regular 400 set in the document, **and bold 700**.",
+            "font": { "family": "Tangerine", "size": 28 }
+          }
+        }
+      ]
+    }
+  ]
+}
