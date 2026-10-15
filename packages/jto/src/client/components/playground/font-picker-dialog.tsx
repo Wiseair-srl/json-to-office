@@ -77,9 +77,10 @@ const FALLBACK_CATALOG: FontCatalog = { safe: [], google: [] };
 /**
  * Read the active theme's text, parse it, apply a mutation, and write back.
  *
- * Font registration only makes sense on themes (theme.fontRegistry) — refuses
+ * Used by the "Set heading/body" actions, which write `theme.fonts.*` — refuses
  * to mutate when the active tab is a document, prompting the user to open a
- * theme file instead.
+ * theme file instead. Font bytes never live here: registration goes to the
+ * document's `props.fontRegistry` (see useMutateActiveDocumentFontRegistry).
  */
 function useMutateActiveTheme() {
   const activeTab = useDocumentsStore((s) => s.activeTab);
@@ -94,7 +95,7 @@ function useMutateActiveTheme() {
         return {
           ok: false as const,
           error:
-            'Fonts are registered on themes, not documents. Open a .theme.json file and try again.',
+            'Heading and body fonts are set on themes. Open a .theme.json file and try again.',
         };
       }
       const doc = documents.find((d) => d.name === activeTab);
@@ -241,6 +242,34 @@ function useActiveDocumentFontRegistry(): FontRegistryEntry[] {
   }, [activeTab, documents, documentTypes]);
 }
 
+/**
+ * Families registered in any open document's `props.fontRegistry`, sorted and
+ * de-duplicated. A theme can't hold font bytes, so this is what the theme-mode
+ * Custom tab offers as names to reference.
+ */
+function useOpenDocumentsFontFamilies(): string[] {
+  const documents = useDocumentsStore((s) => s.documents);
+  const documentTypes = useDocumentsStore((s) => s.documentTypes);
+
+  return useMemo(() => {
+    const families = new Set<string>();
+    for (const doc of documents) {
+      if (documentTypes[doc.name] === 'application/json+theme') continue;
+      try {
+        const registry = JSON.parse(doc.text)?.props?.fontRegistry;
+        if (!Array.isArray(registry)) continue;
+        for (const e of registry) {
+          if (e && typeof e.family === 'string' && e.family.trim())
+            families.add(e.family.trim());
+        }
+      } catch {
+        // Unparseable text contributes nothing.
+      }
+    }
+    return [...families].sort((a, b) => a.localeCompare(b));
+  }, [documents, documentTypes]);
+}
+
 /** "2 weights · uploaded" style summary for a registry card. */
 function describeRegistryEntry(entry: FontRegistryEntry): string {
   const weights = new Set(
@@ -317,6 +346,8 @@ export const FontPickerDialog: React.FC<FontPickerDialogProps> = ({
   const mutateDocumentAtPathAction = useMutateActiveDocumentAtPath();
   const mutateFontRegistry = useMutateActiveDocumentFontRegistry();
   const registryEntries = useActiveDocumentFontRegistry();
+  const openDocumentFamilies = useOpenDocumentsFontFamilies();
+  const [customFamily, setCustomFamily] = useState('');
   const activeTabName = useDocumentsStore((s) => s.activeTab);
   const documentTypes = useDocumentsStore((s) => s.documentTypes);
   const isThemeActive =
@@ -743,13 +774,97 @@ export const FontPickerDialog: React.FC<FontPickerDialogProps> = ({
 
             <TabsContent value="custom" className="m-0 flex flex-col gap-6">
               {isThemeActive ? (
-                <Alert>
-                  <AlertDescription>
-                    Custom fonts are stored on the document (
-                    <code>props.fontRegistry</code>), because the bytes travel
-                    with the JSON. Open a document tab to add one.
-                  </AlertDescription>
-                </Alert>
+                <>
+                  <Alert>
+                    <AlertDescription>
+                      Custom fonts are stored on the document (
+                      <code>props.fontRegistry</code>), because the bytes travel
+                      with the JSON. Open a document tab to upload or embed one.
+                      The theme only references the family by name, so register
+                      it in every document that uses this theme.
+                    </AlertDescription>
+                  </Alert>
+
+                  <section className="flex flex-col gap-2">
+                    <h3 className="text-sm font-medium">
+                      Use a custom family name
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Type the exact family as registered in the document.
+                    </p>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="e.g. Geist"
+                        value={customFamily}
+                        onChange={(e) => setCustomFamily(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (
+                            e.key === 'Enter' &&
+                            contextual &&
+                            customFamily.trim()
+                          )
+                            void handleInsertContextual(customFamily.trim());
+                        }}
+                      />
+                      {contextual ? (
+                        <Button
+                          disabled={customFamily.trim() === ''}
+                          onClick={() =>
+                            void handleInsertContextual(customFamily.trim())
+                          }
+                        >
+                          Use this font
+                        </Button>
+                      ) : (
+                        <>
+                          <Button
+                            variant="secondary"
+                            disabled={customFamily.trim() === ''}
+                            onClick={() =>
+                              void handleInsertTheme(
+                                customFamily.trim(),
+                                'safe',
+                                'heading'
+                              )
+                            }
+                          >
+                            Set heading
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            disabled={customFamily.trim() === ''}
+                            onClick={() =>
+                              void handleInsertTheme(
+                                customFamily.trim(),
+                                'safe',
+                                'body'
+                              )
+                            }
+                          >
+                            Set body
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                    {openDocumentFamilies.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs text-muted-foreground">
+                          Registered in open documents:
+                        </span>
+                        {openDocumentFamilies.map((family) => (
+                          <Button
+                            key={family}
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setCustomFamily(family)}
+                          >
+                            {family}
+                          </Button>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                </>
               ) : (
                 <>
                   <section className="flex flex-col gap-2">
