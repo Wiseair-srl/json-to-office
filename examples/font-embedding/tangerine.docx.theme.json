@@ -1,0 +1,47 @@
+{
+  "name": "tangerine",
+  "displayName": "Tangerine",
+  "description": "Minimal repro theme: headings in Tangerine, registered from local TTF files in the theme's fontRegistry.",
+  "version": "1.0.0",
+  "colors": {
+    "primary": "#2B302B",
+    "secondary": "#4A5B4E",
+    "accent": "#B5452B",
+    "text": "#3B3C38",
+    "background": "#FFFFFF",
+    "border": "#D8D3C8"
+  },
+  "fonts": {
+    "heading": { "family": "Tangerine", "size": 36 },
+    "body": { "family": "Calibri", "size": 11 },
+    "mono": { "family": "Courier New", "size": 10 },
+    "light": { "family": "Tangerine", "size": 36 }
+  },
+  "fontRegistry": [
+    {
+      "id": "Tangerine",
+      "family": "Tangerine",
+      "category": "handwriting",
+      "sources": [
+        {
+          "kind": "file",
+          "path": "fonts/Tangerine-Regular.ttf",
+          "weight": 400
+        },
+        { "kind": "file", "path": "fonts/Tangerine-Bold.ttf", "weight": 700 }
+      ]
+    }
+  ],
+  "page": {
+    "size": "A4",
+    "margins": {
+      "top": 1440,
+      "bottom": 1440,
+      "left": 1440,
+      "right": 1440,
+      "header": 720,
+      "footer": 720,
+      "gutter": 0
+    }
+  }
+}
