@@ -35,6 +35,7 @@ import {
   FontDiskCache,
   fetchVariableFontSource,
 } from '@json-to-office/shared/fonts/node';
+import { getBaseDir } from '../utils/generationContext';
 import type { ThemeConfig } from '../styles';
 import type { ReportComponentDefinition } from '../types';
 
@@ -117,8 +118,14 @@ export async function resolveDocumentFonts(
 
   const registry = new FontRegistry({
     // Spread keeps baseDir/googleFonts/mode/substitution intact for
-    // materializeSource; extraEntries carries the merged registry.
-    opts: { ...fonts, extraEntries: registryEntries },
+    // materializeSource; extraEntries carries the merged registry. Without a
+    // `fonts.baseDir` of its own, kind:"file" sources resolve against the
+    // render's baseDir, as images do — not against process.cwd().
+    opts: {
+      ...fonts,
+      baseDir: fonts?.baseDir ?? getBaseDir(),
+      extraEntries: registryEntries,
+    },
     fileLoader: loadFileFontSource,
     variableLoader: fetchVariableFontSource,
     diskCache: fonts?.googleFonts?.cacheDir
