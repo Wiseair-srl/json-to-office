@@ -1,5 +1,13 @@
 # @json-to-office/jto
 
+## 7.6.2
+
+### Patch Changes
+
+- 9f83f61: Dev server: `kind:"file"` font sources in a discovered document or its theme now resolve against the document's directory instead of the server's cwd, so they reach the preview and embed in `embed` export mode.
+- Updated dependencies [e14efba]
+  - @json-to-office/jto-cli@7.6.2
+
 ## 7.6.1
 
 ### Patch Changes
