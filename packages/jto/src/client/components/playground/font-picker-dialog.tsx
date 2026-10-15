@@ -209,6 +209,51 @@ function useMutateActiveDocumentFontRegistry() {
   );
 }
 
+/**
+ * The active document's `props.fontRegistry`, re-read whenever the store's
+ * documents change — so an upload or embed shows up in the Custom tab as
+ * soon as it is saved. Empty for themes and unparseable text.
+ */
+function useActiveDocumentFontRegistry(): FontRegistryEntry[] {
+  const activeTab = useDocumentsStore((s) => s.activeTab);
+  const documents = useDocumentsStore((s) => s.documents);
+  const documentTypes = useDocumentsStore((s) => s.documentTypes);
+
+  return useMemo(() => {
+    if (!activeTab || documentTypes[activeTab] === 'application/json+theme')
+      return [];
+    const doc = documents.find((d) => d.name === activeTab);
+    if (!doc) return [];
+    // The store text, not `currentDocumentText`: this runs during render,
+    // where flushing a pending save is a side effect, and the Monaco model
+    // only catches up with a registry write after the next render.
+    try {
+      const registry = JSON.parse(doc.text)?.props?.fontRegistry;
+      return Array.isArray(registry)
+        ? registry.filter(
+            (e): e is FontRegistryEntry =>
+              e && typeof e.family === 'string' && Array.isArray(e.sources)
+          )
+        : [];
+    } catch {
+      return [];
+    }
+  }, [activeTab, documents, documentTypes]);
+}
+
+/** "2 weights · uploaded" style summary for a registry card. */
+function describeRegistryEntry(entry: FontRegistryEntry): string {
+  const weights = new Set(
+    entry.sources.map((s) => ('weight' in s && s.weight) || 400)
+  );
+  const kinds = new Set(
+    entry.sources.map((s) => (s.kind === 'data' ? 'uploaded' : s.kind))
+  );
+  return `${weights.size} weight${weights.size === 1 ? '' : 's'} · ${[
+    ...kinds,
+  ].join(', ')}`;
+}
+
 /** Set theme.fonts.<role> at the root of a theme file. */
 function setThemeFont(
   theme: any,
@@ -271,6 +316,7 @@ export const FontPickerDialog: React.FC<FontPickerDialogProps> = ({
   const mutateTheme = useMutateActiveTheme();
   const mutateDocumentAtPathAction = useMutateActiveDocumentAtPath();
   const mutateFontRegistry = useMutateActiveDocumentFontRegistry();
+  const registryEntries = useActiveDocumentFontRegistry();
   const activeTabName = useDocumentsStore((s) => s.activeTab);
   const documentTypes = useDocumentsStore((s) => s.documentTypes);
   const isThemeActive =
@@ -303,6 +349,33 @@ export const FontPickerDialog: React.FC<FontPickerDialogProps> = ({
     if (activeTab !== 'google' || catalog.google.length === 0) return;
     for (const f of catalog.google) ensureGoogleFontLoaded(f.family, f.weights);
   }, [activeTab, catalog]);
+
+  // Load registered faces so the Custom tab's cards preview in the real font.
+  useEffect(() => {
+    if (activeTab !== 'custom') return;
+    for (const entry of registryEntries) {
+      for (const source of entry.sources) {
+        if (source.kind === 'data') {
+          void ensureDataFontLoaded(
+            entry.family,
+            source.data,
+            source.weight ?? 400,
+            source.italic ?? false
+          );
+        } else if (source.kind === 'google') {
+          ensureGoogleFontLoaded(entry.family);
+        }
+      }
+    }
+  }, [activeTab, registryEntries]);
+
+  const filteredRegistry = useMemo(
+    () =>
+      registryEntries.filter((e) =>
+        e.family.toLowerCase().includes(search.toLowerCase())
+      ),
+    [registryEntries, search]
+  );
 
   const filteredSafe = useMemo(
     () =>
@@ -680,6 +753,56 @@ export const FontPickerDialog: React.FC<FontPickerDialogProps> = ({
               ) : (
                 <>
                   <section className="flex flex-col gap-2">
+                    <h3 className="text-sm font-medium">
+                      In this document
+                      <Badge
+                        variant="secondary"
+                        className="ml-2 text-xs px-1 py-0"
+                      >
+                        {registryEntries.length}
+                      </Badge>
+                    </h3>
+                    {registryEntries.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">
+                        No custom fonts yet. Uploaded and embedded fonts appear
+                        here once they are saved to{' '}
+                        <code>props.fontRegistry</code>.
+                      </p>
+                    ) : filteredRegistry.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">
+                        No registered font matches "{search}".
+                      </p>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {filteredRegistry.map((entry) => (
+                          <FontCard
+                            key={entry.id}
+                            family={entry.family}
+                            meta={
+                              <span className="text-xs">
+                                {describeRegistryEntry(entry)}
+                              </span>
+                            }
+                            previewStyle={{
+                              fontFamily: `"${entry.family}", sans-serif`,
+                            }}
+                            onCopy={() => handleCopy(entry.family)}
+                            copied={copied === entry.family}
+                            contextual={Boolean(contextual)}
+                            onUseThis={() =>
+                              handleInsertContextual(entry.family)
+                            }
+                            onInsertHeading={() => {}}
+                            onInsertBody={() => {}}
+                            hideThemeActions
+                            applying={applyingFamily === entry.family}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </section>
+
+                  <section className="flex flex-col gap-2">
                     <h3 className="text-sm font-medium">Upload a font file</h3>
                     <p className="text-xs text-muted-foreground">
                       TTF or OTF, up to 2 MB each. The font is embedded in the
@@ -834,6 +957,8 @@ interface FontCardProps {
   applying: boolean;
   disabled?: boolean;
   extraAction?: React.ReactNode;
+  /** Omit "Set heading"/"Set body" — for cards shown where no theme is open. */
+  hideThemeActions?: boolean;
 }
 
 const FontCard: React.FC<FontCardProps> = ({
@@ -849,6 +974,7 @@ const FontCard: React.FC<FontCardProps> = ({
   applying,
   disabled,
   extraAction,
+  hideThemeActions,
 }) => (
   <div className="border rounded-md p-3 flex flex-col gap-2 bg-card">
     <div className="flex items-baseline justify-between gap-2">
@@ -868,7 +994,7 @@ const FontCard: React.FC<FontCardProps> = ({
         >
           Use this font
         </Button>
-      ) : (
+      ) : hideThemeActions ? null : (
         <>
           <Button
             size="sm"
