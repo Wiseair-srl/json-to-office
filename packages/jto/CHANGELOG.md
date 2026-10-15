@@ -1,5 +1,11 @@
 # @json-to-office/jto
 
+## 7.6.1
+
+### Patch Changes
+
+- dcadd1c: Playground: the Fonts dialog's Custom tab now lists the fonts registered in the active document's `props.fontRegistry`, so an uploaded or embedded font shows up as soon as it is saved.
+
 ## 7.6.0
 
 ### Minor Changes
