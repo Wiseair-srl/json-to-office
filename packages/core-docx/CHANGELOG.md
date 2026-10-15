@@ -1,5 +1,11 @@
 # @json-to-office/core-docx
 
+## 7.6.4
+
+### Patch Changes
+
+- 749d82e: Relative `kind:"file"` font sources now resolve against the render's `baseDir` when `fonts.baseDir` is not set, as relative image paths do, instead of against `process.cwd()`. An explicit `fonts.baseDir` still wins.
+
 ## 7.6.0
 
 ### Minor Changes
