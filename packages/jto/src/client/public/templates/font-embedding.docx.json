@@ -1,0 +1,64 @@
+{
+  "name": "docx",
+  "props": {
+    "metadata": {
+      "title": "Font embedding",
+      "description": "Tangerine reached two ways: through the theme's heading font and through an explicit font.family on a paragraph. Download with the Embed export mode and open on a machine without Tangerine installed."
+    },
+    "theme": "minimal",
+    "themeOverrides": {
+      "fonts": {
+        "heading": { "family": "Tangerine", "size": 36 }
+      }
+    },
+    "fontRegistry": [
+      {
+        "id": "Tangerine",
+        "family": "Tangerine",
+        "category": "handwriting",
+        "sources": [
+          {
+            "kind": "file",
+            "path": "media/font-embedding/fonts/Tangerine-Regular.ttf",
+            "weight": 400
+          },
+          {
+            "kind": "file",
+            "path": "media/font-embedding/fonts/Tangerine-Bold.ttf",
+            "weight": 700
+          }
+        ]
+      }
+    ]
+  },
+  "children": [
+    {
+      "name": "section",
+      "children": [
+        {
+          "name": "heading",
+          "props": { "text": "Heading from the theme", "level": 1 }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Body text stays in the theme's body font. The heading above takes Tangerine from themeOverrides.fonts.heading; the font files come from the document's fontRegistry, so they travel with the JSON."
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Regular 400 set on the paragraph, **and bold 700**.",
+            "font": { "family": "Tangerine", "size": 28 }
+          }
+        },
+        {
+          "name": "paragraph",
+          "props": {
+            "text": "Download with the Embed export mode to write both TTF files into the .docx, then open it on a machine without Tangerine installed."
+          }
+        }
+      ]
+    }
+  ]
+}

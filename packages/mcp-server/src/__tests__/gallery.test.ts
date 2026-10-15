@@ -56,8 +56,8 @@ async function readResource(uri: string) {
 describe('the bundle on disk', () => {
   const manifests = galleryManifests();
 
-  it('ships twelve designed templates across both formats', () => {
-    expect(manifests.length).toBe(12);
+  it('ships thirteen templates across both formats', () => {
+    expect(manifests.length).toBe(13);
     expect(new Set(manifests.map((entry) => entry.format))).toEqual(
       new Set(['docx', 'pptx'])
     );

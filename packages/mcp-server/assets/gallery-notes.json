@@ -48,6 +48,10 @@
     "consulting-deck-blocks.pptx.json": {
       "archetype": "consulting deck with document-local JSON blocks",
       "whenToUse": "Learn, copy and customize the five consulting deck JSON definitions on the house theme: cover, action-chart, kpi-row, two-column and statement. Every slide of this complete playground deck invokes one; the definitions own the geometry as percentage frames and bind every size to a theme role, so the same deck lays out on every theme and canvas."
+    },
+    "font-embedding.docx.json": {
+      "archetype": "custom-font demo",
+      "whenToUse": "A one-page demonstration of custom fonts, not a layout to copy: Tangerine registered from local TTF files in props.fontRegistry, used as the theme heading font through themeOverrides and as an explicit paragraph font. Use to check that a custom font reaches the preview and, with the Embed export mode, the .docx itself."
     }
   }
 }
