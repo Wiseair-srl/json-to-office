@@ -1,5 +1,13 @@
 # @json-to-office/jto
 
+## 7.6.4
+
+### Patch Changes
+
+- a239f0b: New `font-embedding` playground template: Tangerine registered from local TTF files in `props.fontRegistry`, used as the theme heading font through `themeOverrides` and as an explicit paragraph font. It checks that a custom font reaches the preview and, with the Embed export mode, the `.docx`. Shipped in the MCP gallery as well.
+- Updated dependencies [749d82e]
+  - @json-to-office/core-docx@7.6.4
+
 ## 7.6.3
 
 ### Patch Changes
