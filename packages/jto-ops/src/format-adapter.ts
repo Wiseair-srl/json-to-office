@@ -150,6 +150,38 @@ function safeThemeKey(name: string | undefined): string {
   return name && !UNSAFE_KEYS.has(name) ? name : 'custom';
 }
 
+/**
+ * Anchor a theme file's relative `kind: "file"` font sources to the theme's
+ * own directory. A theme is a portable artifact that ships its fonts beside
+ * it; left relative, those paths would resolve against `fonts.baseDir` (the
+ * document's directory) or the cwd, and the theme would only work from where
+ * it happens to sit next to the document. Returns a copy; absolute paths and
+ * every other source kind pass through untouched.
+ */
+function anchorThemeFontFiles<T>(theme: T, themeFile: string): T {
+  const registry = (theme as { fontRegistry?: unknown } | null | undefined)
+    ?.fontRegistry;
+  if (!Array.isArray(registry)) return theme;
+  const themeDir = path.dirname(path.resolve(process.cwd(), themeFile));
+  return {
+    ...theme,
+    fontRegistry: registry.map((entry: any) =>
+      Array.isArray(entry?.sources)
+        ? {
+            ...entry,
+            sources: entry.sources.map((source: any) =>
+              source?.kind === 'file' &&
+              typeof source.path === 'string' &&
+              !path.isAbsolute(source.path)
+                ? { ...source, path: path.resolve(themeDir, source.path) }
+                : source
+            ),
+          }
+        : entry
+    ),
+  };
+}
+
 /** Key the theme named by `--theme`/`--theme-path` is registered under. */
 const CLI_THEME_KEY = 'jto-cli-theme';
 
@@ -927,6 +959,7 @@ export class DocxFormatAdapter implements FormatAdapter {
         );
       }
       if (fileTheme) {
+        fileTheme = anchorThemeFontFiles(fileTheme, options.themePath);
         registry[safeThemeKey(fileTheme.name)] = fileTheme;
       }
     }
@@ -948,7 +981,10 @@ export class DocxFormatAdapter implements FormatAdapter {
       if (options.theme.endsWith('.json') && fs.existsSync(options.theme)) {
         try {
           return {
-            requested: await core.loadThemeFromFile(options.theme),
+            requested: anchorThemeFontFiles(
+              await core.loadThemeFromFile(options.theme),
+              options.theme
+            ),
             customThemes,
             label: options.theme,
           };
@@ -1450,6 +1486,7 @@ export class PptxFormatAdapter implements FormatAdapter {
         );
       }
       if (fileTheme) {
+        fileTheme = anchorThemeFontFiles(fileTheme, options.themePath);
         registry[safeThemeKey(fileTheme.name)] = fileTheme;
       }
     }
@@ -1477,7 +1514,7 @@ export class PptxFormatAdapter implements FormatAdapter {
             'utf-8'
           );
           return {
-            requested: JSON.parse(content),
+            requested: anchorThemeFontFiles(JSON.parse(content), options.theme),
             customThemes,
             label: options.theme,
           };

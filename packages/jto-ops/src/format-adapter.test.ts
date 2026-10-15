@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
 import { Type } from '@sinclair/typebox';
 import { createComponent, createVersion } from '@json-to-office/core-docx';
 import {
@@ -503,6 +504,60 @@ describe('requested theme wins over props.theme', () => {
       themePath: file,
     });
     expect(resolved.themeLabel).toBe(file);
+
+    await fs.promises.rm(dir, { recursive: true, force: true });
+  });
+
+  it('resolves a docx themePath fontRegistry against the theme file, and embeds it', async () => {
+    // A theme ships its fonts beside it. Left relative, its kind:"file"
+    // sources resolved against the cwd (the CLI set no fonts.baseDir), so the
+    // theme only worked when run from its own directory.
+    const example = path.resolve(
+      path.dirname(fileURLToPath(import.meta.url)),
+      '../../../examples/font-embedding'
+    );
+    const dir = await fs.promises.mkdtemp(
+      path.join(os.tmpdir(), 'jto-theme-fonts-')
+    );
+    await fs.promises.cp(
+      path.join(example, 'fonts'),
+      path.join(dir, 'theme', 'fonts'),
+      { recursive: true }
+    );
+    const themeFile = path.join(dir, 'theme', 'tangerine.docx.theme.json');
+    await fs.promises.copyFile(
+      path.join(example, 'tangerine.docx.theme.json'),
+      themeFile
+    );
+    const document = JSON.parse(
+      await fs.promises.readFile(
+        path.join(example, 'font-embedding.docx.json'),
+        'utf-8'
+      )
+    );
+
+    const adapter = new DocxFormatAdapter();
+    const theme = await adapter.resolveTheme({ themePath: themeFile });
+    expect(theme.fontRegistry[0].sources.map((s: any) => s.path)).toEqual([
+      path.join(dir, 'theme', 'fonts', 'Tangerine-Regular.ttf'),
+      path.join(dir, 'theme', 'fonts', 'Tangerine-Bold.ttf'),
+    ]);
+
+    // Document directory elsewhere: the theme's fonts must not depend on it.
+    const generator = await adapter.createGenerator([], {
+      themePath: themeFile,
+      baseDir: path.join(dir, 'elsewhere'),
+      fonts: {
+        baseDir: path.join(dir, 'elsewhere'),
+        mode: 'embed',
+        strict: true,
+        googleFonts: { enabled: false },
+      },
+    });
+    const buffer = await generator.generateBuffer(document);
+    // Zip entry names are stored uncompressed in the central directory.
+    expect(buffer.includes('word/fonts/font1.odttf')).toBe(true);
+    expect(buffer.includes('word/fonts/font2.odttf')).toBe(true);
 
     await fs.promises.rm(dir, { recursive: true, force: true });
   });

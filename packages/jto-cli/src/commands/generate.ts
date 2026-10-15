@@ -249,6 +249,9 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
             }
 
             const quality = loadQualityOptions(options);
+            // Relative asset paths resolve against the document's own
+            // directory, not the invocation cwd (#142).
+            const baseDir = dirname(inputPath);
             const generatorOptions: GeneratorOptions = {
               theme: mergedConfig.theme,
               themePath: mergedConfig.themePath,
@@ -261,10 +264,13 @@ export function createGenerateCommand(adapter: FormatAdapter): Command {
               // renderer rather than being restated here.
               svgRasterFallback: options.svgFallback,
               quality,
-              // Relative asset paths resolve against the document's own
-              // directory, not the invocation cwd (#142).
-              baseDir: dirname(inputPath),
+              baseDir,
               fonts: {
+                // The font registry reads its own baseDir, not the asset one:
+                // without it a document's relative kind:"file" sources resolve
+                // against the cwd. A --theme-path theme's sources are already
+                // anchored to the theme file by the adapter.
+                baseDir,
                 strict: options.strictFonts,
                 ...(extraEntries.length > 0 && { extraEntries }),
                 ...(options.fontMode && { mode: options.fontMode }),
