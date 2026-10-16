@@ -1,5 +1,16 @@
 # @json-to-office/core-docx
 
+## 7.7.0
+
+### Minor Changes
+
+- f4c1655: `generateBuffer` and `generateFile` return a `renderManifest` beside `standardDefinition` and `preservedDefinition`: one entry per image embedded in the package, body first in the order of the `<a:blip r:embed>` elements of `word/document.xml`, then each header and footer part (`part: 'header' | 'footer'`). Each entry names the media file (`mediaPath`, one entry per occurrence, so deduplicated media appear more than once), its `sha256`, the producing node's dot path in `standardDefinition` (`standardPath`, e.g. `children.4.children.2`) and its name (`kind`: `image`, `highcharts`, `visual`); a node emitted by a custom component kept by `preserveCustomComponents` also carries that component's path in `preservedDefinition` (`sourcePath`) and name (`sourceKind`), shared by every node it emits. The origin is recorded during expansion and carried to the compiler, not matched by position, and every entry is checked against the media bytes; a package the check cannot account for gets no manifest and a `W_DOCX_RENDER_MANIFEST_UNAVAILABLE` warning instead of a guessed one. The `.docx` is byte-identical to before. `RenderManifest`, `RenderManifestEntry` and `RenderManifestPart` are exported.
+- f4c1655: `resolveHighchartsOptions({ options, theme, width?, height?, documentProps?, page?, fonts? })` returns the effective options of a `highcharts` node: exactly the `infile` the render posts to the export server. The theme goes through what generation does to it before any chart is drawn — the document's `themeOverrides`, the design system's type roles, the font export mode, the document's `componentDefaults`, the section's `page` — and then the request is built: the theme's `componentDefaults.highcharts.options` beneath the node's own, the theme's chart palette when the node sets no `colors`, and the document's type scaled to the width the chart is placed at. `resolveHighchartsRequest` returns the whole request body, `resources` with any `@font-face` rules included. Both are pure, and both run the render's own functions rather than a copy of them, so they cannot drift from what was drawn.
+
+### Patch Changes
+
+- 64f655f: A table of contents keeps its page numbers in a document where a section empties its header or footer. A section that states no header or footer after one that had them, or an explicit `header: []`, was written as a header with no paragraph at all, which Word never writes and on which docx's layout throws, so the contents field came out without numbers (`W_DOCX_PAGE_NUMBERS_UNAVAILABLE`, "elements.filter is not a function"). Such a header or footer is now written as one empty paragraph in the `Header` or `Footer` style, as Word writes it, on both renderers; the page lays out as before.
+
 ## 7.6.4
 
 ### Patch Changes
