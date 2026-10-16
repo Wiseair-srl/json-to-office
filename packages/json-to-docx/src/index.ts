@@ -17,8 +17,16 @@ export {
   validateJsonSchema,
   flattenVisuals,
   UncompiledComponentError,
+  resolveHighchartsOptions,
+  resolveHighchartsRequest,
+  RENDER_MANIFEST_UNAVAILABLE,
   type FlattenVisualsOptions,
   type DocxGenerationResult,
+  type ResolveHighchartsOptionsInput,
+  type HighchartsExportRequest,
+  type RenderManifest,
+  type RenderManifestEntry,
+  type RenderManifestPart,
 } from '@json-to-office/core-docx';
 
 // Renderer selection

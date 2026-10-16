@@ -26,7 +26,12 @@ import { collectVisualProps } from './prerasterizeVisuals';
 import { containsComponent } from './componentTransform';
 import { desugarExternals } from './desugarExternals';
 import { loadImageResources } from './imageResources';
-import { compileDocument, type UnsupportedComponent } from '../ir/compiler';
+import {
+  compileDocument,
+  type ImageOrigins,
+  type UnsupportedComponent,
+} from '../ir/compiler';
+import { tagNodeOrigins } from './nodeOrigin';
 import type { DocxIR } from '../ir/types';
 import { resolveDocxRenderer } from '../renderers/registry';
 import type { DocxRendererId } from '../renderers/types';
@@ -76,6 +81,10 @@ export interface IrDocxGenerationOptions {
 export interface IrDocxGenerationResult {
   buffer: Buffer;
   warnings: GenerationWarning[];
+  /** The IR the bytes were rendered from. */
+  ir: DocxIR;
+  /** The standard-definition node each image in `ir` was lowered from. */
+  imageOrigins: ImageOrigins;
 }
 
 /**
@@ -113,6 +122,8 @@ export interface CompiledDocx {
   warnings: GenerationWarning[];
   required: ReturnType<typeof compileDocument>['required'];
   unsupported: UnsupportedComponent[];
+  /** The standard-definition node each image in `ir` was lowered from. */
+  imageOrigins: ImageOrigins;
   /**
    * The font faces `embed` mode writes into the package; empty in every other
    * mode. Kept beside the IR rather than in it: they are a resource of this
@@ -207,7 +218,12 @@ async function compileDocumentScoped(
   // does. They read the theme the document is rendered with — the context's,
   // with `props.componentDefaults` merged over it — so a chart preset the
   // document states reaches its charts as a table default reaches its tables.
-  const desugared = await desugarExternals(context.document, {
+  //
+  // What goes in is a copy of the document whose every node knows its path in
+  // it, so each image the compiler lowers can say where it came from (see
+  // `nodeOrigin.ts`). The tags are invisible to everything that serializes,
+  // so the bytes do not change.
+  const desugared = await desugarExternals(tagNodeOrigins(context.document), {
     theme: prepared.model.document.theme,
     ...(options.services ? { services: options.services } : {}),
     ...(options.baseDir !== undefined ? { baseDir: options.baseDir } : {}),
@@ -255,6 +271,7 @@ async function compileDocumentScoped(
     warnings: compiled.warnings,
     required: compiled.required,
     unsupported: compiled.unsupported,
+    imageOrigins: compiled.imageOrigins,
     embeddedFonts,
   };
 }
@@ -309,7 +326,12 @@ async function renderScoped(
     warnings: compiled.warnings,
   });
 
-  return { buffer: Buffer.from(bytes), warnings: compiled.warnings };
+  return {
+    buffer: Buffer.from(bytes),
+    warnings: compiled.warnings,
+    ir: compiled.ir,
+    imageOrigins: compiled.imageOrigins,
+  };
 }
 
 function toDate(value: Date | string): Date {

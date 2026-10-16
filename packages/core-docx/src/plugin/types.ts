@@ -13,6 +13,13 @@ import type { PreparedDocument } from '@json-to-office/quality';
 import type { ReportComponentDefinition } from '../types';
 import type { DocxRendererId } from '../renderers/types';
 import type { DocxQualityFact, DocxQualityModel } from '../quality/facts';
+import type { RenderManifest } from '../core/renderManifest';
+
+export type {
+  RenderManifest,
+  RenderManifestEntry,
+  RenderManifestPart,
+} from '../core/renderManifest';
 
 /**
  * Helper to infer the versions map type from a CustomComponent
@@ -202,6 +209,16 @@ export interface BufferGenerationResult<
    * Present iff the option was passed.
    */
   preservedDefinition?: ExtendedReportComponent<TCustomComponents>;
+  /**
+   * One entry per image embedded in the package, in the order of the
+   * `<a:blip r:embed>` elements of `word/document.xml`, then each header and
+   * footer part: which media file it is, its hash, and the node of
+   * `standardDefinition` (and, for a preserved custom component, of
+   * `preservedDefinition`) that produced it. Every entry is checked against
+   * the bytes. Absent only when that check could not account for an image,
+   * in which case `warnings` carries `W_DOCX_RENDER_MANIFEST_UNAVAILABLE`.
+   */
+  renderManifest?: RenderManifest;
 }
 
 /**
@@ -225,6 +242,16 @@ export interface FileGenerationResult<
   preservedDefinition?: ExtendedReportComponent<TCustomComponents>;
   /** Resolved path of the preserved-tree sidecar, if written. */
   preservedOutputPath?: string;
+  /**
+   * One entry per image embedded in the written file, in the order of the
+   * `<a:blip r:embed>` elements of `word/document.xml`, then each header and
+   * footer part: which media file it is, its hash, and the node of
+   * `standardDefinition` (and, for a preserved custom component, of
+   * `preservedDefinition`) that produced it. Every entry is checked against
+   * the bytes. Absent only when that check could not account for an image,
+   * in which case `warnings` carries `W_DOCX_RENDER_MANIFEST_UNAVAILABLE`.
+   */
+  renderManifest?: RenderManifest;
 }
 
 /**

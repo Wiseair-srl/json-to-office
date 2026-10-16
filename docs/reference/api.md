@@ -49,7 +49,7 @@ object any more. Everything that did is gone:
 | `DocumentGeneratorOptions.enableCache`                                     | — (the component render cache went with the writer layer; the option was a no-op)  |
 | `parseTextWithDecorators`, `renderComponent`, `createTypedImageRun`        | — (they were the writer layer)                                                     |
 
-`generateBuffer` returns `{ buffer, warnings, standardDefinition, preservedDefinition? }`
+`generateBuffer` returns `{ buffer, warnings, standardDefinition, preservedDefinition?, renderManifest? }`
 where `generate` returned `{ document, … }`; every other field is unchanged, so
 the migration is usually one method name and reading `buffer` instead of
 packing `document` yourself.
@@ -118,6 +118,33 @@ const portable = await flattenVisuals(doc, {
 ```
 
 Visuals with `enabled: false` are left untouched; `id` and `enabled` are preserved on the resulting image nodes.
+
+### `resolveHighchartsOptions`
+
+The effective options of a `highcharts` node: exactly the `infile` the render posts to the export server for that node, in that document, with that theme. The theme is resolved with the same functions generation runs before any chart is drawn, and the request is built with the one the render uses, so the result cannot drift from what was drawn. Pure: nothing is posted.
+
+```ts
+import {
+  resolveHighchartsOptions,
+  resolveHighchartsRequest,
+} from '@json-to-office/json-to-docx';
+
+const options = resolveHighchartsOptions({
+  options: node.props.options, // as authored
+  width: node.props.width, // the placed width scales the type
+  height: node.props.height,
+  theme, // the ThemeConfig handed to the generator (`theme` or a `customThemes` entry)
+  documentProps: document.props, // its themeOverrides and componentDefaults
+  page: section.props.page, // the chart's top-level section, if it overrides the page
+  fonts, // the generator's `fonts` option, if any
+});
+```
+
+What reaches the options, in the render's order: the document's `themeOverrides`, the theme's design system (type roles become styles), the font export mode (`substitute` rewrites families), the document's `componentDefaults` over the theme's; then the theme's and document's `componentDefaults.highcharts.options` beneath the node's own options, the theme's chart palette when the node sets no `colors`, and the document's type scaled to the width the chart is placed at — a percentage `width` is of the text width of the section's page. See [Charts](/guide/charts#theme-chart-options).
+
+Pass the theme as you hand it to the generator, not a theme you resolved yourself, and the same `documentProps`, `page` and `fonts` the document renders with: each of them can change the result.
+
+`resolveHighchartsRequest(input)` returns the whole body posted to `/export` — `{ infile, type: 'png', b64: true, scale, resources? }`. It also takes `scale`, `resources` and `fontFaces` (the faces handed to the export server, which only add `@font-face` rules to `resources.css`; the options never depend on them).
 
 ### `diffDocuments`
 
@@ -339,6 +366,60 @@ const { buffer, warnings } = await generator.generateBuffer({
 | `generateSchema(includeStandardComponents = true)`                       | `TSchema`                                                | The enriched TypeBox schema.                                                                                                       |
 | `exportSchema(outputPath, { includeStandardComponents?, prettyPrint? })` | `Promise<void>`                                          | Write the enriched schema as JSON Schema — see [JSON Schemas](/reference/json-schemas).                                            |
 | `getStandardComponentsDefinition(document)`                              | `Promise<ReportComponentDefinition>`                     | **Deprecated.** Runs a second expansion pass; read `standardDefinition` off a generate result, or call `expandStandardDefinition`. |
+
+#### Generation results
+
+`generateBuffer` resolves to a `BufferGenerationResult`; `generateFile` to a `FileGenerationResult`, the same fields without `buffer`.
+
+| Field                 | Type                                 | Description                                                                                                                                                         |
+| --------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `buffer`              | `Buffer`                             | The `.docx` bytes (`generateBuffer` only).                                                                                                                          |
+| `warnings`            | `GenerationWarning[] \| null`        | Non-fatal warnings, `null` when there are none.                                                                                                                     |
+| `standardDefinition`  | `ReportComponentDefinition`          | The fully expanded, normalized standard-component tree the document was rendered from.                                                                              |
+| `preservedDefinition` | `ExtendedReportComponent`            | Present iff `options.preserveCustomComponents` was passed: the same tree with those custom components kept as authored.                                             |
+| `renderManifest`      | [`RenderManifest`](#render-manifest) | One entry per embedded image, saying which node produced it. Absent only when it could not be confirmed against the package — `warnings` then says why (see below). |
+| `preservedOutputPath` | `string`                             | `generateFile` only, with `preserveCustomComponents`: where the preserved tree was written as a JSON sidecar.                                                       |
+
+#### Render manifest
+
+`standardDefinition` and `preservedDefinition` are two trees; the manifest is what ties the pictures in the package to them. A custom component whose `render` emits an `image` with no `id`, or a chart that becomes a PNG, otherwise leaves no way back from a media file to the node that asked for it. The origin is recorded while the custom components expand and carried to every image the compiler lowers, so nothing has to be matched by position afterwards.
+
+`RenderManifest` is `RenderManifestEntry[]`: the body's images first, in the order of the `<a:blip r:embed>` elements of `word/document.xml`, then each section's header and footer parts in section order.
+
+| Field          | Type                             | Description                                                                                                                                                                              |
+| -------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `part`         | `'body' \| 'header' \| 'footer'` | Where the image sits. Header and footer images are not in the body's blip order.                                                                                                         |
+| `partPath`     | `string`                         | The part holding the blip: `word/document.xml`, `word/header1.xml`, …                                                                                                                    |
+| `mediaPath`    | `string`                         | The media file the blip embeds, e.g. `word/media/image12.png`. Identical images are stored once, so two entries can name the same file: there is one entry per occurrence.               |
+| `sha256`       | `string`                         | Lowercase hex SHA-256 of that media file.                                                                                                                                                |
+| `standardPath` | `string`                         | Dot path of the producing node in `standardDefinition`, e.g. `children.4.children.2`, `children.0.props.header.0`, `children.1.props.columns.0.cells.2.content`.                         |
+| `kind`         | `string`                         | The standard component at `standardPath`: `image`, `highcharts`, `visual`.                                                                                                               |
+| `sourcePath`   | `string?`                        | Only for nodes emitted by a custom component kept by `preserveCustomComponents`: that component's dot path in `preservedDefinition`. Every node one preserved component emits shares it. |
+| `sourceKind`   | `string?`                        | The preserved component's name (`mapcharts`, `full-page-image`), alongside `sourcePath`.                                                                                                 |
+
+```ts
+const { buffer, renderManifest, standardDefinition, preservedDefinition } =
+  await generator.generateBuffer(document, {
+    preserveCustomComponents: ['mapcharts'],
+  });
+
+for (const entry of renderManifest ?? []) {
+  // entry.mediaPath  → 'word/media/image3.png'
+  // entry.standardPath → 'children.2.children.0' (kind 'image')
+  // entry.sourcePath   → 'children.2'            (sourceKind 'mapcharts')
+}
+```
+
+How it behaves:
+
+- **Per occurrence.** An image in a header appears once per header part the package writes. A section the layout splits — around columns, say — writes its own copy of the header and footer, and each copy has its entry, all with the same `standardPath`.
+- **What `standardPath` names.** The node as it stands in `standardDefinition`: a chart is its `highcharts` node, not the `image` it became; a native `visual` gives one entry per picture it draws. An SVG image is embedded as a PNG fallback blip carrying the SVG as an extension; `mediaPath` and `sha256` are the PNG's.
+- **Nested preserved components.** `sourcePath` is the outermost preserved component the node came from — the one `preservedDefinition` holds. A custom component that is not preserved has no node in `preservedDefinition`, so its output carries no `sourcePath`.
+- **Checked, or absent.** Every entry is confirmed against the package: the blip of that position must embed the bytes of the image the compiler placed there. A package the check cannot account for gets no manifest rather than a guessed one, and `warnings` carries `W_DOCX_RENDER_MANIFEST_UNAVAILABLE` (exported as `RENDER_MANIFEST_UNAVAILABLE`) with the reason.
+- **The bytes do not change.** Building the manifest only reads the finished package, and the path that reaches each image rides on the nodes where nothing that serializes sees it: the `.docx` is byte-identical to what the same call produced before.
+- **Rendering from `prepared`.** A call that reuses a `prepareQuality` model (`options.prepared`) gets a manifest too, without `sourcePath`, since that path keeps no preserved tree.
+
+The `RenderManifest`, `RenderManifestEntry` and `RenderManifestPart` types are exported from `@json-to-office/core-docx` and `@json-to-office/json-to-docx`.
 
 There is no `generate()`: it returned a docx.js `Document`, and no public API
 hands out a backend object any more. The table at the top of this section maps

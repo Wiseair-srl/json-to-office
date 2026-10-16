@@ -120,15 +120,7 @@ async function generateChart(
   const serverUrl = effectiveChartServerUrl(config, servicesConfig);
   assertExportServerAllowed(serverUrl, servicesConfig, warnings);
 
-  const requestBody: Record<string, unknown> = {
-    infile: config.options,
-    type: 'png',
-    b64: true,
-    scale: config.scale,
-    // Forward resources verbatim only when present so the payload stays
-    // byte-identical to before for callers that omit it.
-    ...(config.resources ? { resources: config.resources } : {}),
-  };
+  const requestBody = chartRequestBody(config);
 
   return sendChartRequest({
     cache,
@@ -355,6 +347,64 @@ function withChartFontFaces(
 }
 
 /**
+ * Every transformation the library applies to a chart before posting it: the
+ * theme's presets beneath the author's options, the theme palette, the
+ * document's type scaled to the placed width, and the `@font-face` rules of
+ * the faces the export server is handed.
+ */
+function resolveChartConfig(
+  props: HighchartsProps,
+  theme: ThemeConfig,
+  fonts: readonly RasterizeFontFace[] | undefined
+): HighchartsProps {
+  return withChartFontFaces(
+    withThemeTypography(
+      withThemeColors(withThemePresets(props, theme), theme),
+      theme
+    ),
+    theme,
+    fonts
+  );
+}
+
+/** The export server's request for a chart whose config is resolved. */
+function chartRequestBody(config: HighchartsProps): HighchartsExportRequest {
+  return {
+    infile: config.options,
+    type: 'png',
+    b64: true,
+    scale: config.scale,
+    // Forward resources verbatim only when present so the payload stays
+    // byte-identical to before for callers that omit it.
+    ...(config.resources ? { resources: config.resources } : {}),
+  };
+}
+
+/** The body posted to the export server's `/export` for one chart. */
+export type HighchartsExportRequest = {
+  /** The chart's effective Highcharts options. */
+  infile: HighchartsProps['options'];
+  type: 'png';
+  b64: true;
+  scale: HighchartsProps['scale'];
+  resources?: HighchartsProps['resources'];
+};
+
+/**
+ * The request the render posts for a chart with these props, under the theme
+ * the chart is rendered with — already resolved: design system materialized,
+ * document defaults merged, the section's page applied. The render and
+ * `resolveHighchartsRequest` both build their request here.
+ */
+export function resolveChartRequest(
+  props: HighchartsProps,
+  renderTheme: ThemeConfig,
+  fontFaces?: readonly RasterizeFontFace[]
+): HighchartsExportRequest {
+  return chartRequestBody(resolveChartConfig(props, renderTheme, fontFaces));
+}
+
+/**
  * Map a chart's props to the `image` props it desugars to.
  *
  * Shared by the render-time component and the DocxIR desugaring pass so the two
@@ -371,14 +421,7 @@ export async function renderChartToImageProps(
   warnings?: GenerationWarning[],
   cache?: ChartCache
 ): Promise<Record<string, unknown>> {
-  const config = withChartFontFaces(
-    withThemeTypography(
-      withThemeColors(withThemePresets(props, theme), theme),
-      theme
-    ),
-    theme,
-    chartFonts
-  );
+  const config = resolveChartConfig(props, theme, chartFonts);
   // The PNG is shared between identical charts; these props are not. Two
   // charts can post the same body and still be placed differently, and
   // `hasConfigDimensions` below reads the component, not the render.

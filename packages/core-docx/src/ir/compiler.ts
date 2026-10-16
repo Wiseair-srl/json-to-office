@@ -85,6 +85,7 @@ import {
   DEFAULT_COMMENT_DATE,
 } from '../utils/commentRegistry';
 import type { ImageResources, LoadedImage } from '../core/imageResources';
+import { nodeOrigin, type NodeOrigin } from '../core/nodeOrigin';
 import {
   calculateMissingDimension,
   detectImageType,
@@ -137,7 +138,9 @@ import {
   type DocxIrIndent,
   type DocxIrColor,
   type DocxIrComment,
+  type DocxIrDrawingGroupChild,
   type DocxIrDrawingGroupRun,
+  type DocxIrDrawingPicture,
   type DocxIrNote,
   type DocxIrFloating,
   type DocxIrFloatingPosition,
@@ -211,7 +214,20 @@ export interface DocxCompileResult {
    * silently dropping content.
    */
   unsupported: UnsupportedComponent[];
+  /**
+   * The standard-definition node each image run and group picture was lowered
+   * from, keyed by the IR object. Kept beside the IR rather than in it: it is
+   * a fact about this render's input, not something the document says, and the
+   * IR stays the same with or without it.
+   */
+  imageOrigins: ImageOrigins;
 }
+
+/** The node each image in the IR came from, for the render manifest. */
+export type ImageOrigins = WeakMap<
+  DocxIrImageRun | DocxIrDrawingPicture,
+  NodeOrigin
+>;
 
 /**
  * Content bookmarks number from here up.
@@ -301,6 +317,8 @@ interface CompileContext {
   tocEntries: readonly TocHeadingEntry[];
   /** Image bytes, loaded before compilation started. */
   images: ImageResources;
+  /** Where each image run and group picture came from. */
+  imageOrigins: ImageOrigins;
   /**
    * When this document was generated.
    *
@@ -354,6 +372,7 @@ export function compileDocument(
     numberedItems: outline.numberedItems,
     tocEntries: outline.entries,
     images,
+    imageOrigins: new WeakMap(),
     generatedAt: structure.metadata.date,
   };
 
@@ -430,7 +449,23 @@ export function compileDocument(
     required: ctx.features.list(),
     warnings: ctx.warnings,
     unsupported: ctx.unsupported,
+    imageOrigins: ctx.imageOrigins,
   };
+}
+
+/** Remember which component an image run or a group's pictures came from. */
+function recordImageOrigin(
+  ctx: CompileContext,
+  component: ComponentDefinition,
+  images: ReadonlyArray<DocxIrImageRun | DocxIrDrawingGroupChild>
+): void {
+  const origin = nodeOrigin(component);
+  if (!origin) return;
+  for (const image of images) {
+    if (image.kind === 'image' || image.kind === 'picture') {
+      ctx.imageOrigins.set(image, origin);
+    }
+  }
 }
 
 /**
@@ -1057,6 +1092,7 @@ function compileChromeImage(
       ? { floating: compileFloating(props.floating, ctx, path) }
       : {}),
   };
+  recordImageOrigin(ctx, component, [image]);
 
   return [
     {
@@ -3665,6 +3701,7 @@ function compileVisual(
     nativeVisualDeps(ctx, path)
   );
   if (!group) return [];
+  recordImageOrigin(ctx, component, group.children);
 
   const size = visualPlacementPixels(props, group.canvas, {
     widthPx: Math.round(twipsToPixels(scope.measureTwips)),
@@ -3883,6 +3920,7 @@ function compileImage(
       ? { floating: compileFloating(props.floating, ctx, path) }
       : {}),
   };
+  recordImageOrigin(ctx, component, [image]);
 
   ctx.features.require('images', path);
   if (props.floating) ctx.features.require('floating-images', path);
@@ -5165,6 +5203,7 @@ function cellVisual(
     nativeVisualDeps(ctx, path)
   );
   if (!group) return [];
+  recordImageOrigin(ctx, component, group.children);
 
   // A cell's real width is decided by the table layout, so a percentage has no
   // page box to resolve against; the nominal box matches `cellImage`'s.
@@ -5237,14 +5276,14 @@ function cellImage(
   if (mediaType === 'svg') ctx.features.require('svg-images', 'table');
   ctx.features.require('images', 'table');
 
-  return [
-    {
-      kind: 'image',
-      resourceId: declareResource(loaded, mediaType, ctx),
-      widthEmu: pixelsToEmu(size.width),
-      heightEmu: pixelsToEmu(size.height),
-    },
-  ];
+  const image: DocxIrImageRun = {
+    kind: 'image',
+    resourceId: declareResource(loaded, mediaType, ctx),
+    widthEmu: pixelsToEmu(size.width),
+    heightEmu: pixelsToEmu(size.height),
+  };
+  recordImageOrigin(ctx, component, [image]);
+  return [image];
 }
 
 /** The grey a cell uses to say what it could not render. */
