@@ -143,22 +143,74 @@ describe('page numbers in a table of contents', () => {
     );
   });
 
-  it.each(['structure/section-empty', 'structure/header-footer-empty'])(
-    'renders %s without numbers, and says so, when the layout throws',
-    async (name) => {
-      // docx 9.9.0's layout throws on an empty header or footer
-      // ("elements.filter is not a function").
-      const { documentXml, settingsXml, warnings } = await generate(
-        withContents(name)
+  it.each(['header', 'footer'] as const)(
+    'numbers the entries after a section that drops the previous %s',
+    async (part) => {
+      // The middle section states no header or footer, so it gets an empty
+      // one to break Word's link to the first. docx/layout (9.9.0–9.11.0)
+      // throws on a part with no block in it ("elements.filter is not a
+      // function"); Word itself never writes one.
+      const paragraph = (text: string) => ({
+        name: 'paragraph',
+        props: { text },
+      });
+      const { documentXml, settingsXml, warnings } = await generate({
+        name: 'docx',
+        props: {},
+        children: [
+          {
+            name: 'section',
+            props: { [part]: [paragraph('Chrome')] },
+            children: [paragraph('A')],
+          },
+          { name: 'section', props: {}, children: [paragraph('B')] },
+          {
+            name: 'section',
+            props: {},
+            children: [
+              { name: 'toc', props: { title: 'Contents', pageBreak: true } },
+              { name: 'heading', props: { text: 'A heading', level: 1 } },
+            ],
+          },
+        ],
+      });
+      // The sections run on; the break after the field puts the heading on
+      // page 2.
+      expect(unavailable(warnings)).toEqual([]);
+      expect(contents(documentXml)).toMatch(
+        /PAGEREF _Toc1 \\h<\/w:instrText><w:fldChar w:fldCharType="separate"\/><w:t xml:space="preserve">2<\/w:t>/
       );
-      expect(unavailable(warnings)).toHaveLength(1);
-      expect(unavailable(warnings)[0].message).toMatch(
-        /elements\.filter is not a function/
-      );
-      expect(contents(documentXml)).toContain('>A heading<');
-      expect(settingsXml).toContain('<w:updateFields/>');
+      expect(settingsXml).not.toContain('w:updateFields');
     }
   );
+
+  it.each(['structure/section-empty', 'structure/header-footer-empty'])(
+    'numbers the entries in %s, whose sections empty their header and footer',
+    async (name) => {
+      const { documentXml, warnings } = await generate(withContents(name));
+      expect(unavailable(warnings)).toEqual([]);
+      expect(contents(documentXml)).toMatch(/PAGEREF _Toc1 \\h/);
+    }
+  );
+
+  it('renders a contents field without numbers, and says so, when the layout throws', async () => {
+    vi.doMock('docx/layout', async (importOriginal) => {
+      const original = await importOriginal<typeof import('docx/layout')>();
+      return {
+        ...original,
+        estimatePageNumbersWith: () => () => {
+          throw new Error('layout failed');
+        },
+      };
+    });
+    const { documentXml, settingsXml, warnings } = await generate(
+      corpusDocument('headings/toc-default')
+    );
+    expect(unavailable(warnings)).toHaveLength(1);
+    expect(unavailable(warnings)[0].message).toMatch(/layout failed/);
+    expect(contents(documentXml)).toContain('>Chapter One<');
+    expect(settingsXml).toContain('<w:updateFields/>');
+  });
 
   it('loads docx/layout only for a document with a contents field', async () => {
     let loads = 0;

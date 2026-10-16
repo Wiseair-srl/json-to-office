@@ -613,6 +613,16 @@ function sectionOptions(
  * All three slots, not only `default`: the IR distinguishes them and dropping
  * one here would lose a whole header without any diagnostic — the same gap the
  * SVG walk had (#256).
+ *
+ * A part with no blocks — the empty one that breaks Word's link to the
+ * previous section, or an author's `header: []` — gets an empty paragraph in
+ * the `Header` or `Footer` style, which is what Word writes when it empties
+ * one: a story ends on a paragraph mark. Left with none, docx.js writes
+ * `<w:hdr/>`, and `docx/layout` (9.9.0–9.11.0) throws on it
+ * ("elements.filter is not a function"), so a contents field lost its page
+ * numbers. The style keeps the page as it was: LibreOffice gives a part with
+ * no paragraph one in that style, and a `Normal` one set the body 0.7pt
+ * lower under a tight top margin.
  */
 function chromeSlots(
   set: DocxIrSection['headers'],
@@ -625,7 +635,10 @@ function chromeSlots(
     const part = set[slot];
     if (part) {
       out[slot] = new Part({
-        children: emitOutsideBody(() => partChildren(part, resources)),
+        children:
+          part.children.length > 0
+            ? emitOutsideBody(() => partChildren(part, resources))
+            : [new Paragraph({ style: Part === Header ? 'Header' : 'Footer' })],
       });
     }
   }

@@ -1495,23 +1495,38 @@ export function section(
       grid: { type: 'default', linePitch: 360, charSpace: 0 },
     },
     children: sectionChildren(value, ctx, closesDocument),
-    ...(value.headers ? { headers: headerFooterSet(value.headers, ctx) } : {}),
-    ...(value.footers ? { footers: headerFooterSet(value.footers, ctx) } : {}),
+    ...(value.headers
+      ? { headers: headerFooterSet(value.headers, 'Header', ctx) }
+      : {}),
+    ...(value.footers
+      ? { footers: headerFooterSet(value.footers, 'Footer', ctx) }
+      : {}),
   };
 }
 
+/**
+ * A section's `default` / `first` / `even` parts. A part with no blocks gets
+ * an empty paragraph in the `Header` or `Footer` style, as on `docxjs` and as
+ * Word writes an emptied one: the backend would otherwise write `<w:hdr/>`,
+ * which the schema refuses.
+ */
 function headerFooterSet(
   set: {
     default?: DocxIrHeaderFooter;
     first?: DocxIrHeaderFooter;
     even?: DocxIrHeaderFooter;
   },
+  style: 'Header' | 'Footer',
   ctx: EmitContext
 ): NonNullable<SectionOptions['headers']> {
   const out: NonNullable<SectionOptions['headers']> = {};
   for (const slot of ['default', 'first', 'even'] as const) {
     const part = set[slot];
-    if (part) out[slot] = part.children.map((child) => block(child, ctx));
+    if (!part) continue;
+    out[slot] =
+      part.children.length > 0
+        ? part.children.map((child) => block(child, ctx))
+        : [{ paragraph: { style, children: [] } }];
   }
   return out;
 }
