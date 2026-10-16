@@ -340,6 +340,8 @@ Palette and type reach a chart from the theme without the author asking. The res
 
 The precedence is the one the palette and typography already follow, highest first: the chart's own options, the theme's `options`, then the theme's palette and type for whatever is still empty. An authored value always wins, at every level it is set. A document's `props.componentDefaults.highcharts` merges over the theme's block, as for any other component. What a theme puts in `options` is posted to the export server as it is; the library does not judge the content. A theme without the key posts exactly the request it posted before.
 
+To read what a chart will be asked to draw — the merged presets, the palette and the type — without rendering it, call `resolveHighchartsOptions({ options, theme, width, height, documentProps, page, fonts })` from `@json-to-office/json-to-docx`. It resolves the theme with the functions generation uses and builds the request with the render's own, so it returns exactly the `infile` the export server receives. See the [API reference](/reference/api#resolvehighchartsoptions).
+
 ## Custom fonts in Highcharts output
 
 The `resources` prop is forwarded to the export server, which lets you inject `@font-face` CSS (plus JS or extra files) yourself — for a family that is neither installed on the server nor registered in the document, or to override what the theme injects:

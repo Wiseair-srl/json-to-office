@@ -34,6 +34,86 @@ import { normalizeDocument } from '../json/normalizer';
 import { expandBlocksWithPlugins } from '../blocks/document';
 import { prepareDocxQualityDocument } from '../quality/facts';
 import { validateComponentProps } from './validation';
+import {
+  buildRenderManifest,
+  type RenderManifest,
+  type SourceOrigin,
+  type SourceOrigins,
+} from '../core/renderManifest';
+import type { DocxIR } from '../ir/types';
+import type { ImageOrigins } from '../ir/compiler';
+
+/** Warning code for a render whose images could not all be attributed. */
+export const RENDER_MANIFEST_UNAVAILABLE = 'W_DOCX_RENDER_MANIFEST_UNAVAILABLE';
+
+/**
+ * Where the nodes one expansion step emits land: the dot path of the array
+ * they are appended to in each tree, and the index the first one takes there.
+ * `null` when they do not land in that tree at a known place — the authored
+ * children a custom component's `render` receives, or anything inside a
+ * preserved component's expansion, which the preserved tree does not hold.
+ */
+interface ExpansionPosition {
+  standard: string | null;
+  standardBase: number;
+  preserved: string | null;
+  preservedBase: number;
+}
+
+const ROOT_POSITION: ExpansionPosition = {
+  standard: 'children',
+  standardBase: 0,
+  preserved: 'children',
+  preservedBase: 0,
+};
+
+const DETACHED_POSITION: ExpansionPosition = {
+  standard: null,
+  standardBase: 0,
+  preserved: null,
+  preservedBase: 0,
+};
+
+function joinPath(path: string | null, key: string | number): string | null {
+  return path === null ? null : `${path}.${key}`;
+}
+
+/**
+ * The origins of a block-path expansion. There each plugin's output stands in
+ * a `group` at the very path the plugin holds in the preserved tree, so the
+ * two trees are walked side by side and a preserved plugin's path is its own
+ * `sourcePath`. The walk stops at one: what its `render` placed inside is
+ * reported against it.
+ */
+function blockSourceOrigins(
+  standard: unknown,
+  preserved: unknown,
+  preserveSet: ReadonlySet<string>
+): SourceOrigins {
+  const origins = new Map<string, SourceOrigin>();
+  const visit = (std: unknown, kept: unknown, path: string): void => {
+    if (!std || !kept || typeof std !== 'object' || typeof kept !== 'object')
+      return;
+    const keptNode = kept as Record<string, unknown>;
+    const stdNode = std as Record<string, unknown>;
+    if (
+      path !== '' &&
+      typeof keptNode.name === 'string' &&
+      preserveSet.has(keptNode.name) &&
+      stdNode.name === 'group'
+    ) {
+      origins.set(path, { sourcePath: path, sourceKind: keptNode.name });
+      return;
+    }
+    for (const [key, value] of Object.entries(keptNode)) {
+      if (key in stdNode) {
+        visit(stdNode[key], value, path === '' ? key : `${path}.${key}`);
+      }
+    }
+  };
+  visit(standard, preserved, '');
+  return origins;
+}
 
 /**
  * Options for creating a document generator
@@ -110,6 +190,29 @@ interface BuilderState {
 }
 
 /**
+ * The render manifest of `buffer`, or nothing — with a warning saying why —
+ * when the package holds an image the pairing cannot account for. A manifest
+ * is complete or absent, never partly guessed.
+ */
+function manifestOf(
+  buffer: Buffer,
+  ir: DocxIR,
+  imageOrigins: ImageOrigins,
+  sourceOrigins: SourceOrigins,
+  warnings: GenerationWarning[]
+): RenderManifest | undefined {
+  const built = buildRenderManifest(buffer, ir, imageOrigins, sourceOrigins);
+  if (built.ok) return built.manifest;
+  warnings.push({
+    component: 'docx',
+    severity: 'warning',
+    message: `No render manifest: ${built.reason}.`,
+    context: { code: RENDER_MANIFEST_UNAVAILABLE, reason: built.reason },
+  });
+  return undefined;
+}
+
+/**
  * Create the builder implementation with the given state
  */
 function createBuilderImpl<
@@ -180,6 +283,8 @@ function createBuilderImpl<
     validateEmitted:
       | ((emitted: ComponentDefinition[], componentLabel: string) => void)
       | undefined,
+    at: ExpansionPosition,
+    origins: Map<string, SourceOrigin>,
     depth = 0
   ): Promise<{
     standard: ComponentDefinition[];
@@ -192,6 +297,11 @@ function createBuilderImpl<
     }
     const standardOut: ComponentDefinition[] = [];
     const preservedOut: ComponentDefinition[] = [];
+    // The paths the next node pushed onto each output will have.
+    const nextStandardPath = () =>
+      joinPath(at.standard, at.standardBase + standardOut.length);
+    const nextPreservedPath = () =>
+      joinPath(at.preserved, at.preservedBase + preservedOut.length);
 
     for (const componentData of components) {
       // Safe type narrowing for custom component detection
@@ -241,12 +351,16 @@ function createBuilderImpl<
             componentWithName.children &&
             Array.isArray(componentWithName.children)
           ) {
+            // Where `render` puts these is its own business, so their paths
+            // are unknown here.
             const nested = await processDocumentComponents(
               componentWithName.children as ComponentDefinition[],
               preserveSet,
               warningsCollector,
               resolvedTheme,
               validateEmitted,
+              DETACHED_POSITION,
+              origins,
               depth + 1
             );
             nestedChildren = nested.standard;
@@ -291,18 +405,42 @@ function createBuilderImpl<
             validateEmitted(resultComponents, versionLabel);
           }
 
-          // Recursively process the result in case it contains more custom components
+          const preservedHere = preserveSet?.has(componentName) === true;
+          const preservedPath = nextPreservedPath();
+          const firstIndex = at.standardBase + standardOut.length;
+
+          // Recursively process the result in case it contains more custom
+          // components. The output is spliced in where this node stood; a
+          // preserved node's output has no place in the preserved tree.
           const processedResult = await processDocumentComponents(
             resultComponents,
             preserveSet,
             warningsCollector,
             resolvedTheme,
             validateEmitted,
+            {
+              standard: at.standard,
+              standardBase: firstIndex,
+              preserved: preservedHere ? null : at.preserved,
+              preservedBase: at.preservedBase + preservedOut.length,
+            },
+            origins,
             depth + 1
           );
+
+          // Every node a preserved component emitted points back at it — the
+          // outermost one that the preserved tree holds.
+          if (preservedHere && at.standard !== null && preservedPath !== null) {
+            processedResult.standard.forEach((_, index) => {
+              origins.set(`${at.standard}.${firstIndex + index}`, {
+                sourcePath: preservedPath,
+                sourceKind: componentName,
+              });
+            });
+          }
           standardOut.push(...processedResult.standard);
 
-          if (preserveSet && preserveSet.has(componentName)) {
+          if (preservedHere) {
             // Keep this custom node verbatim in the preserved tree.
             // Per spec: do NOT recurse into authored children — leave the
             // entire subtree as the user wrote it.
@@ -335,12 +473,21 @@ function createBuilderImpl<
           'children' in componentData &&
           Array.isArray(componentData.children)
         ) {
+          const standardPath = nextStandardPath();
+          const preservedPath = nextPreservedPath();
           const processedNested = await processDocumentComponents(
             componentData.children,
             preserveSet,
             warningsCollector,
             resolvedTheme,
             validateEmitted,
+            {
+              standard: joinPath(standardPath, 'children'),
+              standardBase: 0,
+              preserved: joinPath(preservedPath, 'children'),
+              preservedBase: 0,
+            },
+            origins,
             depth + 1
           );
           standardOut.push({
@@ -453,6 +600,8 @@ function createBuilderImpl<
     pluginOutputs?: readonly string[];
     warnings: GenerationWarning[];
     preserveSet: ReadonlySet<string> | undefined;
+    /** Standard paths rooted in a preserved component's expansion. */
+    sourceOrigins: SourceOrigins;
   }> {
     const preserveSet = resolvePreserveSet(options);
 
@@ -607,6 +756,9 @@ function createBuilderImpl<
       );
       const [modedDoc] = normalizeDocument(expanded.document);
       return {
+        sourceOrigins: preserveSet
+          ? blockSourceOrigins(modedDoc, expanded.preserved, preserveSet)
+          : new Map(),
         modedRoot,
         modedTheme,
         themeName,
@@ -625,12 +777,15 @@ function createBuilderImpl<
 
     // Process custom components to convert them to standard components.
     // Builds standard (fully expanded) and preserved (partial) trees in one pass.
+    const sourceOrigins = new Map<string, SourceOrigin>();
     const processed = await processDocumentComponents(
       modedRoot.children || [],
       preserveSet,
       warnings,
       modedTheme,
-      validateEmitted
+      validateEmitted,
+      ROOT_POSITION,
+      sourceOrigins
     );
 
     // Create a new document definition with processed components
@@ -651,6 +806,7 @@ function createBuilderImpl<
       modedDoc,
       warnings,
       preserveSet,
+      sourceOrigins,
     };
   }
 
@@ -743,22 +899,33 @@ function createBuilderImpl<
       options?.renderer ??
       state.renderer ??
       (prepared.renderer as DocxRendererId | undefined);
-    const { buffer } = await generateBufferViaIr(context.document, {
-      context,
-      prepared,
-      ...(state.services ? { services: state.services } : {}),
-      ...(state.fonts ? { fonts: state.fonts } : {}),
-      ...(baseDir !== undefined ? { baseDir } : {}),
-      ...(deterministic !== undefined ? { deterministic } : {}),
-      ...(generatedAt !== undefined ? { generatedAt } : {}),
-      ...(renderer !== undefined ? { renderer } : {}),
-      warnings,
-    });
+    const { buffer, ir, imageOrigins } = await generateBufferViaIr(
+      context.document,
+      {
+        context,
+        prepared,
+        ...(state.services ? { services: state.services } : {}),
+        ...(state.fonts ? { fonts: state.fonts } : {}),
+        ...(baseDir !== undefined ? { baseDir } : {}),
+        ...(deterministic !== undefined ? { deterministic } : {}),
+        ...(generatedAt !== undefined ? { generatedAt } : {}),
+        ...(renderer !== undefined ? { renderer } : {}),
+        warnings,
+      }
+    );
+    const renderManifest = manifestOf(
+      buffer,
+      ir,
+      imageOrigins,
+      new Map(),
+      warnings
+    );
     return {
       buffer,
       warnings: warnings.length > 0 ? warnings : null,
       standardDefinition: context.document,
       preservedDefinition: undefined,
+      ...(renderManifest && { renderManifest }),
     };
   }
 
@@ -795,6 +962,7 @@ function createBuilderImpl<
         blockPaths,
         warnings,
         preserveSet,
+        sourceOrigins,
       } = await expandDocument(document, options);
 
       const baseDir = options?.baseDir ?? state.baseDir;
@@ -803,7 +971,7 @@ function createBuilderImpl<
       const renderer =
         options?.renderer ?? state.renderer ?? modedRoot.renderer;
 
-      const { buffer } = await generateBufferViaIr(modedDoc, {
+      const { buffer, ir, imageOrigins } = await generateBufferViaIr(modedDoc, {
         // The prologue already ran: the theme had to be resolved before custom
         // components expanded, because each one's `render` is handed it.
         context: {
@@ -832,11 +1000,20 @@ function createBuilderImpl<
           } as unknown as ExtendedReportComponent<TComponents>)
         : undefined;
 
+      const renderManifest = manifestOf(
+        buffer,
+        ir,
+        imageOrigins,
+        sourceOrigins,
+        warnings
+      );
+
       return {
         buffer,
         warnings: warnings.length > 0 ? warnings : null,
         standardDefinition: modedDoc,
         preservedDefinition,
+        ...(renderManifest && { renderManifest }),
       };
     } catch (error) {
       if (state.debug) {
@@ -854,8 +1031,13 @@ function createBuilderImpl<
     outputPath: string,
     options?: GenerateFileOptions
   ): Promise<FileGenerationResult<TComponents>> {
-    const { buffer, warnings, standardDefinition, preservedDefinition } =
-      await generateBuffer(document, options);
+    const {
+      buffer,
+      warnings,
+      standardDefinition,
+      preservedDefinition,
+      renderManifest,
+    } = await generateBuffer(document, options);
     const fs = await import('fs/promises');
     await fs.writeFile(outputPath, new Uint8Array(buffer));
 
@@ -881,6 +1063,7 @@ function createBuilderImpl<
       standardDefinition,
       preservedDefinition,
       preservedOutputPath,
+      ...(renderManifest && { renderManifest }),
     };
   }
 

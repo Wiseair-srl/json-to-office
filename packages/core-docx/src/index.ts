@@ -174,6 +174,14 @@ export type {
   ChartGenerationResult,
 } from './components/highcharts';
 
+// A chart's effective options — what the render posts to the export server
+export {
+  resolveHighchartsOptions,
+  resolveHighchartsRequest,
+  type ResolveHighchartsOptionsInput,
+  type HighchartsExportRequest,
+} from './components/highchartsOptions';
+
 // Note: TextSpaceAfterProps and HighchartsProps types are now in shared package
 // and should be imported from there to maintain single source of truth
 
@@ -190,6 +198,7 @@ export {
   cleanComponentProps,
   ComponentValidationError,
   UnknownPreservedComponentError,
+  RENDER_MANIFEST_UNAVAILABLE,
 
   // Schema utilities
   generatePluginDocumentSchema,
@@ -209,6 +218,9 @@ export {
   type GenerateFileOptions,
   type BufferGenerationResult,
   type FileGenerationResult,
+  type RenderManifest,
+  type RenderManifestEntry,
+  type RenderManifestPart,
   type StandardDefinitionResult,
   type QualityPreparationResult,
   type ValidationResult,

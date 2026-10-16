@@ -11,6 +11,8 @@
  * what to replace.
  */
 
+import { withNodeOrigin } from './nodeOrigin';
+
 /**
  * Decide what one component becomes.
  *
@@ -113,8 +115,8 @@ async function walkColumn(
  * Carry a node's identity and visibility onto its replacement.
  *
  * A desugared node is still the component the author wrote: an `id` other
- * things link to, and an `enabled` flag something downstream may act on, both
- * have to survive the substitution.
+ * things link to, an `enabled` flag something downstream may act on, and the
+ * path the render manifest reports it at all have to survive the substitution.
  */
 export function withNodeIdentity(
   original: Record<string, unknown>,
@@ -123,7 +125,7 @@ export function withNodeIdentity(
   const out = { ...replacement };
   if (original.id !== undefined) out.id = original.id;
   if (original.enabled !== undefined) out.enabled = original.enabled;
-  return out;
+  return withNodeOrigin(original, out);
 }
 
 /**

@@ -1,0 +1,6 @@
+---
+'@json-to-office/core-docx': minor
+'@json-to-office/json-to-docx': minor
+---
+
+`generateBuffer` and `generateFile` return a `renderManifest` beside `standardDefinition` and `preservedDefinition`: one entry per image embedded in the package, body first in the order of the `<a:blip r:embed>` elements of `word/document.xml`, then each header and footer part (`part: 'header' | 'footer'`). Each entry names the media file (`mediaPath`, one entry per occurrence, so deduplicated media appear more than once), its `sha256`, the producing node's dot path in `standardDefinition` (`standardPath`, e.g. `children.4.children.2`) and its name (`kind`: `image`, `highcharts`, `visual`); a node emitted by a custom component kept by `preserveCustomComponents` also carries that component's path in `preservedDefinition` (`sourcePath`) and name (`sourceKind`), shared by every node it emits. The origin is recorded during expansion and carried to the compiler, not matched by position, and every entry is checked against the media bytes; a package the check cannot account for gets no manifest and a `W_DOCX_RENDER_MANIFEST_UNAVAILABLE` warning instead of a guessed one. The `.docx` is byte-identical to before. `RenderManifest`, `RenderManifestEntry` and `RenderManifestPart` are exported.

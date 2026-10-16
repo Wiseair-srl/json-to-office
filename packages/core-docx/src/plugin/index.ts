@@ -39,6 +39,7 @@ export {
 
 export {
   createDocumentGenerator,
+  RENDER_MANIFEST_UNAVAILABLE,
   type DocumentGeneratorOptions,
 } from './createDocumentGenerator';
 
@@ -49,6 +50,9 @@ export {
   type GenerateFileOptions,
   type BufferGenerationResult,
   type FileGenerationResult,
+  type RenderManifest,
+  type RenderManifestEntry,
+  type RenderManifestPart,
   type StandardDefinitionResult,
   type QualityPreparationResult,
   type ValidationResult,
