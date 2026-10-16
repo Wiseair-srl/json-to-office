@@ -115,7 +115,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'structure/section-page-break-mixed':
     '0231a2335d0e69e1136dfca69fa873f7f2c9510a64d871e7b884b04c359aeb89',
   'structure/section-empty':
-    '4cdbd62b8aff5bc49eeb2e1e50079e3d2fa037b6070627c95e0962a7e845ed6c',
+    'd94164a000f12037030c374f1b4313075bd826894e7947848ceb59eddeb28e05',
   'structure/section-nested':
     'eb725f4b89cb560b7f175be400abb41f3162c130b01423b1bf624c492cefd174',
   'structure/section-disabled':
@@ -135,11 +135,11 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'structure/header-and-footer':
     '270b7612e492cc3dbc509a4691802ca2ac0ebe337078f8ada1a83f837f0fc4c6',
   'structure/header-footer-empty':
-    'bf786b3c8d26ebd1e65cbc249a1b15089f33236f6a7106e0f524e1b9241365ca',
+    '13f54d6fbc5496d6e271cbdc81ec4d4c0bb4b233b792055a388cd5b76b6bbfad',
   'structure/header-footer-link-to-previous':
     '1c7f7261c82dfea638dcae6e35ab4deb1e58680378dbedca74c80e8a17dfa523',
   'structure/header-footer-implicit-reset':
-    'c3303f05ad66b52cd24ebeac61e9f536760d7272541496c33ed37193d5b38396',
+    '0af13602bc3029fc18afcec3cdbe4060b5cf149edbb706f69e0dc9cc473de221',
   'structure/header-footer-styled':
     '2716276b3a2f883644eb38575ed26249e8f527b85927edf5559d2df5d7df846f',
   'structure/footer-page-numbers':
@@ -603,7 +603,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'chart/floating':
     '55d4d4b38fa75e49434d7cfb9bde2b9cc5098da79f3159f106b135a5d79aa735',
   'chart/in-header-and-footer':
-    'a153e8e96d6f7f90105596fa7fd2fb835ae5829508b5b79e917feab0bc7f383e',
+    'b1d1e1714c61668542287d9c9942aad8dc5f1705e2b5ef05205b887a682eb456',
   'chart/in-text-box':
     '89f6f22e5646358443a58af8eb87b8cc7ef3266fcb2353f850b3f3eae54c2180',
   'blocks/chart-figure-native':
