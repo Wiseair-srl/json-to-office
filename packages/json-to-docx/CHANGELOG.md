@@ -1,5 +1,22 @@
 # @json-to-office/json-to-docx
 
+## 7.7.1
+
+### Patch Changes
+
+- 2362ac2: The default DOCX renderer (`docxjs`) now runs on docx 9.12.0 (from 9.10.0),
+  pinned exactly in `core-docx`, `json-to-docx` and `shared-docx`.
+
+  `word/numbering.xml` now restates the start value of every level of a list,
+  not only the first (dolanmiu/docx#3768). Every list in a jto document already
+  has its own definition, and each value is the one its level declares, so lists
+  number as before in Word and LibreOffice. Nothing else in the files changes,
+  and `office-open` output does not change.
+
+- Updated dependencies [2362ac2]
+  - @json-to-office/core-docx@7.7.1
+  - @json-to-office/shared-docx@7.7.1
+
 ## 7.7.0
 
 ### Minor Changes
