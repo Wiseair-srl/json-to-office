@@ -147,7 +147,7 @@ describe('page numbers in a table of contents', () => {
     'numbers the entries after a section that drops the previous %s',
     async (part) => {
       // The middle section states no header or footer, so it gets an empty
-      // one to break Word's link to the first. docx/layout (9.9.0–9.11.0)
+      // one to break Word's link to the first. docx/layout (9.9.0–9.12.0)
       // throws on a part with no block in it ("elements.filter is not a
       // function"); Word itself never writes one.
       const paragraph = (text: string) => ({
