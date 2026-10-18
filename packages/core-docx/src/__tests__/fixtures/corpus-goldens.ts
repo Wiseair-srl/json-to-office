@@ -93,7 +93,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'text/bookmark-ids':
     '4b666019984bfdbd69d1c1c4227cd9e74e185e218f7e1db7467863d101473e71',
   'text/markdown-lists':
-    'f02b69393c837dfbabd1ec8f23eece947cd6fb65f208e4211dacb4e4b7a300d8',
+    'ffd3979e5b6f394c2fa0642e660051a3738dcd998a8aada5320a12be4aa9596e',
   'text/unicode-and-xml-escapes':
     'a4e71775e4c66e6cda9ade578ae608fe8b3a2f298231ad177a792d0d005d8cef',
   'text/floating-frame':
@@ -177,11 +177,11 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'headings/proofing':
     '3a5b90d59c5ecc08f4ee62b48958a1a8bff8d477e7cda1969db17a15d8373b56',
   'headings/numbering-nested-levels':
-    '312d1319ca526f1383cd52acb246b9cef2f3bb5da37818f9f016f8ee3565d8e4',
+    '151caf803623019fde391ca19ea737f6e7db4b95e44e1e8f2348c911226305d8',
   'headings/numbering-document-default-and-optout':
-    '006e61557b67f5d36fcbfefff1ec13eab096e3cfb6ef19fa656f1accb3e6de57',
+    '373c88c74765285755e48584b6e30aaf4e44661df0e65686f3aba02012065536',
   'headings/numbering-level-gaps':
-    '4d6478bc074b33ff74c570beae4af7a0fcd498c53d7f4871a9fcf8b15c8c781c',
+    'a54222fb2e00b7e02c4c10e8a585cb52c8f6cae7219ae6023d260789fd6d5374',
   'headings/bookmark-auto-slug':
     'a88ce2b129d62c6cac35fc2dae13dcc18a284af03192389591357375f420d52e',
   'headings/bookmark-slug-collisions':
@@ -195,13 +195,13 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'headings/links-mixed-inline':
     '548cb07be40a078d6fae778681125e487071ee135634635f31cbb6feb4bd6f5f',
   'headings/internal-link-in-heading-and-list':
-    '208cd644ca7fb719de517f978d9c8f3430d3522f0acdca26ddd792a6d39063cf',
+    '8cc46e11a6b925c7c3e9761fd1d7482eb10d6ead10448dcb9f1fce0fde51f57f',
   'headings/cross-reference-formats':
-    '35650f78535684517eeb2ff912c902d79d690005607a419d9cf6cb178796537a',
+    'ab22964ca514007a37b998ac421570a2c04e4ca8597f57d40701c27053113ccc',
   'headings/cross-reference-unresolved':
-    '271b083b9bc101c0ca1432131e5a1ea787c0969d1dc0652aaa28d91ac015339f',
+    '700cdbd5712cc1198d6605e1ec1fc3352ce2676926700910bdb17dad9bfad559',
   'headings/cross-reference-list-item':
-    '5c30f2acd5de77c31adfc32109e8a32ed092e703284edcdbf32f482dc56c93a4',
+    'e3cfd6da1068bbd9184b70e0d1eef4b87f5b909c433f0f5c430129b1d7cb43b4',
   'headings/toc-default':
     '3635b095f56fcbe2ad4c3a0c753fe83056b42fd2da1b7c64055b32096c6c4fc8',
   'headings/toc-depth-ranges':
@@ -217,7 +217,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'headings/toc-numbering-style-legacy':
     '8f00a0794c42c2b89c5f0cd5caa29c18d9994ba7fd7717c7dda497dd4dafbd38',
   'headings/toc-cached-numbered-entries':
-    'd7789a45974a6e2718c6075f9f8d4ae831e429c3b84919995dce5f8a5f95acf5',
+    'ae4030d50558122ab30d928ff9a9a6816ea5aace9a65fa3d9a5316d8db30b61c',
   'headings/toc-in-nested-container':
     '979229e938a9f3e41f1e77dc0309d0e2fe897e01c11541bd623cd6af64233cf5',
   'headings/toc-in-columns':
@@ -231,7 +231,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'lists/single-item':
     '116263ab878f610a8728616f5722775ca870846bb44bf3accb5cdcd77f3d122e',
   'lists/bullet-custom-character':
-    '07e543abf9b19b3a338817805c6a537750f3c002f50e4b3f8276685885d72a0c',
+    '5e52c43738a76e5810f142cc12bddd6d8b139f2ae059f24585d235f5db96ae04',
   'lists/numbered-simplified':
     '2de211d54cf132db8c94212c649de9dd1e30ae923d2f2092d471a55da5096cf0',
   'lists/format-none':
@@ -243,35 +243,35 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'lists/formats-exotic':
     '2703943c33165538af875caf3b13c822b290c4a48f770ca821ca02f4aca54d1b',
   'lists/nested-bullets-three-levels':
-    'a1ae97d6cea45067d477edfbe478f27dfd474b5167e7c987f002ebe5e7d78b87',
+    '6e1c115ba04b7b54f61868b3f7a06aad97a3be7c14b18f835bb727b64ce1544f',
   'lists/nested-numbered-defaults':
-    '5310ef9775ce3ae41f02a6629b7145ffe92a9cfc4526e2d2271a4b3a3f296b11',
+    '87e42de767e85eeccdadbd50863a6cc93d5f877358a258f08c9b283f30f5eeaf',
   'lists/nested-max-depth':
-    '2d9cf44636b5e638045cc64d1e94e52945fe371f651ee3b5e395bc5f43ddb818',
+    '40971302fcba983e74d95ff3f58f7110f077fb0bee458a91a4bbe668e555dd0b',
   'lists/nested-numbered-max-depth':
-    'a9f72853b23fa0c9b57be1f22588a14668780fa157ba904ece234dee0655e0fe',
+    'b09022edabfe7bd826b7d97571d277aa052c75e6c3b6f0c74b523a6255287a26',
   'lists/nested-level-jumps':
-    'c5594ab66a0c54efd34f3047f2274bc17a828f4bec3d08da302160422742c8bb',
+    'bbbc400cdc5857084f5aa38ad92e6433b69a0fcc1116ac19f03efed4bf88a75a',
   'lists/mixed-bullet-and-numbered-levels':
-    '9e2f4b6fb7bc3a73fff02fdcfa87565349831ba022a03bdf6c3db79427f1a237',
+    '96435d9ad8350799ea9e332dac790721b97eb1f3cf45de984228955d3f1abc63',
   'lists/levels-explicit':
-    '08395aee69152ff5d027af983cfcc87ca7b6f5d79cf1839b1499274b5cba4122',
+    'c05bf2ac280a9160daddecd5227514e121fe5316ab2d50b16db1499ea0c2b56d',
   'lists/levels-partial-filled':
-    'ca822f4c7f4d8b030a049c459a4dcaba7275c2399585707be5aacb65e9c22adb',
+    'c0fd714b33091af5939419be54fb5f5cd970e4c5fd21876102238afb77551399',
   'lists/level-start-overrides':
-    '8dd0d710a5d81a65db95f9e755aa139b92c44094d74caae57ef533fd39054902',
+    '620b48c0ea78c101775a25d32d670faba9e189aaed94b33b5e205f0596dd7143',
   'lists/start-with-explicit-levels':
     '95857145889779ad920d127b87a1eecca3bcd9e5642b9cb7153fe98f585193d9',
   'lists/level-text-templates':
-    '347a73249c651c1cb60e26c7335690110fcd5e2244e7782cb1d05ccbf615fa6a',
+    'ca20bbb9af561ab8b4ef95bbc02ebaa5dff83cc0ad366507291be083aa2cbfa4',
   'lists/level-marker-alignment':
-    '3e8bdc7ec01ee459e278602fd2d423a7cad581335672372523efcd689a5df39a',
+    'f7dd835dec474b5e49a61825ee4f4f14c0b4c3b8dc0ae756a988dc5df1df53cc',
   'lists/level-indent':
-    '3fce4467659729d78f6a9cb84cf0cf7479fed535125da01f797315f81f56173f',
+    'bb278b7a0f7a5481425cfe16896128651bba1741fa17966f56210999caa5353f',
   'lists/marker-font':
     '6909377955aff67cac2c2fdaa54df16cd7a48e01f34a846cc814f2d35bc7f332',
   'lists/marker-font-theme-token':
-    'fd0f4d3b40b943e9c23cd666a17ddbb9686880a231a03205f2e9c5087fadde9e',
+    'd60ec9244c207d279f1f61afb84aed756e8f920ca2a6bdb75bef69aae297ef8c',
   'lists/indent-shorthands':
     'ce4c103870014536dc34277b79efb92ecb1b7174f782ea63dbf9a6cc05524761',
   'lists/spacing':
@@ -283,9 +283,9 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'lists/rich-text-items':
     '16a953e0a892bd97bd49ab3756c75df2b45a61d5c4282f66e45c844f7317857e',
   'lists/item-internal-links':
-    '8f7af9f65907f3d7be2faf24d9c1787494eda1b8e1f4bb3682df9a1330b74a0c',
+    '6d5ea4d3eb0c5fe24693faa6784f6c866bdce7cb317d89316d8ac5ffa0d06e78',
   'lists/item-cross-references':
-    '8ba54aea1202bd742733c738db70481ced12e5ff4a8f8a9af24ce965cd2e5f7a',
+    '91b5d275a78d1c3b1fe4d231b183c96b8b9a072bbcd88adaeb0b91e3c600df2a',
   'lists/item-revisions':
     '377c4cb031771b9ed0593f17ae26e1a9e2636dc5b953e1d7d339aff2f27ce3d1',
   'lists/comment-thread':
@@ -303,7 +303,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'lists/disabled':
     'deb314c088b876903350daaaec1e80ba38756eeba93a160644df1396172f72b8',
   'lists/in-document-flow':
-    '49f05f3ddd69f1300bb8f188f35df48b62ac4741dfb56e82d034f472583bfcfd',
+    'ca04630d2dbdcb35beb837f936edcb739fafd8567de9f4f4ff8e68e916f10ccb',
   'links/single-external':
     '516240bf777f63174ae237b6fa885e27b58eebbc774b9db33b47d2d1dbab09cd',
   'links/multiple-in-one-paragraph':
@@ -479,7 +479,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'annotations/comment-multi-run-range':
     '9f447854d27501548a1c4acb6e75d63b65d4ec83d27a5d6a2d21035064aa0367',
   'annotations/comment-anchor-edge-cases':
-    '76ba0c332ae2e7f07b267759f789fe7a2fd7bece861ef6b7bd5780dd442421cb',
+    '50cc2a9531837da69c03c20229fb320d0cdeba41439db2e3299a90bcdd1bfdc6',
   'annotations/comment-in-nested-containers':
     'f1049bc1a0ec006d1a6ec2d32b24f70a06602829e122a4b8080d442b8c5671e0',
   'annotations/footnote-single':
@@ -503,7 +503,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'annotations/endnote-with-footnote':
     '38b3817832f0c7d9572f3d9380f91253cc574740bb5962392d45f41edf1d554b',
   'annotations/notes-in-nested-components':
-    'd3f34a8349cb6456875d848d74d11c4edcb962566e357e7b3d1f2fe01709883f',
+    '71da508c5698a0e71b9a8c795d1af88d030c52f333504900b7436a6a39c03aa3',
   'annotations/revision-defaults':
     '8c66ef994fe66dc37083bf8f140ce10a921475af2f291aa5d8a284477c0022b1',
   'annotations/revision-author-and-date':
@@ -517,7 +517,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'annotations/revision-heading':
     'ab7cd3c4f7c23b3547112acfeebe150ebad3475b959a9a4957816d4283d00ef9',
   'annotations/revision-list-items':
-    'e2051a3368f839a13d05aeddad1ad20ad7028d776d1636485019443ccbd62918',
+    '15c2f908b552a0f1beb512522684296cefc3a58e21727c5c40be6ccce6f1a59c',
   'annotations/revision-styled-paragraph':
     'b9434f505294b7683ec9455753c2055b5adc5f9855f1296a4f038fef8f58eb87',
   'annotations/revision-with-comment':
@@ -571,7 +571,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'theme/component-defaults-instance-wins':
     '85e925da7eb51c4c76ac69bd5bddbc45e4412b39586318ce1fe2fec2641097f1',
   'theme/component-defaults-heading-numbering':
-    '700203f9dfcb4693d1dc151a4f291e919033a3089754b796c819b1590da68c60',
+    '9c9aa0e404aa5a75dc033afe92ce44c2208ae76c85112fd15c0b459c3128bb64',
   'theme/language-document-default':
     '18845c3b020de89a8b705e39efde9330a436499a0339b874d26054ecd3d1b34a',
   'theme/language-component-overrides':

@@ -125,14 +125,17 @@ const isSequenceField = (instruction: string): boolean =>
 /**
  * One complex field, as one run per field character.
  *
- * docx.js has a run child for these (`PageNumber.CURRENT`), but it packs
- * `begin`, `instrText`, `separate` and `end` into a *single* `w:r`. Word reads
- * that fine; LibreOffice does not — it computes the page number itself and
- * paints it with the document default instead of the run's own properties, so
- * an 8pt grey `Page {PAGE}` footer came out with an 11pt black numeral in
- * every PDF the preview path produces. Splitting the field characters across
- * runs that each carry `rPr` is what LibreOffice honours, and it is also the
- * shape Word itself writes.
+ * docx.js has a run child for these (`PageNumber.CURRENT`), which before
+ * 9.12.0 packed `begin`, `instrText`, `separate` and `end` into a *single*
+ * `w:r`. Word reads that fine; LibreOffice does not — it computes the page
+ * number itself and paints it with the document default instead of the run's
+ * own properties, so an 8pt grey `Page {PAGE}` footer came out with an 11pt
+ * black numeral in every PDF the preview path produces. Splitting the field
+ * characters across runs that each carry `rPr` is what LibreOffice honours,
+ * and it is also the shape Word itself writes. docx 9.12.0 splits its own
+ * page fields the same way (dolanmiu/docx#3769); the runs are still built
+ * here, because `PageNumber` covers page fields only and a sequence field
+ * needs its counted result written between `separate` and `end`.
  *
  * A page field carries no cached result between `separate` and `end`. Nothing
  * in this pipeline paginates, so the only value we could put there is a
