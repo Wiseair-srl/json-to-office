@@ -245,6 +245,18 @@ export async function buildDocumentOptions(
     settings: {
       updateFields: ir.settings.updateFields,
       ...(ir.settings.trackRevisions ? { trackRevisions: true } : {}),
+      // A text's `\n` is a manual line break inside its paragraph, and Word
+      // stretches the line before one across the whole width of a justified
+      // paragraph. `w:doNotExpandShiftReturn` sets that line flush instead.
+      // Passing `compatibility` replaces @office-open/docx's fresh-document
+      // defaults rather than extending them, so they are restated here.
+      compatibility: {
+        version: 15,
+        overrideTableStyleFontSizeAndJustification: true,
+        enableOpenTypeFeatures: true,
+        doNotFlipMirrorIndents: true,
+        doNotExpandShiftReturn: true,
+      },
     },
     ...(ir.numbering.length > 0
       ? {
