@@ -224,6 +224,12 @@ export function buildDocument(
       updateFields: ir.settings.updateFields,
       ...(ir.settings.trackRevisions ? { trackRevisions: true } : {}),
     },
+    // A text's `\n` is a manual line break inside its paragraph, and Word
+    // stretches the line before one across the whole width of a justified
+    // paragraph — a two-word line spread edge to edge. `w:doNotExpandShiftReturn`
+    // sets that line flush like the last line of a paragraph, the way every
+    // reader expects. docx keeps compatibility mode 15 alongside it.
+    compatibility: { doNotExpandShiftReturn: true },
     ...(ir.numbering.length > 0
       ? { numbering: { config: ir.numbering.map(numberingConfig) } }
       : {}),
