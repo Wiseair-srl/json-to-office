@@ -579,9 +579,9 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'theme/no-proof-words':
     'c20938190546b451b26efd5dbb59105d8be792cafe3ab6f3e6bc865871903a62',
   'theme/example-practice-note':
-    '4ce6153e3814f288db8f8f5cb40ab0f26bca7f517aa8f1669cae8eacf4a1af90',
+    '5db4f29c3ae36cc4f1d77a02c5944536c02e26203f0cdbdd77730e4aae06eea2',
   'theme/example-field-review':
-    '0502d1e72d1022d57e69870c6a368348131482b259968db8efa209bbef2d3ec8',
+    'bd888f32560b23c15ef67e117ea899da6ede53e3aa2fb24d222ee4b69ee044a8',
   'chart/column-configured':
     '97b7238305c82bf75833229d4a29cfaed846cc5f20b55232967461f8394cdb1b',
   'chart/bar-no-legend':

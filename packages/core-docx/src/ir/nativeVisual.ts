@@ -51,6 +51,7 @@ import {
   pointsToHalfPoints,
   emuToInches,
 } from './units';
+import { noProofRuns } from './inline';
 // The same source string the pre-pass keyed its loaded bytes by. Using a
 // second, equivalent-looking encoder here would silently miss every lookup.
 import { resolveImageSource as imageSource } from '../utils/imageUtils';
@@ -66,9 +67,9 @@ export interface NativePictureResource {
 /**
  * What lowering needs from the compiler.
  *
- * Deliberately four narrow capabilities rather than the compile context: the
- * lowering has no business reaching for bookmarks, numbering or section
- * geometry, and saying so in the type keeps it that way.
+ * Deliberately four narrow capabilities and one value rather than the compile
+ * context: the lowering has no business reaching for bookmarks, numbering or
+ * section geometry, and saying so in the type keeps it that way.
  */
 export interface NativeVisualDeps {
   /** Resolve an authored colour to hex, or `undefined` if it names nothing. */
@@ -79,6 +80,8 @@ export interface NativeVisualDeps {
   reject(detail: string): void;
   /** Report something worth knowing that did not stop the drawing. */
   warn(message: string): void;
+  /** The document's accepted words, marked no-proof in the drawing's text. */
+  noProofWords?: string[];
 }
 
 /** The pixel density an image's stored size is interpreted at. */
@@ -285,7 +288,7 @@ function compileText(
     defaultHeightInches: derivedTextHeightInches(props, runs),
   });
 
-  const paragraphs = textParagraphs(runs, props, colors, at);
+  const paragraphs = textParagraphs(runs, props, colors, at, deps.noProofWords);
 
   return {
     kind: 'shape',
@@ -325,7 +328,8 @@ function textParagraphs(
   runs: NonNullable<NativeVisualTextProps['runs']>,
   props: NativeVisualTextProps,
   colors: ReadonlyMap<string, DocxIrColor>,
-  at: string
+  at: string,
+  words: string[] | undefined
 ): DocxIrParagraph[] {
   const paragraphs: DocxIrParagraph[] = [];
   let current: DocxIrInline[] = [];
@@ -355,9 +359,7 @@ function textParagraphs(
     const lines = run.text.split('\n');
     lines.forEach((line, lineIndex) => {
       if (lineIndex > 0) current.push({ kind: 'lineBreak' });
-      if (line) {
-        current.push({ kind: 'text', text: line, ...formatting });
-      }
+      if (line) current.push(...textLine(line, formatting.formatting, words));
     });
     // `breakLine` ends the paragraph rather than adding a break, so paragraph
     // alignment applies per line the way the raster path lays it out.
@@ -506,7 +508,13 @@ function compileShape(
 
   const text: DocxIrDrawingText | undefined = segments.length
     ? {
-        paragraphs: shapeParagraphs(segments, props, colors, at),
+        paragraphs: shapeParagraphs(
+          segments,
+          props,
+          colors,
+          at,
+          deps.noProofWords
+        ),
         anchor: ANCHOR[props.valign ?? 'middle'] ?? 'middle',
         // Unstated insets are left unstated so OOXML's own shape defaults
         // apply, which is what the raster path draws.
@@ -550,7 +558,8 @@ function shapeParagraphs(
   segments: readonly ShapeSegment[],
   props: NativeVisualShapeProps,
   colors: ReadonlyMap<string, DocxIrColor>,
-  at: string
+  at: string,
+  words: string[] | undefined
 ): DocxIrParagraph[] {
   const paragraphs: DocxIrParagraph[] = [];
   let current: DocxIrInline[] = [];
@@ -588,18 +597,28 @@ function shapeParagraphs(
       ...(bold !== undefined ? { bold } : {}),
       ...(italic !== undefined ? { italic } : {}),
     };
-    const wrapped =
-      Object.keys(formatting).length > 0 ? { formatting } : undefined;
+    const wrapped = Object.keys(formatting).length > 0 ? formatting : undefined;
 
     segment.text.split('\n').forEach((line, lineIndex) => {
       if (lineIndex > 0) current.push({ kind: 'lineBreak' });
-      if (line) current.push({ kind: 'text', text: line, ...wrapped });
+      if (line) current.push(...textLine(line, wrapped, words));
     });
     if (segment.breakLine && index < segments.length - 1) flush();
   });
 
   flush();
   return paragraphs;
+}
+
+/** One line of drawn text, with the document's accepted words split out. */
+function textLine(
+  line: string,
+  formatting: DocxIrRunFormatting | undefined,
+  words: string[] | undefined
+): DocxIrInline[] {
+  return words
+    ? noProofRuns(line, formatting, words)
+    : [{ kind: 'text', text: line, ...(formatting ? { formatting } : {}) }];
 }
 
 /* ------------------------------------------------------------------ *
