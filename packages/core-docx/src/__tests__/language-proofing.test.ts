@@ -6,6 +6,9 @@
 import { describe, it, expect } from 'vitest';
 import JSZip from 'jszip';
 import { generateBufferFromJson } from '../core/generator';
+import type { DocxRendererId } from '../renderers/types';
+
+const RENDERERS: readonly DocxRendererId[] = ['docxjs', 'office-open'];
 
 async function readZipEntry(buf: Buffer, path: string): Promise<string> {
   const zip = await JSZip.loadAsync(buf);
@@ -149,4 +152,204 @@ describe('language & proofing', () => {
       /<w:r><w:rPr><w:noProof\s*\/><\/w:rPr><w:t[^>]*>Filaferro<\/w:t><\/w:r>/
     );
   });
+
+  describe.each(RENDERERS)(
+    'noProofWords beyond paragraphs on %s',
+    (renderer) => {
+      const SVG =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10"/></svg>';
+
+      /** Every run in `xml` whose text, kept or deleted, is exactly `word`. */
+      function runsOf(xml: string, word: string): string[] {
+        const text = new RegExp(`<w:(t|delText)(?: [^>]*)?>${word}</w:\\1>`);
+        return [...xml.matchAll(/<w:r(?: [^>]*)?>[\s\S]*?<\/w:r>/g)]
+          .map(([run]) => run)
+          .filter((run) => text.test(run));
+      }
+
+      /** At least one run of `word`, and every one of them marked no-proof. */
+      function expectNoProof(xml: string, word: string): void {
+        const runs = runsOf(xml, word);
+        expect(runs.length, `a run of "${word}"`).toBeGreaterThan(0);
+        for (const run of runs) expect(run).toMatch(/<w:noProof\s*\/>/);
+      }
+
+      async function generate(children: unknown[]): Promise<Buffer> {
+        return generateBufferFromJson({
+          name: 'docx',
+          renderer,
+          props: { theme: 'minimal', noProofWords: ['Mobility'] },
+          children,
+        } as any);
+      }
+
+      it('reaches table cells, header cells and a cell paragraph of its own', async () => {
+        const buf = await generate([
+          {
+            name: 'table',
+            props: {
+              columns: [
+                {
+                  header: { content: 'Mobility' },
+                  cells: [
+                    { content: 'web-app Mobility Connect' },
+                    {
+                      content: {
+                        name: 'paragraph',
+                        props: { text: 'Wiseair', noProofWords: ['Wiseair'] },
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+        ]);
+        const xml = await readZipEntry(buf, 'word/document.xml');
+        expectNoProof(xml, 'Mobility');
+        expect(runsOf(xml, 'Mobility')).toHaveLength(2);
+        expectNoProof(xml, 'Wiseair');
+        // The words around it are still proofed.
+        expect(runsOf(xml, 'web-app ')[0]).not.toMatch(/<w:noProof/);
+      });
+
+      it('reaches list items, markdown lists included', async () => {
+        const buf = await generate([
+          { name: 'list', props: { items: ['Mobility plan'] } },
+          {
+            name: 'paragraph',
+            props: { text: '- Wiseair app', noProofWords: ['Wiseair'] },
+          },
+        ]);
+        const xml = await readZipEntry(buf, 'word/document.xml');
+        expectNoProof(xml, 'Mobility');
+        expectNoProof(xml, 'Wiseair');
+      });
+
+      it('reaches captions, plain and decorated', async () => {
+        const buf = await generate([
+          { name: 'image', props: { svg: SVG, caption: 'Mobility map' } },
+          {
+            name: 'image',
+            props: { svg: SVG, caption: '**Figure 2** Mobility flows' },
+          },
+        ]);
+        const xml = await readZipEntry(buf, 'word/document.xml');
+        expectNoProof(xml, 'Mobility');
+        expect(runsOf(xml, 'Mobility')).toHaveLength(2);
+      });
+
+      it('reaches a statistic description and a contents title', async () => {
+        const buf = await generate([
+          { name: 'toc', props: { title: 'Mobility' } },
+          {
+            name: 'statistic',
+            props: { number: '42', description: 'Mobility' },
+          },
+        ]);
+        const xml = await readZipEntry(buf, 'word/document.xml');
+        expectNoProof(xml, 'Mobility');
+        expect(runsOf(xml, 'Mobility')).toHaveLength(2);
+      });
+
+      it('reaches tracked changes, inserted, deleted and unchanged', async () => {
+        const buf = await generate([
+          {
+            name: 'paragraph',
+            props: {
+              text: 'x',
+              revision: {
+                segments: [
+                  { type: 'equal', text: 'Mobility ' },
+                  { type: 'delete', text: 'Mobility' },
+                  { type: 'insert', text: 'Mobility Connect' },
+                ],
+              },
+            },
+          },
+          {
+            name: 'table',
+            props: {
+              columns: [
+                {
+                  header: { content: 'h' },
+                  cells: [
+                    {
+                      content: 'c',
+                      revision: {
+                        segments: [{ type: 'insert', text: 'Mobility' }],
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+        ]);
+        const xml = await readZipEntry(buf, 'word/document.xml');
+        expectNoProof(xml, 'Mobility');
+        expect(runsOf(xml, 'Mobility')).toHaveLength(4);
+        // The rest of the inserted line is an insertion of its own, proofed, and
+        // no two insertions share an id.
+        const ids = [...xml.matchAll(/<w:(?:ins|del) w:id="(\d+)"/g)].map(
+          ([, id]) => id
+        );
+        expect(new Set(ids).size).toBe(ids.length);
+        expect(xml).toMatch(
+          /<w:ins [^>]*><w:r>(?:(?!<\/w:r>).)*> Connect<\/w:t>/
+        );
+        expect(runsOf(xml, ' Connect')[0]).not.toMatch(/<w:noProof/);
+      });
+
+      it('reaches the text of a native visual, in text elements and shapes', async () => {
+        const buf = await generate([
+          {
+            name: 'visual',
+            props: {
+              renderMode: 'native',
+              canvas: { width: 3, height: 1 },
+              elements: [
+                {
+                  name: 'text',
+                  props: { text: 'Mobility', x: 0.1, y: 0.1, w: 1, h: 0.3 },
+                },
+                {
+                  name: 'shape',
+                  props: {
+                    type: 'rect',
+                    text: 'Mobility',
+                    x: 1.5,
+                    y: 0.1,
+                    w: 1,
+                    h: 0.8,
+                  },
+                },
+              ],
+            },
+          },
+        ]);
+        const xml = await readZipEntry(buf, 'word/document.xml');
+        expectNoProof(xml, 'Mobility');
+        expect(runsOf(xml, 'Mobility')).toHaveLength(2);
+      });
+
+      it('reaches note and comment bodies', async () => {
+        const buf = await generate([
+          {
+            name: 'paragraph',
+            props: {
+              text: 'Plan[^n].',
+              footnotes: [{ id: 'n', text: 'Mobility' }],
+              comment: { text: 'Mobility', author: 'A' },
+            },
+          },
+        ]);
+        expectNoProof(
+          await readZipEntry(buf, 'word/footnotes.xml'),
+          'Mobility'
+        );
+        expectNoProof(await readZipEntry(buf, 'word/comments.xml'), 'Mobility');
+      });
+    }
+  );
 });

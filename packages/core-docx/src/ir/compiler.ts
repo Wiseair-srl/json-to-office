@@ -119,6 +119,7 @@ import {
   containsLink,
   containsPlaceholder,
   containsUnsupportedSyntax,
+  noProofRuns,
   parseInline,
   parseLiteral,
   type CrossReferenceFormat,
@@ -612,6 +613,21 @@ function compileMetadata(structure: ProcessedDocument): DocxIR['metadata'] {
 function noProofWords(theme: ThemeConfig): string[] | undefined {
   const words = (theme as { noProofWords?: string[] }).noProofWords;
   return words && words.length > 0 ? words : undefined;
+}
+
+/**
+ * Text that skips the inline parser — a note or comment body, a statistic's
+ * caption, a contents title — as runs, with the document's allowlist marked.
+ */
+function plainRuns(
+  text: string,
+  ctx: CompileContext,
+  formatting?: DocxIrRunFormatting
+): DocxIrTextRun[] {
+  const words = noProofWords(ctx.theme);
+  return words && text
+    ? noProofRuns(text, formatting, words)
+    : [{ kind: 'text', text, ...(formatting ? { formatting } : {}) }];
 }
 
 /** The document-wide allowlist plus a component's own, de-duplicated. */
@@ -1258,6 +1274,7 @@ function compileParagraph(
           ...(props.comment ? { comment: props.comment } : {}),
           ...(props.footnotes ? { footnotes: props.footnotes } : {}),
           ...(props.endnotes ? { endnotes: props.endnotes } : {}),
+          ...(props.noProofWords ? { noProofWords: props.noProofWords } : {}),
         },
       } as ComponentDefinition,
       scope,
@@ -2086,13 +2103,10 @@ function compileToc(
       // No style, not even Normal: a title with an outline level would collect
       // itself into the very list it introduces. It carries its own weight and
       // size instead.
-      children: [
-        {
-          kind: 'text',
-          text: String(props.title),
-          formatting: { bold: true, sizeHalfPoints: 28 },
-        },
-      ],
+      children: plainRuns(String(props.title), ctx, {
+        bold: true,
+        sizeHalfPoints: 28,
+      }),
       formatting: {
         alignment: 'left',
         spacing: {
@@ -2416,7 +2430,7 @@ function compileStatistic(
       ...(spacing ? { spacing } : {}),
     }),
     line(
-      descriptionText ? [{ kind: 'text', text: descriptionText }] : [],
+      descriptionText ? plainRuns(descriptionText, ctx) : [],
       STATISTIC_DESCRIPTION_STYLE_ID,
       'description',
       { alignment }
@@ -2463,6 +2477,10 @@ function compileList(
   // One binding for the whole list: ids are declared on the list, and markers
   // may appear in any item.
   const notes = createNoteBinding(props.footnotes, props.endnotes, ctx);
+
+  // The list schema states no allowlist of its own; `noProofWords` reaches
+  // here only from a paragraph whose text is a markdown list.
+  const words = mergeNoProofWords(noProofWords(ctx.theme), props.noProofWords);
 
   // A markdown list states its levels in full rather than deriving them: it
   // always defines three, however few the text actually uses.
@@ -2517,11 +2535,12 @@ function compileList(
           ? parseInline(text, {
               base,
               hyperlinks: true,
+              ...(words ? { noProofWords: words } : {}),
               ...(notes ? { resolveNote: notes.resolve } : {}),
               resolvePlaceholder: placeholderResolver(ctx),
               resolveCrossReference: crossReferenceResolver(ctx, itemPath),
             })
-          : compileRevision(revision as Record<string, any>, base, ctx),
+          : compileRevision(revision as Record<string, any>, base, ctx, words),
         {
           styleId: 'Normal',
           formatting: {
@@ -2860,7 +2879,7 @@ function compileRuns(
     ctx.features.require('revisions', path);
     return [
       ...(props.columnBreak ? [{ kind: 'columnBreak' as const }] : []),
-      ...compileRevision(props.revision, base, ctx),
+      ...compileRevision(props.revision, base, ctx, words),
     ];
   }
 
@@ -3079,7 +3098,7 @@ function createNoteBinding(
             id: `${note.endnote ? 'endnote' : 'footnote'}${resolved.id}:p${index}`,
             path: `${note.endnote ? 'endnotes' : 'footnotes'}[${resolved.id}].children[${index}]`,
             styleId: note.endnote ? 'EndnoteText' : 'FootnoteText',
-            children: [{ kind: 'text' as const, text: line }],
+            children: plainRuns(line, ctx),
           })),
       });
       registered.set(id, resolved);
@@ -3192,7 +3211,7 @@ function declareComment(
           kind: 'paragraph' as const,
           id: `comment${id}:p${index}`,
           path: `comments[${id}].children[${index}]`,
-          children: [{ kind: 'text' as const, text: line }],
+          children: plainRuns(line, ctx),
         })),
       ...(parentId !== undefined ? { parentId } : {}),
       ...(resolved !== undefined ? { resolved } : {}),
@@ -3247,12 +3266,14 @@ function closeComment(ids: readonly number[]): DocxIrInline[] {
  * they stay as written, because what was changed is the token, not its value.
  *
  * Each emitted run gets its own range, and so its own id, which is what the
- * pipeline has always produced.
+ * pipeline has always produced. An accepted word still becomes a no-proof run
+ * of its own: that splits a line without reading anything into it.
  */
 function compileRevision(
   revision: Record<string, any>,
   base: DocxIrRunFormatting,
-  ctx: CompileContext
+  ctx: CompileContext,
+  words = noProofWords(ctx.theme)
 ): DocxIrInline[] {
   const author = revision.author || DEFAULT_REVISION_AUTHOR;
   const date = revision.date || DEFAULT_REVISION_DATE;
@@ -3266,15 +3287,17 @@ function compileRevision(
     const text = normalizeUnicodeText(segment.text);
 
     if (segment.type === 'insert' || segment.type === 'delete') {
-      for (const line of literalLines(text, base)) {
-        out.push({
-          kind: 'revision',
-          type: segment.type,
-          id: ctx.nextRevisionId++,
-          author,
-          date,
-          children: line,
-        });
+      for (const line of literalLines(text, base, words)) {
+        for (const children of oneRunEach(line)) {
+          out.push({
+            kind: 'revision',
+            type: segment.type,
+            id: ctx.nextRevisionId++,
+            author,
+            date,
+            children,
+          });
+        }
       }
       continue;
     }
@@ -3285,36 +3308,60 @@ function compileRevision(
       out.push(
         ...parseInline(text, {
           base,
+          ...(words ? { noProofWords: words } : {}),
           resolvePlaceholder: placeholderResolver(ctx),
         })
       );
       continue;
     }
-    for (const line of literalLines(text, base)) out.push(...line);
+    for (const line of literalLines(text, base, words)) out.push(...line);
   }
 
   return out;
 }
 
 /**
- * One run per line, character for character.
+ * A line's runs one per range, a break riding with the run after it.
+ *
+ * An accepted word split out of a line is a run of its own, and so a range of
+ * its own: docx.js marks each run rather than wrapping them, so two runs in one
+ * range would repeat its `w:id`.
+ */
+function oneRunEach(line: DocxIrInline[]): DocxIrInline[][] {
+  const ranges: DocxIrInline[][] = [];
+  for (const node of line) {
+    const last = ranges[ranges.length - 1];
+    if (last?.[last.length - 1]?.kind === 'lineBreak') last.push(node);
+    else ranges.push([node]);
+  }
+  return ranges;
+}
+
+/**
+ * One run per line, character for character, but for the accepted words.
  *
  * A revision segment carries no mini-language at all: a `**` opened in one
  * segment could close in another, so nothing inside one can be parsed. Even an
- * empty line becomes a run, because the break is what makes it visible.
+ * empty line becomes a run, because the break is what makes it visible. A
+ * no-proof word is split out into a run of its own, text unchanged.
  */
 function literalLines(
   text: string,
-  base: DocxIrRunFormatting
+  base: DocxIrRunFormatting,
+  words?: string[]
 ): DocxIrInline[][] {
   const formatting = Object.keys(base).length > 0 ? base : undefined;
   return text.split('\n').map((line, index) => [
     ...(index > 0 ? [{ kind: 'lineBreak' as const }] : []),
-    {
-      kind: 'text' as const,
-      text: line,
-      ...(formatting ? { formatting } : {}),
-    },
+    ...(words && line
+      ? noProofRuns(line, formatting, words)
+      : [
+          {
+            kind: 'text' as const,
+            text: line,
+            ...(formatting ? { formatting } : {}),
+          },
+        ]),
   ]);
 }
 
@@ -3793,6 +3840,10 @@ function nativeVisualDeps(ctx: CompileContext, path: string): NativeVisualDeps {
     },
     reject: (detail) => ctx.unsupported.push({ name: 'visual', path, detail }),
     warn: (message) => warnOnce(ctx, `visual:${message}`, message),
+
+    ...(noProofWords(ctx.theme)
+      ? { noProofWords: noProofWords(ctx.theme) }
+      : {}),
   };
 }
 
@@ -4295,6 +4346,7 @@ function captionBlock(
     ctx.unsupported.push({ name: componentName, path, detail: syntax });
     return undefined;
   }
+  const words = noProofWords(ctx.theme);
   return {
     kind: 'paragraph',
     id: `${scope.id}:caption`,
@@ -4308,10 +4360,14 @@ function captionBlock(
       ? parseInline(caption, {
           base: {},
           hyperlinks: true,
+          ...(words ? { noProofWords: words } : {}),
           resolvePlaceholder: placeholderResolver(ctx),
           resolveCrossReference: crossReferenceResolver(ctx, path),
         })
-      : parseLiteral(caption, { base: {} }),
+      : parseLiteral(caption, {
+          base: {},
+          ...(words ? { noProofWords: words } : {}),
+        }),
   };
 }
 
@@ -5135,12 +5191,20 @@ function cellChildren(
   const text = cellText(cell);
   if (text === undefined) return wrap([]);
 
+  // A table states no allowlist of its own, but a paragraph in a cell may.
+  const words = mergeNoProofWords(
+    noProofWords(ctx.theme),
+    typeof content === 'object'
+      ? (content.props as { noProofWords?: unknown })?.noProofWords
+      : undefined
+  );
+
   const revision =
     (cell.revision as Record<string, any> | undefined) ??
     cellComponentRevision(cell);
   if (revision) {
     ctx.features.require('revisions', '');
-    return wrap(compileRevision(revision, base, ctx));
+    return wrap(compileRevision(revision, base, ctx, words));
   }
   if (rowRevision) {
     return wrap(
@@ -5151,7 +5215,8 @@ function cellChildren(
           segments: [{ type: rowRevision.type, text }],
         },
         base,
-        ctx
+        ctx,
+        words
       )
     );
   }
@@ -5159,6 +5224,7 @@ function cellChildren(
     parseInline(text, {
       base,
       hyperlinks: true,
+      ...(words ? { noProofWords: words } : {}),
       resolvePlaceholder: placeholderResolver(ctx),
       resolveCrossReference: crossReferenceResolver(ctx, 'table'),
     })

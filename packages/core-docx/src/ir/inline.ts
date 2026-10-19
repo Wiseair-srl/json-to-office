@@ -19,7 +19,7 @@
  */
 
 import { normalizeUnicodeText } from '../utils/unicode';
-import type { DocxIrInline, DocxIrRunFormatting } from './types';
+import type { DocxIrInline, DocxIrRunFormatting, DocxIrTextRun } from './types';
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -631,6 +631,22 @@ function splitNoteMarkers(
 
   const rest = pending + text.slice(lastIndex);
   if (rest) pushNoProofWords(out, rest, formatting, options);
+}
+
+/**
+ * Plain text as runs, with the no-proof words split out: for text that never
+ * reaches the parser but that Word still proofs.
+ */
+export function noProofRuns(
+  text: string,
+  formatting: DocxIrRunFormatting | undefined,
+  noProofWords: string[]
+): DocxIrTextRun[] {
+  const out: DocxIrInline[] = [];
+  pushNoProofWords(out, text, formatting, { base: {}, noProofWords });
+  return (out as DocxIrTextRun[]).map((run) =>
+    run.formatting ? run : { kind: 'text', text: run.text }
+  );
 }
 
 function pushNoProofWords(
