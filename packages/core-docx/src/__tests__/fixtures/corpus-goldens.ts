@@ -19,9 +19,9 @@
 
 export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'blocks/figures-consulting':
-    '3b24c47c9f317a48b316069e54f6166ac08735516d59db8c20e817749e57d7df',
+    '25fb8e1d12d268bb3f137798e18f2bf906e86a2b310bf2dcb279fd5afd9928fe',
   'blocks/figures-fallback':
-    'fdeec226ac635ce3901951f166a95b672ebfbb5e7a1b94da67a256c63efa070f',
+    '703c4e8c7a3d0399b7c212cdcee81be42a34963e06e47034db294535cb0ab0a1',
   'blocks/report-data-consulting':
     '5caf7f361d855fc0d45b89548420cb8241b2518676d799f0546d90465ba8d36c',
   'blocks/report-data-fallback':
@@ -29,7 +29,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'blocks/report-chrome-fallback':
     'ba8ee616691836daf46285e00c638cb78c722eba9c788defd900bb2a7c65fef6',
   'blocks/report-chrome-consulting':
-    '1fe26a836e3bcd8953579396974519402894ac59dabb36a9fb7da321e31c8251',
+    'c619dfcbf6214b39e653d338449a46284d362a8e63577cfaf8dcf421ae118239',
   'blocks/key-takeaways-fallback':
     'a85751192db8c77a60dff785dca0c177995ea24e390c03a44a1a97511643273b',
   'blocks/key-takeaways-consulting':
@@ -147,7 +147,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'structure/header-footer-date-placeholders':
     'e0bfcc2b4d5f934c36c532517547ffc901b4b83f8f9769de16f9adaa8713aeff',
   'structure/header-image':
-    'e5354b21010e14cef0c25df5678eaaf101af9eb7b17f5913f4a295442bf39b92',
+    '6e32bc2b6913938d9b842a3ad4a377c13989fcaf3ecf00df64934096e84e165a',
   'structure/footer-table':
     'ffbe23dcb543f7ef30a637d7f4ddf7f96a7c4afad2e50eafe044fe0cdcbc740c',
   'structure/columns-count':
@@ -379,7 +379,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'tables/nested-paragraphs':
     '6d6bb075c895105ee83b33aa8fd3e2e6c27d5d7937342b2c3a633a9f248d57fb',
   'tables/nested-image':
-    '8b01dc087326f245753913b0a09adb9bce6ca6466a936a9434c2814ee65b2fde',
+    '99db57598e256a13531714c15a92978adda43159ebdb0e2a66f47263bcb54a58',
   'tables/cell-text-decorators':
     '9cbf38f15997581f8906be492c3085d726e4969baafafc3c2e4da28dc3ae5c76',
   'tables/pagination-flags':
@@ -393,35 +393,35 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'tables/adjacent-tables':
     '864542d2010bd760ca7b05729529f74215d8261b990d7cb269790bab4e7ca606',
   'blocks/image-inline-default':
-    '98b66fba43e19b15adf13a2ddec70c24ade8d67780f00122f02aa8d2a3625861',
+    'be502a4661eb4a28673dd26fa3cfdfaf3c1f9c5fb1e84e5cf5458065f513ac98',
   'blocks/image-sizing-pixels':
-    '5e5266586b7e1de7461959ab85495f683057a94bd9bfb483ada4c1cd314f5733',
+    '07203d1453cd49daa13d6647ef463f4ef8b004002f82cd92f43fe2f968614932',
   'blocks/image-sizing-percent':
-    'a67b90f07a0762798455587f287fc2a7fce5b0c4aa2c9c57d217c877f73635cf',
+    '1b304457bbc884246975e664a48d6658e26e689fee800ab2165e19095e5d2324',
   'blocks/image-alignments':
-    '7f725397d1b671463b26f6ea0c667e182640d1d3d449b74485ca8e0a63a486f0',
+    '62c1f4b37fab9dda741c4e77251e7f3f61c3b7673c00dd9686d3be513b056ef4',
   'blocks/image-spacing-and-keeps':
-    'a4f975ccb7fc98a08308255a4ea795af459c768e1bb575bc8fb1efcd1db41078',
+    '180f5382b0542413a053f4b222475a079f1a6a1bc65bac12cdd18d907ee9f2d4',
   'blocks/image-caption-plain':
-    '6466962ab5ebda4f6e98618a197bd1cd9e6e02ddd290e9c7b03b5ef9e2a45d25',
+    '4de8a9e7bcf6c4d0c805a499cb0dc0be18e56459cccc65007162db9b0f44c07f',
   'blocks/image-caption-rich':
-    '04cc8f0cf81bb92d522de0f6dbc8a340370c6f4fdf0774d5fe2cf32e07f58a36',
+    '2734c5bf0cce21d095fdb5e76f5e7d9120df1475db8531e68ca0fc5fe2a52783',
   'blocks/image-alt-and-empty-caption':
-    'b844185182118e62591421fcf97f89e54c8304605e09c9d0efa2e06c9812314f',
+    '572633615f1fee22a3ec77f1a95d1766467041d9ac51231855710c4a4dce2e6d',
   'blocks/image-formats':
-    '4c61db11e414421050e5e4d77418f43e6f79464bfdb438dd9e02b5bf2afb6d6b',
+    '31255d365a4d472f9c3b9330f2a58345fb5826cbae1499c4c4dba76377e1ade4',
   'blocks/image-floating-align-and-wrap':
-    '91b0ac45ec6c933d76300c367dd87764a34524dfdb5b2a2a7cd1590020bcad67',
+    'bd398cfca247d623beeca60f99c1fb7f728921bd6dff34198a2f586f5a15ff3c',
   'blocks/image-floating-offsets-and-flags':
-    '2847eef95b5913fbc1905888a608998c3c5ed2a09b8c12119eccfd3098f81405',
+    'f916eaad41ab704aba3b8b1a21a4b526e05bd660639aed9886365e4fa8b132ce',
   'blocks/image-floating-percent-metrics':
-    'a265689299d3ed9bfba87c78987b496e6ea44caaf6a2604faf85e489d6052ce5',
+    '930bd1a7963a2c71596bd18454f0fa63828d22c9a1502c92e92469c6d1a20511',
   'blocks/image-floating-wrap-variants':
-    'f5d580e31f369487e82655c1a572c09ba27e78889b38209b5df6dacff2505db2',
+    'f0428a84443232db984b7a677f3e48c5bb52e6c90bd4381e077880efbd348c47',
   'blocks/image-floating-rotation-and-visibility':
-    '6d9c990782f9cd22381754adcc33a44d4ee2749fbb8c56ab4e331e8eeb098ef0',
+    '1fac52fec76c4123f35918bcadefe6692a10f83c92d5b0275123d3efd6509d7d',
   'blocks/image-floating-with-caption':
-    'b1ea01ff0660f76fbdc399eeb410030ed7f4284d34d5e4a94871625469d27ac1',
+    'bf4c9ece93ba34e36fe4ccdb006d7bca5cc34067af3f8045f05291a2af556e3b',
   'blocks/statistic-minimal':
     'c6b0a526e90b67411c745b926bd15509f3e2d5e3bd558d2b71f49f8adc03c7cf',
   'blocks/statistic-alignments':
@@ -439,19 +439,19 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'blocks/text-box-floating-table':
     '3eec49f586a68104ab3939705bc1c3a459102eac16f94d3634c9575b92c6889b',
   'blocks/text-box-mixed-children':
-    '85551942c2ff236e3172f034ba0eb45909da6246802d99e9a823d76519eec8e6',
+    '18fbb5bd4c46f5b0c4248f65bcb8be8fdac2cdadd1bdf86dedd562779b448d68',
   'blocks/text-box-empty-children':
     '7a4d0ce5a2edc0be73e6a931e54129569277735163c0a1f2a1f3c33ddfcf08aa',
   'blocks/text-box-shape':
-    '0ebaf6d0027d7160ffc4bdc89394ffbc13c773a4f32a0b3417374bb4cf02ec09',
+    '6443ce1a38ce5121b74fd594bc42973e4f4ae47a68f2c5474fcc21a7502e0b48',
   'blocks/text-box-shape-fill-and-padding':
-    '731398035510fffb3fccd47b6dcda882c6f1c558b4e7bade70ce08b992fd190b',
+    '63ed8f8e0e48c0dd180f0d3b939c7fdff09252a2940a05e102866021c7696f33',
   'blocks/text-box-shape-percent-size':
-    '0e15c7f1db8b84c4fb32dc0410003ed2a574b3ea6f6ba30e35b1a6d9103132c6',
+    '250819dec291505951b7201bc8f85e29e7d3f019970e04562497dc4faa34e8df',
   'blocks/text-box-shape-floating':
-    'b3fb9a59dd4da134146e730eeec21005a9e063f62e5649acd8a1a697b2516b49',
+    '58801b4733cf5f9496e6b6fc75c56ca9086dbfd9e968e270586fa9cd747d9ec9',
   'blocks/text-box-shape-conflicting-borders':
-    'ab4e94677decebd3bf7124103376edff77c156e4d8efe8c6061f3ca57b079ed0',
+    'f0ca131a9b85fae221479fe2b470a66a42fb3d3fddba917c610add9cfeb53b02',
   'blocks/text-box-nested-columns':
     '26650d940d1eda187e90622bf2b604994f89d31d0536cb25e5a080ac03723888',
   'blocks/text-box-nested-columns-widths':
@@ -529,31 +529,31 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'annotations/track-revisions-redline':
     'a7fd507e73a49848606013f64316bc2d978ef90aab49c77cb3a9ebf4b6558a3b',
   'theme/builtin-minimal':
-    '1dd964e256376b0f27552f70eabe50fea2de911732638de2e1adb0dc967f5f03',
+    'f279f00a3800871946c125d77780492466d1895244c9c008106d16421d9f42ae',
   'theme/builtin-devportal':
-    'b547782ad8df4cd3f0b57c518f95b49fad9967fe93ae6c4276f3393cbce1aec3',
+    'bbe06602ddd2757edcfa39c876ef1bdecdff37f14f59b22187d494047b200716',
   'theme/builtin-vermilion':
-    '559209e1d8115a6d0e80ae227097ac1b30059ec57b6671ec34dc2dcdf4fc4eb5',
+    '77e25df796af0cb2334878e3d035e0ea95920dfca4a7111f37d3bb1c50e9651e',
   'theme/builtin-consulting':
-    '9ac7b74cc847c1f5b2353c586ce79886141f0d5cc6841f062814d61c59f89fdd',
+    'e21166ef877735595e05d6129d5b45345b6f262442eb2afea6318f2e993649a5',
   'theme/name-omitted':
-    '9ac7b74cc847c1f5b2353c586ce79886141f0d5cc6841f062814d61c59f89fdd',
+    'e21166ef877735595e05d6129d5b45345b6f262442eb2afea6318f2e993649a5',
   'theme/name-unknown-falls-back':
-    '9ac7b74cc847c1f5b2353c586ce79886141f0d5cc6841f062814d61c59f89fdd',
+    'e21166ef877735595e05d6129d5b45345b6f262442eb2afea6318f2e993649a5',
   'theme/inline-theme-object':
-    '13d3902ecfe08e350a6f724ced507fae7d1b880bf61e5860c885bef2602dbabf',
+    '6f4638d642fb3bb43bc371712bdb09baf750dfacd0090564c41ff0371e7bbdb9',
   'theme/overrides-colors-only':
     '665fe959baf1821b83b1e98b090e5d28c4df21ed058d381337d3d6c779c389ef',
   'theme/overrides-fonts-partial':
-    'a37a966d4fd9ab4ce0f53c9182b45056e40ade415b43db7a5e36d2f353f80b3f',
+    '4e10f1613dada08e3a35e8ffb57bc1ce61027e084a205763662ea35056ddf182',
   'theme/overrides-styles-metrics':
     'a89127925b451f8cf26dba588baaaf684a30fc8e184f5d5074b377e4731faf83',
   'theme/overrides-styles-base-chain':
     '4f338b0cdc3ac98c9193efe360e5dc3e32c98784214c3d65b0a131156da9db75',
   'theme/overrides-empty':
-    '1dd964e256376b0f27552f70eabe50fea2de911732638de2e1adb0dc967f5f03',
+    'f279f00a3800871946c125d77780492466d1895244c9c008106d16421d9f42ae',
   'theme/overrides-over-named-theme':
-    '2c103509c8ebc343fcef7b4149abcbc6ed1c0d38826a131b685b8352ff1c8ce4',
+    '71dad035836cf519828f0b31d0aab7ef99124c07f48e19871bdc8636c23b0f9d',
   'theme/color-tokens-in-components':
     '020f4dbc3db9760e1d73f25f8ea2825ef74d322e9aff300299e7a017d05e929e',
   'theme/color-hex-literals':
@@ -567,9 +567,9 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'theme/toc-entry-styles':
     'f9638ab3ed775a08b12c4e744d5f758544f92e54e1230bae5143b007f292408e',
   'theme/component-defaults-document':
-    '76d48b182d6095132b2ac07985ccf430e489ef866d277e504e3e8c6cda7b6bfd',
+    '3be6d35f64fabbf2c2fc3a2e25cc38522e8e862c8ec01f3a4ca17a7fd9c8725c',
   'theme/component-defaults-instance-wins':
-    '45db9c32a8722761ab2c0faf7979dee2c2cfc98ec573186c7395e84c495cd154',
+    '8778682810dd84b5656802253e98380d71ed63dc4e9fd978f76ba766db0923b3',
   'theme/component-defaults-heading-numbering':
     '23b0f0af56b335845f467af3f04ead7b84ad4c64a1df415ceca47dbb0b0ffe3d',
   'theme/language-document-default':
@@ -579,35 +579,35 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'theme/no-proof-words':
     'c20938190546b451b26efd5dbb59105d8be792cafe3ab6f3e6bc865871903a62',
   'theme/example-practice-note':
-    '5db4f29c3ae36cc4f1d77a02c5944536c02e26203f0cdbdd77730e4aae06eea2',
+    'de0a73ab77437fc8110adb7bfd9bd3d6d1711c87daf47853f9e72bd9d7073e31',
   'theme/example-field-review':
-    'bd888f32560b23c15ef67e117ea899da6ede53e3aa2fb24d222ee4b69ee044a8',
+    '8d9c3fbd751875233dfe7fd53a47f1c039b6ddb22e07aa50644e045003e85c39',
   'chart/column-configured':
     '97b7238305c82bf75833229d4a29cfaed846cc5f20b55232967461f8394cdb1b',
   'chart/bar-no-legend':
-    '3135dba1b8b3f7a9d7e2d229b85d00f84e4b9d7ea235374f282e1d033ddfaa87',
+    '1ae67f9217d62709eb3bb9b54a1cf39c1a49b08a38765344f111db82a0547e5b',
   'chart/line-explicit-palette':
-    '86ce7587becdc584aa99bae45f6827f3d487c34b1bfa8ee2103d79b73a2dfcd4',
+    '7437efa02067467b667ac71357f432e82ee7c878685bd37ee9de887e533e93f8',
   'chart/area-two-series':
-    'b86c1eb96ca3016b08ce18a219725f58805fb0229f194e5c94d2df89223fe477',
+    '0db4caf4a8479376fd3539697b446461754a8fd04e13d6b14c704e7f581c575a',
   'chart/pie':
-    'c48b8dedff3e9c98cf468bc9ecb139d729a58b919d058a156c862825e63dbad3',
+    '95a1828d59257554dbba87e6ad718d63960c5410d3a0dd6066fc4bc44bd1f4d4',
   'chart/doughnut-rings':
-    '5702b4cf0c0e0f77473529e5e5281666a0646aa26cdb02c7aae1ccb8d7518f93',
+    '2be9d4e2c2f5b6ccb18304aaeb1506764f8ff660424df7211c149020c88c35f3',
   'chart/radar-axis-titles':
-    'be3f759f6a14c47a54ec1a7fe72fec1e19cdb0383c1674177c8b4e0552f6debd',
+    '9dea36a5f8cff56def24116dd77a8f4f5ff500ae0f7f1e57fa05be54518669eb',
   'chart/scatter-numeric':
-    '35d148a221f80eee79e37f895fddea79b8a50e7a1a21adc3fb08820489483be4',
+    'e09425e03c70ad525673d51b4cd31f4cfbe302ea709d0ea0e35433ee45c3763e',
   'chart/hidden-title':
-    '7e63f5ee8abaf870923282c61e5351e86fa6ee4823459cb6170b5d06ee13e997',
+    '64c3b403369304d020ed7bd175c9d197b310c4a942a9653248bec5792526b10c',
   'chart/floating':
-    'ace1eb0e00ea0185c4e63585ee180d31dae86edb1eae3c6b96c416fa06e34855',
+    '90984e74034f7641ab8b9c0b86ced84ca347638543d20c6edbad26300f734e9f',
   'chart/in-header-and-footer':
-    'fb268c1bfece0d41c284535cac3e77614ed896850eb42633a3e22cfc31e95000',
+    '0ffc10dcb0b1c69066425676153e4087bfe79ff25a7777beeffd1c9832433552',
   'chart/in-text-box':
-    '9839c781699d15de524ff97ee8b59c7ffe8fea6aacb9e45638d089bc54674348',
+    '2bc4fde7072117aa600cd9a71e37edc0aead310d79d393c054a6b4f25ac34b04',
   'blocks/chart-figure-native':
-    '7db94a05d0eda1e678c256ed203d1946ad5babd399bc42b4191a77033c211197',
+    'ed1620397ed9479417f450e50229f28c17df259d0d5a5e41924d3f1e351384a6',
   'drawings/native-visual-basic':
     '5444d556b327b7419fff4878125f8e25219bcc7d359bd7ccd2b8e1cbd7ca801e',
   'drawings/native-visual-no-background':

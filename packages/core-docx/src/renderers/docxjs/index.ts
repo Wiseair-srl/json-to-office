@@ -58,6 +58,7 @@ import {
   emitBlock,
   emitOutsideBody,
   floatingOptions,
+  paragraphChild,
   runOptions,
   type EmitResources,
   type ImageRunFactory,
@@ -624,7 +625,7 @@ function sectionOptions(
  * previous section, or an author's `header: []` — gets an empty paragraph in
  * the `Header` or `Footer` style, which is what Word writes when it empties
  * one: a story ends on a paragraph mark. Left with none, docx.js writes
- * `<w:hdr/>`, and `docx/layout` (9.9.0–9.12.0) throws on it
+ * `<w:hdr/>`, and `docx/layout` (9.9.0–9.13.0) throws on it
  * ("elements.filter is not a function"), so a contents field lost its page
  * numbers. The style keeps the page as it was: LibreOffice gives a part with
  * no paragraph one in that style, and a `Normal` one set the body 0.7pt
@@ -731,7 +732,7 @@ function lastBlockIsFrame(section: DocxIrSection): boolean {
  */
 function anchorParagraph(anchor?: BookmarkStart | BookmarkEnd): Paragraph {
   return new Paragraph({
-    children: anchor ? [anchor] : [],
+    children: anchor ? [paragraphChild(anchor)] : [],
     spacing: { before: 0, after: 0, line: 20, lineRule: LineRuleType.EXACT },
   });
 }
