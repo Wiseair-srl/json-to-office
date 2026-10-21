@@ -44,7 +44,7 @@
     "probe-image-size": "7.2.3"
   },
   "peerDependencies": {
-    "docx": "9.12.0"
+    "docx": "9.13.0"
   },
   "devDependencies": {
     "@office-open/core": "0.14.6",

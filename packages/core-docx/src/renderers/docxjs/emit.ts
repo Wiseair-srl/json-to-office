@@ -53,6 +53,16 @@ import {
   type ParagraphChild,
 } from 'docx';
 import { assertNever } from '@json-to-office/shared/rendering';
+
+/**
+ * A bookmark's start or end as a paragraph child. jto opens a bookmark in one
+ * paragraph and closes it in another, which docx.js's `Bookmark` (one range
+ * inside one paragraph) can't write. docx 9.13.0 narrowed `ParagraphChild` so
+ * the bare parts no longer type check, though `Paragraph` still writes any
+ * child it is given as it is.
+ */
+export const paragraphChild = (part: BookmarkStart | BookmarkEnd) =>
+  part as unknown as ParagraphChild;
 import { emitChart } from './charts';
 import type {
   DocxIrBlock,
@@ -282,11 +292,11 @@ export function inlineChildren(
         break;
 
       case 'bookmarkStart':
-        out.push(new BookmarkStart(child.name, child.id));
+        out.push(paragraphChild(new BookmarkStart(child.name, child.id)));
         break;
 
       case 'bookmarkEnd':
-        out.push(new BookmarkEnd(child.id));
+        out.push(paragraphChild(new BookmarkEnd(child.id)));
         break;
 
       case 'image': {
