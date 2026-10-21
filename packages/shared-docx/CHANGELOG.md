@@ -1,5 +1,18 @@
 # @json-to-office/shared-docx
 
+## 7.7.4
+
+### Patch Changes
+
+- a6590f4: The default DOCX renderer (`docxjs`) now runs on docx 9.13.0 (from 9.12.0),
+  pinned exactly in `core-docx`, `json-to-docx` and `shared-docx`. docx no longer
+  depends on `xml` and `xml-js`, so neither is installed any more.
+
+  An image, chart or text box with no alt text no longer writes empty `descr=""`
+  and `title=""` on its `wp:docPr` (dolanmiu/docx#3777), so Word 2007 opens it.
+  Alt text that is given is written as before. Nothing else in the files changes,
+  and `office-open` output does not change.
+
 ## 7.7.1
 
 ### Patch Changes
