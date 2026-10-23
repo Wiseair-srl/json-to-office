@@ -7,6 +7,12 @@
  * type or other part may notice — since nothing this adapter writes refers to
  * the theme outside a native chart's part, and that names slots (Text 1,
  * Background 1), not their values.
+ *
+ * One exception, docx.js's own: since 9.14.0 it writes Word's `Caption` style,
+ * whose colour names the Text 2 slot (`w:themeColor="dark2"`) and also carries
+ * that slot's value as `w:val`, as Word does. Word and LibreOffice take the
+ * slot; the value is a fallback, and it follows the theme. That one attribute
+ * is the only thing outside the theme part allowed to move.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -21,6 +27,19 @@ import {
 } from '../../../__tests__/fixtures/themePart';
 
 const THEME = 'word/theme/theme1.xml';
+const STYLES = 'word/styles.xml';
+
+/** The Text 2 value docx.js copies into its `Caption` style's colour. */
+const CAPTION_COLOR =
+  /(<w:style w:type="paragraph" w:styleId="Caption">.*?<w:color w:val=")([0-9A-F]{6})(" w:themeColor="dark2"\/>)/s;
+
+function captionColor(styles: string | undefined): string | undefined {
+  return CAPTION_COLOR.exec(styles ?? '')?.[2];
+}
+
+function withoutCaptionColor(styles: string | undefined): string {
+  return (styles ?? '').replace(CAPTION_COLOR, '$1$3');
+}
 
 async function compile(theme: string): Promise<DocxIR> {
   const compiled = await compileDocumentToIr(
@@ -56,8 +75,17 @@ describe('theme part (docx.js)', () => {
     expect([...themed.keys()]).toEqual([...office.keys()]);
     for (const [name, xml] of themed) {
       if (name === THEME) expect(xml, name).not.toEqual(office.get(name));
+      else if (name === STYLES)
+        expect(withoutCaptionColor(xml), name).toEqual(
+          withoutCaptionColor(office.get(name))
+        );
       else expect(xml, name).toEqual(office.get(name));
     }
+    // The Caption fallback is each theme's Text 2: Office's, then consulting's.
+    expect(captionColor(office.get(STYLES))).toBe('44546A');
+    expect(captionColor(themed.get(STYLES))).toBe(
+      CONSULTING_THEME_PART.colors.dk2
+    );
     expect(themed.get('word/_rels/document.xml.rels')).toEqual(
       office.get('word/_rels/document.xml.rels')
     );
