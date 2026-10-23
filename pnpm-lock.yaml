@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  docx: 9.13.0
+  docx: 9.14.0
   typescript: 5.3.3
   eslint: 8.56.0
   prettier: 3.2.4
@@ -108,8 +108,8 @@ importers:
         specifier: 3.6.0
         version: 3.6.0
       docx:
-        specifier: 9.13.0
-        version: 9.13.0
+        specifier: 9.14.0
+        version: 9.14.0
       probe-image-size:
         specifier: 7.2.3
         version: 7.2.3
@@ -243,8 +243,8 @@ importers:
         specifier: workspace:^
         version: link:../shared-docx
       docx:
-        specifier: 9.13.0
-        version: 9.13.0
+        specifier: 9.14.0
+        version: 9.14.0
     devDependencies:
       '@types/node':
         specifier: 22.20.2
@@ -730,8 +730,8 @@ importers:
         specifier: 0.34.38
         version: 0.34.38
       docx:
-        specifier: 9.13.0
-        version: 9.13.0
+        specifier: 9.14.0
+        version: 9.14.0
     devDependencies:
       '@types/node':
         specifier: 22.20.2
@@ -3794,9 +3794,9 @@ packages:
     resolution: {integrity: sha512-yS+Q5i3hBf7GBkd4KG8a7eBNNWNGLTaEwwYWUijIYM7zrlYDM0BFXHjjPWlWZ1Rg7UaddZeIDmi9jF3HmqiQ2w==}
     engines: {node: '>=6.0.0'}
 
-  docx@9.13.0:
-    resolution: {integrity: sha512-MofrvX7rzwCe1xUFXnwneQHzv2p1lIUIDPD01DueOnKGw+TSKxAAcK5Beo69bTyqKUYsX8d49Co03Bcntc60WQ==}
-    engines: {node: '>=10'}
+  docx@9.14.0:
+    resolution: {integrity: sha512-3QGcC5CUBvyYZsFPpuKy9Mv1j4BOoKjH9angjjDzrqx2GnnXH6ogt/CUVQ3gexN46yKDsl8gcOFNl0jjvlDxhg==}
+    engines: {node: '>=16'}
 
   dom-helpers@5.2.1:
     resolution: {integrity: sha512-nRCa7CK3VTrM2NmGkIy4cbK7IZlgBE/PYMn55rrXefr5xXDP0LdtfPnblFDoVdcAfslJ7or6iqAUnx0CCGIWQA==}
@@ -9193,7 +9193,7 @@ snapshots:
     dependencies:
       esutils: 2.0.3
 
-  docx@9.13.0:
+  docx@9.14.0:
     dependencies:
       '@types/node': 26.6.3
       hash.js: 1.1.7
