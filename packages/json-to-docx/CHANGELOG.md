@@ -1,5 +1,23 @@
 # @json-to-office/json-to-docx
 
+## 7.7.5
+
+### Patch Changes
+
+- 024c112: The default DOCX renderer (`docxjs`) now runs on docx 9.14.0 (from 9.13.0),
+  pinned exactly in `core-docx`, `json-to-docx` and `shared-docx`.
+
+  Every document now sets a half-inch default tab stop in `word/settings.xml`,
+  which Word already assumed, so tabs and list text line up in Pages
+  (dolanmiu/docx#2590). `word/styles.xml` gains Word's `TOC 7`–`TOC 9`,
+  `Caption`, `Bibliography` and `Line Number` styles, hidden until used. A
+  theme's own `TOC 1`–`TOC 6` styles are written as before, and nothing else in
+  the files changes. `office-open` output does not change.
+
+- Updated dependencies [024c112]
+  - @json-to-office/core-docx@7.7.5
+  - @json-to-office/shared-docx@7.7.5
+
 ## 7.7.4
 
 ### Patch Changes

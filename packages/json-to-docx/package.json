@@ -1,6 +1,6 @@
 {
   "name": "@json-to-office/json-to-docx",
-  "version": "7.7.4",
+  "version": "7.7.5",
   "description": "Professional .docx document generation from JSON - Public API package",
   "type": "module",
   "main": "dist/index.cjs",
