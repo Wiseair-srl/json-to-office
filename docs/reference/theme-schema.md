@@ -127,18 +127,19 @@ Each value matches the pattern `^(#[0-9A-Fa-f]{6}|[a-zA-Z][a-zA-Z0-9]*)$` — ei
 
 Exactly four required slots — `heading`, `body`, `mono`, `light` — each a **font definition**:
 
-| Field              | Type              | Required | Description                                                                                  |
-| ------------------ | ----------------- | -------- | -------------------------------------------------------------------------------------------- |
-| `family`           | string            | **yes**  | Font family name (see [Fonts](/guide/fonts) for safe families and registration).             |
-| `size`             | number (8–72)     | no       | Size in points.                                                                              |
-| `color`            | string            | no       | Hex or theme color token.                                                                    |
-| `bold`             | boolean           | no       | Equivalent to `fontWeight: 700`.                                                             |
-| `fontWeight`       | integer (100–900) | no       | Numeric weight; wins over `bold` when both are set.                                          |
-| `italic`           | boolean           | no       | —                                                                                            |
-| `underline`        | boolean           | no       | —                                                                                            |
-| `lineSpacing`      | object            | no       | `{ "type": "single" \| "atLeast" \| "exactly" \| "double" \| "multiple", "value"?: number }` |
-| `spacing`          | object            | no       | `{ "before"?: number, "after"?: number }` (points, ≥ 0).                                     |
-| `characterSpacing` | object            | no       | `{ "type": "condensed" \| "expanded", "value": number }`                                     |
+| Field              | Type              | Required | Description                                                                                               |
+| ------------------ | ----------------- | -------- | --------------------------------------------------------------------------------------------------------- |
+| `family`           | string            | **yes**  | Font family name (see [Fonts](/guide/fonts) for safe families and registration).                          |
+| `size`             | number (8–72)     | no       | Size in points.                                                                                           |
+| `color`            | string            | no       | Hex or theme color token.                                                                                 |
+| `bold`             | boolean           | no       | Equivalent to `fontWeight: 700`.                                                                          |
+| `fontWeight`       | integer (100–900) | no       | Numeric weight; wins over `bold` when both are set.                                                       |
+| `italic`           | boolean           | no       | —                                                                                                         |
+| `underline`        | boolean           | no       | —                                                                                                         |
+| `lineSpacing`      | object            | no       | `{ "type": "single" \| "atLeast" \| "exactly" \| "double" \| "multiple", "value"?: number }`              |
+| `spacing`          | object            | no       | `{ "before"?: number, "after"?: number }` (points, ≥ 0).                                                  |
+| `characterSpacing` | object            | no       | `{ "type": "condensed" \| "expanded", "value": number }`                                                  |
+| `case`             | string            | no       | `"none"` \| `"upper"` \| `"smallCaps"`. DOCX writes native caps/small-caps formatting and preserves text. |
 
 ### `page`
 
