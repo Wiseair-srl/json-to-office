@@ -7,6 +7,7 @@
 import { describe, it, expect } from 'vitest';
 import JSZip from 'jszip';
 import { generateBufferFromJson } from '../core/generator';
+import { minimalTheme } from '../templates/themes';
 
 /** Concatenate every zip part whose name matches `re` (e.g. all header*.xml). */
 async function readParts(buf: Buffer, re: RegExp): Promise<string> {
@@ -82,17 +83,17 @@ describe('header/footer paragraph spacing', () => {
     expect(footerXml).toMatch(/w:lineRule="exact"/);
   });
 
-  // A footer table is not resolved against the theme's componentDefaults, so
-  // no layer pads its cells. They state Word's Normal Table margins rather
-  // than leave them to the package's default table style, which docx 9.9.0
-  // started writing (dolanmiu/docx#3594).
+  // Under a theme whose componentDefaults pad nothing, no layer pads a footer
+  // table's cells. They state Word's Normal Table margins rather than leave
+  // them to the package's default table style, which docx 9.9.0 started
+  // writing (dolanmiu/docx#3594).
   it.each(['docxjs', 'office-open'] as const)(
     'states the margins of an unpadded footer table cell (%s)',
     async (renderer) => {
       const buf = await generateBufferFromJson(
         {
           name: 'docx',
-          props: { theme: 'minimal' },
+          props: { theme: 'bare' },
           children: [
             {
               name: 'section',
@@ -113,7 +114,12 @@ describe('header/footer paragraph spacing', () => {
             },
           ],
         } as any,
-        { renderer }
+        {
+          renderer,
+          customThemes: {
+            bare: { ...minimalTheme, name: 'bare', componentDefaults: {} },
+          },
+        }
       );
 
       const footerXml = await readParts(buf, /word\/footer\d+\.xml/);

@@ -52,6 +52,7 @@ import {
   statisticSizes,
 } from '../styles/themeToStyles';
 import { resolveFontFamily } from '../styles/utils/styleHelpers';
+import { resolveComponentDefaults } from '../styles/utils/resolveComponentTree';
 import {
   getNormalStyle,
   getThemeFonts,
@@ -903,7 +904,8 @@ function compilePart(
   const active = part.filter(
     (component) => !('enabled' in component && component.enabled === false)
   );
-  active.forEach((component, i) => {
+  active.forEach((authored, i) => {
+    const component = withChromeTableDefaults(authored, ctx.theme);
     const scope: ComponentScope = {
       ctx,
       path: `sections[${sectionIndex}].${kind}s.default.children[${i}]`,
@@ -928,6 +930,28 @@ function compilePart(
   if (children.length === 0 && active.length > 0) return undefined;
 
   return { id, children };
+}
+
+/**
+ * Header and footer content never passes through `resolveComponentTree`,
+ * which gives every body table `componentDefaults.table` (the theme's, with
+ * the document's merged over it). A table in page chrome, at any depth, takes
+ * the same cascade here; paragraphs and images keep their own chrome path.
+ */
+function withChromeTableDefaults(
+  component: ComponentDefinition,
+  theme: ThemeConfig
+): ComponentDefinition {
+  const resolved =
+    component.name === 'table'
+      ? resolveComponentDefaults(component, theme)
+      : component;
+  const children = (resolved as { children?: ComponentDefinition[] }).children;
+  if (!Array.isArray(children) || children.length === 0) return resolved;
+  return {
+    ...resolved,
+    children: children.map((child) => withChromeTableDefaults(child, theme)),
+  } as ComponentDefinition;
 }
 
 /**
@@ -5024,11 +5048,11 @@ interface RowRevision {
 /**
  * The margins of a cell no layer pads: Word's Normal Table, stated.
  *
- * A body table takes the theme's `cellDefaults`, but a table in a header or
- * footer is not resolved against `componentDefaults`, so its cells asked for no
- * padding and wrote no `w:tcMar`, leaving them to the document's default table
- * style. Until docx 9.9.0 the package defined none and Word used its own
- * Normal Table, 108 twips left and right; 9.9.0 writes a `TableNormal` that
+ * A table takes the theme's `cellDefaults`, in a header or footer as in the
+ * body, but a cell no layer pads asks for no padding and would write no
+ * `w:tcMar`, leaving it to the document's default table style. Until docx
+ * 9.9.0 the package defined none and Word used its own Normal Table, 108
+ * twips left and right; 9.9.0 writes a `TableNormal` that
  * says the same (dolanmiu/docx#3594). Stating the values keeps such a cell
  * where it was whatever a package's default table style says.
  */
