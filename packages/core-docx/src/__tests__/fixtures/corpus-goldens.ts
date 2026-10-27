@@ -167,7 +167,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'headings/level-default-and-empty-text':
     '8ff08ae6aab7211b62b295a2ffb19cb8f6db88bad8d1dfb29ffcc6fc99027916',
   'headings/decorators-in-text':
-    'bb82fa50a27dacb507954b2d0bdd927e6b8f36784398d990dffa98e3ed76aceb',
+    'daaff38b8f4ca7255028067a0d42bad99152249e7dc863f7dcfa86a28abda7ca',
   'headings/font-override':
     '8389d80b2e8afe342adb215c5a1bf7b98b4653f5bc1c63275d179cf1fc9d512f',
   'headings/paragraph-properties':
@@ -203,25 +203,25 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'headings/cross-reference-list-item':
     '1f059c21445ca852e61e7b71b48a9c73a7e7b9b8b51a5b49bbb893d72b2cb13a',
   'headings/toc-default':
-    '097e44d4ec557afe9f6dbae187e26151c1c7f69733c8e352d101baedf2ceb84a',
+    'f42b85d1a62823aefc762b52180d15eabcca44ec168b17f5419238eff62463c1',
   'headings/toc-depth-ranges':
-    'cbe0ee39e25bbf566d9c96e862c35a346fc22261d95f03a8c04a4951d51a1e80',
+    'e9a4b6a7ab5803c352e2e0d9afa55cc2197c4b9016d003a1877652a59e6dfdf9',
   'headings/toc-page-numbers':
-    'a64d8d751a916e9bfb76a671659738607c346039671dac38ff1b1de70daab1f0',
+    '42efcc4a99927ba4e0f3245870358e7d43d723ac55a8ceaf43d23f3c1371b80b',
   'headings/toc-title-and-page-break':
-    'b2ea6b334a077965ec18a02ed160e3db7c788f30bf9411d57a95397fc614fc64',
+    'bdd5623d5376a455cc42279f10e640d284a53413a884ea447ecc7f644243891c',
   'headings/toc-scope-sections':
-    '6fa65ac36f872ea1ad37f4008447600d434093eed7958544a4f1c313046bdf65',
+    'f5fc63b87b87b51860f9a2b009cf553c74d9895cd96b2143a4e08e9828181da4',
   'headings/toc-style-mapping':
-    'b89867e81a38b2c177ed91715773a8453f694edf4145430df085f5aa05987544',
+    'a1bd60b2deafdf0fdb8bf436df41cc49922985b1d3cfd7dcb79ea622328e0483',
   'headings/toc-numbering-style-legacy':
-    'f78c015d5ec9efd43db9e17428c05068b17f24a530f56a2441f2b784f94651b1',
+    '3cd8acc73c85147178ca9c88eded5c21d98a93ac3024af4d59252dd83f31b66d',
   'headings/toc-cached-numbered-entries':
-    '5d5950458b2e5e4a168140602999af393729fc621b507bf025489e2a387129ba',
+    '1030927e4b51e4036823d2bc88e0712c60e8581469a405af3bbce9243a45a34b',
   'headings/toc-in-nested-container':
-    '7fad42c2e6f1e1d917c9eceeba1459503115001e31f167dfca12a0c95cddd4de',
+    '443b693af106ad7406e0770b83d7e7b5063f09ae2790fcea0fd2155e92dbbad2',
   'headings/toc-in-columns':
-    '05ec9ff5945a6bc0ddac67f9e064552c5dedbbd16814538a355b701dc7de03ca',
+    '635792fc25c9b4fc32b4184106b521fc730e6ac31966b0d286c327549dd7e469',
   'headings/fields-page-numbers':
     '35d776d406a8fb064e39063bad6c278336e6a25d415f95c3c80e069e416fe5ec',
   'headings/header-footer-link-to-previous':
@@ -565,7 +565,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'theme/font-numeric-weights':
     '0f3a0fa2365508687a27857c2dc324b81d2992244616800d193f4821e9912115',
   'theme/toc-entry-styles':
-    '2a8b73bc06354b17878b09246b56aea3299c8c7742a79310b8fbc7c891f4566c',
+    '5a0dcef03d3c94db3b0aaf7a7238c374cea7e5e7a401580601fbcf147052b4c2',
   'theme/component-defaults-document':
     'd6c6ff881d1c134c0d184c15b19097096262acb8a574adfe089525b95e77a2c7',
   'theme/component-defaults-instance-wins':
@@ -583,31 +583,31 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'theme/example-field-review':
     '18269fe843b42984ec09019a2aca66f68fa74dbb24befe500cefa2cbf238530b',
   'chart/column-configured':
-    '23c60c84f4bcadac4baada8dd21687005819094d8894d22d98f08df80344c7ba',
+    'b888fda9ad104f283d5d7dc6cc1971153ae8125a29ba9a9287e55272b8be7421',
   'chart/bar-no-legend':
-    'c7c9aadf0d22f35a39b296e37c76d54451ea3d5bde6f95c0ae86695b32c08baf',
+    '91b6be224737587b7d320c8faf9a36c3669679b12c8a64c115a22a061d90e5ea',
   'chart/line-explicit-palette':
-    '506fc0d24d71325e1d8d460ba4a95382124bd22eba13492cb3730d068e2b1556',
+    'df1fc8564e9d1dbb85e8becd28189c3db527f8339cdbb339057a0b3fe15541b9',
   'chart/area-two-series':
-    '9b9dc4e7d4fa7474892443c2b83f943752bc79834ff625e4463c90c737053b3d',
+    '9fcf2e5934ecc92c1a60fc041727bf5b967cc8f8bd3f086da7f56ffe98936529',
   'chart/pie':
-    'f1de18477274dcd7d04c7c15e87407e1cc00ccd08166aad2aa0c1d0fb26dfb1a',
+    '6aa5ff0f3e3c188f94dba458bdc90748c53c6e6685af3e048b468be7c3a44138',
   'chart/doughnut-rings':
-    '3abdac2756a692cde2ea8a50f36bf846cc96e900f2eaa25571a3b94584931c0e',
+    '3356f68937d0a7a41214dae6a4afb45b53f6645bfe5bf622482b321dedb96eb9',
   'chart/radar-axis-titles':
-    'f7f02378e5d1a17a1ab0be13561eee1dfd4e90f8c3351719d43f22af2ef7d226',
+    'a52ac8b7e1e9c72201ced6d900f0b8390c7a956314efa8cf17782abcdd59588c',
   'chart/scatter-numeric':
-    '4eb3fcb57af421eb9ea689b50c4f413e9426e8e0e8e6aa0b31853f5ef6e75ec3',
+    '7ed62702a3a6e42711196d142069e84de106f824c5bda55fad6a01d5cbbf502c',
   'chart/hidden-title':
-    '77b3d96f4fb11ed07284cca7569c65c4b58771eca98f040efd5b76ee43a48c79',
+    'f7a9f66aa14cb1960fe9d1c891eb092e8771cf026b31e0802426ad53b30efac0',
   'chart/floating':
-    'cb1244e2f749b7760c604bdcb599f6dcc4f9b8a816eaa2e5b8e3c4f8cc037463',
+    'e7741abe72504cc9f5754523dfde504f6abfa9f9e7158265de3d278553119f5b',
   'chart/in-header-and-footer':
-    '11b6c94f0c947e044dd7937c2adc01eea1a3e00eb58f1e77da11149a6ac5e8f9',
+    '3fa04f746ee6e0e4d91e98968f4596126c615d7c4cf8d8a0453cdb5f6aaeceeb',
   'chart/in-text-box':
-    '556ba563e839d590b6288f0e8d3a21f9bfe93361137a6c1a07ce6fcf7634b288',
+    'd54389f4480569979a96c6063a8d079ea87e5b89737ebaf1c74ed3e3c9e26ecb',
   'blocks/chart-figure-native':
-    '01d377c050c84974d9bbc8e9a483b9ae6008707e6347976bdef753b23a1f97b3',
+    'd3f94ec5e78415c4adb20749a228b6ee0353721b6c56df9e5cd4770e295115cd',
   'drawings/native-visual-basic':
     'ed5efcd3dd56f9d378b7952868ce1238349063286facd452ba509b15029713c0',
   'drawings/native-visual-no-background':
@@ -617,5 +617,5 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'drawings/native-visual-placed':
     '0d22e0e9e1d2f1770cd8bdb3272e626ad8413174b7a1edf897119f485d4cdc5a',
   'headings/toc-in-text-box':
-    '4aa5a1cce4e4c4ddd99e1fe5639f1e2249e0313a82170c361669d0f9e682543c',
+    'c22b9e8c38a9b27b56b7a9c4f229661badfc92b3ae281b8257b7b09ec8fb637c',
 };
