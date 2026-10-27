@@ -73,6 +73,8 @@ Full per-component prop tables live in the reference: [DOCX components](/referen
 
 Any node with `enabled: false` is filtered out before rendering, along with its subtree. This is a first-class feature of the document-as-data model: because the document is plain JSON, you can keep optional sections, draft slides, or per-tenant blocks in one template and switch them on or off programmatically — no string templating, no conditional code.
 
+The same holds for a registered custom (plugin) component in a DOCX document: a disabled one is never expanded, so its `render` does not run, and `standardDefinition` and `preservedDefinition` keep it as authored, flag included.
+
 ```json
 {
   "name": "slide",

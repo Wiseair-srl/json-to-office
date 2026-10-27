@@ -315,6 +315,18 @@ function createBuilderImpl<
 
       const customComponent = componentMap.get(componentName);
 
+      // A disabled custom component is never rendered: both trees keep it
+      // with its flag, the way they keep a disabled standard node, and the
+      // renderer skips it. Matches composeBlocksWithPlugins.
+      if (
+        customComponent &&
+        (componentData as { enabled?: boolean }).enabled === false
+      ) {
+        standardOut.push(componentData);
+        preservedOut.push(componentData);
+        continue;
+      }
+
       if (customComponent) {
         // This is a custom component - validate and process it
         try {

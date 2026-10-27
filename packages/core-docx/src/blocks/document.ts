@@ -357,7 +357,11 @@ export async function expandBlocksWithPlugins<T>(
   // plugin components. Expand them before the same final validation gate.
   const second = await walk(finished.document);
   validateEffects(second.standard, effects);
-  const result = validateDocument(second.standard);
+  // The only plugin nodes left are disabled ones, kept as authored; the
+  // plugin layer validated them before expansion.
+  const result = validateDocument(second.standard, {
+    knownCustomNames: new Set(plugins),
+  });
   if (!result.valid)
     throw new BlockEvaluationError(
       result.errors.map((issue) => ({
