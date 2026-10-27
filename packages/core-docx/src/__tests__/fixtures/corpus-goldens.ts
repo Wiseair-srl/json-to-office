@@ -149,7 +149,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'structure/header-image':
     'd1d3953e3888681e146eec6225d6b09655586b11a03787b111492ab85ddbe3dc',
   'structure/footer-table':
-    '1f718ee39d1c634a7739954091639a2b251782495744f9c0226f610d60cccd05',
+    '3204f8834ecdf3ce6f1166b61205d6f02a7e2a30d45ab9ec8cf1a61fbeab5718',
   'structure/columns-count':
     '4d5db2b00df5a3d1c0525f670257314b3452631dc19a880822ddbb2f42669390',
   'structure/columns-single':
@@ -581,7 +581,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'theme/example-practice-note':
     '6c8a88021e2c45d099535d804f8d9eb59b61ac9bceecd201601709d2d2298120',
   'theme/example-field-review':
-    'e2933417eb6cce73e904b8d9821b24b23710e3432c2dacda86e5f5e3e1da3797',
+    '18269fe843b42984ec09019a2aca66f68fa74dbb24befe500cefa2cbf238530b',
   'chart/column-configured':
     '23c60c84f4bcadac4baada8dd21687005819094d8894d22d98f08df80344c7ba',
   'chart/bar-no-legend':
