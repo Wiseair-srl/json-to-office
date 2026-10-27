@@ -1,5 +1,12 @@
 # @json-to-office/core-docx
 
+## 7.7.6
+
+### Patch Changes
+
+- 120a0c4: A table in a section header or footer now takes `componentDefaults.table`, as a body table does: the theme's defaults, the document's `componentDefaults` over them, the table's own props over both. Header and footer tables used to skip the cascade and render with bare Normal Table cells, so a theme's `hideBorders`, `cellDefaults` (alignment, padding, fill, font), `headerCellDefaults`, border colour and size never reached them. Header and footer paragraphs and images are unchanged. A document with a table in a header or footer renders differently wherever its theme states table defaults.
+- 2eb15d9: A registered custom (plugin) component with `enabled: false` is now disabled, as every standard node already was. Its `render` never runs (nor any service call it would make) and nothing it would emit reaches the document, wherever the node sits: at the top level, inside a standard container, or emitted by another custom component's `render`. `standardDefinition` and `preservedDefinition` keep the node as authored, flag included, the way they keep a disabled standard node. A document with `blocks` used to reject a disabled custom component as an unknown component; it now generates.
+
 ## 7.7.5
 
 ### Patch Changes
