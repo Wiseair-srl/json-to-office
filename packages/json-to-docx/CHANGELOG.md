@@ -1,5 +1,23 @@
 # @json-to-office/json-to-docx
 
+## 7.7.7
+
+### Patch Changes
+
+- fabac9c: The default DOCX renderer (`docxjs`) now runs on docx 9.15.0 (from 9.14.0),
+  pinned exactly in `core-docx`, `json-to-docx` and `shared-docx`.
+
+  A table of contents is now marked as Word's Table of Contents gallery part, so
+  Word shows **Update Table** on it (dolanmiu/docx#2598). Text containing control
+  characters that XML 1.0 does not allow, such as a vertical tab, no longer
+  produces a file Word refuses to open. A native chart's embedded workbook is
+  zipped without directory entries; the files inside it are unchanged. Nothing
+  else in the output changes. `office-open` output does not change.
+
+- Updated dependencies [fabac9c]
+  - @json-to-office/core-docx@7.7.7
+  - @json-to-office/shared-docx@7.7.7
+
 ## 7.7.5
 
 ### Patch Changes
