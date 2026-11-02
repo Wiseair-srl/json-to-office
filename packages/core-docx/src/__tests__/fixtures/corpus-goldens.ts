@@ -19,9 +19,9 @@
 
 export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'blocks/figures-consulting':
-    '46683369de5569ad6927fc453d4444ade6b20c540c57198117bb10a95323f84b',
+    'dd0da9a855a0e307a8e990b45cbafd2f9e6e496c1f417a177583b107f200a852',
   'blocks/figures-fallback':
-    'dbe6ad96fe6790e3918cdd715713bdf80f49bc2b498e4aa658b146ea5f6a2df2',
+    'bacdb06e52a73fc0937e019c2a2f0771a86b113dd259739085da06530a76a317',
   'blocks/report-data-consulting':
     '7d46cb938b1931db3481cb53f7e9f348cdbfdd7e39a5be4d3d307d9f012cdd99',
   'blocks/report-data-fallback':
@@ -29,7 +29,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'blocks/report-chrome-fallback':
     '459bc7617a5ab3635eeaf8b460fef9c1aed703934f913a347a77abaf55a95275',
   'blocks/report-chrome-consulting':
-    'ff0aa1b169280918b517f6572c5ac5feb92b0dfa82f711075eb70e4edb8991a7',
+    '8c888b75047aecf45fb9f1418813536067175aeb915fdaa09fc34f952f2b3165',
   'blocks/key-takeaways-fallback':
     '5b6b67cf69aa5fe29b191e8b8b065b9c15f805a9a13415d015da5710e2edc91c',
   'blocks/key-takeaways-consulting':
@@ -147,7 +147,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'structure/header-footer-date-placeholders':
     'c818195a2e9c637d3f95020298c61a3f192dfd20059190ff93c954798fb2dffc',
   'structure/header-image':
-    'd1d3953e3888681e146eec6225d6b09655586b11a03787b111492ab85ddbe3dc',
+    '62d25adf6c1e5054e5ac3d7d27d8aaa5ebb0d5efb8da2b2feb6b25aa31635562',
   'structure/footer-table':
     '3204f8834ecdf3ce6f1166b61205d6f02a7e2a30d45ab9ec8cf1a61fbeab5718',
   'structure/columns-count':
@@ -379,7 +379,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'tables/nested-paragraphs':
     '5b7de2af3940ab8c8d12288330bb1db4a782d9a6d539d22083cae4638a9374f0',
   'tables/nested-image':
-    '0de388c7231231c71f3232acbf31c719d1585c2612b79e6abcb20d45e4f64ac3',
+    '67f7a7c10bbd1a3a92fed8046035a26e6d237aa50ee3c1ef41b171cde645f7c7',
   'tables/cell-text-decorators':
     'ec25f7e387e083f8ef04d23d6aff55513c40a1b111aed55386ae47fe72823626',
   'tables/pagination-flags':
@@ -393,35 +393,35 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'tables/adjacent-tables':
     'aec4742debdf5a9ef0681e85573ab3a71e6ad5d8f728b2ea2d1b01a4d91dc843',
   'blocks/image-inline-default':
-    '28ce9a7330d3e221b6f3ff19788c5d172611ab261ed0e4a474e40d365cb15cb4',
+    '5e12cea8da0347cfc59f2032538436755da2646bc66d83bdd11ddc492229d804',
   'blocks/image-sizing-pixels':
-    '6e7cc77f530e00a028e65dbbe8fc0f1bb7a0835870c3037355ea6f205c53911f',
+    '0491d24465fa64a968a8c02f62f6acededfdce2460a0629a3e50fe9beaa6f7d0',
   'blocks/image-sizing-percent':
-    '509d85ae033feade39455055c6dcb956a8a55b1533ae8468818b601de2855e7c',
+    'a08f48ba75b0f38698b7fc80b55305dfaeb54f0b261b9928333d08f2594a151a',
   'blocks/image-alignments':
-    '171528398338b96d600c5327fc8c2b24050eee39543fdc31edf011f66148cebe',
+    'fa867aaa6293aa49ff7b9d317727a0ecd841216d2780c70fddfd9283670260b3',
   'blocks/image-spacing-and-keeps':
-    'b004a16d8888e800304a8ef569e4a7d46c6512286ffd1fcf6c8a2496e47e77d8',
+    '0a8ac74036df87b2ef67a63ce0402f124ccc91652868a8786a9829b76f21a8c0',
   'blocks/image-caption-plain':
-    '2152a86aeae63ed7f346caef83b109d267201b6dd2193a4f74efe04a21607922',
+    '00b36955a1f2eeb6c543dd036c6ac9dc7c9f5f6f86e4336c94c32f543b90e958',
   'blocks/image-caption-rich':
-    'b222e3f4cc5dff6eedf7f2fc709bd7390d10d36fa8dc99265d07dae5f01097a9',
+    'bb7e4b81cc83921b1798bd918d225a34a4601d7de5fcce4b18563aac7b9b5013',
   'blocks/image-alt-and-empty-caption':
-    'ba58620e0ea304b7d5b65c9e03ef76d99e4c85b4d6fa79a5af4be94b0f52604f',
+    '2e317689dfb45a6b908e5ffa46fbb7cb45967a54e4cdfebb05c8b59d66fe5dd4',
   'blocks/image-formats':
-    '41340be29625fa8e9ac83b41191904bd791261b90b2dc4db0effe89b530623c2',
+    'b17683737f4dc0725a2cd93f27f656b04be7244e2e522d6b3ca87f3fdce54add',
   'blocks/image-floating-align-and-wrap':
-    'c255196f22a59312e254e7f9249203dd2a1c054c1abc0381b84ebaec7931ea2a',
+    'e560ab25ca7ff6bdd0a5e108a2d5718d256e744e3ca8efef3279b8b0344bf29c',
   'blocks/image-floating-offsets-and-flags':
-    'c8735d75d567f0e9cb976fb85980a147d0902ee38bc6865205e1df02a25a7933',
+    '0ef69f588a56f456cb64af660e4f987ab33b279fa093d829340557e8b917a518',
   'blocks/image-floating-percent-metrics':
-    '5a7081f42247566153eba8e74405bcb0b7d2089c363eb6e480e3bf0dd76fda01',
+    '66576b7508c608a05c41af4cf48b08782776cbc7e0854861da6cb3f3c538451d',
   'blocks/image-floating-wrap-variants':
-    '3a7e352fe2feb58992b454450aef35db3b2518a285539584a7a833431ba58af3',
+    'dfb3426d3e25cbad5ede66519b509731bca899130c15ee50526fb494748ba96c',
   'blocks/image-floating-rotation-and-visibility':
-    '91b34df027677327e770ea8dac909b87e5d09bf09dd3bc8628a610e87689da84',
+    '5e5b28ca99d5b6963622f5c1fca3667e392ce851129c6d50d3564649b9b4ffb2',
   'blocks/image-floating-with-caption':
-    'e52e05c19e423f05d1d4bcb4ef9ac6e21ab86ed6192caab321383f6e36afca76',
+    '086518d3ecd07bf7886e7bdb6f9c8911c04dcf785bfcea233c1b02f73ffaea69',
   'blocks/statistic-minimal':
     '85f8375b4449da83f55c1d759e359461749146884fcff48816407fe03670fe18',
   'blocks/statistic-alignments':
@@ -439,7 +439,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'blocks/text-box-floating-table':
     '0335e073db8fb0b9c838677521504ff22c904b42f09ef0f0e4cd91d32de211dc',
   'blocks/text-box-mixed-children':
-    'ba4075096f0dbcc407aff9188ee1cd6472a125aa60c3c27e340971a77494ebc4',
+    '19002b5cd35e5e4ae9de4b8e86b2344af812a69ac51e468bfe55a9d422f8f9a2',
   'blocks/text-box-empty-children':
     'ca5d286a19be973d4e3912c97ddf757c695523d17accb6d0b16c41e1d6b50c64',
   'blocks/text-box-shape':
@@ -529,31 +529,31 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'annotations/track-revisions-redline':
     'ab430f547866d8ddee490ad1c391439473dae378f2cb4f35257f2b1331ac7bf6',
   'theme/builtin-minimal':
-    '93a0198d5cbfe319dbe4a454a572485aa2708f55378dcf9aeeb9b8ed172172d4',
+    '6b1798516d595192c55cc9874abf07137a824bb6c7555d737d0d356a7a08bc0f',
   'theme/builtin-devportal':
-    '7c861e269ba42e45e9d78d2953dd2ac76c67f0206b6d35b6bd1485186380cbd8',
+    'b85b68d33984ac6635a3580e9988883baddfaaf25133c043af565025538f0688',
   'theme/builtin-vermilion':
-    '17cd3667c9e712dd4cd9775f3f9f574127dbb67f4999bc4da872081f5eb40147',
+    'c67de404888a0e136e03678b63fbb08b9382d4729b3944f5b136a7c578651201',
   'theme/builtin-consulting':
-    '81496c7e1d8cdca34e47aa3a9e0e1d95c843d509a5529bdb9a395e971a449122',
+    '83c231a0cbdd03629bada17d150c57fa04562257377d2d733d80545cd6342bd3',
   'theme/name-omitted':
-    '81496c7e1d8cdca34e47aa3a9e0e1d95c843d509a5529bdb9a395e971a449122',
+    '83c231a0cbdd03629bada17d150c57fa04562257377d2d733d80545cd6342bd3',
   'theme/name-unknown-falls-back':
-    '81496c7e1d8cdca34e47aa3a9e0e1d95c843d509a5529bdb9a395e971a449122',
+    '83c231a0cbdd03629bada17d150c57fa04562257377d2d733d80545cd6342bd3',
   'theme/inline-theme-object':
-    '8692aea0c1afe15a22d25f7acf4d656f9ec7176323df37a084221197bd65e0d3',
+    'ccda6bb70c1b960e4a122c4a798e178bc8ee922a135c21bc866e87784da72f6c',
   'theme/overrides-colors-only':
     '9eee027dcea5411968f61488d8b750173f7c36dc9af8006267139c64adb52e4a',
   'theme/overrides-fonts-partial':
-    '9641dc8085efb28dbab822ae07a5bf70b66f77aec9d41a0a54457d49b1ca626c',
+    '30af0b5b9a920482d83040e943804813b8439f5c7078988725bc55e502c75836',
   'theme/overrides-styles-metrics':
     '9f2a283ec11256e461a90753390f2f9edafeea6a5f0e2aa92ce8a4f5fa3ad11d',
   'theme/overrides-styles-base-chain':
     'e62cb36d41936bac40ff65dea8e7fd1c519b28d9d139b65d0f064c53a5df261b',
   'theme/overrides-empty':
-    '93a0198d5cbfe319dbe4a454a572485aa2708f55378dcf9aeeb9b8ed172172d4',
+    '6b1798516d595192c55cc9874abf07137a824bb6c7555d737d0d356a7a08bc0f',
   'theme/overrides-over-named-theme':
-    '6a4b68fa2e755c166bb89d1d62ff3f13535a8cab0e12a51241a12e4bebc072e2',
+    '67f1ec36155504b7693b5091bd9f235896b4d0fb179c271deb0dd4997ada0957',
   'theme/color-tokens-in-components':
     '6f65202909fde4879d282be55301ec7ceedbb552dcd14caabb211ed94480a23e',
   'theme/color-hex-literals':
@@ -567,9 +567,9 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'theme/toc-entry-styles':
     '5a0dcef03d3c94db3b0aaf7a7238c374cea7e5e7a401580601fbcf147052b4c2',
   'theme/component-defaults-document':
-    'd6c6ff881d1c134c0d184c15b19097096262acb8a574adfe089525b95e77a2c7',
+    '3e5b95d99032b1fd26a17b333e8aba127a3301841c324169c8d0397ab500d6c3',
   'theme/component-defaults-instance-wins':
-    'bad140a3a1671d625ae6c4f9dd4abbeb6bf2a8c5a6811694a2f13e7a2fedfa2c',
+    'f4fc19054bb6f4b66809ff1829762f6a191aad122e3eb7a25db7875872481793',
   'theme/component-defaults-heading-numbering':
     '41999f2f5497b4279aedd16b5a8ab4ada1b9e52b36e43c8395f73b2c94399624',
   'theme/language-document-default':
@@ -579,9 +579,9 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'theme/no-proof-words':
     '1f78ee87abb9dcd727b98b1a49882a1c4cfd972b4d7b2537aabe3495d6f07fbc',
   'theme/example-practice-note':
-    '6c8a88021e2c45d099535d804f8d9eb59b61ac9bceecd201601709d2d2298120',
+    '140a9dbc4ba7e81f8d24b78a96543e7e7b54f553be9eee81c7bed50e5ee421f0',
   'theme/example-field-review':
-    '18269fe843b42984ec09019a2aca66f68fa74dbb24befe500cefa2cbf238530b',
+    '774a98d86ad5f162a6ebfe458c1237a27f96ea128e5edb753191adc3121ba6d2',
   'chart/column-configured':
     'b888fda9ad104f283d5d7dc6cc1971153ae8125a29ba9a9287e55272b8be7421',
   'chart/bar-no-legend':
@@ -613,7 +613,7 @@ export const CORPUS_GOLDENS: Readonly<Record<string, string>> = {
   'drawings/native-visual-no-background':
     'e5b620c38cc8a379f523a5861e9e89e618233f5132db6350709016d72cffb241',
   'drawings/native-visual-pictures':
-    'fa0f8bfe4661fa4c2f0c28e99e96a6fcf44230b0668bd0bdf98dbe2f69470d95',
+    'acde59b56543227052962a8939b498659b4943093ed10ba5dff65266fc4cad87',
   'drawings/native-visual-placed':
     '0d22e0e9e1d2f1770cd8bdb3272e626ad8413174b7a1edf897119f485d4cdc5a',
   'headings/toc-in-text-box':
