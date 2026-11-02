@@ -1,5 +1,17 @@
 # @json-to-office/shared-docx
 
+## 7.7.8
+
+### Patch Changes
+
+- 40833c3: The default DOCX renderer (`docxjs`) now runs on docx 9.15.1 (from 9.15.0),
+  pinned exactly in `core-docx`, `json-to-docx` and `shared-docx`.
+
+  Pictures are now stored in the package as `image1.png`, `image2.jpg` and so
+  on, as Word names them, rather than under a hash of their bytes, which Word
+  for the web showed as an empty box. Nothing else in the output changes.
+  `office-open` output does not change.
+
 ## 7.7.7
 
 ### Patch Changes
