@@ -28,6 +28,7 @@ vi.mock('../../utils/environment', () => ({
 
 import { renderChartToImageProps } from '../highcharts';
 import { desugarExternals } from '../../core/desugarExternals';
+import { tagNodeOrigins } from '../../core/nodeOrigin';
 
 // Mock fetch globally
 const mockFetch = vi.fn();
@@ -1734,5 +1735,302 @@ describe('theme chart options', () => {
     });
     await renderChartToImageProps(bar as never, themed({}));
     expect(request()).toEqual(before);
+  });
+});
+
+/**
+ * The host's say over an image the export server returned with a 200.
+ *
+ * A Puppeteer screenshot taken under load can come back white or half
+ * painted, and the same request posted again draws it properly. Whether an
+ * image is good enough is the host's to decide; what the library owes it is
+ * the retry, and never letting a refused image pass for an accepted one.
+ */
+describe('letting the host refuse a chart image', () => {
+  const BAD = 'YmFk'; // "bad"
+  const GOOD = 'Z29vZA=='; // "good"
+  const text = (bytes: Uint8Array): string => new TextDecoder().decode(bytes);
+  const answer = (body: string): unknown => ({
+    ok: true,
+    text: async () => body,
+  });
+  const chartProps = (data: number[] = [1, 2, 3]): Record<string, unknown> => ({
+    options: {
+      chart: { width: 400, height: 300 },
+      series: [{ type: 'column', data }],
+    },
+    scale: 2,
+  });
+  /** Refuse any image whose bytes read "bad". */
+  const refuseBad = vi.fn(
+    ({ image }: { image: Uint8Array }) => text(image) !== 'bad'
+  );
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetChartLimiters();
+    resetChartRequestStats();
+  });
+
+  it('re-posts a refused image and embeds the one it accepts', async () => {
+    mockFetch
+      .mockResolvedValueOnce(answer(BAD))
+      .mockResolvedValue(answer(GOOD));
+    const warnings: GenerationWarning[] = [];
+
+    const props = await renderChartToImageProps(
+      chartProps() as never,
+      createMockTheme(),
+      { acceptImage: refuseBad },
+      undefined,
+      warnings
+    );
+
+    expect(props.base64).toBe(`data:image/png;base64,${GOOD}`);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    // The same request both times.
+    expect(mockFetch.mock.calls[1][1].body).toBe(
+      mockFetch.mock.calls[0][1].body
+    );
+    expect(warnings).toEqual([]);
+    expect(getChartRequestStats()).toMatchObject({
+      retries: 1,
+      rejectedRetries: 1,
+    });
+  });
+
+  it('hands the check the decoded bytes and the options actually posted', async () => {
+    mockFetch.mockResolvedValue(answer(GOOD));
+    const acceptImage = vi.fn(() => true);
+
+    await renderChartToImageProps(chartProps() as never, createMockTheme(), {
+      acceptImage,
+    });
+
+    const sent = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(acceptImage).toHaveBeenCalledTimes(1);
+    const [input] = acceptImage.mock.calls[0] as unknown as [
+      {
+        image: Uint8Array;
+        mediaType: string;
+        options: unknown;
+        scale?: number;
+        attempt: number;
+      },
+    ];
+    expect(input.image).toBeInstanceOf(Uint8Array);
+    expect(text(input.image)).toBe('good');
+    expect(input.mediaType).toBe('png');
+    expect(input.options).toEqual(sent.infile);
+    expect(input.scale).toBe(2);
+    expect(input.attempt).toBe(1);
+  });
+
+  it('embeds the last refused image once the budget is spent, and names the chart', async () => {
+    mockFetch.mockResolvedValue(answer(BAD));
+    const warnings: GenerationWarning[] = [];
+
+    const document = await desugarExternals(
+      tagNodeOrigins({
+        name: 'docx',
+        props: {},
+        children: [
+          { name: 'paragraph', props: { text: 'Before' } },
+          { name: 'highcharts', id: 'sales', props: chartProps() },
+        ],
+      }),
+      {
+        theme: createMockTheme(),
+        services: { highcharts: { acceptImage: refuseBad } },
+        warnings,
+      }
+    );
+
+    expect(mockFetch).toHaveBeenCalledTimes(3);
+    expect(document.children[1]).toMatchObject({
+      name: 'image',
+      id: 'sales',
+      props: { base64: `data:image/png;base64,${BAD}` },
+    });
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toMatchObject({
+      component: 'highcharts',
+      severity: 'warning',
+    });
+    expect(warnings[0].message).toMatch(/children\.1.*3 attempts/);
+    expect(warnings[0].context).toEqual({
+      code: 'W_CHART_IMAGE_REJECTED',
+      standardPath: 'children.1',
+      kind: 'highcharts',
+      id: 'sales',
+      attempts: 3,
+      serverUrl: 'http://localhost:7801',
+    });
+    expect(getChartRequestStats()).toMatchObject({
+      retries: 2,
+      rejectedRetries: 2,
+    });
+  });
+
+  it('takes the budget from retries', async () => {
+    mockFetch.mockResolvedValue(answer(BAD));
+    const warnings: GenerationWarning[] = [];
+
+    await renderChartToImageProps(
+      chartProps() as never,
+      createMockTheme(),
+      { acceptImage: () => false, retries: 0 },
+      undefined,
+      warnings
+    );
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(warnings[0].context).toMatchObject({ attempts: 1 });
+  });
+
+  it('keeps the refused image when the retry after it fails outright', async () => {
+    mockFetch
+      .mockResolvedValueOnce(answer(BAD))
+      .mockRejectedValue(new Error('ECONNREFUSED'));
+    const warnings: GenerationWarning[] = [];
+
+    const props = await renderChartToImageProps(
+      chartProps() as never,
+      createMockTheme(),
+      { acceptImage: refuseBad },
+      undefined,
+      warnings
+    );
+
+    expect(props.base64).toBe(`data:image/png;base64,${BAD}`);
+    expect(mockFetch).toHaveBeenCalledTimes(3);
+    expect(warnings[0].context).toMatchObject({
+      code: 'W_CHART_IMAGE_REJECTED',
+      attempts: 3,
+    });
+  });
+
+  it('lets a throwing check fail the render at once, as it threw', async () => {
+    mockFetch.mockResolvedValue(answer(GOOD));
+    const failure = new Error('checker broke');
+
+    await expect(
+      renderChartToImageProps(chartProps() as never, createMockTheme(), {
+        acceptImage: () => {
+          throw failure;
+        },
+      })
+    ).rejects.toBe(failure);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('awaits an async check', async () => {
+    mockFetch
+      .mockResolvedValueOnce(answer(BAD))
+      .mockResolvedValue(answer(GOOD));
+
+    const props = await renderChartToImageProps(
+      chartProps() as never,
+      createMockTheme(),
+      { acceptImage: async (input) => refuseBad(input) }
+    );
+
+    expect(props.base64).toBe(`data:image/png;base64,${GOOD}`);
+  });
+
+  it('never shares a refused image with an identical chart', async () => {
+    // The first post answers "bad", every later one "good". Three copies of
+    // one chart share a single request, and the refused image is not what
+    // any of them receives.
+    mockFetch
+      .mockResolvedValueOnce(answer(BAD))
+      .mockResolvedValue(answer(GOOD));
+
+    const document = await desugarExternals(
+      {
+        name: 'docx',
+        props: {},
+        children: [
+          { name: 'highcharts', props: chartProps() },
+          { name: 'highcharts', props: chartProps() },
+          { name: 'highcharts', props: chartProps() },
+        ],
+      },
+      {
+        theme: createMockTheme(),
+        services: { highcharts: { acceptImage: refuseBad } },
+      }
+    );
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    for (const child of document.children) {
+      expect(child).toMatchObject({
+        props: { base64: `data:image/png;base64,${GOOD}` },
+      });
+    }
+  });
+
+  it('gives each identical chart its own request once a render ends refused', async () => {
+    mockFetch.mockResolvedValue(answer(BAD));
+    const warnings: GenerationWarning[] = [];
+
+    await desugarExternals(
+      tagNodeOrigins({
+        name: 'docx',
+        props: {},
+        children: [
+          { name: 'highcharts', props: chartProps() },
+          { name: 'highcharts', props: chartProps() },
+        ],
+      }),
+      {
+        theme: createMockTheme(),
+        services: {
+          highcharts: { acceptImage: () => false, retries: 0 },
+        },
+        warnings,
+      }
+    );
+
+    // One request each: the refused render was not handed on.
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(
+      warnings.map((warning) => warning.context?.standardPath).sort()
+    ).toEqual(['children.0', 'children.1']);
+  });
+
+  it('changes nothing for a host that sets no check', async () => {
+    const render = async (
+      services: Record<string, unknown>
+    ): Promise<{ props: unknown; bodies: unknown[] }> => {
+      vi.clearAllMocks();
+      mockFetch
+        .mockRejectedValueOnce(new Error('ECONNREFUSED'))
+        .mockResolvedValue(answer(BAD));
+      const props = await renderChartToImageProps(
+        chartProps() as never,
+        createMockTheme(),
+        services
+      );
+      // Everything but the per-request abort signal.
+      const bodies = mockFetch.mock.calls.map(([url, init]) => ({
+        url,
+        method: init.method,
+        headers: init.headers,
+        body: init.body,
+      }));
+      return { props, bodies };
+    };
+
+    const without = await render({});
+    const acceptingAll = await render({ acceptImage: () => true });
+
+    // Without a check a "bad" image is simply the image: one retry for the
+    // refused connection, and nothing judged.
+    expect(without.bodies).toHaveLength(2);
+    expect(without.props).toMatchObject({
+      base64: `data:image/png;base64,${BAD}`,
+    });
+    expect(acceptingAll).toEqual(without);
   });
 });

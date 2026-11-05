@@ -61,8 +61,19 @@ export interface PostJsonOptions<T> {
   retries?: number;
   /** Backoff before the first retry, doubled each time (default 250ms). */
   retryBaseDelayMs?: number;
-  /** Called after each retryable failure, before the backoff. */
+  /**
+   * Called after each retryable failure, before the backoff. A body that
+   * `accept` refused arrives here too, as an error whose `code` is
+   * {@link RESPONSE_REJECTED_CODE}.
+   */
   onRetry?: (attempt: number, error: Error) => void;
+  /**
+   * Judge a decoded 2xx body. `false` spends one attempt from the same
+   * `retries` budget, with the same backoff, as a transport failure, and the
+   * same body is posted again. A throw is not a refusal: it propagates at
+   * once. Absent, every decoded body is accepted.
+   */
+  accept?: (body: T, attempt: number) => boolean | Promise<boolean>;
   /** Label used in the timeout message and the non-2xx error. */
   serviceLabel: string;
   /** Message builder for a connection failure (distinct from a timeout). */
@@ -77,6 +88,25 @@ export interface PostJsonOptions<T> {
  * and hand the caller the message that says how to start it.
  */
 export const SERVICE_UNAVAILABLE_CODE = 'SERVICE_UNAVAILABLE';
+
+/**
+ * The `code` on the error `onRetry` receives when `accept` refused a body.
+ * The service answered; the caller did not like what it said.
+ */
+export const RESPONSE_REJECTED_CODE = 'RESPONSE_REJECTED';
+
+/** What the error messages need to know about a call. */
+type ServiceNaming = Pick<
+  PostJsonOptions<unknown>,
+  'url' | 'serviceLabel' | 'onUnreachable'
+>;
+
+function responseRejected(opts: ServiceNaming): Error {
+  return Object.assign(
+    new Error(`${opts.serviceLabel} response was refused by the caller.`),
+    { code: RESPONSE_REJECTED_CODE }
+  );
+}
 
 function serviceUnavailable(message: string): Error {
   return Object.assign(new Error(message), { code: SERVICE_UNAVAILABLE_CODE });
@@ -129,7 +159,7 @@ function backoffMs(attempt: number, baseDelayMs: number): number {
  */
 function transportFailure(
   error: unknown,
-  opts: PostJsonOptions<unknown>,
+  opts: ServiceNaming,
   timeoutMs: number
 ): Error {
   if ((error as Error)?.name === 'AbortError') {
@@ -198,6 +228,19 @@ async function attemptPost<T>(
 }
 
 /**
+ * What {@link postJsonToServiceWithOutcome} ended with: the body, whether
+ * `accept` took it, and how many posts it cost.
+ */
+export interface ServiceOutcome<T> {
+  /** The accepted body, or the last one `accept` refused. */
+  body: T;
+  /** `false` only when `accept` refused every body the service returned. */
+  accepted: boolean;
+  /** Posts made, the first included. */
+  attempts: number;
+}
+
+/**
  * POST a JSON body to `${url}${path}` and return the decoded 2xx body, under
  * one timeout covering the whole exchange and retrying a service that was
  * busy or restarting. Throws a normalized Error on timeout, connection
@@ -206,6 +249,22 @@ async function attemptPost<T>(
 export async function postJsonToService<T>(
   opts: PostJsonOptions<T>
 ): Promise<T> {
+  return (await postJsonToServiceWithOutcome(opts)).body;
+}
+
+/**
+ * {@link postJsonToService}, saying whether `accept` took the body.
+ *
+ * A refused body is retried like a transport failure. Once the budget is
+ * spent, the last refused body is returned with `accepted: false` rather than
+ * thrown: the service did answer, and whether a refused answer is good
+ * enough is the caller's call. The same holds when a refusal is followed by a
+ * failure — a service that has already returned a body never ends the call
+ * worse off than it would have without `accept`.
+ */
+export async function postJsonToServiceWithOutcome<T>(
+  opts: PostJsonOptions<T>
+): Promise<ServiceOutcome<T>> {
   const resolvedHeaders =
     typeof opts.headers === 'function'
       ? await opts.headers(opts.body)
@@ -218,21 +277,43 @@ export async function postJsonToService<T>(
   const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const baseDelayMs = opts.retryBaseDelayMs ?? DEFAULT_RETRY_BASE_DELAY_MS;
   const attempts = 1 + Math.max(0, opts.retries ?? DEFAULT_RETRIES);
+  const backoff = (attempt: number): Promise<void> =>
+    new Promise((resolve) =>
+      setTimeout(resolve, backoffMs(attempt, baseDelayMs))
+    );
+
+  // The last body `accept` refused, kept in case nothing better comes.
+  let refused: { body: T } | undefined;
 
   for (let attempt = 1; ; attempt++) {
+    let body: T;
     try {
-      return await attemptPost(opts, headers, timeoutMs);
+      body = await attemptPost(opts, headers, timeoutMs);
     } catch (error) {
       const failure = error as Error;
       if (attempt >= attempts || !isRetryable(failure)) {
+        if (refused) {
+          return { body: refused.body, accepted: false, attempts: attempt };
+        }
         // A first-attempt failure is reported exactly as it always was: a
         // malformed chart should read the same whether or not retries exist.
         throw attempt === 1 ? failure : withAttemptCount(failure, attempt);
       }
       opts.onRetry?.(attempt, failure);
-      await new Promise((resolve) =>
-        setTimeout(resolve, backoffMs(attempt, baseDelayMs))
-      );
+      await backoff(attempt);
+      continue;
     }
+
+    // Outside the try: a throwing `accept` is the caller's defect, not the
+    // service's, and must not be retried or reworded as an outage.
+    if (!opts.accept || (await opts.accept(body, attempt))) {
+      return { body, accepted: true, attempts: attempt };
+    }
+    if (attempt >= attempts) {
+      return { body, accepted: false, attempts: attempt };
+    }
+    refused = { body };
+    opts.onRetry?.(attempt, responseRejected(opts));
+    await backoff(attempt);
   }
 }

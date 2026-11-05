@@ -25,9 +25,10 @@ import {
   withChartTypography,
   type ChartTypography,
   resolveServiceUrl,
-  postJsonToService,
-  recordChartRetry,
+  exportChartImage,
   sendChartRequest,
+  CHART_IMAGE_REJECTED_WARNING,
+  chartImageRejectedMessage,
   type ChartRenderCache,
   type HighchartsServiceConfig,
   type RasterizeFontFace,
@@ -44,6 +45,20 @@ export interface ChartGenerationResult {
   base64DataUri: string;
   width: number;
   height: number;
+  /**
+   * Present only when `services.highcharts.acceptImage` refused every image
+   * the export server returned: `base64DataUri` is the last of them.
+   */
+  rejected?: { attempts: number };
+}
+
+/**
+ * Which node of the document a chart is, as the render manifest names it:
+ * `standardPath` is the node's path in the returned `standardDefinition`.
+ */
+export interface ChartNodeIdentity {
+  standardPath?: string;
+  id?: string;
 }
 
 /**
@@ -128,36 +143,58 @@ async function generateChart(
     concurrency: servicesConfig?.concurrency,
     requestBody,
     send: () => postChart(serverUrl, requestBody, config, servicesConfig),
+    // An image the host refused is this chart's alone: an identical chart
+    // posts its own request rather than inherit it.
+    shareable: (result) => result.rejected === undefined,
   });
 }
 
 async function postChart(
   serverUrl: string,
-  requestBody: Record<string, unknown>,
+  requestBody: HighchartsExportRequest,
   config: HighchartsProps,
   servicesConfig: HighchartsServiceConfig | undefined
 ): Promise<ChartGenerationResult> {
-  const base64Data = await postJsonToService({
-    url: serverUrl,
-    path: '/export',
-    body: requestBody,
-    headers: servicesConfig?.headers,
-    timeoutMs: servicesConfig?.timeoutMs,
-    retries: servicesConfig?.retries,
-    onRetry: recordChartRetry,
-    serviceLabel: 'Highcharts export server',
-    onUnreachable: (url, cause) =>
-      `Highcharts Export Server is not running at ${url}. ` +
-      'Start it with: npx highcharts-export-server --enableServer true\n' +
-      `Cause: ${cause}`,
-    decode: (response) => response.text(),
-  });
+  const exported = await exportChartImage(
+    serverUrl,
+    requestBody,
+    servicesConfig
+  );
 
   return {
-    base64DataUri: `data:image/png;base64,${base64Data}`,
+    base64DataUri: `data:image/png;base64,${exported.base64}`,
     width: config.options.chart.width,
     height: config.options.chart.height,
+    ...(exported.rejected ? { rejected: exported.rejected } : {}),
   };
+}
+
+/**
+ * Say that a chart went in with an image the host refused, naming the chart
+ * the way the render manifest does so the host can find it there.
+ */
+function reportRejectedImage(
+  rejected: { attempts: number },
+  serverUrl: string,
+  identity: ChartNodeIdentity | undefined,
+  warnings: GenerationWarning[] | undefined
+): void {
+  if (!warnings) return;
+  const where = identity?.standardPath ?? identity?.id;
+  warnings.push({
+    component: 'highcharts',
+    severity: 'warning',
+    message: chartImageRejectedMessage(rejected.attempts, where),
+    context: {
+      code: CHART_IMAGE_REJECTED_WARNING,
+      ...(identity?.standardPath !== undefined
+        ? { standardPath: identity.standardPath, kind: 'highcharts' }
+        : {}),
+      ...(identity?.id !== undefined ? { id: identity.id } : {}),
+      attempts: rejected.attempts,
+      serverUrl,
+    },
+  });
 }
 
 /**
@@ -419,13 +456,22 @@ export async function renderChartToImageProps(
   servicesConfig?: HighchartsServiceConfig,
   chartFonts?: readonly RasterizeFontFace[],
   warnings?: GenerationWarning[],
-  cache?: ChartCache
+  cache?: ChartCache,
+  identity?: ChartNodeIdentity
 ): Promise<Record<string, unknown>> {
   const config = resolveChartConfig(props, theme, chartFonts);
   // The PNG is shared between identical charts; these props are not. Two
   // charts can post the same body and still be placed differently, and
   // `hasConfigDimensions` below reads the component, not the render.
   const chart = await generateChart(config, servicesConfig, warnings, cache);
+  if (chart.rejected) {
+    reportRejectedImage(
+      chart.rejected,
+      effectiveChartServerUrl(config, servicesConfig),
+      identity,
+      warnings
+    );
+  }
 
   const hasConfigDimensions =
     config.width !== undefined || config.height !== undefined;

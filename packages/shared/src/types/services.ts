@@ -28,6 +28,34 @@ export type HighchartsHeadersResolver = (
   body: unknown
 ) => HighchartsHeaders | Promise<HighchartsHeaders>;
 
+/**
+ * One image the export server returned with a 2xx, handed to
+ * {@link HighchartsServiceConfig.acceptImage} before the document uses it.
+ */
+export interface HighchartsExportedImage {
+  /** The image bytes, decoded from the server's base64 body. A copy: changing it changes nothing. */
+  image: Uint8Array;
+  /** The format the image was requested in. */
+  mediaType: 'png';
+  /**
+   * The Highcharts options that were posted — the request's `infile`, with
+   * the theme's presets, palette, type and font faces already written in.
+   */
+  options: Record<string, unknown>;
+  /** The request's `scale`, when it set one. */
+  scale?: number;
+  /** Which post this image answered: 1 for the first, 2 for the first retry, … */
+  attempt: number;
+}
+
+/**
+ * Decide whether an image the export server returned is fit to embed. `false`
+ * re-posts the request; a throw fails the generation.
+ */
+export type HighchartsAcceptImage = (
+  image: HighchartsExportedImage
+) => boolean | Promise<boolean>;
+
 export interface HighchartsServiceConfig {
   serverUrl?: string;
   headers?: HighchartsHeaders | HighchartsHeadersResolver;
@@ -59,6 +87,22 @@ export interface HighchartsServiceConfig {
    * Every other 4xx is about the chart we sent and always fails at once.
    */
   retries?: number;
+  /**
+   * Judge each image the export server returned with a 2xx, before the
+   * document uses it or shares it with an identical chart. Return `false` to
+   * refuse it: the same request is posted again, from the same `retries`
+   * budget and with the same backoff as a failure the server could not
+   * answer. A throw is not a refusal — it fails the generation as it is.
+   *
+   * When the budget runs out on a refused image, that last image is embedded
+   * and a `W_CHART_IMAGE_REJECTED` warning names the chart and the attempts it
+   * took; whether that fails the generation is the host's decision. A refused
+   * image is never reused for an identical chart in the same document.
+   *
+   * The library judges nothing itself: absent, every image is accepted and
+   * the requests, retries and output are exactly what they are without it.
+   */
+  acceptImage?: HighchartsAcceptImage;
 }
 
 // ============================================================================
