@@ -17,6 +17,7 @@
  */
 
 import { createLimiter } from './promiseLimiter';
+import { RESPONSE_REJECTED_CODE } from './serviceClient';
 
 /**
  * Concurrent chart requests allowed per export server. Four keeps a
@@ -42,6 +43,11 @@ export interface ChartRequestStats {
   unique: number;
   /** Retries spent across those requests. */
   retries: number;
+  /**
+   * Of those retries, the ones spent re-posting a chart whose image the
+   * host's `acceptImage` refused.
+   */
+  rejectedRetries: number;
   /** Most requests observed open against an export server at one time. */
   maxInFlight: number;
 }
@@ -50,6 +56,7 @@ const stats: ChartRequestStats = {
   collected: 0,
   unique: 0,
   retries: 0,
+  rejectedRetries: 0,
   maxInFlight: 0,
 };
 
@@ -63,6 +70,7 @@ export function resetChartRequestStats(): void {
   stats.collected = 0;
   stats.unique = 0;
   stats.retries = 0;
+  stats.rejectedRetries = 0;
   stats.maxInFlight = 0;
 }
 
@@ -75,9 +83,17 @@ export function recordChartCollected(): void {
   stats.collected++;
 }
 
-/** Record one retry. Wire it to `postJsonToService`'s `onRetry`. */
-export function recordChartRetry(): void {
+/**
+ * Record one retry. Wire it to `postJsonToService`'s `onRetry`: the error it
+ * passes says whether the retry was for a refused image.
+ */
+export function recordChartRetry(_attempt?: number, error?: Error): void {
   stats.retries++;
+  if (
+    (error as { code?: string } | undefined)?.code === RESPONSE_REJECTED_CODE
+  ) {
+    stats.rejectedRetries++;
+  }
 }
 
 const gates = new Map<string, Limit>();
@@ -139,17 +155,36 @@ export type ChartRenderCache<T> = Map<string, Promise<T>>;
  * render is shared too: the same body would fail the same way, and letting
  * fifty copies each spend the retry budget is exactly the storm the gate
  * exists to prevent.
+ *
+ * A render `shareable` says no to is the exception: it is the one image the
+ * host refused, and handing it to every identical chart would spread exactly
+ * what the host asked to keep out. It leaves the memo, and each chart that
+ * was waiting on it makes its own trip.
  */
 function dedupeChartRequest<T>(
   cache: ChartRenderCache<T> | undefined,
   key: string,
-  send: () => Promise<T>
+  send: () => Promise<T>,
+  shareable: ((result: T) => boolean) | undefined
 ): Promise<T> {
   if (!cache) return send();
   const pending = cache.get(key);
-  if (pending) return pending;
+  if (pending) {
+    if (!shareable) return pending;
+    return pending.then((result) => (shareable(result) ? result : send()));
+  }
   const started = send();
   cache.set(key, started);
+  if (shareable) {
+    started.then(
+      (result) => {
+        if (!shareable(result) && cache.get(key) === started) {
+          cache.delete(key);
+        }
+      },
+      () => undefined
+    );
+  }
   return started;
 }
 
@@ -165,6 +200,11 @@ export interface ChartRequest<T> {
   requestBody: unknown;
   /** Post it. */
   send: () => Promise<T>;
+  /**
+   * Whether a finished render may be handed to identical charts. Absent,
+   * every render is shared.
+   */
+  shareable?: (result: T) => boolean;
 }
 
 /**
@@ -184,7 +224,8 @@ export function sendChartRequest<T>(request: ChartRequest<T>): Promise<T> {
     () =>
       limitChartRequest(request.serverUrl, request.concurrency, () =>
         counted(request.send)
-      )
+      ),
+    request.shareable
   );
 }
 

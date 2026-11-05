@@ -6,6 +6,8 @@ export type {
   HighchartsServiceConfig,
   HighchartsHeaders,
   HighchartsHeadersResolver,
+  HighchartsAcceptImage,
+  HighchartsExportedImage,
   PptxServiceConfig,
   PptxServiceHeaders,
   PptxServiceHeadersResolver,
@@ -201,11 +203,21 @@ export {
 // HTTP client for the render services (highcharts export, pptx rasterize)
 export {
   postJsonToService,
+  postJsonToServiceWithOutcome,
   resolveServiceUrl,
+  RESPONSE_REJECTED_CODE,
   SERVICE_UNAVAILABLE_CODE,
   type PostJsonOptions,
   type ServiceHeaders,
+  type ServiceOutcome,
 } from './utils/serviceClient';
+export {
+  CHART_IMAGE_REJECTED_WARNING,
+  chartImageRejectedMessage,
+  exportChartImage,
+  type ChartExport,
+  type ChartExportRequestBody,
+} from './utils/chartExport';
 
 // Bounded concurrency
 export { createLimiter } from './utils/promiseLimiter';

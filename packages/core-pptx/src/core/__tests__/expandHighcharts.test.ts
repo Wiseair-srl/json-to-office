@@ -1008,3 +1008,112 @@ describe('theme chart options', () => {
     expect(requestBody()).toEqual(withEmpty);
   });
 });
+
+/**
+ * The host's `acceptImage` on the pptx path: the same shared client as docx,
+ * so the same retry, the same refusal of a shared render, the same warning.
+ */
+describe('letting the host refuse a chart image', () => {
+  const BAD = 'YmFk'; // "bad"
+  const GOOD = 'Z29vZA=='; // "good"
+  const answer = (body: string): unknown => ({
+    ok: true,
+    text: async () => body,
+  });
+  const refuseBad: HighchartsServiceConfig['acceptImage'] = ({ image }) =>
+    new TextDecoder().decode(image) !== 'bad';
+  const chartProps = { options: { chart: { width: 600, height: 400 } } };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetChartLimiters();
+  });
+
+  it('re-posts a refused image and embeds the one it accepts', async () => {
+    mockFetch
+      .mockResolvedValueOnce(answer(BAD))
+      .mockResolvedValue(answer(GOOD));
+
+    const { component, warnings } = await expand(chartProps, EMPTY_THEME, {
+      acceptImage: refuseBad,
+    });
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(component.props.base64).toBe(`data:image/png;base64,${GOOD}`);
+    expect(warnings).toEqual([]);
+  });
+
+  it('embeds the last refused image once the budget is spent, and names the chart', async () => {
+    mockFetch.mockResolvedValue(answer(BAD));
+    const warnings: PipelineWarning[] = [];
+
+    const { presentation: expanded } = await expandHighchartsComponents(
+      presentation(
+        [
+          { name: 'text', props: { text: 'Before' } },
+          { name: 'highcharts', id: 'sales', props: chartProps },
+        ],
+        EMPTY_THEME
+      ),
+      { acceptImage: () => false, retries: 1 },
+      warnings
+    );
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(expanded.slides[0].components[1].props.base64).toBe(
+      `data:image/png;base64,${BAD}`
+    );
+    expect(warnings).toEqual([
+      {
+        code: 'W_CHART_IMAGE_REJECTED',
+        component: 'highcharts',
+        slide: 0,
+        message: expect.stringMatching(
+          /slides\[0\]\.elements\[1\].*2 attempts/
+        ),
+        context: {
+          path: 'slides[0].elements[1]',
+          id: 'sales',
+          attempts: 2,
+          serverUrl: 'http://localhost:7801',
+        },
+      },
+    ]);
+  });
+
+  it('lets a throwing check fail the render at once', async () => {
+    mockFetch.mockResolvedValue(answer(GOOD));
+
+    await expect(
+      expand(chartProps, EMPTY_THEME, {
+        acceptImage: () => {
+          throw new Error('checker broke');
+        },
+      })
+    ).rejects.toThrow('checker broke');
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('never shares a refused image with an identical chart', async () => {
+    mockFetch
+      .mockResolvedValueOnce(answer(BAD))
+      .mockResolvedValue(answer(GOOD));
+
+    const { presentation: expanded } = await expandHighchartsComponents(
+      presentation(
+        [
+          { name: 'highcharts', props: chartProps },
+          { name: 'highcharts', props: chartProps },
+        ],
+        EMPTY_THEME
+      ),
+      { acceptImage: refuseBad },
+      []
+    );
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    for (const component of expanded.slides[0].components) {
+      expect(component.props.base64).toBe(`data:image/png;base64,${GOOD}`);
+    }
+  });
+});

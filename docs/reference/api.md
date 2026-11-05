@@ -459,6 +459,19 @@ interface ServicesConfig {
       | ((
           body: unknown
         ) => Record<string, string> | Promise<Record<string, string>>);
+    allowRemote?: boolean; // permit an export server outside private networks
+    concurrency?: number; // requests in flight per export server (default 4)
+    timeoutMs?: number; // abort one export request after this long (default 30000)
+    retries?: number; // retries after the first attempt (default 2)
+    // Your check on each 2xx image; false re-posts the request from the same
+    // retries budget. See Charts → Refusing an image the server returned.
+    acceptImage?: (image: {
+      image: Uint8Array; // the PNG bytes
+      mediaType: 'png';
+      options: Record<string, unknown>; // the infile that was posted
+      scale?: number;
+      attempt: number; // 1 for the first post
+    }) => boolean | Promise<boolean>;
   };
   pptx?: {
     // In-process rasterizer — takes precedence over serverUrl.

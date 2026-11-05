@@ -15,9 +15,10 @@ import {
   REMOTE_EXPORT_WARNING,
   chartFamilyResolver,
   chartPointsPerPixel,
-  postJsonToService,
+  CHART_IMAGE_REJECTED_WARNING,
+  chartImageRejectedMessage,
+  exportChartImage,
   recordChartCollected,
-  recordChartRetry,
   resolveServiceUrl,
   sendChartRequest,
   type ChartRenderCache,
@@ -151,7 +152,21 @@ async function expandOne(
     scope.chartCache
   );
 
-  void path;
+  if (chart.rejected) {
+    scope.warnings.push({
+      code: CHART_IMAGE_REJECTED_WARNING,
+      component: 'highcharts',
+      slide: slideIndexOf(path),
+      message: chartImageRejectedMessage(chart.rejected.attempts, path),
+      context: {
+        path,
+        ...(component.id !== undefined ? { id: component.id } : {}),
+        attempts: chart.rejected.attempts,
+        serverUrl: exportServerUrl(props.serverUrl, scope.services?.serverUrl),
+      },
+    });
+  }
+
   return {
     ...component,
     name: 'image',
@@ -169,6 +184,14 @@ interface RenderedChart {
   dataUri: string;
   widthPx: number;
   heightPx: number;
+  /** Present only when `acceptImage` refused every image the server returned. */
+  rejected?: { attempts: number };
+}
+
+/** The slide a `slides[i]…` path is on. */
+function slideIndexOf(path: string): number | undefined {
+  const match = /^slides\[(\d+)\]/.exec(path);
+  return match ? Number(match[1]) : undefined;
 }
 
 /** A public export server is a decision: refused without `allowRemote`, announced with it. */
@@ -225,37 +248,25 @@ async function renderChart(
     concurrency: services?.concurrency,
     requestBody,
     send: () => postChart(serverUrl, requestBody, config, services),
+    // An image the host refused is this chart's alone: an identical chart
+    // posts its own request rather than inherit it.
+    shareable: (result) => result.rejected === undefined,
   });
 }
 
 async function postChart(
   serverUrl: string,
-  requestBody: Record<string, unknown>,
+  requestBody: { infile: unknown; scale?: number },
   config: PptxHighchartsProps,
   services: HighchartsServiceConfig | undefined
 ): Promise<RenderedChart> {
-  const base64Data = await postJsonToService({
-    url: serverUrl,
-    path: '/export',
-    body: requestBody,
-    headers: services?.headers,
-    timeoutMs: services?.timeoutMs,
-    retries: services?.retries,
-    onRetry: recordChartRetry,
-    serviceLabel: 'Highcharts export server',
-    // The code lets a server route report a missing export server as a
-    // dependency outage with this message, not as an internal error.
-    onUnreachable: (url, cause) =>
-      `Highcharts Export Server is not running at ${url}. ` +
-      'Start it with: npx highcharts-export-server --enableServer true\n' +
-      `Cause: ${cause}`,
-    decode: (response) => response.text(),
-  });
+  const exported = await exportChartImage(serverUrl, requestBody, services);
 
   return {
-    dataUri: `data:image/png;base64,${base64Data}`,
+    dataUri: `data:image/png;base64,${exported.base64}`,
     widthPx: config.options.chart?.width ?? DEFAULT_CHART_WIDTH_PX,
     heightPx: config.options.chart?.height ?? 720,
+    ...(exported.rejected ? { rejected: exported.rejected } : {}),
   };
 }
 

@@ -176,6 +176,8 @@ export interface PipelineWarning {
   message: string;
   component?: string;
   slide?: number;
+  /** Structured detail for a caller to match on, e.g. the node's `path`. */
+  context?: Record<string, unknown>;
 }
 
 export function isPresentationComponent(

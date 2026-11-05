@@ -172,6 +172,7 @@ import './components/index';
 export type {
   // ChartGenerationResult is specific to the component implementation
   ChartGenerationResult,
+  ChartNodeIdentity,
 } from './components/highcharts';
 
 // A chart's effective options — what the render posts to the export server

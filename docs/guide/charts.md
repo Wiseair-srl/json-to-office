@@ -279,6 +279,7 @@ One chart is one Puppeteer render, and a self-hosted export server usually runs 
 | `services.highcharts.concurrency` | `4`     | Requests in flight at once against this export server             |
 | `services.highcharts.timeoutMs`   | `30000` | Abort one export request after this long                          |
 | `services.highcharts.retries`     | `2`     | Retries after the first attempt, for a failure the server may fix |
+| `services.highcharts.acceptImage` | none    | Your check on each returned image; `false` re-posts the request   |
 
 ```ts
 await generateAndSaveFromJson(document, 'report.docx', {
@@ -293,6 +294,28 @@ await generateAndSaveFromJson(document, 'report.docx', {
   },
 });
 ```
+
+#### Refusing an image the server returned
+
+An export server can answer `200` with an image that is not the chart — a Puppeteer screenshot taken under CPU load sometimes comes back white or only partly painted, and the same request posted again draws it properly. Only you can say what a bad image looks like for your charts, so json-to-office judges nothing itself: `services.highcharts.acceptImage` is where your check goes.
+
+```ts
+await generateAndSaveFromJson(document, 'report.docx', {
+  services: {
+    highcharts: {
+      // image: the PNG bytes; options: the Highcharts options that were posted
+      // (theme presets, palette and type already written in); attempt: 1, 2, …
+      acceptImage: ({ image, options, scale, attempt }) => !looksBlank(image),
+    },
+  },
+});
+```
+
+It is called with every image the server returns with a 2xx, after the body is decoded and before the image is used or shared with an identical chart, and may return a promise. `false` refuses the image: the same request is posted again, from the same `retries` budget and with the same backoff as a timeout or a 5xx, and the retry is counted in `getChartRequestStats()` as both a `retries` and a `rejectedRetries`. A throw is not a refusal — it fails the generation with your error, on the spot.
+
+When the budget runs out on a refused image, generation does not fail: the last refused image is embedded and a `W_CHART_IMAGE_REJECTED` warning names the chart and the number of attempts. The same happens when a refusal is followed by a failure the server could not answer — a chart that already came back once is never worse off for having a check. Whether that warning fails your generation is yours to decide. In docx its `context` is `{ code, standardPath, kind: 'highcharts', id?, attempts, serverUrl }`, where `standardPath` is the path the [render manifest](/reference/api#render-manifest) reports the chart's image at; in pptx the warning carries `slide` and a `context` of `{ path, id?, attempts, serverUrl }`, `path` being `slides[i].elements[j]`.
+
+A refused image is never cached or handed to an identical chart in the same document: when a shared render ends refused, each chart that was waiting on it posts its own request. Without `acceptImage`, the requests, the retries and the output are exactly what they are without the option.
 
 A chart identical to one already rendered in the same document is requested once and its PNG reused, so a figure that appears in a summary and again in its own section costs one render. Identical means the same export server and the same resolved request body — the `options` after the theme's palette and typography have been written into them. Where the component sits on the page is not part of that: two appearances at different positions share one render. The _width_ it is placed at usually is, because the type in a chart is sized for it — the same series shrunk into half the measure is drawn at a different scale, so it is a different PNG.
 

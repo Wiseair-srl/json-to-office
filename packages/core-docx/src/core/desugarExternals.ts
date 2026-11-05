@@ -42,6 +42,7 @@ import {
 import {
   renderChartToImageProps,
   type ChartCache,
+  type ChartNodeIdentity,
 } from '../components/highcharts';
 import { prerasterizeVisuals } from './prerasterizeVisuals';
 import {
@@ -49,6 +50,7 @@ import {
   withNodeIdentity,
   type ComponentReplacer,
 } from './componentTransform';
+import { nodeOrigin } from './nodeOrigin';
 
 export interface DesugarExternalsOptions {
   theme: ThemeConfig;
@@ -149,7 +151,8 @@ export async function desugarExternals<T>(
           options.services?.highcharts,
           options.chartFonts,
           options.warnings,
-          chartCache
+          chartCache,
+          chartNodeIdentity(node)
         ),
       });
     }
@@ -158,6 +161,15 @@ export async function desugarExternals<T>(
   };
 
   return transformComponents(document, replace(options.theme, false));
+}
+
+/** A chart node named as the render manifest names it, plus its `id`. */
+function chartNodeIdentity(node: Record<string, unknown>): ChartNodeIdentity {
+  const standardPath = nodeOrigin(node)?.standardPath;
+  return {
+    ...(standardPath !== undefined ? { standardPath } : {}),
+    ...(typeof node.id === 'string' ? { id: node.id } : {}),
+  };
 }
 
 async function visualImageProps(
