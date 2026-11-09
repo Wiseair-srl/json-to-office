@@ -1296,6 +1296,13 @@ function compileParagraph(
         ...component,
         props: {
           items: markdown.items,
+          // The paragraph's run style carries over to every item, so turning
+          // its text into a list does not change the face it is set in.
+          ...(props.font ? { font: props.font } : {}),
+          ...(props.keepNext !== undefined ? { keepNext: props.keepNext } : {}),
+          ...(props.keepLines !== undefined
+            ? { keepLines: props.keepLines }
+            : {}),
           ...(props.spacing ? { spacing: props.spacing } : {}),
           ...(props.alignment ? { alignment: props.alignment } : {}),
           ...(props.comment ? { comment: props.comment } : {}),

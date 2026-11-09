@@ -136,16 +136,28 @@ function decodeEscapes(text: string): string {
 const LINK = /\[([^\]]+)\]\(([^)]+)\)/g;
 
 /**
+ * The shape of a placeholder name: an identifier, optionally followed by a
+ * `:argument` (`{PAGE}`, `{SEQ:figure}`).
+ *
+ * Braces holding anything else are text. `{0, 1}` is a set, not a token, and
+ * reading it as one would send the whole paragraph down the placeholder path,
+ * where note markers and links are not recognised.
+ */
+const PLACEHOLDER_NAME = String.raw`[A-Za-z_][\w]*(?::[\w-]+)?`;
+
+/**
  * Decorators and `{PLACEHOLDER}` in one pass.
  *
  * They cannot be parsed separately: a placeholder may sit inside a decorated
  * span, and a decorated span may sit between two placeholders.
  */
-const DECORATOR_OR_PLACEHOLDER =
-  /(\*\*\*|___)([\s\S]*?)\1|(\*\*|__)([\s\S]*?)\3|(\*|_)([\s\S]*?)\5|\{([^}]+)\}/g;
+const DECORATOR_OR_PLACEHOLDER = new RegExp(
+  String.raw`(\*\*\*|___)([\s\S]*?)\1|(\*\*|__)([\s\S]*?)\3|(\*|_)([\s\S]*?)\5|\{(${PLACEHOLDER_NAME})\}`,
+  'g'
+);
 
 /** `{NAME}`, the placeholder syntax. */
-const PLACEHOLDER = /\{([^}]+)\}/;
+const PLACEHOLDER = new RegExp(String.raw`\{(${PLACEHOLDER_NAME})\}`);
 
 /** Syntax this parser does not lower, each with the feature that would cover it. */
 const UNSUPPORTED_SYNTAX: ReadonlyArray<{
