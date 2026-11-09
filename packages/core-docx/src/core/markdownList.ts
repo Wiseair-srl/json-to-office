@@ -26,8 +26,13 @@ export function parseMarkdownList(text: string): MarkdownList | null {
     // Skip empty lines
     if (!line.trim()) continue;
 
+    // A tab after the marker is not list syntax: `1.\tText` is a paragraph
+    // numbered by hand against a tab stop or a hanging indent, and reading it
+    // as a list would replace the author's number and drop the paragraph's own
+    // formatting. Only spaces separate a markdown marker from its text.
+
     // Match unordered list: optional spaces + (- or *) + space + text
-    const unorderedMatch = line.match(/^(\s*)([-*])\s+(.+)$/);
+    const unorderedMatch = line.match(/^(\s*)([-*]) +(.+)$/);
     if (unorderedMatch) {
       const indentLevel = Math.floor(unorderedMatch[1].length / 2); // 2 spaces = 1 level
       const text = unorderedMatch[3];
@@ -37,7 +42,7 @@ export function parseMarkdownList(text: string): MarkdownList | null {
     }
 
     // Match ordered list: optional spaces + number + . + space + text
-    const orderedMatch = line.match(/^(\s*)(\d+)\.\s+(.+)$/);
+    const orderedMatch = line.match(/^(\s*)(\d+)\. +(.+)$/);
     if (orderedMatch) {
       const indentLevel = Math.floor(orderedMatch[1].length / 2); // 2 spaces = 1 level
       const text = orderedMatch[3];

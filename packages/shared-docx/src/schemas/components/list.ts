@@ -11,6 +11,7 @@ import {
 import { FontDefinitionSchema, HexColorSchema } from '../font';
 import { RevisionSchema } from './revision';
 import { CommentSchema } from './comment';
+import { EndnotesSchema, FootnotesSchema } from './note';
 
 /**
  * Level format options for docx numbering
@@ -244,6 +245,9 @@ export const ListPropsSchema = Type.Object(
     // Anchored to the list as a whole: the range opens on the first rendered
     // item and closes on the last.
     comment: Type.Optional(CommentSchema),
+    // Declared once for the whole list: a `[^id]` marker may sit in any item.
+    footnotes: Type.Optional(FootnotesSchema),
+    endnotes: Type.Optional(EndnotesSchema),
   },
   {
     description: 'List component props',
