@@ -41,6 +41,8 @@ const DOCX_DESIGN_NOTES: DesignNotes = {
   toc: 'Worth it past roughly eight headings or ten pages; below that it costs a page and answers nothing.',
   divider:
     'A rule separates what whitespace cannot; repeated dividers usually need better spacing.',
+  equation:
+    'Give a formula its own line only when the reader must stop on it; a short symbol belongs in the sentence as \\(…\\). Define every symbol in the prose around it.',
   block:
     'Use a definition from this document’s props.blocks. Copy reference definitions from jto://blocks into the document before invoking them; fill semantic slots and respect their budgets.',
   group:

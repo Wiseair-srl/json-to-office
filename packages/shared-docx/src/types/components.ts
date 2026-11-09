@@ -22,6 +22,7 @@ import type {
   ListPropsSchema,
   TocPropsSchema,
   DividerPropsSchema,
+  EquationPropsSchema,
 } from '../schemas/components';
 
 import type { TextSpaceAfterPropsSchema } from '../schemas/custom-components';
@@ -230,6 +231,17 @@ export interface DividerComponent {
   props?: Static<typeof DividerPropsSchema>;
 }
 
+/**
+ * Equation component with literal name discriminator
+ */
+export interface EquationComponent {
+  name: 'equation';
+  id?: string;
+  /** When false, this component is filtered out and not rendered. Defaults to true */
+  enabled?: boolean;
+  props: Static<typeof EquationPropsSchema>;
+}
+
 // ============================================================================
 // Specific Custom Component Types
 // ============================================================================
@@ -269,7 +281,8 @@ export type StandardComponentDefinition =
   | TableComponent
   | ListComponent
   | TocComponent
-  | DividerComponent;
+  | DividerComponent
+  | EquationComponent;
 
 /**
  * Array of all standard component names.
@@ -279,6 +292,7 @@ export const STANDARD_COMPONENTS = [
   'chart',
   'columns',
   'divider',
+  'equation',
   'heading',
   'highcharts',
   'image',
@@ -409,6 +423,12 @@ export function isDividerComponent(
   component: ComponentDefinition
 ): component is DividerComponent {
   return component.name === 'divider';
+}
+
+export function isEquationComponent(
+  component: ComponentDefinition
+): component is EquationComponent {
+  return component.name === 'equation';
 }
 
 export function isTocComponent(

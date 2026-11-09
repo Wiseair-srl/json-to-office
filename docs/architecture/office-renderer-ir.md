@@ -448,6 +448,7 @@ Run `pnpm generate:renderer-docs` after changing a feature or capability set.
 | `text-boxes`         | Native shape text boxes.                       | yes      | yes           |
 | `drawing-groups`     | Grouped DrawingML shapes and pictures.         | yes      | yes           |
 | `charts`             | Native charts with embedded workbooks.         | yes      | yes           |
+| `math`               | Native Word equations from LaTeX.              | yes      | —             |
 | `toc`                | Table-of-contents fields.                      | yes      | yes           |
 | `cached-toc`         | Pre-rendered table-of-contents entries.        | yes      | yes           |
 | `fields`             | Arbitrary Word fields.                         | yes      | yes           |

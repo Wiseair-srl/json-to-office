@@ -33,6 +33,7 @@ export * from './components/table';
 export * from './components/list';
 export * from './components/toc';
 export * from './components/divider';
+export * from './components/equation';
 export * from './components/text-box';
 
 // ============================================================================

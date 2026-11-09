@@ -339,6 +339,7 @@ The cores name their generation warnings in a dialect of their own too — bare 
 | `E_UNKNOWN_COMPONENT`              | `name` is not a component of this format, or not one allowed here.                                          |
 | `E_MUTUALLY_EXCLUSIVE`             | Two props that exclude each other were both set.                                                            |
 | `E_UNSUPPORTED_CELL_CONTENT`       | A DOCX table cell holds a component it cannot render; the message names what a cell takes.                  |
+| `E_INVALID_LATEX`                  | A DOCX formula — an `equation`'s `latex` or a `\(…\)` in text — that the renderer cannot convert.           |
 | `E_THEME_NOT_FOUND`                | A theme the document names does not exist.                                                                  |
 | `E_ASSET_UNREADABLE`               | An image the document names — a file, or a URL — cannot be read, and generation fails over it.              |
 | `E_EMPTY_DOCUMENT`                 | The document has no content.                                                                                |

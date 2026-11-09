@@ -66,6 +66,7 @@ const docx = {
   'text-boxes': 'Native shape text boxes.',
   'drawing-groups': 'Grouped DrawingML shapes and pictures.',
   charts: 'Native charts with embedded workbooks.',
+  math: 'Native Word equations from LaTeX.',
   toc: 'Table-of-contents fields.',
   'cached-toc': 'Pre-rendered table-of-contents entries.',
   fields: 'Arbitrary Word fields.',

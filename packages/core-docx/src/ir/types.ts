@@ -465,7 +465,8 @@ export type DocxIrInline =
   | DocxIrRevisionRange
   | DocxIrShapeRun
   | DocxIrDrawingGroupRun
-  | DocxIrChartRun;
+  | DocxIrChartRun
+  | DocxIrMathRun;
 
 /**
  * A native text box: a shape holding paragraphs.
@@ -611,6 +612,19 @@ export interface DocxIrTextRun {
   formatting?: DocxIrRunFormatting;
   /** Character style applied on top of `formatting`. */
   styleId?: string;
+}
+
+/**
+ * A Word equation (`m:oMath`), inline in its paragraph.
+ *
+ * Kept as the LaTeX the author wrote rather than as a tree of fractions and
+ * scripts: the conversion is a backend's, the one that writes the equation,
+ * and the IR stays backend-neutral. A display equation is a paragraph holding
+ * this run alone, which is how Word itself tells display math from inline.
+ */
+export interface DocxIrMathRun {
+  kind: 'math';
+  latex: string;
 }
 
 export interface DocxIrLineBreak {

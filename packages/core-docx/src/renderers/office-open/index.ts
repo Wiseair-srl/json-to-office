@@ -101,6 +101,10 @@ function installedBackendVersion(): string | undefined {
  * - `comment-threads` — `CommentOptions` is `{id, author, initials, date,
  *   children}`: it carries neither a parent nor a resolved state, so a threaded
  *   reply would flatten into an unrelated top-level comment.
+ * - `math` — `@office-open/docx` writes Office Math from a tree of its own
+ *   (`MathInput`) but reads no LaTeX, and the IR carries LaTeX. Declaring it
+ *   means a LaTeX-to-`MathInput` translation tested against Word; until then
+ *   an equation is refused by name rather than written as its source text.
  * - `table-merged-cells`, `shading`, `rtl` — vocabulary the compiler does not
  *   require of any backend yet. Both adapters leave them out so the declared
  *   sets keep meaning "proven by a test". `borders` left that list when

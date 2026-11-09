@@ -123,6 +123,7 @@ import {
   noProofRuns,
   parseInline,
   parseLiteral,
+  withoutInlineMath,
   type CrossReferenceFormat,
   type PlaceholderResolution,
 } from './inline';
@@ -1188,6 +1189,8 @@ function compileComponent(
       return compileToc(component, scope);
     case 'divider':
       return compileDivider(component, scope);
+    case 'equation':
+      return compileEquation(component, scope);
     case 'text-box':
       return compileTextBox(component, scope);
     case 'columns':
@@ -1310,7 +1313,7 @@ function compileParagraph(
   const styleId = definedParagraphStyleId(props.themeStyle, ctx.theme);
   if (styleId && !ctx.styleIds.has(styleId)) ctx.styleIds.add(styleId);
 
-  const children = compileRuns(props, text, ctx, path);
+  const children = compileRuns(props, text, ctx, path, 'inline', true);
   // A paragraph is a bookmark target only when the author asked for one, and
   // the id is a prop — unlike a heading, whose id sits on the component.
   const bookmarkName = typeof props.id === 'string' ? props.id : undefined;
@@ -2264,6 +2267,75 @@ function compileDivider(
   ];
 }
 
+/* ------------------------------------------------------------------ *
+ * Equations
+ * ------------------------------------------------------------------ */
+
+/** Points. A display equation needs air above and below to read as one. */
+const DEFAULT_EQUATION_SPACING_PT = 6;
+
+/**
+ * A display equation: a paragraph holding one Word equation and nothing else.
+ *
+ * Word has no display-equation element of its own to reach for here — an
+ * equation alone on its line is how Word tells display math from math inside a
+ * sentence, and draws it at full size, with limits above and below a sum. So
+ * the paragraph carries the alignment and the space around it, and the run
+ * carries the LaTeX for the backend to convert.
+ */
+function compileEquation(
+  component: ComponentDefinition,
+  scope: ComponentScope
+): DocxIrBlock[] {
+  const { ctx, path } = scope;
+  const props = (component.props ?? {}) as Record<string, any>;
+  const latex = typeof props.latex === 'string' ? props.latex : '';
+  if (!latex.trim()) {
+    warnOnce(
+      ctx,
+      'equation',
+      `The equation at ${path} has no LaTeX, so it is left out.`
+    );
+    return [];
+  }
+  ctx.features.require('math', path);
+
+  const spacing = (props.spacing ?? {}) as { before?: number; after?: number };
+  const points = (value: unknown): number =>
+    typeof value === 'number' && Number.isFinite(value)
+      ? value
+      : DEFAULT_EQUATION_SPACING_PT;
+
+  return [
+    {
+      kind: 'paragraph',
+      id: scope.id,
+      path,
+      styleId: 'Normal',
+      children: [{ kind: 'math', latex }],
+      formatting: {
+        alignment: compileAlignment(props.alignment ?? 'center')!,
+        spacing: {
+          beforeTwips: pointsToTwips(points(spacing.before)),
+          afterTwips: pointsToTwips(points(spacing.after)),
+        },
+      },
+    },
+  ];
+}
+
+/** Record the `math` feature when parsed text came back holding a formula. */
+function requireMath(
+  runs: DocxIrInline[],
+  ctx: CompileContext,
+  path: string
+): DocxIrInline[] {
+  if (runs.some((run) => run.kind === 'math')) {
+    ctx.features.require('math', path);
+  }
+  return runs;
+}
+
 /**
  * The indents that shorten a divider to `width`, or nothing at full width.
  *
@@ -2556,14 +2628,19 @@ function compileList(
       paragraphNode(
         { ...scope, path: itemPath, id: `${scope.id}:i${index}` },
         revision === undefined
-          ? parseInline(text, {
-              base,
-              hyperlinks: true,
-              ...(words ? { noProofWords: words } : {}),
-              ...(notes ? { resolveNote: notes.resolve } : {}),
-              resolvePlaceholder: placeholderResolver(ctx),
-              resolveCrossReference: crossReferenceResolver(ctx, itemPath),
-            })
+          ? requireMath(
+              parseInline(text, {
+                base,
+                hyperlinks: true,
+                math: true,
+                ...(words ? { noProofWords: words } : {}),
+                ...(notes ? { resolveNote: notes.resolve } : {}),
+                resolvePlaceholder: placeholderResolver(ctx),
+                resolveCrossReference: crossReferenceResolver(ctx, itemPath),
+              }),
+              ctx,
+              itemPath
+            )
           : compileRevision(revision as Record<string, any>, base, ctx, words),
         {
           styleId: 'Normal',
@@ -2875,7 +2952,8 @@ function compileRuns(
   text: string,
   ctx: CompileContext,
   path: string,
-  mode: 'inline' | 'literal' = 'inline'
+  mode: 'inline' | 'literal' = 'inline',
+  math = false
 ): DocxIrInline[] {
   const font = (props.font ?? {}) as Record<string, any>;
   const base = runFormatting(font, props, ctx);
@@ -2924,12 +3002,19 @@ function compileRuns(
   children.push(
     ...(mode === 'literal'
       ? parseLiteral(text, parseOptions)
-      : parseInline(text, { ...parseOptions, hyperlinks: true }))
+      : requireMath(
+          parseInline(text, { ...parseOptions, hyperlinks: true, math }),
+          ctx,
+          path
+        ))
   );
-  if (mode === 'inline' && containsLink(text)) {
+  // A formula's braces are LaTeX, not a placeholder: only the prose around
+  // the formulas says what else this text needs.
+  const prose = math ? withoutInlineMath(text) : text;
+  if (mode === 'inline' && containsLink(prose)) {
     ctx.features.require('hyperlinks', path);
   }
-  if (mode === 'inline' && containsPlaceholder(text)) {
+  if (mode === 'inline' && containsPlaceholder(prose)) {
     ctx.features.require('fields', path);
   }
   notes?.reportUnemitted(text);
@@ -5245,13 +5330,18 @@ function cellChildren(
     );
   }
   return wrap(
-    parseInline(text, {
-      base,
-      hyperlinks: true,
-      ...(words ? { noProofWords: words } : {}),
-      resolvePlaceholder: placeholderResolver(ctx),
-      resolveCrossReference: crossReferenceResolver(ctx, 'table'),
-    })
+    requireMath(
+      parseInline(text, {
+        base,
+        hyperlinks: true,
+        math: true,
+        ...(words ? { noProofWords: words } : {}),
+        resolvePlaceholder: placeholderResolver(ctx),
+        resolveCrossReference: crossReferenceResolver(ctx, 'table'),
+      }),
+      ctx,
+      scope.path
+    )
   );
 }
 

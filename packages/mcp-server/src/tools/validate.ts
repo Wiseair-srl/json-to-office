@@ -253,8 +253,16 @@ export function register(server: McpServer, deps: ToolDeps): void {
               qualityOption = option;
             }
           }
+          // Whether what is written can be drawn is the renderer's to say: a
+          // formula is a string to the schema until its backend reads it.
+          const drawable = adapter.rendererDiagnostics
+            ? await adapter.rendererDiagnostics(resolved.document, {
+                ...(args.renderer !== undefined && { renderer: args.renderer }),
+              })
+            : [];
           const structural = [
             ...validationDiagnostics(result.errors),
+            ...validationDiagnostics(drawable),
             ...(unavailable ? [unavailable] : []),
             ...(qualityOption ? [qualityOption] : []),
           ];

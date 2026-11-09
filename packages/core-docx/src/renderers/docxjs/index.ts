@@ -64,6 +64,7 @@ import {
   type ImageRunFactory,
 } from './emit';
 import { docxSubpath } from './docxSubpath';
+import { checkFormula, loadDocxMath } from './math';
 import {
   chooseMarkers,
   createDrawingGroupFactory,
@@ -92,7 +93,8 @@ const shapes = docxSubpath(
  * and tests it. Most omissions are slice boundaries. `charts` and
  * `drawing-groups` were backend gaps until docx 9.8.0; they are drawn through
  * `docx/charts` and `docx/shapes`, each imported at render time rather than
- * with the package (see `docxSubpath.ts`, #478).
+ * with the package (see `docxSubpath.ts`, #478). `math` is drawn the same way,
+ * through `docx/math` (docx 9.15.1).
  */
 const DOCXJS_CAPABILITIES: ReadonlySet<DocxFeature> = new Set([
   'paragraphs',
@@ -107,6 +109,7 @@ const DOCXJS_CAPABILITIES: ReadonlySet<DocxFeature> = new Set([
   'floating-images',
   'svg-images',
   'charts',
+  'math',
   'text-frames',
   'text-boxes',
   'drawing-groups',
@@ -133,11 +136,13 @@ export function createDocxJsRenderer(): DocxRenderer {
     id: DOCXJS_RENDERER_ID,
     format: 'docx',
     capabilities: DOCXJS_CAPABILITIES,
+    checkFormula,
     async render(
       ir: DocxIR,
       renderOptions?: DocxRenderOptions
     ): Promise<Uint8Array> {
       await loadDocxCharts();
+      await loadDocxMath();
       const prepared = await prepareImages(
         ir,
         renderOptions?.svgRasterFallback

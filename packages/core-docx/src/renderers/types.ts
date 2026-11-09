@@ -63,6 +63,17 @@ export interface DocxRenderOptions extends RenderOptions {
 export interface DocxRenderer
   extends OfficeRenderer<DocxIR, DocxFeature, DocxRendererId> {
   render(document: DocxIR, options?: DocxRenderOptions): Promise<Uint8Array>;
+  /**
+   * Why this backend cannot write `latex` as an equation, in its own words, or
+   * nothing when it can.
+   *
+   * On the renderer, not in the validator, because the answer is the
+   * backend's: `docxjs` asks the same docx function it draws the equation
+   * with, so a formula passes exactly when it will render, and no layer above
+   * the adapters imports a backend to find out. Present on every renderer that
+   * declares `math`.
+   */
+  checkFormula?(latex: string): Promise<string | undefined>;
 }
 
 export type { RenderOptions };

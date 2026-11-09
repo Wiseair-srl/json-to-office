@@ -37,6 +37,7 @@ import {
 import { ListPropsSchema } from './components/list';
 import { TocPropsSchema } from './components/toc';
 import { DividerPropsSchema } from './components/divider';
+import { EquationPropsSchema } from './components/equation';
 import { HighchartsPropsSchema } from './components/highcharts';
 import { ChartPropsSchema } from './components/chart';
 import { VisualPropsSchema } from './components/visual';
@@ -157,6 +158,7 @@ export const FLOW_CHILDREN = [
   'list',
   'toc',
   'divider',
+  'equation',
   'highcharts',
   'chart',
   'visual',
@@ -335,6 +337,16 @@ export const STANDARD_COMPONENTS_REGISTRY: readonly StandardComponentDefinition[
       category: 'content',
       description:
         "Horizontal divider - a thin line across the measure, for separating sections. Drawn as a Word paragraph border, so it stays a real Word object. Use this rather than collapsing a paragraph's line spacing to fake one.",
+    },
+    {
+      name: 'equation',
+      propsSchema: EquationPropsSchema,
+      hasChildren: false,
+      category: 'content',
+      // office-open reads no LaTeX, so it draws no equations yet.
+      renderers: ['docxjs'],
+      description:
+        "Display equation - a formula on its own line, written as LaTeX and drawn as Word's native equation (editable in Word's equation editor). For a formula inside a sentence, write it in the paragraph text between \\( and \\).",
     },
     {
       name: 'highcharts',

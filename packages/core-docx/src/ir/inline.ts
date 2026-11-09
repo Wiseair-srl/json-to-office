@@ -11,13 +11,14 @@
  * become a real tab run because a tab character inside `<w:t>` is dropped, and
  * a no-proof word has to be its own run so the flag can sit on it alone.
  *
- * Scope: decorators, line breaks, tabs, no-proof words, `[text](target)` links
- * and `{PLACEHOLDER}` tokens. Cross-references and note markers are recognised
- * only so the compiler can refuse them explicitly rather than render them as
- * the literal characters an author wrote as markup — see
- * `containsUnsupportedSyntax`.
+ * Scope: decorators, line breaks, tabs, no-proof words, `[text](target)` links,
+ * `{PLACEHOLDER}` tokens and `\(…\)` formulas. Cross-references and note
+ * markers are recognised only so the compiler can refuse them explicitly
+ * rather than render them as the literal characters an author wrote as markup
+ * — see `containsUnsupportedSyntax`.
  */
 
+import { inlineMathSpans } from '@json-to-office/shared-docx';
 import { normalizeUnicodeText } from '../utils/unicode';
 import type { DocxIrInline, DocxIrRunFormatting, DocxIrTextRun } from './types';
 
@@ -218,6 +219,14 @@ export interface ParseInlineOptions {
    * resolved here rather than left for a renderer to infer from `bold`.
    */
   boldColor?: { hex: string };
+  /**
+   * Lower `\(…\)` into equation nodes.
+   *
+   * Off by default, like links: only the components that promise inline math
+   * — a paragraph, a list item, a table cell — turn it on, and everywhere else
+   * the delimiters stay the characters the author typed.
+   */
+  math?: boolean;
   /** Words to mark `noProof`, each split into a run of its own. */
   noProofWords?: string[];
   /**
@@ -269,6 +278,10 @@ export function parseInline(
   text: string,
   options: ParseInlineOptions
 ): DocxIrInline[] {
+  if (options.math) {
+    const spans = inlineMathSpans(text);
+    if (spans.length > 0) return parseAroundMath(text, spans, options);
+  }
   const normalized = encodeEscapes(normalizeUnicodeText(text));
   if (!normalized) {
     return [
@@ -283,6 +296,50 @@ export function parseInline(
   }
   if (options.hyperlinks) return parseLinks(normalized, options);
   return parseDecorated(normalized, options);
+}
+
+/** `text` with every `\(…\)` formula cut out: the prose around them. */
+export function withoutInlineMath(text: string): string {
+  const spans = inlineMathSpans(text);
+  if (spans.length === 0) return text;
+  let out = '';
+  let at = 0;
+  for (const span of spans) {
+    out += text.slice(at, span.index);
+    at = span.index + span.length;
+  }
+  return out + text.slice(at);
+}
+
+/**
+ * Text holding `\(…\)` formulas: each formula an equation node, and the text
+ * between them parsed as any other text is.
+ *
+ * Formulas are cut out before anything else reads the text, because LaTeX is
+ * full of what this grammar treats as markup — `x_1`, `a*b`, `{n}`, `\\` —
+ * and none of it may reach the decorator, placeholder or escape passes. The
+ * cost is that a decorator pair cannot straddle a formula: `**\(x\) is**`
+ * splits the `**` across two segments, which then stay literal. The LaTeX
+ * itself is kept exactly as written, unnormalised, for the converter to read.
+ */
+function parseAroundMath(
+  text: string,
+  spans: ReturnType<typeof inlineMathSpans>,
+  options: ParseInlineOptions
+): DocxIrInline[] {
+  const between: ParseInlineOptions = { ...options, math: false };
+  const out: DocxIrInline[] = [];
+  let at = 0;
+  for (const span of spans) {
+    if (span.index > at) {
+      out.push(...parseInline(text.slice(at, span.index), between));
+    }
+    // An empty `\(\)` is nothing to draw; the formula check reports it.
+    if (span.latex.trim()) out.push({ kind: 'math', latex: span.latex });
+    at = span.index + span.length;
+  }
+  if (at < text.length) out.push(...parseInline(text.slice(at), between));
+  return out;
 }
 
 /**

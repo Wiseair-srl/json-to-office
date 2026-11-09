@@ -64,6 +64,7 @@ import { assertNever } from '@json-to-office/shared/rendering';
 export const paragraphChild = (part: BookmarkStart | BookmarkEnd) =>
   part as unknown as ParagraphChild;
 import { emitChart } from './charts';
+import { emitMath } from './math';
 import type {
   DocxIrBlock,
   DocxIrBorder,
@@ -420,6 +421,15 @@ export function inlineChildren(
             : new FootnoteReferenceRun(child.id)
         );
         break;
+
+      case 'math': {
+        // A break before an equation rides on a run of its own, as before an
+        // image: `m:oMath` is no run, so it cannot carry one.
+        const pending = breakOption();
+        if (pending.break) out.push(new TextRun(pending));
+        out.push(emitMath(child));
+        break;
+      }
 
       default:
         assertNever(child, 'DocxIrInline');

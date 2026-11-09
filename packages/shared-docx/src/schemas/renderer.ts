@@ -1,6 +1,7 @@
 import { Kind, type TSchema } from '@sinclair/typebox';
 import type { ValidationError } from '@json-to-office/shared';
 import { NATIVE_RENDER_MODE } from './components/visual';
+import { collectFormulas } from '../math';
 
 export const DOCX_RENDERER_IDS = ['docxjs', 'office-open'] as const;
 export type DocxRendererId = (typeof DOCX_RENDERER_IDS)[number];
@@ -115,6 +116,21 @@ export function collectDocxRendererErrors(data: unknown): ValidationError[] {
   };
 
   visit(root, '');
+
+  // `office-open` draws no equations yet: every formula is refused where it
+  // stands, an `equation`'s LaTeX and a `\(…\)` in text alike.
+  if (isOfficeOpen) {
+    // One error per string, however many formulas it holds.
+    const paths = new Set(collectFormulas(root).map((site) => site.path));
+    for (const path of paths) {
+      errors.push({
+        path,
+        message:
+          'The "office-open" renderer does not draw equations yet; render with "docxjs".',
+        code: 'unsupported_renderer_feature',
+      });
+    }
+  }
   return errors;
 }
 

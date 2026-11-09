@@ -108,20 +108,33 @@ describe('jto_discover', () => {
     });
   });
 
-  it('reports both docx renderers drawing the same components', async () => {
-    // The docx `chart` was the last renderer-scoped component: docx.js had no
-    // chart primitive until docx 9.8.0. A profile that silently dropped a
+  it('reports the docx renderers apart by exactly `equation`', async () => {
+    // The docx `chart` was renderer-scoped until docx 9.8.0 gave docx.js a
+    // chart primitive. `equation` is now: office-open builds math from a tree
+    // of its own and reads no LaTeX. A profile that silently dropped any other
     // component would let an agent author a document that validates and then
-    // renders without the figure, so the two are compared whole.
+    // renders without it, so the two are compared whole.
     const { formats } = await discover({ format: 'docx' });
     const [docxjs, officeOpen] = ['docxjs', 'office-open'].map((id) =>
       formats[0]!.renderers.find((renderer) => renderer.id === id)
     );
     expect(docxjs?.unsupported).toEqual([]);
     expect(docxjs?.components).toContain('chart');
-    expect([...(docxjs?.components ?? [])].sort()).toEqual(
-      [...(officeOpen?.components ?? [])].sort()
+    expect(
+      (docxjs?.components ?? []).filter(
+        (name) => !(officeOpen?.components ?? []).includes(name)
+      )
+    ).toEqual(['equation']);
+    expect(
+      (officeOpen?.components ?? []).filter(
+        (name) => !(docxjs?.components ?? []).includes(name)
+      )
+    ).toEqual([]);
+
+    const equation = formats[0]!.components.find(
+      (component) => component.name === 'equation'
     );
+    expect(equation?.renderers).toEqual(['docxjs']);
 
     const chart = formats[0]!.components.find(
       (component) => component.name === 'chart'

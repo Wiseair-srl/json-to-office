@@ -23,6 +23,7 @@ import {
 import { ThemeConfig } from '../styles';
 import type { ServicesConfig, FontRuntimeOpts } from '@json-to-office/shared';
 import { generateBufferViaIr } from './generateFromIr';
+import { checkDocxFormulas } from './formulaCheck';
 import type { DocxRendererId } from '../renderers/types';
 import type { PreparedDocument } from '@json-to-office/quality';
 import type { DocxQualityFact, DocxQualityModel } from '../quality/facts';
@@ -143,9 +144,13 @@ export async function generateBufferWithWarnings(
         allowUnknownFields: validation?.allowUnknownFields,
       }
     );
-    const errors = result.errors.filter(
-      (error) => error.code !== 'unsupported_renderer_feature'
-    );
+    const errors = [
+      ...result.errors.filter(
+        (error) => error.code !== 'unsupported_renderer_feature'
+      ),
+      // Only the renderer can say whether a formula converts.
+      ...(await checkDocxFormulas(document, renderer)),
+    ];
     if (errors.length > 0) {
       throw new JsonValidationError('Document validation failed', errors);
     }
