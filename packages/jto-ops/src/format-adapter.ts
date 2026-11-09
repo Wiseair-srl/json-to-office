@@ -475,6 +475,19 @@ export interface FormatAdapter {
     plugins: any[]
   ): Promise<{ valid: boolean; errors?: any[] }>;
 
+  /**
+   * Defects only the renderer can see: today, DOCX formulas its backend cannot
+   * write as an equation (`invalid_latex`), each at its path.
+   *
+   * Separate from `validateDocument` because the answer belongs to the
+   * backend — the core asks the selected renderer — so it is async, loads that
+   * renderer, and has nothing to say for a format without such checks.
+   */
+  rendererDiagnostics?(
+    doc: unknown,
+    options?: { renderer?: string }
+  ): Promise<any[]>;
+
   /** Analyze format-specific design quality with profiles, policy, and gate. */
   analyzeQuality?(
     doc: unknown,
@@ -785,6 +798,15 @@ export class DocxFormatAdapter implements FormatAdapter {
       valid: result.valid,
       ...(errors.length > 0 && { errors }),
     };
+  }
+
+  async rendererDiagnostics(
+    doc: unknown,
+    options: { renderer?: string } = {}
+  ): Promise<any[]> {
+    const core = await import('@json-to-office/core-docx');
+    const parsed = typeof doc === 'string' ? JSON.parse(doc) : doc;
+    return core.checkDocxFormulas(parsed, options.renderer);
   }
 
   async analyzeQuality(

@@ -159,7 +159,20 @@ export class JsonValidator {
           ? await import('@json-to-office/shared-docx')
           : await import('@json-to-office/shared-pptx');
       const validator = options.strict ? validateStrict : validate;
-      const result = validator.jsonDocument(jsonString);
+      const parsedResult = validator.jsonDocument(jsonString);
+      // Whether a formula converts is the renderer's to say, so the schema
+      // validator cannot; ask the adapter, which asks the renderer.
+      const drawable = this.adapter?.rendererDiagnostics
+        ? await this.adapter.rendererDiagnostics(jsonData)
+        : [];
+      const result =
+        drawable.length > 0
+          ? {
+              ...parsedResult,
+              valid: false,
+              errors: [...(parsedResult.errors ?? []), ...drawable],
+            }
+          : parsedResult;
       const schemaWarnings = (result as any).warnings?.map((e: any) => ({
         ...e,
         code: e.code || 'WARNING',

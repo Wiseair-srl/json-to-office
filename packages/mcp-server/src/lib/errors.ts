@@ -119,6 +119,11 @@ export const ERROR_CODES = {
    * heading, a list; the message names what a cell does take.
    */
   UNSUPPORTED_CELL_CONTENT: 'E_UNSUPPORTED_CELL_CONTENT',
+  /**
+   * A DOCX formula — an `equation`'s `latex`, or a `\(…\)` span in text —
+   * that LaTeX-to-Word conversion cannot read; the message says where.
+   */
+  INVALID_LATEX: 'E_INVALID_LATEX',
   /** A theme the document names does not exist. */
   THEME_NOT_FOUND: 'E_THEME_NOT_FOUND',
   /**
@@ -227,6 +232,7 @@ const CORE_CODES = new Map<string, string>(
     unknown_component: ERROR_CODES.UNKNOWN_COMPONENT,
     mutually_exclusive: ERROR_CODES.MUTUALLY_EXCLUSIVE,
     unsupported_cell_content: ERROR_CODES.UNSUPPORTED_CELL_CONTENT,
+    invalid_latex: ERROR_CODES.INVALID_LATEX,
     theme_not_found: ERROR_CODES.THEME_NOT_FOUND,
     empty_input: ERROR_CODES.EMPTY_DOCUMENT,
     json_parse_error: ERROR_CODES.INVALID_JSON,

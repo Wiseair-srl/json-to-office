@@ -4,24 +4,25 @@ The complete catalog of DOCX components: what each one does, every prop it accep
 
 ## Overview
 
-| Component                                     | Category               | Children allowed                                                                                                            |
-| --------------------------------------------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| [`docx`](/reference/docx/document#docx-root)  | container              | `section` only                                                                                                              |
-| [`section`](/reference/docx/document#section) | container              | heading, paragraph, image, statistic, table, list, toc, divider, highcharts, chart, visual, columns, text-box, block, group |
-| [`columns`](#columns)                         | layout                 | same as section, minus `columns` (no nesting)                                                                               |
-| [`text-box`](#text-box)                       | layout                 | same as section — the box is a one-cell table, so it holds a table, a columns, another text-box                             |
-| [`heading`](#heading)                         | content                | —                                                                                                                           |
-| [`paragraph`](#paragraph)                     | content                | —                                                                                                                           |
-| [`image`](#image)                             | content                | —                                                                                                                           |
-| [`statistic`](#statistic)                     | content                | —                                                                                                                           |
-| [`table`](#table)                             | content                | — (a cell's `content` is text, or a `paragraph`, `image`, `visual` or `highcharts`)                                         |
-| [`list`](#list)                               | content                | —                                                                                                                           |
-| [`toc`](#toc)                                 | content                | —                                                                                                                           |
-| [`divider`](#divider)                         | content                | —                                                                                                                           |
-| [`highcharts`](#highcharts)                   | content                | —                                                                                                                           |
-| [`chart`](#chart)                             | content                | —                                                                                                                           |
-| [`visual`](#visual)                           | content                | —                                                                                                                           |
-| [`text-space-after`](#text-space-after)       | legacy custom (opt-in) | —                                                                                                                           |
+| Component                                     | Category               | Children allowed                                                                                                                      |
+| --------------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| [`docx`](/reference/docx/document#docx-root)  | container              | `section` only                                                                                                                        |
+| [`section`](/reference/docx/document#section) | container              | heading, paragraph, image, statistic, table, list, toc, divider, equation, highcharts, chart, visual, columns, text-box, block, group |
+| [`columns`](#columns)                         | layout                 | same as section, minus `columns` (no nesting)                                                                                         |
+| [`text-box`](#text-box)                       | layout                 | same as section — the box is a one-cell table, so it holds a table, a columns, another text-box                                       |
+| [`heading`](#heading)                         | content                | —                                                                                                                                     |
+| [`paragraph`](#paragraph)                     | content                | —                                                                                                                                     |
+| [`image`](#image)                             | content                | —                                                                                                                                     |
+| [`statistic`](#statistic)                     | content                | —                                                                                                                                     |
+| [`table`](#table)                             | content                | — (a cell's `content` is text, or a `paragraph`, `image`, `visual` or `highcharts`)                                                   |
+| [`list`](#list)                               | content                | —                                                                                                                                     |
+| [`toc`](#toc)                                 | content                | —                                                                                                                                     |
+| [`divider`](#divider)                         | content                | —                                                                                                                                     |
+| [`equation`](#equation)                       | content                | — (`docxjs` only)                                                                                                                     |
+| [`highcharts`](#highcharts)                   | content                | —                                                                                                                                     |
+| [`chart`](#chart)                             | content                | —                                                                                                                                     |
+| [`visual`](#visual)                           | content                | —                                                                                                                                     |
+| [`text-space-after`](#text-space-after)       | legacy custom (opt-in) | —                                                                                                                                     |
 
 Every node is `{ name, props, children? }` plus optional `id` and `enabled` fields; `enabled: false` removes the node from the render. Custom plugin components (see [API reference](/reference/api)) are allowed as children of any container.
 
@@ -54,6 +55,12 @@ A backslash before `*`, `_`, `[`, `]`, `{`, `}` or `\` keeps that character as i
 This matters most for code samples, where the delimiters are ordinary identifier characters: `grant_type=client_credentials` has two underscores, so the span between them reads as emphasis and renders as _granttype=clientcredentials_. Written `grant\_type=client\_credentials`, it renders as typed. In JSON, remember the string escape too — `"grant\\_type"`.
 
 An escape covers exactly one character: `\\_x_` is a literal backslash followed by an emphasized `x`. Escapes are a feature of the inline mini-language, so the paths that render text character for character (image and visual captions) keep the backslash.
+
+#### Formulas
+
+A `paragraph`, a `list` item and a table cell's text take inline formulas between `\(` and `\)`, written in LaTeX: `"The mean \\(\\bar{x} = \\frac{1}{n}\\sum x_i\\) holds."` (every backslash doubled in JSON). Each becomes a native Word equation in the line, the kind Word's equation editor makes and a reader can click into. For a formula on a line of its own, use [`equation`](#equation).
+
+Not `$…$`: in business prose a dollar sign is a price far more often than a formula, so `$5` stays `$5`. Inside the delimiters nothing is markup — `x_1`, `a*b` and `{n}` are LaTeX, not emphasis or a placeholder — and the cost is that a `**bold**` pair cannot straddle a formula. A heading, a caption and a header or footer keep `\(` as typed. A formula that will not convert is refused by validation with `invalid_latex` (`E_INVALID_LATEX` from `jto_validate`) at the text that holds it, with the converter's own message saying where it broke. Formulas need the default `docxjs` renderer; `office-open` refuses them by name.
 
 #### Cross-references
 
@@ -310,6 +317,29 @@ measure and warns.
 
 To draw a _gap_ rather than a line, use an empty paragraph — that idiom is
 untouched and needs no border.
+
+## `equation`
+
+A display equation: a formula on its own line, written in LaTeX and drawn as Word's own equation (`m:oMath`) — editable in Word's equation editor, not a picture. For a formula inside a sentence, write it in the text between `\(` and `\)` ([Formulas](#formulas)).
+
+| Prop        | Type                                | Required | Default    | Description                                                |
+| ----------- | ----------------------------------- | -------- | ---------- | ---------------------------------------------------------- |
+| `latex`     | `string` (non-empty)                | **yes**  | —          | The formula in LaTeX math; every backslash doubled in JSON |
+| `alignment` | `'left'` \| `'center'` \| `'right'` | no       | `'center'` | Where the equation sits across the measure                 |
+| `spacing`   | `{ before?, after? }` (points)      | no       | `6` / `6`  | Room above and below                                       |
+
+```json
+{
+  "name": "equation",
+  "props": { "latex": "x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}" }
+}
+```
+
+The LaTeX is converted by docx's own `latexToMath`, the function the `docxjs` renderer draws the equation with, so a formula that validates is one that renders. It reads what LaTeX, MathJax and KaTeX write: fractions, scripts, roots, sums, integrals and other large operators, functions such as `\sin` and `\lim`, `\left`/`\right` brackets, accents, braces, boxes, fonts such as `\mathbb` and `\mathrm`, `\text`, Greek letters and symbols, and the `matrix`, `cases` and `aligned` environments. Surrounding `$…$`, `$$…$$`, `\(…\)` or `\[…\]` are optional. Colours, sizes and manual spacing are left to Word.
+
+`\tag{1}` numbers an equation: Word 2016 and later put the number at the right margin, while LibreOffice — and so `jto_preview` — shows it after a `#`, as `#(1)`. A command the converter does not know, or an unbalanced brace, is refused by validation with `invalid_latex` (`E_INVALID_LATEX`) at `props/latex`, naming the character where it broke.
+
+Only the default `docxjs` renderer draws equations. `office-open` writes Office Math from a structure of its own and reads no LaTeX, so its schema has no `equation` and validation refuses any formula under it.
 
 ## `table`
 

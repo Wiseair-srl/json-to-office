@@ -37,6 +37,7 @@ export {
 // Compilation and rendering
 export { compileDocumentToIr, generateBufferViaIr } from './generateFromIr';
 export { desugarExternals } from './desugarExternals';
+export { checkDocxFormulas } from './formulaCheck';
 
 // Type exports
 export type {

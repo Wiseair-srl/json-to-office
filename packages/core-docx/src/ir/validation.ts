@@ -408,6 +408,12 @@ function checkInline(inline: DocxIrInline, path: string, scope: Scope): void {
       checkChart(inline, path, scope);
       return;
 
+    case 'math':
+      if (typeof inline.latex !== 'string' || !inline.latex.trim()) {
+        scope.add(`${path}.latex`, 'expected a non-empty LaTeX string');
+      }
+      return;
+
     case 'lineBreak':
     case 'pageBreak':
     case 'columnBreak':

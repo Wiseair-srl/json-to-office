@@ -440,6 +440,13 @@ export function inlineChildren(
         );
         break;
 
+      case 'math':
+        // Undeclared capability: the pipeline refuses a document with an
+        // equation before it gets here (`index.ts`).
+        throw new Error(
+          'The office-open renderer cannot write an equation; render with docxjs.'
+        );
+
       default:
         assertNever(child, 'DocxIrInline');
     }

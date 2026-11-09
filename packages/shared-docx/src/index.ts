@@ -394,6 +394,11 @@ export type {
   GenerateDocumentSchemaOptions,
 } from './schemas/generator';
 
+// Math: the inline `\(…\)` syntax and where formulas sit, shared by the
+// compiler and the renderer's formula check
+export { INLINE_MATH_PATTERN, collectFormulas, inlineMathSpans } from './math';
+export type { FormulaSite, InlineMathSpan } from './math';
+
 // Renderer-discriminated schema profiles
 export {
   DOCX_RENDERER_IDS,

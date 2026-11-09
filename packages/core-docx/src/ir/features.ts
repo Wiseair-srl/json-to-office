@@ -61,6 +61,17 @@ export const DOCX_FEATURES = [
    * than a document missing a figure.
    */
   'charts',
+  /**
+   * Word's own equations (`m:oMath`), written from LaTeX.
+   *
+   * A feature of its own because it is a vocabulary of its own — the whole
+   * Office Math namespace — not a kind of run a backend gets for free with
+   * paragraphs. docx.js has it through `docx/math`, whose `latexToMath` builds
+   * the equation. office-open builds math from a tree of its own and reads no
+   * LaTeX, so it does not declare this yet and a formula there is refused by
+   * name rather than written as its source text.
+   */
+  'math',
   /** A table-of-contents field. */
   'toc',
   /** TOC entries baked in so an unrefreshed reader still shows them. */

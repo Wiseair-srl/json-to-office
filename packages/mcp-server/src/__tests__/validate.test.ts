@@ -191,6 +191,38 @@ describe('jto_validate', () => {
     }
   });
 
+  it('refuses a formula the renderer cannot convert, at its path', async () => {
+    // A formula is a string to the schema; only the renderer's own converter
+    // can say it will not draw, and validation asks it rather than waiting
+    // for the render to fail.
+    const { result } = await validate({
+      format: 'docx',
+      document: {
+        name: 'docx',
+        props: { theme: 'minimal' },
+        children: [
+          {
+            name: 'section',
+            props: {},
+            children: [
+              { name: 'equation', props: { latex: '\\frac{a}{b}' } },
+              { name: 'paragraph', props: { text: 'bad \\(\\frac{1}{2\\)' } },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(result.ok).toBe(false);
+    const errors = result.diagnostics.filter(
+      (entry: any) => entry.severity === 'error'
+    );
+    expect(errors.map((entry: any) => [entry.code, entry.path])).toEqual([
+      ['E_INVALID_LATEX', '/children/0/children/1/props/text'],
+    ]);
+    expect(errors[0].message).toMatch(/no closing }/);
+  });
+
   it('refuses a component a table cell cannot render, at the cell, with the fix', async () => {
     // The KPI row that shipped: statistics in table cells, each rendered as
     // "[Unsupported component type: statistic]" with no diagnostic anywhere.

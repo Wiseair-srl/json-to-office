@@ -28,6 +28,9 @@ export {
 } from './renderers/registry';
 export { UncompiledComponentError } from './core/generateFromIr';
 
+// Formulas: whether the selected renderer can write each one, path-addressed.
+export { checkDocxFormulas } from './core/formulaCheck';
+
 // Visual flattening (desugar `visual` → `image` for portable, service-free docs)
 export {
   flattenVisuals,

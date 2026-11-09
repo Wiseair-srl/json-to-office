@@ -26,6 +26,7 @@ export * from './table';
 export * from './list';
 export * from './toc';
 export * from './divider';
+export * from './equation';
 
 // Re-export from the main components file
 export {
