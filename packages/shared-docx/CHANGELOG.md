@@ -1,5 +1,11 @@
 # @json-to-office/shared-docx
 
+## 7.10.1
+
+### Patch Changes
+
+- 030dcc6: Bump docx to 9.15.4. Its published types no longer add `glob` to `import.meta`, so projects that declare `import.meta.glob` themselves (such as Next.js apps) type-check again.
+
 ## 7.10.0
 
 ### Minor Changes
