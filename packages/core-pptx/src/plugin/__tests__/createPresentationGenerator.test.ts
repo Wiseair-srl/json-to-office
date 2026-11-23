@@ -442,6 +442,42 @@ describe('createPresentationGenerator', () => {
     }
   });
 
+  it('keeps the original render error as the cause', async () => {
+    const original = new Error('boom');
+    const failing = createComponent({
+      name: 'failing' as const,
+      versions: {
+        '1.0.0': createVersion({
+          propsSchema: Type.Object({}, { additionalProperties: false }),
+          render: async (): Promise<PptxComponentInput[]> => {
+            throw original;
+          },
+        }),
+      },
+    });
+    const gen = createPresentationGenerator().addComponent(failing);
+
+    const error = await gen
+      .generateBuffer({
+        name: 'pptx',
+        props: {},
+        children: [
+          {
+            name: 'slide',
+            props: {},
+            children: [{ name: 'failing', props: {} }],
+          },
+        ],
+      })
+      .catch((e) => e);
+    expect(error).toBeInstanceOf(Error);
+    expect(error.message).toBe(
+      "Error processing custom component 'failing': boom"
+    );
+    // The renderer's own error stays reachable, so error trackers group on it.
+    expect(error.cause).toBe(original);
+  });
+
   it('rejects an image that sets more than one source (path/base64/svg)', () => {
     const gen = createPresentationGenerator();
 
