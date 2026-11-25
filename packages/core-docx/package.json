@@ -39,9 +39,9 @@
     "@office-open/docx": "0.14.6",
     "@resvg/resvg-js": "2.6.2",
     "@sinclair/typebox": "0.34.38",
-    "adm-zip": "0.5.16",
+    "adm-zip": "0.6.1",
     "date-fns": "3.6.0",
-    "probe-image-size": "7.2.3"
+    "probe-image-size": "7.5.0"
   },
   "peerDependencies": {
     "docx": "9.15.4"

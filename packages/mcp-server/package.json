@@ -40,13 +40,13 @@
     "@json-to-office/shared": "workspace:^",
     "@json-to-office/shared-docx": "workspace:^",
     "@json-to-office/shared-pptx": "workspace:^",
-    "@modelcontextprotocol/server": "2.0.0",
+    "@modelcontextprotocol/server": "2.4.0",
     "@sinclair/typebox": "0.34.38",
     "ajv": "8.17.1",
     "ajv-formats": "3.0.1"
   },
   "devDependencies": {
-    "@modelcontextprotocol/client": "2.0.0",
+    "@modelcontextprotocol/client": "2.4.0",
     "@types/node": "22.20.2",
     "tsup": "8.5.0",
     "typescript": "5.3.3",
