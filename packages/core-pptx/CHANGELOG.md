@@ -1,5 +1,11 @@
 # @json-to-office/core-pptx
 
+## 7.10.2
+
+### Patch Changes
+
+- 5388d22: Fix high-severity advisories in runtime dependencies: bump `@modelcontextprotocol/server` to 2.4.0 (cross-client message delivery, unbounded request size), `adm-zip` to 0.6.1 (decompression bombs, SUID bits preserved on extract) and `probe-image-size` to 7.5.0 (SVG parser DoS). Pin the transitive `fast-uri` 3.1.9, `image-size` 2.1.0, `lodash` 4.18.1 and `zod` 4.6.7.
+
 ## 7.8.0
 
 ### Minor Changes
