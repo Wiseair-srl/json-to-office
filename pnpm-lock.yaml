@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  docx: 9.15.4
+  docx: 9.16.1
   typescript: 5.3.3
   eslint: 8.56.0
   prettier: 3.2.4
@@ -112,8 +112,8 @@ importers:
         specifier: 3.6.0
         version: 3.6.0
       docx:
-        specifier: 9.15.4
-        version: 9.15.4
+        specifier: 9.16.1
+        version: 9.16.1
       probe-image-size:
         specifier: 7.5.0
         version: 7.5.0
@@ -247,8 +247,8 @@ importers:
         specifier: workspace:^
         version: link:../shared-docx
       docx:
-        specifier: 9.15.4
-        version: 9.15.4
+        specifier: 9.16.1
+        version: 9.16.1
     devDependencies:
       '@types/node':
         specifier: 22.20.2
@@ -734,8 +734,8 @@ importers:
         specifier: 0.34.38
         version: 0.34.38
       docx:
-        specifier: 9.15.4
-        version: 9.15.4
+        specifier: 9.16.1
+        version: 9.16.1
     devDependencies:
       '@types/node':
         specifier: 22.20.2
@@ -3790,8 +3790,8 @@ packages:
     resolution: {integrity: sha512-yS+Q5i3hBf7GBkd4KG8a7eBNNWNGLTaEwwYWUijIYM7zrlYDM0BFXHjjPWlWZ1Rg7UaddZeIDmi9jF3HmqiQ2w==}
     engines: {node: '>=6.0.0'}
 
-  docx@9.15.4:
-    resolution: {integrity: sha512-5UUTdR+eE7KVeNroYYt6K0Ixi9yez18BBKnypz3XyQSR8FsVYTiZ4vqKZr83JHjYPAgO+Tw7T/+13KyITpkgFw==}
+  docx@9.16.1:
+    resolution: {integrity: sha512-AL6ECiw4TIz74jTk5/DpLCDNyhONelWLyLy35rKAbhihhpX28AuirWStdUsNn9DuTtzxCv+sT7Ta4WBlF7JixQ==}
     engines: {node: '>=16'}
 
   dom-helpers@5.2.1:
@@ -9174,7 +9174,7 @@ snapshots:
     dependencies:
       esutils: 2.0.3
 
-  docx@9.15.4:
+  docx@9.16.1:
     dependencies:
       '@types/node': 26.6.3
       fflate: 0.8.3
