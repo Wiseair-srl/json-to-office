@@ -1,5 +1,14 @@
 # @json-to-office/json-to-docx
 
+## 7.10.3
+
+### Patch Changes
+
+- 5b2d98d: Bump docx to 9.16.1. Redlines write a paragraph mark's insertion or deletion before its formatting, as the schema orders them, so the Open XML SDK validator accepts them. Table of contents page numbers are now estimated for documents with rows that repeat their table's properties, rows split at multiple line spacing, and overfull text boxes. Packing a document takes about a quarter less time.
+- Updated dependencies [5b2d98d]
+  - @json-to-office/core-docx@7.10.3
+  - @json-to-office/shared-docx@7.10.3
+
 ## 7.10.1
 
 ### Patch Changes
