@@ -81,8 +81,13 @@ export class PluginExpansionError extends Error {
   readonly pluginName: string | undefined;
   readonly path: string | undefined;
 
-  constructor(message: string, pluginName?: string, path?: string) {
-    super(message);
+  constructor(
+    message: string,
+    pluginName?: string,
+    path?: string,
+    options?: ErrorOptions
+  ) {
+    super(message, options);
     this.name = 'PluginExpansionError';
     this.pluginName = pluginName;
     this.path = path;
@@ -306,7 +311,8 @@ export async function expandDocument(
             error instanceof Error ? error.message : String(error)
           }`,
           node.name,
-          nodeAuthored
+          nodeAuthored,
+          { cause: error }
         );
       }
       for (const warning of result.warnings ?? []) {

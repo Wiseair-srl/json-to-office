@@ -259,3 +259,33 @@ describe('plugin render-output validation', () => {
     expect(buffer.length).toBeGreaterThan(0);
   });
 });
+
+describe('plugin render failures', () => {
+  it('keeps the original render error as the cause', async () => {
+    const original = new Error('boom');
+    const failing = createComponent({
+      name: 'failing',
+      versions: {
+        '1.0.0': createVersion({
+          propsSchema: Type.Object({}, { additionalProperties: false }),
+          description: 'Always throws',
+          render: async (): Promise<ComponentDefinition[]> => {
+            throw original;
+          },
+        }),
+      },
+    });
+    const gen = createDocumentGenerator({ theme: testTheme }).addComponent(
+      failing
+    );
+    const error = await gen
+      .generateBuffer(docWith([{ name: 'failing', props: {} }]) as any)
+      .catch((e) => e);
+    expect(error).toBeInstanceOf(Error);
+    expect(error.message).toBe(
+      "Error processing custom component 'failing': boom"
+    );
+    // The renderer's own error stays reachable, so error trackers group on it.
+    expect(error.cause).toBe(original);
+  });
+});

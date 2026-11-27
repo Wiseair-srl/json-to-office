@@ -179,6 +179,9 @@ describe('expandDocument', () => {
     // A JSON pointer, so the editor can jump to the node that failed.
     expect(error.path).toBe('/children/0/children/0');
     expect(error.pluginName).toBe('callout');
+    // The renderer's own error stays reachable, so error trackers group on it.
+    expect(error.cause).toBeInstanceOf(Error);
+    expect(error.cause.message).toBe('boom');
 
     const notArray: PluginRenderer = async () => ({
       components: { name: 'paragraph' } as never,

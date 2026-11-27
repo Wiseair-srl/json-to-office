@@ -160,7 +160,8 @@ function createBuilderImpl<
         throw new Error(
           `Error processing custom component '${customComponent.name}': ${
             error instanceof Error ? error.message : String(error)
-          }`
+          }`,
+          { cause: error }
         );
       }
       const emitted = (
