@@ -1,5 +1,11 @@
 # @json-to-office/core-docx
 
+## 7.10.4
+
+### Patch Changes
+
+- d8cbc14: Keep the original error as `cause` when a custom component's render fails. The message is unchanged, but error trackers such as Sentry can now group failures by the error that actually happened instead of lumping them all under the generator's rethrow.
+
 ## 7.10.3
 
 ### Patch Changes
